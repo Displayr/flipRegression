@@ -24,7 +24,7 @@ residuals.Regression <- function(object, type = "raw", ...)
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a refression model.
 #' @export
-probabilities <- function(object, ...)
+probabilities <- function(object)
 {
     notValidForPartial(object, "probabilities")
     if (object$type == "Linear")

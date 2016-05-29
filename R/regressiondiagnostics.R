@@ -256,6 +256,7 @@ influencePlot.Regression <- function(model, ...)
 #' \code{infIndexPlot.Regression}
 #'
 #' @param model A 'Regression'  model.
+#' @param ... Other parameters for \code{infIndexPlot}.
 #' @importFrom car infIndexPlot
 #' @export
 infIndexPlot.Regression <- function(model, ...)
