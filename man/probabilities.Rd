@@ -4,7 +4,7 @@
 \alias{probabilities}
 \title{\code{probabilities} Probabilities.}
 \usage{
-probabilities(object, ...)
+probabilities(object)
 }
 \arguments{
 \item{object}{A model of some kind.}

@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{model}{A 'Regression'  model.}
+
+\item{...}{Other parameters for \code{infIndexPlot}.}
 }
 \description{
 \code{infIndexPlot.Regression}
