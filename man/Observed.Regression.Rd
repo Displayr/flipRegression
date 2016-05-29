@@ -7,9 +7,12 @@ Observed.default <- function(x)
 {
     fitted(x)
 }
-#@method observed Regression}
+\code{observed} Observed values used in fitting a model with an outcome variable.}
 \usage{
 \method{Observed}{Regression}(x)
+}
+\arguments{
+\item{x}{A 'Regression' model.}
 }
 \description{
 #' @export
@@ -17,6 +20,6 @@ Observed.default <- function(x)
 {
     fitted(x)
 }
-#@method observed Regression
+\code{observed} Observed values used in fitting a model with an outcome variable.
 }
 

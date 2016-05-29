@@ -6,6 +6,9 @@
 \usage{
 Observed(x)
 }
+\arguments{
+\item{x}{A 'Regression' model.}
+}
 \description{
 \code{observed} Observed values used in fitting a model with an outcome variable.
 }

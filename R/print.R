@@ -1,3 +1,7 @@
+#' @importFrom flipU IsCount
+#' @importFrom formattable percent comma
+#' @importFrom utils capture.output
+#' @importFrom flipFormat FormatAsPValue
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
 {
@@ -45,21 +49,21 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                        more appropriate."))
     else
     {
-        if (x$type == "Linear" & flipU::IsCount(outcome.variable))
+        if (x$type == "Linear" & IsCount(outcome.variable))
             warning(paste0("The outcome variable appears to contain count data (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Quasi-Poisson Regression, Ordered Logit)."))
     }
     # Creating a nicely formatted text description of the model.
-    require(formattable)
+    requireNamespace("formattable")
     aic <- if(partial) NA else AIC(x)
     rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
     caption <- x$sample.description
     caption <- if (partial)
-         paste0(caption," R-Squared: ", round(z$original$original$R2, 4), "; ")
+         paste0(caption," R-Squared: ", round(x$original$original$R2, 4), "; ")
     else
          paste0(caption," R-Squared: ", round(GoodnessOfFit(x)$value, 4),
-                          "; Correct predictions: ", formattable::percent(Accuracy(x)),
+                          "; Correct predictions: ", percent(Accuracy(x)),
                           if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-                          if (is.na(aic)) "" else paste0("; AIC: ",formattable::comma(aic), "; "))
+                          if (is.na(aic)) "" else paste0("; AIC: ",comma(aic), "; "))
     if (x$detail)
     {
         cat(paste0(x$type, " regression\n"))
@@ -78,7 +82,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
 }
 
-
+#' @importFrom stats printCoefmat pt pt
 #' @export
 print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("digits") - 3L), symbolic.cor = x$symbolic.cor,
                                                 signif.stars = getOption("show.signif.stars"), ...)
@@ -103,6 +107,8 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
 
 # Create an HTML widget data table (package DT) from the coefficients
 # table in a regression summary.
+#' @importFrom flipFormat DataTableWithRItemFormat AddSignificanceHighlightingToDataTable
+#' @importFrom stats pt qt qnorm fitted fitted.values
 createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits = 2,
                                       p.digits = 2, coefficient.indices = 1:2,
                                       test.index = 3, p.index = 4,
@@ -182,7 +188,7 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
   caption <- paste0(caption, "Results highlighted when p <= " , p.cutoff)
 
 
-  dt <- flipU::DataTableWithRItemFormat(pretty.coefs,
+  dt <- DataTableWithRItemFormat(pretty.coefs,
                                         caption = caption,
                                         header.alignments = rep("right", ncol(pretty.coefs)),
                                         page.length = nrow(pretty.coefs),
@@ -195,12 +201,12 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
   if (test.info$test.type == "t")
   {
     t.val <- qt(p.cutoff / 2, df = df.residual(x))
-    dt <- flipU::AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
+    dt <- AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
                                                         column.to.check = "t value",#test.info$test.column,
                                                         red.value = t.val, blue.value = -1L * t.val)
   } else if (test.info$test.type == "z") {
     z.val <- qnorm(p.cutoff / 2)
-    dt <- flipU::AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
+    dt <- AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
                                                         column.to.check = test.info$test.column,
                                                         red.value = z.val, blue.value = -1L * z.val)
   }

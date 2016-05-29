@@ -1,5 +1,5 @@
 #
-# data(bank, package = "flipData")
+# data(bank, package = "flipExampleData")
 #
 # # Single imputation.
 # method = "Imputation (replace missing values with estimates)" #"Multiple imputation"}.

@@ -13,7 +13,7 @@
 #'   \code{"Error if missing data"},
 #'   \code{"Exclude cases with missing data"},
 #'   \code{"Use partial data (pairwise correlations)"},
-#'   \code{"Imputation (replace missing values with estimates)", and
+#'   \code{"Imputation (replace missing values with estimates)"}, and
 #'   \code{"Multiple imputation"}.
 #' @param type Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
@@ -27,7 +27,6 @@
 #' @param m The number of imputed samples, if using multiple imputation..
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
-#'
 #' @details "Imputation (replace missing values with estimates)". All selected
 #'   outcome and predictor variables are included in the imputation, excluding
 #'   cases that are excluded via subset or have invalid weights, but including
@@ -36,7 +35,7 @@
 #'   the analysis (von Hippel 2007). Where "Use partial data (pairwise
 #'   correlations)" is used, if the data is weighted, a synthetic data file is
 #'   created by sampling with replacement in proportion to the weights,where the
-#'   sample size is the sum of the weights. See \code{\link{SingleImputation}}.
+#'   sample size is the sum of the weights. See \code{\link[flipImputation]{Imputation}}.
 #' @references von Hippel, Paul T. 2007. "Regression With Missing Y's: An
 #'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
 #'   Methodology 37:83-117. White, H. (1980), A heteroskedastic-consistent
@@ -44,6 +43,15 @@
 #'   Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
+#' @importFrom flipData GetData CleanSubset CleanWeights EstimationData
+#' @importFrom flipU OutcomeName IsCount
+#' @importFrom stats glm lm poisson quasipoisson binomial pt
+#' @importFrom survey svyglm
+#' @importFrom MASS polr glm.nb
+#' @importFrom nnet multinom
+#' @importFrom lmtest coeftest
+#' @importFrom car hccm
+#' @importFrom flipTransformations CreatingBinaryDependentVariableIfNecessary
 #' @export
 Regression <- function(formula,
                        data = NULL,
@@ -63,11 +71,11 @@ Regression <- function(formula,
   if (!is.null(subset.description))
        attr(subset, "description") <- subset.description
   weights <- eval(substitute(weights), data, parent.frame())
-  data <- flipU::GetData(.formula, data)
+  data <- GetData(.formula, data)
   if (method == "model.frame")
     return(data)
   mt <- attr(data, "terms")
-  outcome.name <- flipU::OutcomeName(.formula)
+  outcome.name <- OutcomeName(.formula)
   outcome.variable <- data[[outcome.name]]
   if (!is.null(weights) & length(weights) != nrow(data))
     stop("'weights' and 'data' are required to have the same number of observations. They do not.")
@@ -90,7 +98,7 @@ Regression <- function(formula,
       detail = TRUE
     }
   }
-  else if (flipU::IsCount(type) & !flipU::IsCount(outcome.variable))
+  else if (IsCount(type) & !IsCount(outcome.variable))
     stopNotCount()
   else if (is.factor(outcome.variable))
   {
@@ -100,8 +108,8 @@ Regression <- function(formula,
   row.names <- rownames(data)
   if (missing == "Use partial data (pairwise correlations)")
   {
-    subset <- flipU::CleanSubset(subset, nrow(data))
-    unfiltered.weights <- weights <- flipU::CleanWeights(weights)
+    subset <- CleanSubset(subset, nrow(data))
+    unfiltered.weights <- weights <- CleanWeights(weights)
     if (type != "Linear")
       stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
     if (robust.se)
@@ -113,7 +121,7 @@ Regression <- function(formula,
   }
     else
     {
-        processed.data <- flipU::EstimationData(.formula, data, subset, weights, missing, m = m)
+        processed.data <- EstimationData(.formula, data, subset, weights, missing, m = m)
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
         n <- nrow(.estimation.data)
@@ -132,18 +140,18 @@ Regression <- function(formula,
                                                                         "Quasi-Poisson" = quasipoisson,
                                                                         "Binary Logit" = binomial(link = "logit")))
           else if (type == "Ordered Logit")
-            original <- MASS::polr(.formula, .estimation.data, Hess = TRUE, ...)
+            original <- polr(.formula, .estimation.data, Hess = TRUE, ...)
           else if (type == "Multinomial Logit")
-            original <- nnet::multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+            original <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
           else if (type == "NBD")
-            original <- MASS::glm.nb(.formula, .estimation.data)
+            original <- glm.nb(.formula, .estimation.data)
           else
             stop("Unknown regression 'type'.")
 
           if (robust.se)
           {
-            original$robust.coefficients <- lmtest::coeftest(original,
-                                                             vcov = car::hccm(original, type = "hc1"))
+            original$robust.coefficients <- coeftest(original,
+                                                             vcov = hccm(original, type = "hc1"))
             colnames(original$robust.coefficients)[2] <- "Robust SE"
           }
         }
@@ -152,29 +160,29 @@ Regression <- function(formula,
           if (robust.se)
             warningRobustInappropriate()
           if (type == "Linear")
-            original <- survey::svyglm(.formula, weightedSurveyDesign(.estimation.data, weights))
+            original <- svyglm(.formula, weightedSurveyDesign(.estimation.data, weights))
           else if (type == "Ordered Logit")
           {
             .estimation.data$weights <- weights
-            original <- MASS::polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+            original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
           }
           else if (type == "Multinomial Logit")
           {
             .estimation.data$weights <- weights
-            original <- nnet::multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+            original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
           }
           else if (type == "NBD")
           {
             .estimation.data$weights <- weights
-            original <- MASS::glm.nb(.formula, .estimation.data, weights = weights, ...)
+            original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
           }
           else
           {
             wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
             original <- switch(type,
-                               "Binary Logit" = survey::svyglm(.formula, wgt.svy.des, family = quasibinomial()),
-                               "Poisson" = survey::svyglm(.formula, wgt.svy.des, family = poisson()),
-                               "Quasi-Poisson" = survey::svyglm(.formula, wgt.svy.des, family = quasipoisson()))
+                               "Binary Logit" = svyglm(.formula, wgt.svy.des, family = quasibinomial()),
+                               "Poisson" = svyglm(.formula, wgt.svy.des, family = poisson()),
+                               "Quasi-Poisson" = svyglm(.formula, wgt.svy.des, family = quasipoisson()))
             assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
             original$aic <- AIC(original)[2]
             remove("wgt.svy.des", envir=.GlobalEnv)
@@ -182,12 +190,7 @@ Regression <- function(formula,
           }
         }
         result <- list(original = original, call = cl)
-        # if(is.null(result$aic))
-        # {
-        #     result$aic<- AIC(original)
-        #     result$bic <- BIC(original)
-        # }
-        require(car)
+        requireNamespace("car")
         if (missing == "Imputation (replace missing values with estimates)")
           data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
@@ -218,6 +221,7 @@ Regression <- function(formula,
   return(result)
   }
 
+#' @importFrom graphics plot
 #' @export
 plot.Regression <- function(x,  ...){
   plot(x$original)
@@ -231,24 +235,24 @@ notValidForPartial <- function(object, method)
     stop(paste0("'", method, "' not available when 'missing' = ",ms, "'." ))
 }
 
-
-
+#' @importFrom stats vcov
 #' @export
 vcov.Regression <- function(object, ...)
 {
     vcov(object$original, ...)
 }
 
+#' @importFrom stats coef
 #' @export
 coef.Regression <- function(object, ...)
 {
     coef(object$original, ...)
 }
 
-
+#' @importFrom survey svydesign
 weightedSurveyDesign <- function(data, weights)
 {
-    survey::svydesign(id = ~ 1, weights = weights, data = data)
+    svydesign(id = ~ 1, weights = weights, data = data)
 }
 
 

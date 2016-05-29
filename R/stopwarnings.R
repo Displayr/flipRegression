@@ -1,13 +1,13 @@
 # Exceptions and warnings
-
+#' @importFrom flipU AllIntegers OutcomeName AnyNegative
 stopIfNotCount = function(formula, data)
 {
-    dependent.name <- outcomeName(formula)
+    dependent.name <- OutcomeName(formula)
     dependent.variable <- data[[dependent.name]]
-    if (!flipU::AllIntegers(dependent.variable))
+    if (!AllIntegers(dependent.variable))
         stop(paste("This analysis assumes that the Outcome variable contains only integers (i.e., whole numbers).
              However,", dependent.name, "contains non-integer values (i.e., numbers with decimal places)."))
-    if(anyNegative(dependent.variable))
+    if(AnyNegative(dependent.variable))
         stop(paste("This analysis assumes that the Outcome variable contains only values greater than or equal
             to zero. However", dependent.name, "contains negative values."))
 }

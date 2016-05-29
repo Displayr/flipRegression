@@ -1,35 +1,46 @@
+#' @importFrom stats resid residuals
 #' @export
 resid.Regression <- function(object, ...)
 {
     residuals(object, ...)
 }
+
+#' @importFrom flipTransformations UnclassIfNecessary
+#' @importFrom stats residuals
 #' @export
 residuals.Regression <- function(object, type = "raw", ...)
 {
     notValidForPartial(object, "residuals")
     if (type == "raw" & object$type %in% c("Ordered Logit", "Multinomial Logit", "Binary Logit"))
-        return(flipU::UnclassIfNecessary(Observed(object)) - flipU::UnclassIfNecessary(predict(object)))
+        return(UnclassIfNecessary(Observed(object)) - UnclassIfNecessary(predict(object)))
     resids <- residuals(object$original, ...)
     fillInMissingRowNames(rownames(object$model), resids)
 }
 
+#' \code{probabilities} Probabilities.
+#'
+#' @param object A model of some kind.
+#' @importFrom stats na.pass dpois
+#' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
+#' of class membership from a refression model.
 #' @export
-probabilities <- function(x, ...)
+probabilities <- function(object, ...)
 {
-    notValidForPartial(x, "probabilities")
-    if (x$type == "Linear")
+    notValidForPartial(object, "probabilities")
+    if (object$type == "Linear")
         stop("'probabilities' is not applicable to linear regression models.")
-    if (x$type %in% c("Ordered Logit", "Multinomial Logit"))
-        return(suppressWarnings(predict(x$original, newdata = x$model, na.action = na.pass, type = "probs")))
-    if (x$type == "Binary Logit")
-        return(suppressWarnings(predict(x$original, newdata = x$model, na.action = na.pass, type = "response")))[, 2]
-    xs <- 0:max(Observed(x), na.rm = TRUE)
-    if (x$type == "Poisson"){
-        log.lambdas <- suppressWarnings(predict(x$original, newdata = x$model, na.action = na.pass, type = "link"))
+    if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
+        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "probs")))
+    if (object$type == "Binary Logit")
+        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "response")))[, 2]
+    xs <- 0:max(Observed(object), na.rm = TRUE)
+    if (object$type == "Poisson")
+    {
+        log.lambdas <- suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "link"))
         lambdas <- exp(log.lambdas)
         return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
     }
-    stop(paste0("Probabilities are not computed for models of type '", x$type, "."))
+    stop(paste0("Probabilities are not computed for models of type '", object$type, "."))
 }
 
 computePoissonEsqueProbabilities <- function(xs, lambdas, density)
@@ -43,6 +54,7 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 }
 
 #' @export
+#' @importFrom stats predict.glm
 predict.Regression <- function(object, newdata = object$model, na.action = na.pass, ...)
 {
     notValidForPartial(object, "predict")
@@ -59,6 +71,7 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
 
 
 #' @export
+#' @importFrom stats fitted
 fitted.Regression <- function(object, ...)
 {
     notValidForPartial(object, "fitted")
@@ -76,13 +89,14 @@ fillInMissingRowNames <- function(row.names, variable)
 }
 
 #' @export
+#' @importFrom stats fitted.values
 fitted.values.Regression <- function(object, ...)
 {
     fitted(object, ...)
 }
 
 #' \code{observed} Observed values used in fitting a model with an outcome variable.
-#'
+#' @param x A 'Regression' model.
 #' @export
 Observed <- function(x) UseMethod("Observed", x)
 
@@ -92,7 +106,8 @@ Observed <- function(x) UseMethod("Observed", x)
 #'     fitted(x)
 #' }
 
-##' #@method observed Regression
+#' \code{observed} Observed values used in fitting a model with an outcome variable.
+#' @param x A 'Regression' model.
 #' @export
 Observed.Regression <- function(x)
 {

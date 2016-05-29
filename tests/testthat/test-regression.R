@@ -1,7 +1,6 @@
 context("Regression")
+data(bank, package = "flipExampleData")
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
-library(flipData, "flipData")
-data(bank)
 sb <- bank$ID > 100
 attr(sb, "label") <- "ID greater than 100"
 wgt <- bank$ID

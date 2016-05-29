@@ -38,8 +38,6 @@ DurbinWatson <- function(model, n.permutations = 1000)
   {
     .dW <- function(x)
     {
-      #        flipMultivariates:::printDetails(x[-n])
-      #       flipMultivariates:::printDetails(x[-1])
       sum((x[-n] - x[-1]) ^ 2) / sum(x^2)
     }
     .permute <- function(x) { .dW(sample(x)) }
@@ -53,30 +51,35 @@ DurbinWatson <- function(model, n.permutations = 1000)
 }
 
 #' @export
-print.DurbinWatson <- function(x)
+print.DurbinWatson <- function(x, ...)
 {
-  cat(paste0("Durbin-Watson statistic: ", d, "\n"))
-  cat(paste0("p-value: ", p, "\n"))
+  cat(paste0("Durbin-Watson statistic: ", x$d, "\n"))
+  cat(paste0("p-value: ", x$p, "\n"))
 }
 
 
+#' @importFrom stats cooks.distance
 #' @export
 cooks.distance.Regression <- function(model, ...)
 {
   checkAcceptableModel(model, c("lm", "glm"),"cooks.distance")
-  stats::cooks.distance(model$original)
+  cooks.distance(model$original)
 }
 
+#' @importFrom stats df.residual
 #' @export
-df.residual.Regression <- function(model, ...)
+df.residual.Regression <- function(object, ...)
 {
-  df.residual(model$original)
+  df.residual(object$original)
 }
 
 #' \code{CooksDistance}
 #'
 #' @param model A 'Regression' model.
 #' @details Computes Cook's distance and a threshold value.
+
+#' @importFrom stats quantile qf
+#' @importFrom stats cooks.distance
 #' @export
 CooksDistance <- function(model)
 {
@@ -103,6 +106,7 @@ CooksDistance <- function(model)
 #'
 #' @param model A 'Regression' model.
 #' @details Computes hat values and a threshold value.
+#' @importFrom stats hatvalues
 #' @export
 HatValues <- function(model)
 {
@@ -128,11 +132,13 @@ HatValues <- function(model)
 #'
 #' @param model A 'Regression' model.
 #' @details Computes studentized residuals.
+#' @importFrom car outlierTest
+#' @importFrom stats quantile
 #' @export
 OutlierTest <- function(model)
 {
   cat("Studentized residuals:\n")
-  st <- car::outlierTest(model, cutoff = Inf, n.max = Inf)
+  st <- outlierTest(model, cutoff = Inf, n.max = Inf)
   qs <- quantile(st$rstudent)
   print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
   min.p <- min(st$bonf.p)
@@ -217,13 +223,11 @@ residualPlots.Regression <- function(model, ...)
   assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
   assign(".formula", model$formula, envir=.GlobalEnv)
   assign("weights", model$weights, envir=.GlobalEnv)
-  #txt <- paste0("car::", diagnostic, "(model)")
   t <- residualPlots(model$original)
   remove("weights", envir=.GlobalEnv)
   remove(".formula", envir=.GlobalEnv)
   remove(".estimation.data", envir=.GlobalEnv)
   t
-  #diagnosticTestFromCar(model, "residualPlots", ...)
 }
 
 
@@ -234,6 +238,7 @@ influenceIndexPlot.Regression <- function(model, ...)
   diagnosticTestFromCar(model, "influenceIndexPlot", ...)
 }
 
+#' @importFrom stats hatvalues
 #' @export
 hatvalues.Regression <- function(model, ...)
 {
@@ -251,26 +256,24 @@ influencePlot.Regression <- function(model, ...)
 #' \code{infIndexPlot.Regression}
 #'
 #' @param model A 'Regression'  model.
+#' @importFrom car infIndexPlot
 #' @export
 infIndexPlot.Regression <- function(model, ...)
 {
   checkAcceptableModel(model, c("glm","lm"), "influenceIndexPlot")
   model <- model$original
-  #  assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
-  # assign(".formula", model$formula, envir=.GlobalEnv)
-  car::infIndexPlot(model, ...)
-  #   remove(".formula", envir=.GlobalEnv)
-  #    remove(".estimation.data", envir=.GlobalEnv)
+  infIndexPlot(model, ...)
 }
 
 
 
+#' @import car
 diagnosticTestFromCar<- function(x, diagnostic, ...)
 {
   model <- x$original
   assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
   assign(".formula", formula(model), envir=.GlobalEnv)
-  txt <- paste0("car::", diagnostic, "(model, ...)")
+  txt <- paste0(diagnostic, "(model, ...)")
   t <- eval(parse(text = txt))
   remove(".formula", envir=.GlobalEnv)
   remove(".estimation.data", envir=.GlobalEnv)
@@ -287,12 +290,13 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 #'   may not be an expression. \code{subset} may not
 #' @param weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
-#'
 #' @details A contingency table showing the observed versus predicted values from a model.
+#' @importFrom flipU IsCount
+#' @importFrom stats xtabs
 #' @export
 ConfusionMatrixFromVariables <- function(observed, predicted, subset = NULL, weights = NULL)
 {
-  if(flipU::IsCount(observed))
+  if(IsCount(observed))
     predicted <- floor(predicted)
   #     observed <- factor(observed)
   # if(!is.factor(observed))
@@ -363,6 +367,7 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
 #' Where the outcome
 #' variable in the model is not a factor and not a count, predicted values are assigned to the closest observed
 #' value.
+#' @importFrom stats predict
 #' @export
 ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
 {
@@ -399,12 +404,12 @@ Accuracy <- function(obj, subset = NULL, weights = NULL)
   correct / n
 }
 
-
+#' @importFrom effects allEffects
 #' @export
 allEffects.Regression <- function(model, ...)
 {
   assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
-  effects <- effects::allEffects(model$original, ...)#BreuschPagan(x$original)
+  effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
   remove(".estimation.data", envir=.GlobalEnv)
   effects
 }
@@ -460,6 +465,8 @@ allEffects.Regression <- function(model, ...)
 #' @describeIn GoodnessOfFit  Goodness-of-fit for a Regression object. Computed as the \eqn{R^2} statistic.
 #' With factors, the index value of the factor is used. With unordered factors, this will often be
 #' grieviously-downward biased.
+#' @importFrom flipTransformations UnclassIfNecessary
+#' @importFrom stats predict lm summary.lm ts
 #' @export
 GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
     if (object$missing == "Use partial data (pairwise correlations)")
@@ -468,8 +475,8 @@ GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits")
         r2 <- object$summary$r.square
     else
     {
-        predicted <- flipU::UnclassIfNecessary(predict(object)[object$subset])
-        observed <- flipU::UnclassIfNecessary(Observed(object)[object$subset])
+        predicted <- UnclassIfNecessary(predict(object)[object$subset])
+        observed <- UnclassIfNecessary(Observed(object)[object$subset])
         if (is.null(object$weights))
             r2 <- cor(observed, predicted, use = "complete.obs") ^ 2
         else

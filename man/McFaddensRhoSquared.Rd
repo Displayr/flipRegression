@@ -7,9 +7,7 @@
 McFaddensRhoSquared(x)
 }
 \arguments{
-\item{model}{A 'Regression' model.}
-
-\item{n.permutations}{Number of permutations used in computing the p-value.}
+\item{x}{A 'Regression' model.}
 }
 \description{
 \code{McFaddensRhoSquared}

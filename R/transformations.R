@@ -1,58 +1,3 @@
-#' \code{DichotomizeFactor} Converts a list of variable or data frames into a
-#' data.frame.
-#'
-#' @param variable A variable in a DataSet or data.frame.
-#' @param cutoff The cutoff point to split the variable into.
-#' @param warning If TRUE, raise a warning showing the new levels.
-#' @param variable.name An alternate name to show instead of the deparsed
-#'   variable name.
-#' @export
-DichotomizeFactor <- function(variable, cutoff = 0.5, warning = FALSE, variable.name = deparse(substitute(variable))) {
-    if (!is.factor(variable))
-        variable <- factor(variable)
-    if (nlevels(variable) == 1)
-        stop(paste(deparse(substitute(variable)), "cannot be dichotimized as it only contains one level."))
-    else if (nlevels(variable) == 2)
-        return(variable)
-    cumulative.probs <- cumsum(prop.table(table(variable)))
-    cut.point <- match(TRUE, cumulative.probs > cutoff)
-    if (cut.point == 1)
-        stop(paste(variable.name, "cannot be dichotimized (e.g., perhaps only has 1 value)."))
-    new.factor <- factor(unclass(variable) >= cut.point)
-    levels(new.factor) <- paste0(c("<=", ">="), levels(variable)[c(cut.point - 1, cut.point )])
-    if (warning)
-        warning(paste(variable.name, "has been dichotimized into", paste(levels(new.factor), collapse = " & ")))
-    new.factor
-}
-
-
-
-#' @export
-CreatingBinaryDependentVariableIfNecessary <- function(formula, data)
-{
-    outcome.name <- flipU::OutcomeName(formula)
-    data[, outcome.name] <- CreatingBinaryVariableIfNecessary(data, outcome.name)
-    data
-}
-
-#' @export
-CreatingBinaryVariableIfNecessary <- function(data, variable.name)
-{
-    variable <- data[[variable.name]]
-    n.unique <- length(unique(variable))
-    if (n.unique < 2)
-        stopTooFewForBinary()
-    else
-    {
-        if (n.unique > 2) {
-            if(!is.factor(variable))
-                variable <- factor(variable)
-            if (nlevels(variable) > 2)
-                variable <- DichotomizeFactor(variable, warning = TRUE, variable.name = variable.name)
-        }
-    }
-    variable
-}
 
 #' #' Converts a factor into an indicator matrix.
 #' #'
@@ -95,6 +40,8 @@ CreatingBinaryVariableIfNecessary <- function(data, variable.name)
 #' }
 
 
+#' #' Converts a data frame into a vector if it only contains a single variable.
+#' @param data.frame.object A  \code{data.frame}.
 dataFrameToVariableIfAppropriate <- function(data.frame.object)
 {
     if(is.data.frame(data.frame.object))

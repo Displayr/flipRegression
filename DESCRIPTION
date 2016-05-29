@@ -1,13 +1,30 @@
 Package: flipRegression
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Estimates standard regression models
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: Tim Bock
+Maintainer: Tim Bock  <tim.bock@numbers.net.au>
+Description: Regression models according to the flip Project's principles.
+License: GPL-3
 LazyData: TRUE
-depends: flipU, stats, formattable
+Imports:
+    car,
+    effects,
+    formattable,
+    flipFormat,
+    flipData,
+    flipStatistics,
+    flipTransformations,
+    flipU,
+    lmtest,
+    MASS,
+    methods,
+    psych,
+    nnet,
+    stats,
+    survey,
+    xml2
 Suggests:
-    testthat, survey
+    testthat,
+    flipExampleData
 RoxygenNote: 5.0.1

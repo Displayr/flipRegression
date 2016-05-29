@@ -1,5 +1,5 @@
 context("Sweep regression (pairwise correlations")
-data(bank, package = "flipData")
+data(bank, package = "flipExampleData")
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
 sb <- bank$ID > 100
 attr(sb, "label") <- "ID greater than 100"

@@ -22,6 +22,13 @@ may not be an expression. \code{subset} may not}
 \item{weights}{An optional vector of sampling weights, or, the name or, the
 name of a variable in \code{data}. It may not be an expression.}
 
+\item{missing}{How missing data is to be treated in the regression. Options:
+\code{"Error if missing data"},
+\code{"Exclude cases with missing data"},
+\code{"Use partial data (pairwise correlations)"},
+\code{"Imputation (replace missing values with estimates)"}, and
+\code{"Multiple imputation"}.}
+
 \item{type}{Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
@@ -52,7 +59,7 @@ data is weighted,  \code{\link[survey]{svyglm}}.}
   the analysis (von Hippel 2007). Where "Use partial data (pairwise
   correlations)" is used, if the data is weighted, a synthetic data file is
   created by sampling with replacement in proportion to the weights,where the
-  sample size is the sum of the weights. See \code{\link{SingleImputation}}.
+  sample size is the sum of the weights. See \code{\link[flipImputation]{Imputation}}.
 }
 \references{
 von Hippel, Paul T. 2007. "Regression With Missing Y's: An

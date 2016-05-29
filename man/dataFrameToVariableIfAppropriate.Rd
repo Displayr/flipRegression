@@ -23,6 +23,9 @@ FactorToIndicators <- function(variable, variable.name = deparse(substitute(vari
 \usage{
 dataFrameToVariableIfAppropriate(data.frame.object)
 }
+\arguments{
+\item{data.frame.object}{A  \code{data.frame}.}
+}
 \description{
 Converts an ordered factor into a numeric variable
 #'
@@ -43,5 +46,6 @@ FactorToNumeric <- function(variable, variable.name = deparse(substitute(variabl
         return(OrderedToNumeric(variable))
     return(FactorToIndicators(variable, variable.name))
 }
+#' Converts a data frame into a vector if it only contains a single variable.
 }
 

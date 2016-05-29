@@ -30,6 +30,7 @@ GoodnessOfFit <- function(object, digits = max(3L, getOption("digits") - 3L), ..
 }
 
 #' @describeIn GoodnessOfFit  Default goodness-of-fit \eqn{R^2}.
+#' @importFrom stats cor
 #' @export
 GoodnessOfFit.default = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
     obs.fit = FittedAndObserved(object)
@@ -95,10 +96,10 @@ nullDeviance <- function(x)
 
 #' \code{McFaddensRhoSquared}
 #'
-#' @param model A 'Regression' model.
-#' @param n.permutations Number of permutations used in computing the p-value.
+#' @param x A 'Regression' model.
 #' @details 1 - the deviance divided by the null deviance.
 #'  McFadden, D. (1974) “Conditional logit analysis of qualitative choice behavior.” Pp. 105-142 in P. Zarembka (ed.), Frontiers in Econometrics
+#' @importFrom stats deviance
 #' @export
 McFaddensRhoSquared <- function(x)
 {
@@ -107,18 +108,20 @@ McFaddensRhoSquared <- function(x)
     1 - deviance(x$original) / nullDeviance(x)
 }
 
+#' @importFrom stats logLik
 #' @export
-logLik.Regression <- function(x)
+logLik.Regression <- function(object, ...)
 {
-    logLik(x$original)
+    logLik(object$original, ...)
 }
 
+#' @importFrom stats AIC
 #' @export
-AIC.Regression <- function(x)
+AIC.Regression <- function(object, ...)
 {
-    if (is.null(x$original$aic))
-        return(AIC(x$original))
-    x$original$aic
+    if (is.null(object$original$aic))
+        return(AIC(object$original, ...))
+    object$original$aic
 }
 
 

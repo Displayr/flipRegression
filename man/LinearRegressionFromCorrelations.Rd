@@ -21,7 +21,7 @@ may not be an expression. \code{subset} may not}
 \item{weights}{An optional vector of sampling weights, or, the name or, the
 name of a variable in \code{data}. It may not be an expression.}
 
-\item{...}{Additional argments to be past to  \code{\link{psych::setCor}}.}
+\item{...}{Additional argments to be past to  \code{\link[psych]{setCor}}.}
 }
 \description{
 \code{LinearRegressionFromCorrelations} Linear regression via a sweep operation n the correlation matrix.
