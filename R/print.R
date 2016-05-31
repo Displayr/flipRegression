@@ -61,7 +61,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
          paste0(caption," R-Squared: ", FormatAsReal(GoodnessOfFit(x)$value, 4),
                           "; Correct predictions: ", FormatAsPercent(Accuracy(x), 4),
                           if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-                          if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic), "; "))
+                          if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
     if (x$detail)
     {
         cat(paste0(x$type, " regression\n"))
