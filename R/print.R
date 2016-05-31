@@ -1,7 +1,6 @@
 #' @importFrom flipU IsCount
-#' @importFrom formattable percent comma
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
 {
@@ -61,9 +60,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
          paste0(caption," R-Squared: ", round(x$original$original$R2, 4), "; ")
     else
          paste0(caption," R-Squared: ", round(GoodnessOfFit(x)$value, 4),
-                          "; Correct predictions: ", percent(Accuracy(x)),
+                          "; Correct predictions: ", FormatAsPercent(Accuracy(x)),
                           if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-                          if (is.na(aic)) "" else paste0("; AIC: ",comma(aic), "; "))
+                          if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic), "; "))
     if (x$detail)
     {
         cat(paste0(x$type, " regression\n"))

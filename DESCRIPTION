@@ -10,7 +10,6 @@ LazyData: TRUE
 Imports:
     car,
     effects,
-    formattable,
     flipFormat,
     flipData,
     flipStatistics,
