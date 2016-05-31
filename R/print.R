@@ -52,7 +52,6 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             warning(paste0("The outcome variable appears to contain count data (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Quasi-Poisson Regression, Ordered Logit)."))
     }
     # Creating a nicely formatted text description of the model.
-    requireNamespace("formattable")
     aic <- if(partial) NA else AIC(x)
     rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
     caption <- x$sample.description
@@ -81,7 +80,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
 }
 
-#' @importFrom stats printCoefmat pt pt
+#' @importFrom stats printCoefmat pt pt pf
 #' @export
 print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("digits") - 3L), symbolic.cor = x$symbolic.cor,
                                                 signif.stars = getOption("show.signif.stars"), ...)

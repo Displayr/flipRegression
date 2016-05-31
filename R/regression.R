@@ -45,7 +45,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom flipData GetData CleanSubset CleanWeights EstimationData
 #' @importFrom flipU OutcomeName IsCount
-#' @importFrom stats glm lm poisson quasipoisson binomial pt
+#' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm
 #' @importFrom MASS polr glm.nb
 #' @importFrom nnet multinom
@@ -150,8 +150,7 @@ Regression <- function(formula,
 
           if (robust.se)
           {
-            original$robust.coefficients <- coeftest(original,
-                                                             vcov = hccm(original, type = "hc1"))
+            original$robust.coefficients <- coeftest(original, vcov. = hccm(original, type = "hc1"))
             colnames(original$robust.coefficients)[2] <- "Robust SE"
           }
         }
@@ -252,7 +251,7 @@ coef.Regression <- function(object, ...)
 #' @importFrom survey svydesign
 weightedSurveyDesign <- function(data, weights)
 {
-    svydesign(id = ~ 1, weights = weights, data = data)
+    svydesign(ids = ~ 1, weights = weights, data = data)
 }
 
 

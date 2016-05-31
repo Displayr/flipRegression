@@ -98,7 +98,8 @@ nullDeviance <- function(x)
 #'
 #' @param x A 'Regression' model.
 #' @details 1 - the deviance divided by the null deviance.
-#'  McFadden, D. (1974) “Conditional logit analysis of qualitative choice behavior.” Pp. 105-142 in P. Zarembka (ed.), Frontiers in Econometrics
+#' McFadden, D. (1974) "Conditional logit analysis of qualitative choice behavior."
+#' Pp. 105-142 in P. Zarembka (ed.), Frontiers in Econometrics
 #' @importFrom stats deviance
 #' @export
 McFaddensRhoSquared <- function(x)

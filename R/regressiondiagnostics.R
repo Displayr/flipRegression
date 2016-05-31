@@ -17,8 +17,10 @@ numberObservations <- function(x)
 #' @param model A 'Regression'  model.
 #' @param n.permutations Number of permutations used in computing the p-value.
 #' @details Computes the Durbin-Watson statistic. A permutation test is used for
-#' computing the p-value. Tests to a lag of 1. Two-sided.
-#' Durbin, J.; Watson, G. S. (1950). "Testing for Serial Correlation in Least Squares Regression, I". Biometrika 37 (3–4): 409–428.
+#' computing the p-value. Tests to a lag of 1 (two-sided).
+#'
+#' Durbin, J., Watson, G. S. (1950). "Testing for Serial Correlation in Least Squares
+#' Regression, I". Biometrika 37 (3–4): 409–428.
 #' @export
 DurbinWatson <- function(model, n.permutations = 1000)
 {
@@ -369,6 +371,7 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
 #' variable in the model is not a factor and not a count, predicted values are assigned to the closest observed
 #' value.
 #' @importFrom stats predict
+#' @importFrom methods is
 #' @export
 ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
 {
