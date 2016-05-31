@@ -16,11 +16,11 @@ numberObservations <- function(x)
 #'
 #' @param model A 'Regression'  model.
 #' @param n.permutations Number of permutations used in computing the p-value.
-#' @details Computes the Durbin-Watson statistic. A permutation test is used for
+#' @details "Computes the Durbin-Watson statistic. A permutation test is used for
 #' computing the p-value. Tests to a lag of 1 (two-sided).
 #'
-#' Durbin, J., Watson, G. S. (1950). "Testing for Serial Correlation in Least Squares
-#' Regression, I". Biometrika 37 (3–4): 409–428.
+#' Durbin, J., Watson, G. S. (1950). 'Testing for Serial Correlation in Least Squares
+#' Regression, I'. Biometrika 37, (pp. 3 - 4.
 #' @export
 DurbinWatson <- function(model, n.permutations = 1000)
 {
@@ -80,8 +80,8 @@ df.residual.Regression <- function(object, ...)
 #' @param model A 'Regression' model.
 #' @details Computes Cook's distance and a threshold value.
 
-#' @importFrom stats quantile qf
-#' @importFrom stats cooks.distance
+#' @importFrom stats quantile qf cooks.distance
+#' @importFrom flipFormat FormatAsReal
 #' @export
 CooksDistance <- function(model)
 {
@@ -94,10 +94,10 @@ CooksDistance <- function(model)
   max.d <- max(d)
   max.is.high <- max.d > cutoff
   description = paste0("The largest Cook's distance is ",
-                       round(max.d, 3), ", which is ",
+                       FormatAsReal(max.d, 3), ", which is ",
                        if(max.is.high) "" else "not ",
                        "higher than the threshhold of ",
-                       round(cutoff, 3), " (the median of the F(k=",
+                       FormatAsReal(cutoff, 3), " (the median of the F(k=",
                        k,",n-k=", n - k, ") distribution).\n")
   cat(description)
   cat("\n")
@@ -109,6 +109,7 @@ CooksDistance <- function(model)
 #' @param model A 'Regression' model.
 #' @details Computes hat values and a threshold value.
 #' @importFrom stats hatvalues
+#' @importFrom flipFormat FormatAsReal
 #' @export
 HatValues <- function(model)
 {
@@ -121,10 +122,10 @@ HatValues <- function(model)
   max.d <- max(d)
   max.is.high <- max.d > cutoff
   description = paste0("The largest hat value is ",
-                       round(max.d, 3), ", which is ",
+                       FormatAsReal(max.d, 3), ", which is ",
                        if(max.is.high) "" else "not ",
                        "higher than the threshhold of ",
-                       round(cutoff, 3), " = 2 * (k + 1) / n.\n")
+                       FormatAsReal(cutoff, 3), " = 2 * (k + 1) / n.\n")
   cat(description)
   cat("\n")
   invisible(list(max.is.high = max.is.high, d = d, cutoff = cutoff, description = description))
@@ -136,6 +137,8 @@ HatValues <- function(model)
 #' @details Computes studentized residuals.
 #' @importFrom car outlierTest
 #' @importFrom stats quantile
+#' @importFrom flipFormat FormatAsReal FormatAsPValue
+
 #' @export
 OutlierTest <- function(model)
 {
@@ -147,10 +150,10 @@ OutlierTest <- function(model)
   max.is.high <- min.p <= 0.05
   mx <- if(abs(qs[1]) < qs[5]) qs[5] else qs[1]
   description = paste0("The largest studentized residual is ",
-                       round(mx, 3), ", which is ",
+                       FormatAsReal(mx, 3), ", which is ",
                        if(max.is.high) "" else "not ",
                        "significant, with a Bonferroni-corrected p-value of ",
-                       round(min.p, 5), ".\n")
+                       FormatAsPValue(min.p), ".\n")
   cat(description)
   cat("\n")
   invisible(list(max.is.high = max.is.high, outlierTest = ts, description = description))

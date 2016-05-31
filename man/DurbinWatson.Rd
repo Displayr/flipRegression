@@ -15,10 +15,10 @@ DurbinWatson(model, n.permutations = 1000)
 \code{DurbinWatson}
 }
 \details{
-Computes the Durbin-Watson statistic. A permutation test is used for
+"Computes the Durbin-Watson statistic. A permutation test is used for
 computing the p-value. Tests to a lag of 1 (two-sided).
 
-Durbin, J., Watson, G. S. (1950). "Testing for Serial Correlation in Least Squares
-Regression, I". Biometrika 37 (3–4): 409–428.
+Durbin, J., Watson, G. S. (1950). 'Testing for Serial Correlation in Least Squares
+Regression, I'. Biometrika 37, (pp. 3 - 4.
 }
 
