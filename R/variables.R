@@ -72,6 +72,11 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
     #      return(floor(predicted))
     if (object$type == "Binary Logit")
         return(factor(as.integer(predicted >= 0.5) + 1, labels = levels(Observed(object))))
+    else if (object$type == "Multinomial Logit")
+    {
+        levs <- levels(Observed(object))
+        predicted <- factor(match(predicted, levs), levels = levs)
+    }
     predicted
 }
 
