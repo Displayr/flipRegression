@@ -220,12 +220,6 @@ Regression <- function(formula,
   return(result)
   }
 
-#' @importFrom graphics plot
-#' @export
-plot.Regression <- function(x,  ...){
-  plot(x$original)
-}
-
 
 notValidForPartial <- function(object, method)
 {

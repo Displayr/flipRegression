@@ -64,7 +64,7 @@ print.DurbinWatson <- function(x, ...)
 #' @export
 cooks.distance.Regression <- function(model, ...)
 {
-  checkAcceptableModel(model, c("lm", "glm"),"cooks.distance")
+  checkAcceptableModel(model, c("lm", "glm"),"'cooks.distance'")
   cooks.distance(model$original)
 }
 
@@ -163,7 +163,7 @@ OutlierTest <- function(model)
 #' @export
 outlierTest.Regression <- function(model, ...)
 {
-  checkAcceptableModel(model, c("glm","lm"), "outlierTest")
+  checkAcceptableModel(model, c("glm","lm"), "'outlierTest'")
   diagnosticTestFromCar(model, "outlierTest", ...)
 }
 
@@ -201,22 +201,22 @@ checkAcceptableModel <- function(x, classes, diagnostic, exclude.partial.data = 
   if (exclude.partial.data & x$missing == "Use partial data (pairwise correlations)")
     stop(paste0("'", diagnostic, "' is not computed for model that are computed using 'Use partial data (pairwise correlations)'"))
   if (!any(classes %in% class(x$original)))
-    stop(paste0("'", diagnostic, "' is not computed for models of this type or class."))
+    stop(paste0(diagnostic, " is not computed for models of this type or class."))
 }
 
 #' @export
 vif.Regression <- function (mod, ...)
 {
-  checkAcceptableModel(mod, c("lm", "glm"), "vif")
+  checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
   diagnosticTestFromCar(mod, "vif", ...)
 }
 
 #' @export
 ncvTest.Regression <- function(model, ...)
 {
-  if (any("svyglm" %in% class(model$original)))
+  if (!any("lm" %in% class(model$original)))
     stop(paste0("'ncvTest is not applicable for models with sampling weights."))
-  checkAcceptableModel(model, "lm", "ncvTest")
+  checkAcceptableModel(model, "lm", "'ncvTest'")
   diagnosticTestFromCar(model, "ncvTest", ...)
 }
 
@@ -224,7 +224,7 @@ ncvTest.Regression <- function(model, ...)
 #' @export
 residualPlots.Regression <- function(model, ...)
 {
-  checkAcceptableModel(model, c("glm","lm"), "residualPlots")
+  checkAcceptableModel(model, c("glm","lm"), "'residualPlots'")
   assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
   assign(".formula", model$formula, envir=.GlobalEnv)
   assign("weights", model$weights, envir=.GlobalEnv)
@@ -239,7 +239,7 @@ residualPlots.Regression <- function(model, ...)
 #' @export
 influenceIndexPlot.Regression <- function(model, ...)
 {
-  checkAcceptableModel(model, c("glm","lm"), "influenceIndexPlot")
+  checkAcceptableModel(model, c("glm","lm"), "'influenceIndexPlot'")
   diagnosticTestFromCar(model, "influenceIndexPlot", ...)
 }
 
@@ -253,7 +253,7 @@ hatvalues.Regression <- function(model, ...)
 #' @export
 influencePlot.Regression <- function(model, ...)
 {
-  checkAcceptableModel(model, c("glm","lm"), "influencePlot")
+  checkAcceptableModel(model, c("glm","lm"), "'influencePlot'")
   diagnosticTestFromCar(model, "influencePlot", ...)
 }
 
@@ -266,7 +266,7 @@ influencePlot.Regression <- function(model, ...)
 #' @export
 infIndexPlot.Regression <- function(model, ...)
 {
-  checkAcceptableModel(model, c("glm","lm"), "influenceIndexPlot")
+  checkAcceptableModel(model, c("glm","lm"), "'influenceIndexPlot'")
   model <- model$original
   infIndexPlot(model, ...)
 }

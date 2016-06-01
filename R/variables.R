@@ -12,7 +12,13 @@ residuals.Regression <- function(object, type = "raw", ...)
 {
     notValidForPartial(object, "residuals")
     if (type == "raw" & object$type %in% c("Ordered Logit", "Multinomial Logit", "Binary Logit"))
-        return(UnclassIfNecessary(Observed(object)) - UnclassIfNecessary(predict(object)))
+    {
+        observed <- Observed(object)
+        levs <- levels(observed)
+        observed <- UnclassIfNecessary(observed)
+        predicted <- match(predict(object), levs) # Dealing with situations where the predictions omit a class.
+        return(observed - predicted)
+    }
     resids <- residuals(object$original, ...)
     fillInMissingRowNames(rownames(object$model), resids)
 }
