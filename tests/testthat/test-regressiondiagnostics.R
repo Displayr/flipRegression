@@ -27,19 +27,6 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Mul
 })
 
 
-for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
-   # test_that(paste("Accuracy:", type),
-    {
-        bank$overalldiv3 = bank$Overall / 3
-        z = Regression(overalldiv3 ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
-        print(ConfusionMatrix(z))
-        #expect_error(outlierTest(z), NA)
-        #expect_error(capture.output(HatValues(z)), NA)
-        #expect_error(capture.output(CooksDistance(z)), NA)
-
-}#)
-
-
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD"))#, "Multinomial Logit")) #"Ordered Logit",
     test_that(paste("Testing outliers:", type),
     {
