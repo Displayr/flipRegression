@@ -355,6 +355,8 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
     predicted[predicted.na] <- -Inf
   predicted <- sapply(predicted, function(x) unique.observed[which.min(abs(unique.observed - x))])
   predicted[predicted.na] <- NA
+  #levels(observed) <- paste("Observed", levels(observed))
+  #levels(predicted) <- paste("Predicted", levels(predicted))
   ConfusionMatrixFromVariables(observed, predicted)
 }
 
