@@ -97,7 +97,7 @@ CooksDistance <- function(model)
   k <- numberParameters(model)
   n <- numberObservations(model)
   cutoff <- qf(0.5, k, n - k)
-  max.d <- max(d, na.rm)
+  max.d <- max(d, na.rm = TRUE)
   max.is.high <- max.d > cutoff
   description = paste0("The largest Cook's distance is ",
                        FormatAsReal(max.d, 3), ", which is ",
@@ -125,7 +125,7 @@ HatValues <- function(model)
   k <- numberParameters(model)
   n <- numberObservations(model)
   cutoff <- 2 * (k + 1) / n
-  max.d <- max(d, na.rm)
+  max.d <- max(d, na.rm = TRUE)
   max.is.high <- max.d > cutoff
   description = paste0("The largest hat value is ",
                        FormatAsReal(max.d, 3), ", which is ",
