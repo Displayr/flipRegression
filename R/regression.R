@@ -33,10 +33,7 @@
 #'   cases that are excluded via subset or have invalid weights, but including
 #'   cases with missing values of the outcome variable.
 #'   Then, cases with missing values in the outcome variable are excluded from
-#'   the analysis (von Hippel 2007). Where "Use partial data (pairwise
-#'   correlations)" is used, if the data is weighted, a synthetic data file is
-#'   created by sampling with replacement in proportion to the weights,where the
-#'   sample size is the sum of the weights. See \code{\link[flipImputation]{Imputation}}.
+#'   the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 #' @references von Hippel, Paul T. 2007. "Regression With Missing Y's: An
 #'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
 #'   Methodology 37:83-117. White, H. (1980), A heteroskedastic-consistent

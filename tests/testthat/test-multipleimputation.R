@@ -67,9 +67,10 @@ print(cbind(x,y))
 distance <- Distance <- c(5, 5, 10, 10, 15, 15, 20, 20)
 price <- Price <- c(1.6, 2.4, 1.1, 1.9, .6, 1.4, .1, .9)
 
-PredictionPlot(lm(price ~ distance))
+PredictionPlot(Regression(price ~ distance))
 
 ## M ~ X
+distance <- Distance
 distance[7:8] <- NA
 
 # Complete case
@@ -79,7 +80,6 @@ Regression(price ~ distance, data = data.frame(distance, price), missing = "Use 
 Regression(price ~ distance, data = data.frame(distance, price)[1:6, ], missing = "Use partial data (pairwise correlations)")
 
 # Regression-based imputation
-Regression(price ~ distance, data = data.frame(distance, price), missing = "Imputation (replace missing values with estimates)")
 Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation")
 
 # Hot decking
@@ -90,12 +90,14 @@ Regression(price ~ distance, data = data.frame(distance, price))
 distance[7:8] <- mean(distance[1:6])
 Regression(price ~ distance, data = data.frame(distance, price))
 
+predict(Regression(distance ~ price))
+
 # M ~ Y
 distance <- Distance
-distance[c(5,8)] <- NA
+distance[c(5,7)] <- NA
 Regression(price ~ distance, data = data.frame(distance, price))
 Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)")
-Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation", seed = 5)
+Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation")
 
 
 
