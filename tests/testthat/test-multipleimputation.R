@@ -59,8 +59,6 @@ Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z))
 Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Multiple imputation")
 Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Use partial data (pairwise correlations)")
 
-print(cbind(x,y))
-
 
 # Case study
 

@@ -93,7 +93,7 @@ CooksDistance <- function(model)
 {
   cat("Cook's distance:\n")
   d <- cooks.distance(model)
-  print(structure(zapsmall(quantile(d), 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
+  print(structure(zapsmall(quantile(d, na.rm = TRUE), 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
   k <- numberParameters(model)
   n <- numberObservations(model)
   cutoff <- qf(0.5, k, n - k)
@@ -121,7 +121,7 @@ HatValues <- function(model)
 {
   cat("Hat values:\n")
   d <- hatvalues(model)
-  print(structure(zapsmall(quantile(d), 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
+  print(structure(zapsmall(quantile(d, na.rm = TRUE), 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
   k <- numberParameters(model)
   n <- numberObservations(model)
   cutoff <- 2 * (k + 1) / n

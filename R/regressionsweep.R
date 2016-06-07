@@ -167,7 +167,6 @@ regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
     betas <- matrix(NA, b, ncol(x))
     for (i in 1:b)
     {
-        dat <- f
         dat <- inverseBootstrap(data, prob)
         r <- cor(dat, use = "pairwise.complete.obs")
         b <- betasFromCorrelations(r)$b
