@@ -7,7 +7,7 @@
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
   robust.se = FALSE, method = "default", detail = TRUE, m = 10,
-  seed = 1223, ...)
+  seed = 12321, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be

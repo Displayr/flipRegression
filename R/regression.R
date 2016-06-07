@@ -61,7 +61,7 @@ Regression <- function(formula,
                        method = "default",
                        detail = TRUE,
                        m = 10,
-                       seed = 1223,
+                       seed = 12321,
                        ...)
 {
   cl <- match.call()
