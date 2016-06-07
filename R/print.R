@@ -56,21 +56,31 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
     caption <- x$sample.description
     caption <- if (partial)
-         paste0(caption," R-Squared: ", FormatAsReal(x$original$original$R2, 4), "; ")
+         paste0(caption," R-squared: ", FormatAsReal(x$original$original$R2, 4), "; ")
     else
-         paste0(caption," R-Squared: ", FormatAsReal(GoodnessOfFit(x)$value, 4),
+         paste0(caption," R-squared: ", FormatAsReal(GoodnessOfFit(x)$value, 4),
                           "; Correct predictions: ", FormatAsPercent(Accuracy(x), 4),
                           if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
                           if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
     if (x$detail)
     {
         cat(paste0(x$type, " regression\n"))
-        print(x$summary, ...)
-        # if (!is.null(x$original$original))
-        #     cat(paste0("Partial-data R-squared ", flipU::FormatAsReal(x$original$original$R2, 4), " (the R-squared and F above are based only on complete cases).\n"))
-        cat(caption)
-        if (x$robust.se)
-            cat("Heteroscedastic-robust standard errors.")
+        if (x$missing == "Multiple imputation")
+        {
+            printCoefmat(x$summary$coefficients)
+            cat(caption)
+        }
+        else
+        {
+            print(x$summary, ...)
+            # if (!is.null(x$original$original))
+            #     cat(paste0("Partial-data R-squared ", flipU::FormatAsReal(x$original$original$R2, 4), " (the R-squared and F above are based only on complete cases).\n"))
+            cat(caption)
+            if (x$robust.se)
+                cat("Heteroscedastic-robust standard errors.")
+        }
+
+
     }
     else
     {
@@ -79,6 +89,57 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         print(dt)
     }
 }
+#
+# printMultipleImputation <- function(object)
+# {
+#     # Based on summary.lm
+#     r <- object$residuals
+#     n <- length(r)
+#     w <- z$weights
+#     if (is.null(w)) {
+#         rss <- sum(r^2)
+#     }
+#     else {
+#         rss <- sum(w * r^2)
+#         r <- sqrt(w) * r
+#     }
+#     resvar <- rss/rdf
+#     ans <- object[c("call", "terms", if (!is.null(z$weights)) "weights")]
+#     ans$residuals <- resid(r)
+#     ans$coefficients <- object$summary$coef
+#     ans$sigma <- sqrt(resvar)
+#     ans$df <- c(p, rdf, NCOL(Qr$qr))
+#     if (p != attr(z$terms, "intercept")) {
+#         df.int <- if (attr(z$terms, "intercept"))
+#             1L
+#         else 0L
+#         ans$r.squared <- mss/(mss + rss)
+#         ans$adj.r.squared <- 1 - (1 - ans$r.squared) * ((n -
+#             df.int)/rdf)
+#         ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
+#             numdf = p - df.int, dendf = rdf)
+#     }
+#     else ans$r.squared <- ans$adj.r.squared <- 0
+#     ans$cov.unscaled <- R
+#     dimnames(ans$cov.unscaled) <- dimnames(ans$coefficients)[c(1,
+#         1)]
+#     if (correlation) {
+#         ans$correlation <- (R * resvar)/outer(se, se)
+#         dimnames(ans$correlation) <- dimnames(ans$cov.unscaled)
+#         ans$symbolic.cor <- symbolic.cor
+#     }
+#     if (!is.null(z$na.action))
+#         ans$na.action <- z$na.action
+#     class(ans) <- "summary.lm"
+#     ans
+#
+#
+# }
+
+
+
+
+
 
 #' @importFrom stats printCoefmat pt pt pf
 #' @export
@@ -137,77 +198,71 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
     return(list(test.type = test.type, test.column = test.column))
   }
 
-  # Create a formatted array of regression coefficient information that can be passed to an HTMLwidget
-  # DataTable.
-  .formatRegressionCoefficientMatrix <- function (x, coeff.digits = 2,
+    # Create a formatted array of regression coefficient information that can be passed to an HTMLwidget
+    # DataTable.
+    .formatRegressionCoefficientMatrix <- function (x, coeff.digits = 2,
                                                   p.digits = 2, coefficient.indices = 1:2,
                                                   test.index = 3, p.index = 4,
                                                   eps.p = 0.001)
-  {
-    d <- dim(x)
-    num.cols <- d[2]
+    {
+        d <- dim(x)
+        num.cols <- d[2]
 
-    coefficients <- data.matrix(x)
+        coefficients <- data.matrix(x)
+        tidied.coefficients <- array("", dim = d, dimnames = dimnames(coefficients))
+        na.values <- is.na(coefficients)
+        normal.indices <- c(coefficient.indices, test.index)
+        tidied.coefficients[,normal.indices] <- format(round(coefficients[, normal.indices], digits = coeff.digits), digits = coeff.digits)
+        tidied.coefficients[,p.index] <- format.pval(coefficients[, p.index], digits = p.digits, eps = eps.p)
 
+        # Print any NA values
+        if (any(na.values))
+          tidied.coefficients[na.values] <- "NA"
 
-    tidied.coefficients <- array("", dim = d, dimnames = dimnames(coefficients))
+        return(as.data.frame(tidied.coefficients))
+      }
 
-    na.values <- is.na(coefficients)
-
-    normal.indices <- c(coefficient.indices, test.index)
-    tidied.coefficients[,normal.indices] <- format(round(coefficients[, normal.indices], digits = coeff.digits), digits = coeff.digits)
-    tidied.coefficients[,p.index] <- format.pval(coefficients[, p.index], digits = p.digits, eps = eps.p)
-
-    # Print any NA values
-    if (any(na.values))
-      tidied.coefficients[na.values] <- "NA"
-
-    return(as.data.frame(tidied.coefficients))
-  }
-
-
-
-  # Make a pretty table with a caption
-  coefs <- x$summary$coefficients
-  # Ordered Logit tables don't come with a p-value column
-  # so calculate the p's from the
-  if (x$type == "Ordered Logit")
-  {
+    # Make a pretty table with a caption
+    #coefs <- if (x$missing == "Multiple imputation") x$coef.table else x$summary$coefficients
+    coefs <- x$summary$coefficients
+    # Ordered Logit tables don't come with a p-value column
+    # so calculate the p's from the
+    if (x$type == "Ordered Logit" & x$missing != "Multiple imputation")
+    {
     ps = 2*pt(-abs(coefs[, test.index]), df = x$summary$df.residual)
     coefs = cbind(coefs, ps)
-  }
-
-  pretty.coefs <- .formatRegressionCoefficientMatrix(coefs, coeff.digits,
+    }
+    pretty.coefs <- .formatRegressionCoefficientMatrix(coefs, coeff.digits,
                                                      p.digits, coefficient.indices,
                                                      test.index, p.index,
                                                      eps.p)
-  pretty.coefs <- as.data.frame(pretty.coefs, stringsAsFactors = FALSE)
+    pretty.coefs <- as.data.frame(pretty.coefs, stringsAsFactors = FALSE)
 
-  caption <- paste0(caption, "Results highlighted when p <= " , p.cutoff)
+    caption <- paste0(caption, "Results highlighted when p <= " , p.cutoff)
 
 
-  dt <- DataTableWithRItemFormat(pretty.coefs,
+    dt <- DataTableWithRItemFormat(pretty.coefs,
                                         caption = caption,
                                         header.alignments = rep("right", ncol(pretty.coefs)),
                                         page.length = nrow(pretty.coefs),
                                         allow.paging = FALSE,
                                         show.info = FALSE)
 
-
-  # Highlight significant coefficients
-  test.info <- .findTestInCoefficientTable(coefs)
-  if (test.info$test.type == "t")
-  {
-    t.val <- qt(p.cutoff / 2, df = df.residual(x))
-    dt <- AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
+    # Highlight significant coefficients
+    test.info <- .findTestInCoefficientTable(coefs)
+    if (test.info$test.type == "t")
+    {
+        t.val <- qt(p.cutoff / 2, df = df.residual(x))
+        dt <- AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
                                                         column.to.check = "t value",#test.info$test.column,
                                                         red.value = t.val, blue.value = -1L * t.val)
-  } else if (test.info$test.type == "z") {
-    z.val <- qnorm(p.cutoff / 2)
-    dt <- AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
-                                                        column.to.check = test.info$test.column,
+    }
+    else if (test.info$test.type == "z")
+    {
+        z.val <- qnorm(p.cutoff / 2)
+        dt <- AddSignificanceHighlightingToDataTable(dt, columns.to.color = 1,
+                                                            column.to.check = test.info$test.column,
                                                         red.value = z.val, blue.value = -1L * z.val)
-  }
-
-  return(dt)
+    }
+    return(dt)
 }

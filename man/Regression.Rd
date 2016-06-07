@@ -6,7 +6,8 @@
 \usage{
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
-  robust.se = FALSE, method = "default", detail = TRUE, m = m, ...)
+  robust.se = FALSE, method = "default", detail = TRUE, m = 10,
+  seed = 1223, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -42,7 +43,9 @@ method = "model.frame", which returns the model frame.}
 
 \item{detail}{More detailed outputs.}
 
-\item{m}{The number of imputed samples, if using multiple imputation..}
+\item{m}{The number of imputed samples, if using multiple imputation.}
+
+\item{seed}{The random number seed used in imputation.}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}

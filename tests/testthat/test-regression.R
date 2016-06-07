@@ -71,7 +71,7 @@ test_that(paste("Robust se does something"),
 })
 
 
-for(missing in c("Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Residuals", missing, type),
       {
@@ -86,7 +86,6 @@ for(missing in c("Imputation (replace missing values with estimates)", "Exclude 
           expect_error(capture.output(print(z)),NA)
       })
 
-
 test_that("allEffects works on Regression object",
 {
     data(cpus, package = "MASS")
@@ -95,7 +94,7 @@ test_that("allEffects works on Regression object",
     expect_equal(effects::allEffects(z), effects::allEffects(zlm))
 })
 
-for(missing in c("Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
     for (type in c("Multinomial Logit","Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Stops gracefully with small sample size", missing, type),
 {
@@ -138,8 +137,21 @@ test_that(missing,
     expect_equal(round(z, 3), 0.312)
 })
 
+missing <- "Multiple imputation"
+test_that(missing,
+{
+    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
+    expect_equal(round(z, 3), 0.281)
+    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
+    expect_equal(round(z, 3), 0.266)
+    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
+    expect_equal(round(z, 3), 0.325)
+    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
+    expect_equal(round(z, 3), 0.269)
+})
 
-for(missing in c("Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         for (detail in c(FALSE, TRUE))
             test_that(paste("No error", missing, type, "detail =", detail),

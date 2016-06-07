@@ -76,7 +76,6 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
     partial.coefs <- partial.coefs[c(1,1:nrow(partial.coefs)),]
     partial.coefs[1,] <- c(intercept, NA, NA, NA)
     rownames(partial.coefs)[1] <- "(Intercept)"
-    #result$partial.coefs <- partial.coefs
     result$coef <- partial.coefs[, 1]
     result$subset <- !is.na(data[outcome.index]) & !is.na(fitted) & (rownames(data) %in% rownames(subset.data))
     # Sample description.
@@ -119,17 +118,13 @@ df.residual.RegressionCorrelations <- function(object, ...)
 summary.RegressionCorrelations <- function(object, ...)
 {
     n <- object$estimation.data
-    #result <- list(call = match.call(object$original), terms = attr(object$estimation.data, "terms"))
-    #result <- list(residuals = (object$estimation.data[,object$outcome.index] - object$predicted.values)
     result <- list(coefficients = object$original$coefficients)
     p <- nrow(object$original$coefficients)
-    #result$aliased <- rep(FALSE, p)
     result$sigma <- object$original$residual * object$original$sd.dependent
     result$df <- object$original$df[c(1:2,1)]
     result$fstatistic <- c(value = object$original$F, numdf = object$original$df[1], numdf = object$original$df[2])
     result$r.squared <- object$original$R2
     result$adj.r.squared <- object$original$shrunkenR2
-    #result$na.action <- (1:result$n.observations)[object$subset]
     class(result) <- "RegressionCorrelationsSummary"
     result
 }
@@ -163,7 +158,8 @@ inverseBootstrap <- function(x, probabilities)
     x[replicants, ]
 }
 
-#' @importFrom stats sd
+#' @importFrom stats sd cor
+# Bootstrapping
 regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
 {
     data <- as.matrix(cbind(x, y))
@@ -171,6 +167,7 @@ regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
     betas <- matrix(NA, b, ncol(x))
     for (i in 1:b)
     {
+        dat <- f
         dat <- inverseBootstrap(data, prob)
         r <- cor(dat, use = "pairwise.complete.obs")
         b <- betasFromCorrelations(r)$b

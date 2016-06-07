@@ -75,6 +75,12 @@ df.residual.Regression <- function(object, ...)
   df.residual(object$original)
 }
 
+#' @export
+df.residual.multinom <- function(object, ...)
+{
+  sum(!is.na(object$fitted.values[, 1])) - length(object$coefnames)
+}
+
 #' \code{CooksDistance}
 #'
 #' @param model A 'Regression' model.

@@ -24,7 +24,8 @@
 #' @param detail More detailed outputs.
 #' @param method The method to be used; for fitting. This will only do something if
 #' method = "model.frame", which returns the model frame.
-#' @param m The number of imputed samples, if using multiple imputation..
+#' @param m The number of imputed samples, if using multiple imputation.
+#' @param seed The random number seed used in imputation.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -62,7 +63,9 @@ Regression <- function(formula,
                        robust.se = FALSE,
                        method = "default",
                        detail = TRUE,
-                       m = m, ...)
+                       m = 10,
+                       seed = 1223,
+                       ...)
 {
   cl <- match.call()
   .formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
@@ -106,14 +109,14 @@ Regression <- function(formula,
     data[, outcome.name] <- outcome.variable <- unclass(outcome.variable)
   }
   row.names <- rownames(data)
+  if (robust.se & (missing == "Use partial data (pairwise correlations)" | missing == "Multiple imputation"))
+      stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
   if (missing == "Use partial data (pairwise correlations)")
   {
     subset <- CleanSubset(subset, nrow(data))
     unfiltered.weights <- weights <- CleanWeights(weights)
     if (type != "Linear")
       stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
-    if (robust.se)
-      stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
     result <- list(original = LinearRegressionFromCorrelations(.formula, data, subset,
                                                                weights, outcome.name, ...),
                    call = cl)
@@ -121,7 +124,26 @@ Regression <- function(formula,
   }
     else
     {
-        processed.data <- EstimationData(.formula, data, subset, weights, missing, m = m)
+        processed.data <- EstimationData(.formula, data, subset, weights, missing, m = m, seed = seed)
+        if (missing == "Multiple imputation")
+        {
+            models <- lapply(processed.data$estimation.data,
+                FUN = function(x) Regression(formula,
+                    data = x,
+                    missing = "Error if missing data",
+                    weights = processed.data$weights,
+                    type = type,
+                    robust.se = FALSE,
+                    detail = detail))
+            final.model <- models[[1]]
+            coefs <- MultipleImputationCoefficientTable(models)
+            final.model$coefficient.table <- coefs
+            final.model$summary$coefficients  <- coefs[, -4]
+            final.model$original$coef <- coefs[, 1]
+            final.model$missing = "Multiple imputation"
+            final.model$sample.description <- processed.data$description
+            return(final.model)
+        }
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
         n <- nrow(.estimation.data)

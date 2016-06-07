@@ -121,7 +121,7 @@ for (type in c("Ordered Logit",  "Multinomial Logit"))
     })
 
 
-for(missing in c("Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
     for (type in c( "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD", "Multinomial Logit"))
         test_that(paste("Accuracy and R-square:",missing, type),
         {
