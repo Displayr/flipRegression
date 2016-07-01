@@ -8,7 +8,9 @@ zbank$rnd1 <- runif(nrow(zbank))
 zbank$rnd2 <- runif(nrow(zbank))
 zbank$rnd3 <- runif(nrow(zbank))
 zbank$rnd4 <- runif(nrow(zbank))
-
+attr(bank$Overall, "label") <- "Overall satisfaction"
+attr(bank$Fees, "label") <- "Fees paid"
+attr(bank$Online, "label") <- "Online banking"
 
 test_that("Multiple imputation run using Regression", {
     est <- flipData::EstimationData(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, zbank, missing = "Multiple imputation", m = 10)
@@ -98,8 +100,4 @@ Regression(price ~ distance, data = data.frame(distance, price), missing = "Use 
 Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation")
 
 
-
-
-
-Regression(price ~ distance, data = data.frame(distance, price)[1:6, ], missing = "Use partial data (pairwise correlations)")
 

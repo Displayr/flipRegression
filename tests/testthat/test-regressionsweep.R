@@ -6,7 +6,9 @@ attr(sb, "label") <- "ID greater than 100"
 wgt <- bank$ID
 attr(wgt, "label") <- "ID"
 bank$dep <- (unclass(bank$Overall) - 1) / 6
-
+attr(bank$dep, "label") <- "Overall satisfaction"
+attr(bank$Fees, "label") <- "Fees paid"
+attr(bank$Online, "label") <- "Online banking"
 #
 #
 # z = LinearRegressionFromCorrelations(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank)

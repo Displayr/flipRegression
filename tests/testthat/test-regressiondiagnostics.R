@@ -6,7 +6,9 @@ attr(sb, "label") <- "ID greater than 100"
 wgt <- bank$ID
 wgt[is.na(wgt)] = 0
 attr(wgt, "label") <- "ID"
-
+attr(bank$Overall, "label") <- "Overall satisfaction"
+attr(bank$Fees, "label") <- "Fees paid"
+attr(bank$Online, "label") <- "Online banking"
 
 
 test_that(paste("Confusion matrix for linear with non-integer dependent variables"),

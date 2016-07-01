@@ -43,6 +43,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom flipData GetData CleanSubset CleanWeights EstimationData
 #' @importFrom flipU OutcomeName IsCount
+#' @importFrom flipFormat GetLabels
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm
 #' @importFrom MASS polr glm.nb
@@ -218,6 +219,8 @@ Regression <- function(formula,
         result$estimation.data <- .estimation.data
   }
   result$summary <- summary(result$original)
+  # Replacing the variables with their labelsz$s
+  rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
   result$summary$call <- cl
   result$formula <- .formula
   # Inserting the coefficients from the partial data.
