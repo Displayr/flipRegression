@@ -10,8 +10,10 @@
 #' the contrats, this plot will not display the predicted values correctly).
 #' @importFrom flipFormat Equation
 #' @export
-setGeneric("PredictionPlot", function(Regression.object, predictor.number = NULL)
+PredictionPlot <- function(Regression.object, predictor.number = NULL)
 {
+    if (!is(Regression.object, "Regression"))
+        stop("'PredictionPlot' requires a regression object.")
     # Working out which variable to use.
     coefs <- coef(Regression.object)
     coefs.n <- length(coefs)
@@ -56,5 +58,5 @@ setGeneric("PredictionPlot", function(Regression.object, predictor.number = NULL
         a <- y.mean - b * x.mean
         plt <- abline(a, b, col = "red", lwd = 2, lty = 2)
     }
-    print(plot)
-})
+    plt
+}
