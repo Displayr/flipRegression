@@ -75,7 +75,7 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
     else if (object$type == "Multinomial Logit")
     {
         levs <- levels(Observed(object))
-        predicted <- factor(match(predicted, levs), labels = levs)
+        predicted <- factor(match(predicted, levs), levels = levs, labels = levs)
     }
     predicted
 }
