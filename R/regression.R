@@ -26,6 +26,8 @@
 #' method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
 #' @param seed The random number seed used in imputation.
+#' @param statistical.assumptions A Statistical Assumptions object.
+#' @param auxiliary.data A \code{\link{data.frame}} containing additional variables to be used in imputation (if required).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -50,6 +52,7 @@
 #' @importFrom nnet multinom
 #' @importFrom lmtest coeftest
 #' @importFrom car hccm
+#' @importFrom flipData CalibrateWeight
 #' @importFrom flipTransformations CreatingBinaryDependentVariableIfNecessary
 #' @export
 Regression <- function(formula,
@@ -63,16 +66,20 @@ Regression <- function(formula,
                        detail = TRUE,
                        m = 10,
                        seed = 12321,
+                       statistical.assumptions,
+                       auxiliary.data = NULL,
                        ...)
 {
   cl <- match.call()
   .formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
   subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
   subset <- eval(substitute(subset), data, parent.frame())
+  if(!missing(statistical.assumptions))
+      stop("'statistical.assumptions' objects are not yet supported.")
   if (!is.null(subset.description))
        attr(subset, "description") <- subset.description
   weights <- eval(substitute(weights), data, parent.frame())
-  data <- GetData(.formula, data)
+  data <- GetData(.formula, data, auxiliary.data)
   if (method == "model.frame")
     return(data)
   mt <- attr(data, "terms")
@@ -182,17 +189,17 @@ Regression <- function(formula,
             original <- svyglm(.formula, weightedSurveyDesign(.estimation.data, weights))
           else if (type == "Ordered Logit")
           {
-            .estimation.data$weights <- weights
+            .estimation.data$weights <- CalibrateWeight(weights)
             original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
           }
           else if (type == "Multinomial Logit")
           {
-            .estimation.data$weights <- weights
+            .estimation.data$weights <- CalibrateWeight(weights)
             original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
           }
           else if (type == "NBD")
           {
-            .estimation.data$weights <- weights
+            .estimation.data$weights <- CalibrateWeight(weights)
             original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
           }
           else

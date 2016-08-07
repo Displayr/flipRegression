@@ -12,6 +12,28 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
+
+test_that("Multiple imputation with auxiliary variables ", {
+    # No auxiliary variables, data has an argument
+    z1 = Regression(Overall ~ Branch + Interest, data = zbank, missing = "Multiple imputation")$coef[2]
+    # No auxiliary variables, data inferred from environment
+    attach(zbank)
+    z2 = Regression(Overall ~ Branch + Interest, missing = "Multiple imputation")$coef[2]
+    detach(zbank)
+    expect_equal(z1, z2)
+    # Auxiliary variables, data has an argument
+    zaux <- data.frame(a = zbank$Phone, b = zbank$Online)
+    z3 = Regression(Overall ~ Branch + Interest,auxiliary.data = zaux, data = zbank, missing = "Multiple imputation")$coef[2]
+    # Auxiliary variables, data inferred from environment
+    attach(zbank)
+    z4 = Regression(Overall ~ Branch + Interest, auxiliary.data = zaux, missing = "Multiple imputation")$coef[2]
+    detach(zbank)
+    expect_false(isTRUE(all.equal(z1, z4)))
+
+})
+
+
+
 test_that("Multiple imputation run using Regression", {
     est <- flipData::EstimationData(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, zbank, missing = "Multiple imputation", m = 10)
     models <- lapply(est$estimation.data, FUN = function(x) Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = x))
@@ -19,10 +41,9 @@ test_that("Multiple imputation run using Regression", {
     expect_equal(coefs[12,5], 0.224, 0.001)
 })
 
-library(flipData)
 test_that("Multiple imputation ", {
     z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = zbank, missing = "Multiple imputation")
-    expect_equal(z$coefficient.table[12,5], 0.224, 0.001)
+    expect_equal(z$coefficient.table[12,5], 0.348, 0.001)
 })
 
 # Using examples from https://www.ssc.wisc.edu/sscc/pubs/mi/missmech.do

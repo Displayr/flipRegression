@@ -7,7 +7,7 @@
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
   robust.se = FALSE, method = "default", detail = TRUE, m = 10,
-  seed = 12321, ...)
+  seed = 12321, statistical.assumptions, auxiliary.data = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -46,6 +46,10 @@ method = "model.frame", which returns the model frame.}
 \item{m}{The number of imputed samples, if using multiple imputation.}
 
 \item{seed}{The random number seed used in imputation.}
+
+\item{statistical.assumptions}{A Statistical Assumptions object.}
+
+\item{auxiliary.data}{A \code{\link{data.frame}} containing additional variables to be used in imputation (if required).}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}

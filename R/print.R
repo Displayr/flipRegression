@@ -1,6 +1,6 @@
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent PrettyRegressionTable
 #' @importFrom stats printCoefmat
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
@@ -63,7 +63,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                           "; Correct predictions: ", FormatAsPercent(Accuracy(x), 4),
                           if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
                           if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
-    if (x$detail)
+    if (x$detail) # Detailed text output.
     {
         cat(paste0(x$type, " regression\n"))
         if (x$missing == "Multiple imputation")
@@ -83,10 +83,17 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
 
     }
-    else
+    else # Pretty table.
     {
-        caption <- c(paste0(x$type, " Regression; ", caption))
-        dt <- createRegressionDataTable(x, p.cutoff = p.cutoff, caption = caption)
+        title <- c(paste0(x$type, " Regression"))
+        t <- x$type != "Ordered Logit" | x$missing == "Multiple imputation"
+        caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
+        dt <- PrettyRegressionTable(x$summary$coef,
+             t,
+             title = title,
+             #subtitle = x$call,
+             footer = caption)
+        #dt <- createRegressionDataTable(x, p.cutoff = p.cutoff, caption = caption)
         print(dt)
     }
 }

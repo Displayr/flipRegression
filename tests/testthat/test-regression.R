@@ -7,6 +7,8 @@ wgt <- bank$ID
 attr(wgt, "label") <- "ID"
     bank$dep <- (unclass(bank$Overall) - 1) / 6
 
+Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, detail = FALSE)
+
 test_that("Counts are required for count models",{
     expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "Poisson"), throws_error())
     expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "NBD"), throws_error())
@@ -55,8 +57,8 @@ test_that(paste("Robust se does something"),
       z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, detail = FALSE, subset = TRUE,  weights = NULL, type = type)
       zs = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, detail = FALSE, robust.se = TRUE, subset = TRUE,  weights = NULL, type = type)
       expect_false(isTRUE(all.equal(z$summary$coefficients[,2], zs$summary$coefficients[,2])))
-      expect_error(capture.output(print(z)), NA)
-      expect_error(capture.output(print(zs)), NA)
+      expect_error(((z)), NA)
+      expect_error(((zs)), NA)
 
       type = "Poisson"
       # no weight, no filter
@@ -66,8 +68,9 @@ test_that(paste("Robust se does something"),
       z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, detail = FALSE, subset = TRUE,  weights = NULL, type = type)
       zs = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, detail = FALSE, robust.se = TRUE, subset = TRUE,  weights = NULL, type = type)
       expect_false(isTRUE(all.equal(z$summary$coefficients[,2], zs$summary$coefficients[,2])))
-      expect_error(capture.output(print(z)), NA)
-      expect_error(capture.output(print(zs)), NA)
+      expect_error(((z)), NA)
+      expect_error(((zs)), NA)
+
 })
 
 
@@ -128,11 +131,11 @@ missing <- "Imputation (replace missing values with estimates)"
 test_that(missing,
 {
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.312)
+    expect_equal(round(z, 3), 0.297)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.299)
+    expect_equal(round(z, 3), 0.307)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.303)
+    expect_equal(round(z, 3), 0.308)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
     expect_equal(round(z, 3), 0.312)
 })
@@ -141,13 +144,13 @@ missing <- "Multiple imputation"
 test_that(missing,
 {
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.281)
+    expect_equal(round(z, 3), 0.32)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.266)
+    expect_equal(round(z, 3), 0.295)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.325)
+    expect_equal(round(z, 3), 0.306)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.269)
+    expect_equal(round(z, 3), 0.301)
 })
 
 
@@ -178,5 +181,5 @@ for(missing in c("Imputation (replace missing values with estimates)", "Exclude 
 for (type in c("Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
     test_that(paste(type, "does not have an error when producing non-detailed outputs"),{
             z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb, detail = FALSE)
-            expect_error(capture.output(print(z)), NA)
+            expect_error((print(z)), NA)
           })
