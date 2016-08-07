@@ -491,11 +491,20 @@ GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits")
     else
     {
         predicted <- UnclassIfNecessary(predict(object)[object$subset])
-        observed <- UnclassIfNecessary(Observed(object)[object$subset])
-        if (is.null(object$weights))
-            r2 <- cor(observed, predicted, use = "complete.obs") ^ 2
+        if (sd(predicted) == 0)
+            r2 <- 0
         else
-            r2 <- summary(lm(predicted ~ observed, weights = object$weights[object$subset]))$r.square
+        {
+            observed <- UnclassIfNecessary(Observed(object)[object$subset])
+            if (is.null(object$weights))
+                r2 <- cor(observed, predicted, use = "complete.obs") ^ 2
+            else
+            {
+                wgts <- object$weights[object$subset]
+                r2 <- summary(lm(predicted ~ observed, weights = wgts))$r.square
+
+            }
+        }
     }
     names(r2) <- "R-squared"
     description <- list("Variance explained: ",

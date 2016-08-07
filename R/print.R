@@ -85,7 +85,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
     else # Pretty table.
     {
-        title <- c(paste0(x$type, " Regression"))
+        title <- c(paste0(x$type, " Regression: ", x$outcome.name))
         t <- x$type != "Ordered Logit" | x$missing == "Multiple imputation"
         caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
         dt <- PrettyRegressionTable(x$summary$coef,

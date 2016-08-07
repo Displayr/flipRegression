@@ -70,12 +70,14 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
         predict(object$original, newdata = newdata, na.action = na.action)
     # if (flipU::IsCount(object$type))
     #      return(floor(predicted))
-    if (object$type == "Binary Logit")
-        return(factor(as.integer(predicted >= 0.5) + 1, labels = levels(Observed(object))))
-    else if (object$type == "Multinomial Logit")
+    if (object$type == "Binary Logit" || object$type == "Multinomial Logit")
     {
         levs <- levels(Observed(object))
-        predicted <- factor(match(predicted, levs), levels = levs, labels = levs)
+        predicted <- if(object$type == "Binary Logit")
+            as.integer(predicted >= 0.5) + 1
+        else
+            match(predicted, levs)
+        predicted <- factor(predicted, levels = 1:length(levs), labels = levs)
     }
     predicted
 }

@@ -27,12 +27,17 @@
 #' @param m The number of imputed samples, if using multiple imputation.
 #' @param seed The random number seed used in imputation.
 #' @param statistical.assumptions A Statistical Assumptions object.
-#' @param auxiliary.data A \code{\link{data.frame}} containing additional variables to be used in imputation (if required).
+#' @param auxiliary.data A \code{\link{data.frame}} containing additional variables
+#'  to be used in imputation (if required). While adding more variables will improve
+#'  the quality of the imputation, it will dramatically slow down the time to estimate.
+#'  Factors and Character variables with a large number of categories should not be included,
+#'  as they will both slow down the data and are unlikely to be useful
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
-#'   outcome and predictor variables are included in the imputation, excluding
-#'   cases that are excluded via subset or have invalid weights, but including
+#'   outcome and predictor variables are included in the imputation, along with
+#'   all \code{auxiliary.data}, excluding cases that are excluded via subset or
+#'    have invalid weights, but including
 #'   cases with missing values of the outcome variable.
 #'   Then, cases with missing values in the outcome variable are excluded from
 #'   the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
@@ -144,7 +149,7 @@ Regression <- function(formula,
             coefs <- MultipleImputationCoefficientTable(models)
             final.model$coefficient.table <- coefs
             final.model$summary$coefficients  <- coefs[, -4]
-            final.model$original$coef <- coefs[, 1]
+            final.model$coef <- final.model$original$coef <- coefs[, 1]
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
             return(final.model)

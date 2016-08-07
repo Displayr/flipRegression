@@ -12,6 +12,22 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
+data("cola", package = "flipExampleData")
+cola <- cola[1:150,]
+cola$Q3[1:100] <- NA
+cola$Q3 <- unclass(cola$Q3)
+
+
+# z = Regression(Q2 ~ Q3, data = cola, type = "Binary Logit", detail = FALSE, missing = "Multiple imputation")
+# z$coef[2]
+#
+# z = Regression(Q2 ~ Q3, data = cola[,c("Q2","Q3")], type = "Binary Logit", detail = FALSE, missing = "Multiple imputation")
+# z$coef[2]
+#
+# z = Regression(Q2 ~ Q3, data = cola, auxiliary = cola[,17:30], type = "Binary Logit", detail = FALSE, missing = "Multiple imputation")
+# z$coef[2]
+#
+
 
 test_that("Multiple imputation with auxiliary variables ", {
     # No auxiliary variables, data has an argument
@@ -31,7 +47,6 @@ test_that("Multiple imputation with auxiliary variables ", {
     expect_false(isTRUE(all.equal(z1, z4)))
 
 })
-
 
 
 test_that("Multiple imputation run using Regression", {
