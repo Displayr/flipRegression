@@ -9,6 +9,7 @@
 #' the other levels are the intercept plus the parameter (thus, if you modify
 #' the contrats, this plot will not display the predicted values correctly).
 #' @importFrom flipFormat Equation
+#' @importFrom graphics abline segments
 #' @export
 PredictionPlot <- function(Regression.object, predictor.number = NULL)
 {
@@ -38,7 +39,7 @@ PredictionPlot <- function(Regression.object, predictor.number = NULL)
     if(is.factor(x))
     {
         # Identifying the parameter to use
-        n.parameters <- unlist(lapply(z$model, nlevels))
+        n.parameters <- unlist(lapply(x, nlevels))
         factors <- n.parameters != 0
         n.parameters[!factors] <- 1
         n.parameters[factors] <- n.parameters[factors] - 1

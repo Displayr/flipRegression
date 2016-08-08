@@ -7,7 +7,7 @@ wgt <- bank$ID
 attr(wgt, "label") <- "ID"
     bank$dep <- (unclass(bank$Overall) - 1) / 6
 
-Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, detail = FALSE)
+Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, detail = FALSE, robust.se = TRUE)
 
 test_that("Counts are required for count models",{
     expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "Poisson"), throws_error())
@@ -144,13 +144,13 @@ missing <- "Multiple imputation"
 test_that(missing,
 {
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.32)
+    expect_equal(round(z, 3), 0.302)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.295)
+    expect_equal(round(z, 3), 0.307)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.306)
+    expect_equal(round(z, 3), 0.304)
     z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.301)
+    expect_equal(round(z, 3), 0.315)
 })
 
 
