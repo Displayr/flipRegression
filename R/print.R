@@ -85,10 +85,12 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
     else # Pretty table.
     {
-        title <- c(paste0(x$type, " Regression: ", x$outcome.name))
-        t <- x$type != "Ordered Logit" | x$missing == "Multiple imputation"
+        add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
+        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ", x$outcome.name))
+        coefs <- x$summary$coefficients
+        t <- "t" == substr(colnames(coefs)[3], 1, 1)
         caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
-        dt <- PrettyRegressionTable(x$summary$coef,
+        dt <- PrettyRegressionTable(coefs,
              t,
              title = title,
              #subtitle = x$call,
@@ -225,52 +227,5 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
     return(dt)
 }
 
-
-#
-# printMultipleImputation <- function(object)
-# {
-#     # Based on summary.lm
-#     r <- object$residuals
-#     n <- length(r)
-#     w <- z$weights
-#     if (is.null(w)) {
-#         rss <- sum(r^2)
-#     }
-#     else {
-#         rss <- sum(w * r^2)
-#         r <- sqrt(w) * r
-#     }
-#     resvar <- rss/rdf
-#     ans <- object[c("call", "terms", if (!is.null(z$weights)) "weights")]
-#     ans$residuals <- resid(r)
-#     ans$coefficients <- object$summary$coef
-#     ans$sigma <- sqrt(resvar)
-#     ans$df <- c(p, rdf, NCOL(Qr$qr))
-#     if (p != attr(z$terms, "intercept")) {
-#         df.int <- if (attr(z$terms, "intercept"))
-#             1L
-#         else 0L
-#         ans$r.squared <- mss/(mss + rss)
-#         ans$adj.r.squared <- 1 - (1 - ans$r.squared) * ((n -
-#             df.int)/rdf)
-#         ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
-#             numdf = p - df.int, dendf = rdf)
-#     }
-#     else ans$r.squared <- ans$adj.r.squared <- 0
-#     ans$cov.unscaled <- R
-#     dimnames(ans$cov.unscaled) <- dimnames(ans$coefficients)[c(1,
-#         1)]
-#     if (correlation) {
-#         ans$correlation <- (R * resvar)/outer(se, se)
-#         dimnames(ans$correlation) <- dimnames(ans$cov.unscaled)
-#         ans$symbolic.cor <- symbolic.cor
-#     }
-#     if (!is.null(z$na.action))
-#         ans$na.action <- z$na.action
-#     class(ans) <- "summary.lm"
-#     ans
-#
-#
-# }
 
 
