@@ -75,63 +75,65 @@ Regression <- function(formula,
                        auxiliary.data = NULL,
                        ...)
 {
-  cl <- match.call()
-  .formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
-  subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
-  subset <- eval(substitute(subset), data, parent.frame())
-  if(!missing(statistical.assumptions))
-      stop("'statistical.assumptions' objects are not yet supported.")
-  if (!is.null(subset.description))
-       attr(subset, "description") <- subset.description
-  weights <- eval(substitute(weights), data, parent.frame())
-  data <- GetData(.formula, data, auxiliary.data)
-  if (method == "model.frame")
-    return(data)
-  mt <- attr(data, "terms")
-  outcome.name <- OutcomeName(.formula)
-  outcome.variable <- data[[outcome.name]]
-  if (!is.null(weights) & length(weights) != nrow(data))
-    stop("'weights' and 'data' are required to have the same number of observations. They do not.")
-  if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
-    stop("'subset' and 'data' are required to have the same number of observations. They do not.")
-  if (type == "Binary Logit")
-  {
-    data <- CreatingBinaryDependentVariableIfNecessary(.formula, data)
+    cl <- match.call()
+    .formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
+    subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
+    subset <- eval(substitute(subset), data, parent.frame())
+    if(!missing(statistical.assumptions))
+        stop("'statistical.assumptions' objects are not yet supported.")
+    if (!is.null(subset.description))
+         attr(subset, "description") <- subset.description
+    weights <- eval(substitute(weights), data, parent.frame())
+    data <- GetData(.formula, data, auxiliary.data)
+    if (method == "model.frame")
+        return(data)
+    mt <- attr(data, "terms")
+    outcome.name <- OutcomeName(.formula)
     outcome.variable <- data[[outcome.name]]
-  }
-  else if (type == "Ordered Logit")
-    data[, outcome.name] <- ordered(outcome.variable)
-  else if (type == "Multinomial Logit")
-  {
-    data[, outcome.name] <- factor(outcome.variable)
-    if (!detail)
+    if (!is.null(weights) & length(weights) != nrow(data))
+        stop("'weights' and 'data' are required to have the same number of observations. They do not.")
+    if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
+        stop("'subset' and 'data' are required to have the same number of observations. They do not.")
+    if (type == "Binary Logit")
     {
-      warning("The 'Detailed output' option has not been selected. Only detailed output is available
-              with Multinomial Logit.")
-      detail = TRUE
+        data <- CreatingBinaryDependentVariableIfNecessary(.formula, data)
+        outcome.variable <- data[[outcome.name]]
     }
-  }
-  else if (IsCount(type) & !IsCount(outcome.variable))
-    stopNotCount()
-  else if (is.factor(outcome.variable))
-  {
-    WarningFactorToNumeric()
-    data[, outcome.name] <- outcome.variable <- unclass(outcome.variable)
-  }
-  row.names <- rownames(data)
-  if (robust.se & (missing == "Use partial data (pairwise correlations)" | missing == "Multiple imputation"))
-      stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
-  if (missing == "Use partial data (pairwise correlations)")
-  {
-    subset <- CleanSubset(subset, nrow(data))
-    unfiltered.weights <- weights <- CleanWeights(weights)
-    if (type != "Linear")
-      stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
-    result <- list(original = LinearRegressionFromCorrelations(.formula, data, subset,
+    else if (type == "Ordered Logit")
+        data[, outcome.name] <- ordered(outcome.variable)
+    else if (type == "Multinomial Logit")
+    {
+        data[, outcome.name] <- factor(outcome.variable)
+        if (!detail)
+        {
+            warning("The 'Detailed output' option has not been selected. Only detailed output is available
+                  with Multinomial Logit.")
+            detail = TRUE
+        }
+    }
+    else if (IsCount(type) & !IsCount(outcome.variable))
+        stopNotCount()
+    else if (is.factor(outcome.variable))
+    {
+        WarningFactorToNumeric()
+        data[, outcome.name] <- outcome.variable <- unclass(outcome.variable)
+    }
+    row.names <- rownames(data)
+    if (robust.se & (missing == "Use partial data (pairwise correlations)" | missing == "Multiple imputation"))
+        stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
+    if (robust.se & (type != "Linear" & type != "Poisson"))
+        stop("Robust standard errors may only be computed using Linear or Poisson regressions.")
+    if (missing == "Use partial data (pairwise correlations)")
+    {
+        subset <- CleanSubset(subset, nrow(data))
+        unfiltered.weights <- weights <- CleanWeights(weights)
+        if (type != "Linear")
+            stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
+        result <- list(original = LinearRegressionFromCorrelations(.formula, data, subset,
                                                                weights, outcome.name, ...),
                    call = cl)
-    result$sample.description <- result$original$sample.description
-  }
+        result$sample.description <- result$original$sample.description
+    }
     else
     {
         processed.data <- EstimationData(.formula, data, subset, weights, missing, m = m, seed = seed)
@@ -184,6 +186,8 @@ Regression <- function(formula,
           {
             original$robust.coefficients <- coeftest(original, vcov. = hccm(original, type = "hc1"))
             colnames(original$robust.coefficients)[2] <- "Robust SE"
+            class(original$robust.coefficients) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
+
           }
         }
         else
@@ -229,30 +233,34 @@ Regression <- function(formula,
         result$n.predictors <- ncol(.estimation.data) - 1
         result$n.observations <- n
         result$estimation.data <- .estimation.data
-  }
-  result$summary <- summary(result$original)
-  # Replacing the variables with their labelsz$s
-  rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
-  result$summary$call <- cl
-  result$formula <- .formula
-  # Inserting the coefficients from the partial data.
-  result$model <- data #over-riding the data that is automatically saved (which has had missing values removed).
-  result$robust.se <- robust.se
-  class(result) <- "Regression"
-  result$type = type
-  result$weights <- unfiltered.weights
-  result$detail <- detail
-  result$outcome.name <- outcome.name
-  result$missing <- missing
-  result$terms <- mt
-  result$coef <- result$original$coef
-  # if (type != "Multinomial Logit")
-  #     result$residuals <- unclassIfNecessary(outcome.variable) -
-  #     unclassIfNecessary(result$predicted.values)#Note this occurs after summary, to avoid stuffing up summary, but before Breusch Pagan, for the same reason.
-  if (robust.se)
+    }
+    result$summary <- summary(result$original)
+    if (type == "Ordered Logit" & missing != "Multiple imputation")
+    {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
+        coefs <-  result$summary$coefficients
+        ps <- 2 * pt(-abs(coefs[, 3]), df = result$summary$df.residual)
+        colnames(coefs)[1] <- "Estimate"
+        result$summary$coefficients <- cbind(coefs, p = ps)
+    }
+    # Replacing the variables with their labelsz$s
+    rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
+    result$summary$call <- cl
+    result$formula <- .formula
+    # Inserting the coefficients from the partial data.
+    result$model <- data #over-riding the data that is automatically saved (which has had missing values removed).
+    result$robust.se <- robust.se
+    class(result) <- "Regression"
+    result$type = type
+    result$weights <- unfiltered.weights
+    result$detail <- detail
+    result$outcome.name <- outcome.name
+    result$missing <- missing
+    result$terms <- mt
+    result$coef <- result$original$coef
+    if (robust.se)
     result$summary$coefficients <- result$original$robust.coefficients
-  return(result)
-  }
+    return(result)
+}
 
 
 notValidForPartial <- function(object, method)
