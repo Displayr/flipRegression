@@ -120,10 +120,22 @@ logLik.Regression <- function(object, ...)
 #' @export
 AIC.Regression <- function(object, ...)
 {
-    if (is.null(object$original$aic))
-        return(AIC(object$original, ...))
-    object$original$aic
+    aic <- if (is.null(object$original$aic))
+        AIC(object$original, ...)
+    else
+        object$original$aic
+    names(aic) <- "AIC"
+    aic
 }
 
-
-
+#' @importFrom stats extractAIC
+#' @export
+extractAIC.Regression <- function(object, ...)
+{
+    aic <- AIC.Regression(object, ...)
+    df <- if (is.null(object$original$df))
+        extractAIC(object$original, ...)[1]
+    else
+        object$original$df
+    c(df = unname(df), AIC = unname(aic))
+}

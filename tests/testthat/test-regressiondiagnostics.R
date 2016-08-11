@@ -28,6 +28,12 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Mul
         expect_error(ConfusionMatrix(z), NA)
 })
 
+for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
+    test_that(paste("extractAIC :", type),
+    {
+        z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+        expect_error(extractAIC(z), NA)
+})
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD"))#, "Multinomial Logit")) #"Ordered Logit",
     test_that(paste("Testing outliers:", type),

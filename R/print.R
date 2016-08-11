@@ -123,6 +123,28 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
     }
 }
 
+#' @export
+print.Stepwise <- function(x)
+{
+    if (x$output == "final")
+    {
+        x$model$detail <- FALSE
+        print(x$model)
+    }
+    else
+    {
+        x$model$detail <- TRUE
+        print(x$model)
+        cat("\n")
+        print(x$model$anova)
+
+        if (x$output == "all")
+        {
+            cat("\n")
+            cat(x$steps.output)
+        }
+    }
+}
 
 # Create an HTML widget data table (package DT) from the coefficients
 # table in a regression summary.
