@@ -37,8 +37,7 @@ Stepwise <- function(object, output = "final", always.include = NULL, steps = 10
     if (output == "all")
     {
         # We assign the output to v so that only the steps are captured
-        captured <- capture.output(v <- stepAIC(reg.without.missing, scope = scope, direction = direction,
-                                    steps = steps))
+        captured <- capture.output(v <- stepAIC(reg.without.missing, scope = scope, steps = steps))
         result$steps.output <- paste(captured, collapse = "\n")
     }
 

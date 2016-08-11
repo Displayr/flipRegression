@@ -216,6 +216,7 @@ Regression <- function(formula,
           {
             .estimation.data$weights <- CalibrateWeight(weights)
             original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+            original$aic <- AIC(original)
           }
           else if (type == "Multinomial Logit")
           {
