@@ -11,6 +11,9 @@ Stepwise <- function(object, output = "Final", always.include = NULL, steps = 10
     if (class(object) != "Regression")
         stop("Invalid regression model object supplied.")
 
+    if (object$type == "Quasi-Poisson" && is.null(object$weight))
+        stop("Stepwise regression is currently incompatible with unweighted Quasi-Poisson regression models. Consider using a Poisson or NBD model instead.")
+
     if (object$missing == "Use partial data (pairwise correlations)")
         stop("Stepwise regression is incompatible with regression models which use partial data (pairwise correlations).")
 
