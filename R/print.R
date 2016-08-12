@@ -126,7 +126,7 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
 #' @export
 print.Stepwise <- function(x)
 {
-    if (x$output == "final")
+    if (x$output == "Final")
     {
         x$model$detail <- FALSE
         print(x$model)
@@ -138,7 +138,7 @@ print.Stepwise <- function(x)
         cat("\n\n")
         print(x$model$anova)
 
-        if (x$output == "all")
+        if (x$output == "All")
         {
             cat("\n")
             cat(x$steps.output)

@@ -1,12 +1,12 @@
 #' \code{Stepwise}
 #' @description Stepwise selection of predictor variables by AIC.
 #' @param object a \code{Regression} object.
-#' @param output one of \code{final}, \code{detailed} or \code{all}, which determines how much information to display.
+#' @param output one of \code{Final}, \code{Detailed} or \code{All}, which determines how much information to display.
 #' @param always.include a vector of names of variables to always include in the model.
 #' @param steps the maximum number of steps to be considered.
 #' @importFrom MASS stepAIC
 #' @export
-Stepwise <- function(object, output = "final", always.include = NULL, steps = 1000)
+Stepwise <- function(object, output = "Final", always.include = NULL, steps = 1000)
 {
     if (class(object) != "Regression")
         stop("Invalid regression model object supplied.")
@@ -47,7 +47,7 @@ Stepwise <- function(object, output = "final", always.include = NULL, steps = 10
     result <- list(model = selected.model, output = output)
     class(result) <- "Stepwise"
 
-    if (output == "all")
+    if (output == "All")
     {
         # We assign the output to v so that only the steps are captured
         captured <- capture.output(v <- stepAIC(reg.without.missing, scope = scope, steps = steps))
