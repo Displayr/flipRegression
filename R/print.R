@@ -135,7 +135,7 @@ print.Stepwise <- function(x)
     {
         x$model$detail <- TRUE
         print(x$model)
-        cat("\n")
+        cat("\n\n")
         print(x$model$anova)
 
         if (x$output == "all")
