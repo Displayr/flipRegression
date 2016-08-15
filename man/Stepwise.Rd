@@ -4,17 +4,17 @@
 \alias{Stepwise}
 \title{\code{Stepwise}}
 \usage{
-Stepwise(object, output = "final", always.include = NULL,
-  direction = "backward", steps = 1000)
+Stepwise(object, output = "Final", direction = "Backward",
+  always.include = NULL, steps = 1000)
 }
 \arguments{
 \item{object}{a \code{Regression} object.}
 
-\item{output}{one of \code{final}, \code{detailed} or \code{all}, which determines how much information to display.}
+\item{output}{one of \code{Final}, \code{Detailed} or \code{All}, which determines how much information to display.}
+
+\item{direction}{one of \code{Backward} (backward elimination of variables) or \code{Forward} (forward selection of variables).}
 
 \item{always.include}{a vector of names of variables to always include in the model.}
-
-\item{direction}{one of \code{backward} or \code{forward}, which determines whether to use backward elimination or forward selection of variables.}
 
 \item{steps}{the maximum number of steps to be considered.}
 }
