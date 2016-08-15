@@ -128,7 +128,7 @@ print.Stepwise <- function(x)
 {
     if (x$output == "Final")
     {
-        x$model$detail <- FALSE
+        x$model$detail <- x$model$type == "Multinomial Logit"
         print(x$model)
     }
     else
