@@ -136,11 +136,19 @@ print.Stepwise <- function(x)
         x$model$detail <- TRUE
         print(x$model)
         cat("\n\n")
-        print(x$model$anova)
-
+        heading <- attr(x$model$anova, "heading")
+        cat(paste(heading[2:length(heading)], collapse = "\n"))
+        cat("Overview of steps:")
+        cat("\n")
+        results.table <- data.frame(AIC = x$mode$anova$AIC)
+        row.names(results.table) <- levels(x$mode$anova$Step)
+        row.names(results.table)[1] <- "Original model"
+        print(results.table)
         if (x$output == "All")
         {
-            cat("\n")
+            cat("\n\n")
+            cat("All steps:")
+            cat("\n\n")
             cat(x$steps.output)
         }
     }
