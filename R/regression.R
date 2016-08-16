@@ -82,7 +82,7 @@ Regression <- function(formula,
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
     if (!is.null(subset.description))
-         attr(subset, "description") <- subset.description
+        attr(subset, "description") <- subset.description
     weights <- eval(substitute(weights), data, parent.frame())
     data <- GetData(.formula, data, auxiliary.data)
     if (method == "model.frame")
@@ -159,99 +159,98 @@ Regression <- function(formula,
         .estimation.data <- processed.data$estimation.data
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
-          stop(warningSampleSizeTooSmall())
+            stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         weights <- processed.data$weights
         subset <-  processed.data$subset
         if (is.null(weights))
         {
-          if (type == "Linear")
-          {
-            original <- lm(.formula, .estimation.data, model = TRUE)
-            original$aic <- AIC(original)
-          }
-          else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-            original <- glm(.formula, .estimation.data, family = switch(type,
+            if (type == "Linear")
+            {
+                original <- lm(.formula, .estimation.data, model = TRUE)
+                original$aic <- AIC(original)
+            }
+            else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
+                original <- glm(.formula, .estimation.data, family = switch(type,
                                                                         "Poisson" = poisson,
                                                                         "Quasi-Poisson" = quasipoisson,
                                                                         "Binary Logit" = binomial(link = "logit")))
-          else if (type == "Ordered Logit")
-          {
-            original <- polr(.formula, .estimation.data, Hess = TRUE, ...)
-            original$aic <- AIC(original)
-          }
-          else if (type == "Multinomial Logit")
-          {
-            original <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
-            original$aic <- AIC(original)
-          }
-          else if (type == "NBD")
-            original <- glm.nb(.formula, .estimation.data)
-          else
-            stop("Unknown regression 'type'.")
+            else if (type == "Ordered Logit")
+            {
+                original <- polr(.formula, .estimation.data, Hess = TRUE, ...)
+                original$aic <- AIC(original)
+            }
+            else if (type == "Multinomial Logit")
+            {
+                original <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                original$aic <- AIC(original)
+            }
+            else if (type == "NBD")
+                original <- glm.nb(.formula, .estimation.data)
+            else
+                stop("Unknown regression 'type'.")
 
-          if (robust.se)
-          {
-            original$robust.coefficients <- coeftest(original, vcov. = hccm(original, type = "hc1"))
-            colnames(original$robust.coefficients)[2] <- "Robust SE"
-            class(original$robust.coefficients) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
-
-          }
+            if (robust.se)
+            {
+                original$robust.coefficients <- coeftest(original, vcov. = hccm(original, type = "hc1"))
+                colnames(original$robust.coefficients)[2] <- "Robust SE"
+                class(original$robust.coefficients) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
+            }
         }
         else
         {
-          if (robust.se)
-            warningRobustInappropriate()
-          if (type == "Linear")
-          {
-            wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
-            original <- svyglm(.formula, wgt.svy.des)
-            if (all(original$residuals == 0)) # perfect fit
-              original$df <- NA
+            if (robust.se)
+                warningRobustInappropriate()
+            if (type == "Linear")
+            {
+                wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
+                original <- svyglm(.formula, wgt.svy.des)
+                if (all(original$residuals == 0)) # perfect fit
+                    original$df <- NA
+                else
+                {
+                    assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
+                    aic <- extractAIC(original)
+                    remove("wgt.svy.des", envir=.GlobalEnv)
+                    original$df <- aic[1]
+                    original$aic <- aic[2]
+                }
+            }
+            else if (type == "Ordered Logit")
+            {
+                .estimation.data$weights <- CalibrateWeight(weights)
+                original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+                original$aic <- AIC(original)
+            }
+            else if (type == "Multinomial Logit")
+            {
+                .estimation.data$weights <- CalibrateWeight(weights)
+                original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                original$aic <- AIC(original)
+            }
+            else if (type == "NBD")
+            {
+                .estimation.data$weights <- CalibrateWeight(weights)
+                original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
+            }
             else
             {
-              assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
-              aic <- extractAIC(original)
-              remove("wgt.svy.des", envir=.GlobalEnv)
-              original$df <- aic[1]
-              original$aic <- aic[2]
+                wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
+                original <- switch(type,
+                                   "Binary Logit" = svyglm(.formula, wgt.svy.des, family = quasibinomial()),
+                                   "Poisson" = svyglm(.formula, wgt.svy.des, family = poisson()),
+                                   "Quasi-Poisson" = svyglm(.formula, wgt.svy.des, family = quasipoisson()))
+                assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
+                aic <- extractAIC(original)
+                remove("wgt.svy.des", envir=.GlobalEnv)
+                original$df <- aic[1]
+                original$aic <- aic[2]
             }
-          }
-          else if (type == "Ordered Logit")
-          {
-            .estimation.data$weights <- CalibrateWeight(weights)
-            original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
-            original$aic <- AIC(original)
-          }
-          else if (type == "Multinomial Logit")
-          {
-            .estimation.data$weights <- CalibrateWeight(weights)
-            original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
-            original$aic <- AIC(original)
-          }
-          else if (type == "NBD")
-          {
-            .estimation.data$weights <- CalibrateWeight(weights)
-            original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
-          }
-          else
-          {
-            wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
-            original <- switch(type,
-                               "Binary Logit" = svyglm(.formula, wgt.svy.des, family = quasibinomial()),
-                               "Poisson" = svyglm(.formula, wgt.svy.des, family = poisson()),
-                               "Quasi-Poisson" = svyglm(.formula, wgt.svy.des, family = quasipoisson()))
-            assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
-            aic <- extractAIC(original)
-            remove("wgt.svy.des", envir=.GlobalEnv)
-            original$df <- aic[1]
-            original$aic <- aic[2]
-          }
         }
         result <- list(original = original, call = cl)
         requireNamespace("car")
         if (missing == "Imputation (replace missing values with estimates)")
-          data <- processed.data$data
+            data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
         result$sample.description <- processed.data$description
         result$n.predictors <- ncol(.estimation.data) - 1
@@ -289,9 +288,9 @@ Regression <- function(formula,
 
 notValidForPartial <- function(object, method)
 {
-  ms <- "Use partial data (pairwise correlations)"
-  if (object$missing == ms)
-    stop(paste0("'", method, "' not available when 'missing' = ",ms, "'." ))
+    ms <- "Use partial data (pairwise correlations)"
+    if (object$missing == ms)
+        stop(paste0("'", method, "' not available when 'missing' = ",ms, "'." ))
 }
 
 #' @importFrom stats vcov
