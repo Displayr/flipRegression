@@ -44,9 +44,11 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     else
         formula(paste(outcome.name, "~ 1"))
 
+    w <- object$weights[object$subset]
+    attr(w, "label") <- attr(object$weights, "label")
+
     params <- c(list(formula = reg.formula, data = object$estimation.data,
-                     weights = object$weights[object$subset], type = object$type,
-                     robust.se = object$robust.se), object$ellipsis)
+                     weights = w, type = object$type, robust.se = object$robust.se), object$ellipsis)
     # Use do.call so that we can pass the ellipsis parameters
     reg.without.missing <- do.call("Regression", params)
     selected.model <- stepAIC(reg.without.missing, scope = scope, direction = tolower(direction),
