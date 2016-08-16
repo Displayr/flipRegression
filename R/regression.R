@@ -206,11 +206,16 @@ Regression <- function(formula,
           {
             wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
             original <- svyglm(.formula, wgt.svy.des)
-            assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
-            aic <- extractAIC(original)
-            remove("wgt.svy.des", envir=.GlobalEnv)
-            original$df <- aic[1]
-            original$aic <- aic[2]
+            if (all(original$residuals == 0)) # perfect fit
+              original$df <- NA
+            else
+            {
+              assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
+              aic <- extractAIC(original)
+              remove("wgt.svy.des", envir=.GlobalEnv)
+              original$df <- aic[1]
+              original$aic <- aic[2]
+            }
           }
           else if (type == "Ordered Logit")
           {

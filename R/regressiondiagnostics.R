@@ -150,19 +150,24 @@ OutlierTest <- function(model)
 {
   cat("Studentized residuals:\n")
   st <- outlierTest(model, cutoff = Inf, n.max = Inf)
-  qs <- quantile(st$rstudent)
-  print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
-  min.p <- min(st$bonf.p)
-  max.is.high <- min.p <= 0.05
-  mx <- if(abs(qs[1]) < qs[5]) qs[5] else qs[1]
-  description = paste0("The largest studentized residual is ",
-                       FormatAsReal(mx, 3), ", which is ",
-                       if(max.is.high) "" else "not ",
-                       "significant, with a Bonferroni-corrected p-value of ",
-                       FormatAsPValue(min.p), ".\n")
-  cat(description)
-  cat("\n")
-  invisible(list(max.is.high = max.is.high, outlierTest = ts, description = description))
+  if (length(st$rstudent) > 0) # length will be 0 when the fit is perfect
+  {
+      qs <- quantile(st$rstudent)
+      print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
+      min.p <- min(st$bonf.p)
+      max.is.high <- min.p <= 0.05
+      mx <- if(abs(qs[1]) < qs[5]) qs[5] else qs[1]
+      description = paste0("The largest studentized residual is ",
+                           FormatAsReal(mx, 3), ", which is ",
+                           if(max.is.high) "" else "not ",
+                           "significant, with a Bonferroni-corrected p-value of ",
+                           FormatAsPValue(min.p), ".\n")
+      cat(description)
+      cat("\n")
+      invisible(list(max.is.high = max.is.high, outlierTest = st, description = description))
+  }
+  else
+      invisible(list(max.is.high = FALSE, outlierTest = st))
 }
 
 
