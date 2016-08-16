@@ -281,7 +281,7 @@ Regression <- function(formula,
     result$terms <- result$original$terms
     result$coef <- result$original$coef
     if (robust.se)
-    result$summary$coefficients <- result$original$robust.coefficients
+        result$summary$coefficients <- result$original$robust.coefficients
     return(result)
 }
 
