@@ -16,7 +16,10 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
         stop("Stepwise regression is currently incompatible with unweighted Quasi-Poisson regression models. Consider using a Poisson or NBD model instead.")
 
     if (object$missing == "Use partial data (pairwise correlations)")
-        stop("Stepwise regression is incompatible with regression models which use partial data (pairwise correlations).")
+        stop("Stepwise regression is incompatible with regression models which use partial data (pairwise correlations). Please modify the 'Missing data' setting in the original model.")
+
+    if (object$missing == "Imputation (replace missing values with estimates)" || "Multiple imputation")
+        stop("Stepwise regression is incompatible with regression models which use imputation. Please modify the 'Missing data' setting in the original model.")
 
     var.names <- all.vars(object$formula)
     outcome.name <- var.names[1]
