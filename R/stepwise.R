@@ -6,6 +6,7 @@
 #' @param always.include a vector of names of variables to always include in the model.
 #' @param steps the maximum number of steps to be considered.
 #' @importFrom MASS stepAIC
+#' @importFrom flipU OutcomeName
 #' @export
 Stepwise <- function(object, output = "Final", direction = "Backward", always.include = NULL, steps = 1000)
 {
@@ -21,7 +22,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     if (object$missing == "Imputation (replace missing values with estimates)" || object$missing == "Multiple imputation")
         stop("Stepwise regression is incompatible with regression models which use imputation. Please modify the 'Missing data' setting in the original model.")
 
-    var.names <- all.vars(object$formula)
+    var.names <- AllVariablesNames(object$formula)
     outcome.name <- var.names[1]
 
     vars.outside.model <- setdiff(always.include, var.names)

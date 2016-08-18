@@ -12,7 +12,7 @@
 #' @param ... Additional argments to be past to  \code{\link[psych]{setCor}}.
 #' @details Estimates regression using sweep operations on the correlation matrix.
 #' The sample size assumed in tests is the smallest pairwise correlation sample size.
-#' @importFrom flipU OutcomeName
+#' @importFrom flipU OutcomeName AllVariablesNames
 #' @importFrom flipStatistics CovarianceAndCorrelationMatrix  StandardDeviation Mean
 #' @importFrom psych setCor
 #' @importFrom flipData BaseDescription
@@ -22,7 +22,7 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
 {
     result <- NULL
     variable.names <- names(data)
-    formula.names <- all.vars(formula)
+    formula.names <- AllVariablesNames(formula)
     indices <- match(formula.names, variable.names)
     outcome.name <- OutcomeName(formula)
     outcome.index <- match(outcome.name, variable.names)

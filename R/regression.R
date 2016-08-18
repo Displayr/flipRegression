@@ -48,7 +48,7 @@
 #'   Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
-#' @importFrom flipData GetData CleanSubset CleanWeights EstimationData
+#' @importFrom flipData GetData CleanSubset CleanWeights EstimationData DataFormula
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipFormat GetLabels
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
@@ -163,30 +163,31 @@ Regression <- function(formula,
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         weights <- processed.data$weights
         subset <-  processed.data$subset
+        estimation.formula <- DataFormula(.formula)
         if (is.null(weights))
         {
             if (type == "Linear")
             {
-                original <- lm(.formula, .estimation.data, model = TRUE)
+                original <- lm(estimation.formula, .estimation.data, model = TRUE)
                 original$aic <- AIC(original)
             }
             else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-                original <- glm(.formula, .estimation.data, family = switch(type,
+                original <- glm(estimation.formula, .estimation.data, family = switch(type,
                                                                         "Poisson" = poisson,
                                                                         "Quasi-Poisson" = quasipoisson,
                                                                         "Binary Logit" = binomial(link = "logit")))
             else if (type == "Ordered Logit")
             {
-                original <- polr(.formula, .estimation.data, Hess = TRUE, ...)
+                original <- polr(estimation.formula, .estimation.data, Hess = TRUE, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "Multinomial Logit")
             {
-                original <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                original <- multinom(estimation.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "NBD")
-                original <- glm.nb(.formula, .estimation.data)
+                original <- glm.nb(estimation.formula, .estimation.data)
             else
                 stop("Unknown regression 'type'.")
 
@@ -204,7 +205,7 @@ Regression <- function(formula,
             if (type == "Linear")
             {
                 wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
-                original <- svyglm(.formula, wgt.svy.des)
+                original <- svyglm(estimation.formula, wgt.svy.des)
                 if (all(original$residuals == 0)) # perfect fit
                     original$df <- NA
                 else
@@ -219,27 +220,27 @@ Regression <- function(formula,
             else if (type == "Ordered Logit")
             {
                 .estimation.data$weights <- CalibrateWeight(weights)
-                original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+                original <- polr(estimation.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "Multinomial Logit")
             {
                 .estimation.data$weights <- CalibrateWeight(weights)
-                original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                original <- multinom(estimation.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "NBD")
             {
                 .estimation.data$weights <- CalibrateWeight(weights)
-                original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
+                original <- glm.nb(estimation.formula, .estimation.data, weights = weights, ...)
             }
             else
             {
                 wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
                 original <- switch(type,
-                                   "Binary Logit" = svyglm(.formula, wgt.svy.des, family = quasibinomial()),
-                                   "Poisson" = svyglm(.formula, wgt.svy.des, family = poisson()),
-                                   "Quasi-Poisson" = svyglm(.formula, wgt.svy.des, family = quasipoisson()))
+                                   "Binary Logit" = svyglm(estimation.formula, wgt.svy.des, family = quasibinomial()),
+                                   "Poisson" = svyglm(estimation.formula, wgt.svy.des, family = poisson()),
+                                   "Quasi-Poisson" = svyglm(estimation.formula, wgt.svy.des, family = quasipoisson()))
                 assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
                 aic <- extractAIC(original)
                 remove("wgt.svy.des", envir=.GlobalEnv)
@@ -284,7 +285,6 @@ Regression <- function(formula,
         result$summary$coefficients <- result$original$robust.coefficients
     return(result)
 }
-
 
 notValidForPartial <- function(object, method)
 {
