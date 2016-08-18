@@ -18,7 +18,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     if (object$missing == "Use partial data (pairwise correlations)")
         stop("Stepwise regression is incompatible with regression models which use partial data (pairwise correlations). Please modify the 'Missing data' setting in the original model.")
 
-    if (object$missing == "Imputation (replace missing values with estimates)" || "Multiple imputation")
+    if (object$missing == "Imputation (replace missing values with estimates)" || object$missing == "Multiple imputation")
         stop("Stepwise regression is incompatible with regression models which use imputation. Please modify the 'Missing data' setting in the original model.")
 
     var.names <- all.vars(object$formula)
@@ -47,11 +47,9 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     else
         formula(paste(outcome.name, "~ 1"))
 
-    w <- object$weights[object$subset]
-    attr(w, "label") <- attr(object$weights, "label")
-
     params <- c(list(formula = reg.formula, data = object$estimation.data,
-                     weights = w, type = object$type, robust.se = object$robust.se), object$ellipsis)
+                     weights = object$weights[object$subset], type = object$type,
+                     robust.se = object$robust.se), object$ellipsis)
     # Use do.call so that we can pass the ellipsis parameters
     reg.without.missing <- do.call("Regression", params)
     selected.model <- stepAIC(reg.without.missing, scope = scope, direction = tolower(direction),
@@ -61,6 +59,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     call.formula <- selected.model$call[attr(selected.model$call, "name") == "formula"]
     selected.model$summary$call <- object$call
     selected.model$summary$call[attr(object$call, "name") == "formula"] <- call.formula
+    selected.model$sample.description <- object$sample.description
 
     result <- list(model = selected.model, output = output)
     class(result) <- "Stepwise"
