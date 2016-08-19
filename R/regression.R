@@ -76,7 +76,7 @@ Regression <- function(formula,
                        ...)
 {
     cl <- match.call()
-    .formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
+    input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
     subset <- eval(substitute(subset), data, parent.frame())
     if(!missing(statistical.assumptions))
@@ -84,10 +84,10 @@ Regression <- function(formula,
     if (!is.null(subset.description))
         attr(subset, "description") <- subset.description
     weights <- eval(substitute(weights), data, parent.frame())
-    data <- GetData(.formula, data, auxiliary.data)
+    data <- GetData(input.formula, data, auxiliary.data)
     if (method == "model.frame")
         return(data)
-    outcome.name <- OutcomeName(.formula)
+    outcome.name <- OutcomeName(input.formula)
     outcome.variable <- data[[outcome.name]]
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
@@ -95,7 +95,7 @@ Regression <- function(formula,
         stop("'subset' and 'data' are required to have the same number of observations. They do not.")
     if (type == "Binary Logit")
     {
-        data <- CreatingBinaryDependentVariableIfNecessary(.formula, data)
+        data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
         outcome.variable <- data[[outcome.name]]
     }
     else if (type == "Ordered Logit")
@@ -128,14 +128,14 @@ Regression <- function(formula,
         unfiltered.weights <- weights <- CleanWeights(weights)
         if (type != "Linear")
             stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
-        result <- list(original = LinearRegressionFromCorrelations(.formula, data, subset,
+        result <- list(original = LinearRegressionFromCorrelations(input.formula, data, subset,
                                                                weights, outcome.name, ...),
                    call = cl)
         result$sample.description <- result$original$sample.description
     }
     else
     {
-        processed.data <- EstimationData(.formula, data, subset, weights, missing, m = m, seed = seed)
+        processed.data <- EstimationData(input.formula, data, subset, weights, missing, m = m, seed = seed)
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
@@ -163,31 +163,31 @@ Regression <- function(formula,
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         weights <- processed.data$weights
         subset <-  processed.data$subset
-        estimation.formula <- DataFormula(.formula)
+        .formula <- DataFormula(input.formula)
         if (is.null(weights))
         {
             if (type == "Linear")
             {
-                original <- lm(estimation.formula, .estimation.data, model = TRUE)
+                original <- lm(.formula, .estimation.data, model = TRUE)
                 original$aic <- AIC(original)
             }
             else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-                original <- glm(estimation.formula, .estimation.data, family = switch(type,
+                original <- glm(.formula, .estimation.data, family = switch(type,
                                                                         "Poisson" = poisson,
                                                                         "Quasi-Poisson" = quasipoisson,
                                                                         "Binary Logit" = binomial(link = "logit")))
             else if (type == "Ordered Logit")
             {
-                original <- polr(estimation.formula, .estimation.data, Hess = TRUE, ...)
+                original <- polr(.formula, .estimation.data, Hess = TRUE, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "Multinomial Logit")
             {
-                original <- multinom(estimation.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                original <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "NBD")
-                original <- glm.nb(estimation.formula, .estimation.data)
+                original <- glm.nb(.formula, .estimation.data)
             else
                 stop("Unknown regression 'type'.")
 
@@ -205,7 +205,7 @@ Regression <- function(formula,
             if (type == "Linear")
             {
                 wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
-                original <- svyglm(estimation.formula, wgt.svy.des)
+                original <- svyglm(.formula, wgt.svy.des)
                 if (all(original$residuals == 0)) # perfect fit
                     original$df <- NA
                 else
@@ -220,27 +220,27 @@ Regression <- function(formula,
             else if (type == "Ordered Logit")
             {
                 .estimation.data$weights <- CalibrateWeight(weights)
-                original <- polr(estimation.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+                original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "Multinomial Logit")
             {
                 .estimation.data$weights <- CalibrateWeight(weights)
-                original <- multinom(estimation.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
                 original$aic <- AIC(original)
             }
             else if (type == "NBD")
             {
                 .estimation.data$weights <- CalibrateWeight(weights)
-                original <- glm.nb(estimation.formula, .estimation.data, weights = weights, ...)
+                original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
             }
             else
             {
                 wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
                 original <- switch(type,
-                                   "Binary Logit" = svyglm(estimation.formula, wgt.svy.des, family = quasibinomial()),
-                                   "Poisson" = svyglm(estimation.formula, wgt.svy.des, family = poisson()),
-                                   "Quasi-Poisson" = svyglm(estimation.formula, wgt.svy.des, family = quasipoisson()))
+                                   "Binary Logit" = svyglm(.formula, wgt.svy.des, family = quasibinomial()),
+                                   "Poisson" = svyglm(.formula, wgt.svy.des, family = poisson()),
+                                   "Quasi-Poisson" = svyglm(.formula, wgt.svy.des, family = quasipoisson()))
                 assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
                 aic <- extractAIC(original)
                 remove("wgt.svy.des", envir=.GlobalEnv)
@@ -269,7 +269,7 @@ Regression <- function(formula,
     # Replacing the variables with their labelsz$s
     rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
     result$summary$call <- cl
-    result$formula <- .formula
+    result$formula <- input.formula
     # Inserting the coefficients from the partial data.
     result$model <- data #over-riding the data that is automatically saved (which has had missing values removed).
     result$robust.se <- robust.se
