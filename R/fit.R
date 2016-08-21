@@ -130,12 +130,12 @@ AIC.Regression <- function(object, ...)
 
 #' @importFrom stats extractAIC
 #' @export
-extractAIC.Regression <- function(object, ...)
+extractAIC.Regression <- function(fit, scale, k = 2, ...)
 {
-    aic <- AIC.Regression(object, ...)
-    df <- if (is.null(object$original$df))
-        extractAIC(object$original, ...)[1]
+    aic <- AIC.Regression(fit, ...)
+    df <- if (is.null(fit$original$df))
+        extractAIC(fit$original, scale, k, ...)[1]
     else
-        object$original$df
+        fit$original$df
     c(df = unname(df), AIC = unname(aic))
 }

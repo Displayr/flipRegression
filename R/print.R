@@ -269,7 +269,7 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
 }
 
 #' @export
-print.Stepwise <- function(x)
+print.Stepwise <- function(x, ...)
 {
     if (x$output == "Final")
     {
