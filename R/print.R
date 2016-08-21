@@ -123,6 +123,36 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
     }
 }
 
+#' @export
+print.Stepwise <- function(x)
+{
+    if (x$output == "Final")
+    {
+        x$model$detail <- x$model$type == "Multinomial Logit"
+        print(x$model)
+    }
+    else
+    {
+        x$model$detail <- TRUE
+        print(x$model)
+        cat("\n\n")
+        heading <- attr(x$model$anova, "heading")
+        cat(paste(heading[2:length(heading)], collapse = "\n"))
+        cat("Overview of steps:")
+        cat("\n")
+        results.table <- data.frame(AIC = x$mode$anova$AIC)
+        row.names(results.table) <- levels(x$mode$anova$Step)
+        row.names(results.table)[1] <- "Original model"
+        print(results.table)
+        if (x$output == "All")
+        {
+            cat("\n\n")
+            cat("All steps:")
+            cat("\n\n")
+            cat(x$steps.output)
+        }
+    }
+}
 
 # Create an HTML widget data table (package DT) from the coefficients
 # table in a regression summary.

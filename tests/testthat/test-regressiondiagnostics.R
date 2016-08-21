@@ -11,25 +11,6 @@ attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
 
-for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
-
-    type = "Poisson"
-    test_that(paste("residualPlots :", type),
-              {
-                  bank$fBranch <- factor(bank$Branch)
-                  zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
-#zdesign = svydesign(ids = ~ 1, weights = wgt, data = bank)
-#zw = svyglm(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, family = poisson(), design = zdesign)
-                  car::residualPlots(zw)
-                  z = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb)
-                  (car::residualPlots(z), NA)
-              })
-
-termsToMf.svyglm(zw$original, terms = ~.)
-termsToMf.svyglm(z$original, terms = ~.)
-
-
-
 test_that(paste("Confusion matrix for linear with non-integer dependent variables"),
 {
     type  = "Linear"
@@ -47,6 +28,12 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Mul
         expect_error(ConfusionMatrix(z), NA)
 })
 
+for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
+    test_that(paste("extractAIC :", type),
+    {
+        z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+        expect_error(extractAIC(z), NA)
+})
 
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD"))#, "Multinomial Logit")) #"Ordered Logit",

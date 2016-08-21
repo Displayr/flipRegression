@@ -1,4 +1,4 @@
-numberParameters <- function(x)
+?numberParameters <- function(x)
 {
   if("Regression" %in% class(x))
     return(x$n.predictors + 1)
@@ -150,19 +150,24 @@ OutlierTest <- function(model)
 {
   cat("Studentized residuals:\n")
   st <- outlierTest(model, cutoff = Inf, n.max = Inf)
-  qs <- quantile(st$rstudent)
-  print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
-  min.p <- min(st$bonf.p)
-  max.is.high <- min.p <= 0.05
-  mx <- if(abs(qs[1]) < qs[5]) qs[5] else qs[1]
-  description = paste0("The largest studentized residual is ",
-                       FormatAsReal(mx, 3), ", which is ",
-                       if(max.is.high) "" else "not ",
-                       "significant, with a Bonferroni-corrected p-value of ",
-                       FormatAsPValue(min.p), ".\n")
-  cat(description)
-  cat("\n")
-  invisible(list(max.is.high = max.is.high, outlierTest = ts, description = description))
+  if (length(st$rstudent) > 0) # length will be 0 when the fit is perfect
+  {
+      qs <- quantile(st$rstudent)
+      print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
+      min.p <- min(st$bonf.p)
+      max.is.high <- min.p <= 0.05
+      mx <- if(abs(qs[1]) < qs[5]) qs[5] else qs[1]
+      description = paste0("The largest studentized residual is ",
+                           FormatAsReal(mx, 3), ", which is ",
+                           if(max.is.high) "" else "not ",
+                           "significant, with a Bonferroni-corrected p-value of ",
+                           FormatAsPValue(min.p), ".\n")
+      cat(description)
+      cat("\n")
+      invisible(list(max.is.high = max.is.high, outlierTest = st, description = description))
+  }
+  else
+      invisible(list(max.is.high = FALSE, outlierTest = st))
 }
 
 
@@ -273,21 +278,210 @@ termsToMf <- function(model, terms)
     list(mf.vars = mf.vars, mf.groups = mf.groups)
 }
 
+residualPlot.glm <- function (model, variable = "fitted", type = "pearson", plot = TRUE,
+          quadratic = FALSE, smoother = loessLine, smoother.args = list(k = 3),
+          ...)
+{
+    residualPlot.default(model, variable = variable, type = type,
+                         plot = plot, quadratic = quadratic, smoother = smoother,
+                         smoother.args = smoother.args, ...)
+}
 
+residualPlot.lm <- function (model, ...)
+{
+    residualPlot.default(model, ...)
+}
+
+residualPlot.default <- function (model, variable = "fitted", type = "pearson", groups,
+          plot = TRUE, linear = TRUE, quadratic = if (missing(groups)) TRUE else FALSE,
+          smoother = NULL, smoother.args = list(), col.smooth = palette()[3],
+          labels, id.method = "r", id.n = if (id.method[1] == "identify") Inf else 0,
+          id.cex = 1, id.col = palette()[1], col = palette()[1], col.quad = palette()[2],
+          pch = 1, xlab, ylab, lwd = 1, lty = 1, grid = TRUE, key = !missing(groups),
+          ...)
+{
+    string.capitalize <- function(string) {
+        paste(toupper(substring(string, 1, 1)), substring(string,
+                                                          2), sep = "")
+    }
+    if (missing(labels))
+        labels <- names(residuals(model)[!is.na(residuals(model))])
+    ylab <- if (!missing(ylab))
+        ylab
+    else paste(string.capitalize(type), "residuals")
+    column <- match(variable, names(model$model))
+    if (is.na(column) && variable != "fitted")
+        stop(paste(variable, "is not a regressor in the mean function"))
+    horiz <- if (variable == "fitted")
+        predict(model)
+    else model$model[[column]]
+    lab <- if (variable == "fitted") {
+        if (inherits(model, "glm"))
+            "Linear Predictor"
+        else "Fitted values"
+    }
+    else variable
+    lab <- if (!missing(xlab))
+        xlab
+    else lab
+    if (class(horiz)[1] == "ordered")
+        horiz <- factor(horiz, ordered = FALSE)
+    ans <- if (inherits(horiz, "poly")) {
+        horiz <- horiz[, 1]
+        lab <- paste("Linear part of", lab)
+        c(NA, NA)
+    }
+    else if (inherits(horiz, "matrix")) {
+        horiz <- try(predict(model, type = "terms"), silent = TRUE)
+        if (class(horiz) == "try-error")
+            stop("Could not plot spline terms")
+        warning("Splines replaced by a fitted linear combination")
+        horiz <- horiz[, variable]
+        c(NA, NA)
+    }
+    else if (inherits(horiz, "factor"))
+        c(NA, NA)
+    else residCurvTest.glm(model, variable)
+    if (!missing(groups)) {
+        if (is.data.frame(groups)) {
+            groups.name <- names(groups)[1]
+            groups <- groups[, 1, drop = TRUE]
+        }
+        else groups.name <- deparse(substitute(groups))
+        groups <- if (class(groups)[1] == "factor")
+            groups
+        else factor(groups, ordered = FALSE)
+        if (key) {
+            mar3 <- 1.1 + length(levels(groups))
+            op <- par(mar = c(5.1, 4.1, mar3, 2.1))
+            on.exit(par(op))
+        }
+        colors <- if (length(col) >= length(levels(groups)))
+            col
+        else palette()
+        col <- colors[as.numeric(groups)]
+        pchs <- if (length(pch) >= length(levels(groups)))
+            pch
+        else 1:length(levels(groups))
+        pch <- pchs[as.numeric(groups)]
+    }
+    theResiduals <- switch(type, rstudent = rstudent(model),
+                           rstandard = rstandard(model), residuals(model, type = type))
+    if (plot == TRUE) {
+        if (class(horiz) == "factor") {
+            idm <- if (is.list(id.method)) {
+                lapply(id.method, function(x) if (x[1] == "xy")
+                    "y"
+                    else x)
+            }
+            else {
+                if (id.method[1] == "xy")
+                    "y"
+            }
+            Boxplot(theResiduals, horiz, xlab = lab, ylab = ylab,
+                    labels = labels, id.method = idm, id.n = id.n,
+                    id.cex = id.cex, id.col = id.col, ...)
+            abline(h = 0, lty = 2)
+        }
+        else {
+            plot(horiz, theResiduals, xlab = lab, ylab = ylab,
+                 type = "n", ...)
+            if (grid) {
+                grid(lty = 1, equilogs = FALSE)
+                box()
+            }
+            points(horiz, theResiduals, col = col, pch = pch,
+                   ...)
+            if (linear) {
+                if (missing(groups)) {
+                    abline(h = 0, lty = 2, lwd = 2)
+                }
+                else {
+                    for (g in 1:length(levels(groups))) try(abline(lm(theResiduals ~
+                                                                          horiz, subset = groups == levels(groups)[g]),
+                                                                   lty = 2, lwd = 2, col = colors[g]), silent = TRUE)
+                }
+            }
+            if (quadratic) {
+                new <- seq(min(horiz), max(horiz), length = 200)
+                if (missing(groups)) {
+                    if (length(unique(horiz)) > 2) {
+                        lm2 <- lm(theResiduals ~ poly(horiz, 2))
+                        lines(new, predict(lm2, list(horiz = new)),
+                              lty = 1, lwd = 2, col = col.quad)
+                    }
+                }
+                else {
+                    for (g in 1:length(levels(groups))) {
+                        if (length(unique(horiz)) > 2) {
+                            lm2 <- lm(theResiduals ~ poly(horiz, 2),
+                                      subset = groups == levels(groups)[g])
+                            lines(new, predict(lm2, list(horiz = new)),
+                                  lty = 1, lwd = 1.5, col = colors[g])
+                        }
+                    }
+                }
+            }
+            if (is.function(smoother))
+                if (missing(groups)) {
+                    smoother(horiz, theResiduals, col.smooth, log.x = FALSE,
+                             log.y = FALSE, spread = FALSE, smoother.args = smoother.args)
+                }
+            else for (g in 1:length(levels(groups))) {
+                sel <- groups == levels(groups)[g]
+                smoother(horiz[sel], theResiduals[sel], colors[g],
+                         log.x = FALSE, log.y = FALSE, spread = FALSE,
+                         smoother.args = smoother.args)
+            }
+            if (key & !missing(groups)) {
+                items <- paste(groups.name, levels(groups), sep = " = ")
+                plotArrayLegend("top", items = items, col.items = colors,
+                                pch = pchs)
+            }
+            showLabels(horiz, theResiduals, labels = labels,
+                       id.method = id.method, id.n = id.n, id.cex = id.cex,
+                       id.col = id.col)
+        }
+    }
+    invisible(ans)
+}
 #' @export
 residualPlots.Regression <- function(model, ...)
 {
   checkAcceptableModel(model, c("glm","lm"), "'residualPlots'")
   assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
   assign(".formula", model$formula, envir=.GlobalEnv)
-  assign(".weights", model$weights[model$subset], envir=.GlobalEnv)
+  #assign(".weights", model$weights[model$subset], envir=.GlobalEnv)
   assign(".design", model$design, envir=.GlobalEnv)
+  #attach(.estimation.data)
   t <- suppressWarnings(residualPlotsT(model$original))
+  #detach(.estimation.data)
   remove(".design", envir=.GlobalEnv)
-  remove(".weights", envir=.GlobalEnv)
+  #remove(".weights", envir=.GlobalEnv)
   remove(".formula", envir=.GlobalEnv)
   remove(".estimation.data", envir=.GlobalEnv)
   t
+}
+
+residCurvTest.glm <- function (model, variable)
+{
+    if (variable == "fitted")
+        c(NA, NA)
+    else {
+        if (is.na(match(variable, attr(model$terms, "term.labels"))))
+            stop(paste(variable, "is not a term in the mean function"))
+        else {
+            newmod <- paste(" ~ . + I(", variable, "^2)")
+            print(class(model))
+            print(.design)
+            if (inherits(model, "svyglm"))
+                m2 <- update(model, newmod, start = NULL, design = .design)
+            else
+                m2 <- update(model, newmod, start = NULL)
+            c(Test = test <- deviance(model) - deviance(m2),
+              Pvalue = 1 - pchisq(test, 1))
+        }
+    }
 }
 
 #' @importFrom effects allEffects
@@ -296,11 +490,13 @@ allEffects.Regression <- function(model, ...)
 {
     assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
     assign(".formula", model$formula, envir=.GlobalEnv)
-    assign(".weights", model$weights[model$subset], envir=.GlobalEnv)
+    #assign(".weights", model$weights[model$subset], envir=.GlobalEnv)
     assign(".design", model$design, envir=.GlobalEnv)
+    attach(.estimation.data)
     effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
+    detach(.estimation.data)
     remove(".design", envir=.GlobalEnv)
-    remove(".weights", envir=.GlobalEnv)
+    #remove(".weights", envir=.GlobalEnv)
     remove(".formula", envir=.GlobalEnv)
     remove(".estimation.data", envir=.GlobalEnv)
     effects

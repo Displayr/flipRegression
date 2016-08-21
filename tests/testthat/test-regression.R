@@ -44,7 +44,10 @@ test_that(paste("Alternative ways of passing data in"),
       z1 = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, subset = sb, weights = wgt, type = type)
       detach(zbank)
       expect_true(all.equal(z$coefficients, z1$coefficients))
-
+      # data frame referenced in formula.
+      z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, weights = wgt, type = type)
+      z1 = Regression(bank$Overall ~ bank$Fees + bank$Interest + bank$Phone + bank$Branch + bank$Online + bank$ATM, subset = sb, weights = wgt, type = type)
+      expect_true(all.equal(z$coefficients, z1$coefficients))
 })
 
 test_that(paste("Robust se does something"),
