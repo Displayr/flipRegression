@@ -11,6 +11,25 @@ attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
 
+for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
+
+    type = "Poisson"
+    test_that(paste("residualPlots :", type),
+              {
+                  bank$fBranch <- factor(bank$Branch)
+                  zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+#zdesign = svydesign(ids = ~ 1, weights = wgt, data = bank)
+#zw = svyglm(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, family = poisson(), design = zdesign)
+                  car::residualPlots(zw)
+                  z = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb)
+                  (car::residualPlots(z), NA)
+              })
+
+termsToMf.svyglm(zw$original, terms = ~.)
+termsToMf.svyglm(z$original, terms = ~.)
+
+
+
 test_that(paste("Confusion matrix for linear with non-integer dependent variables"),
 {
     type  = "Linear"
@@ -29,6 +48,7 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Mul
 })
 
 
+
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD"))#, "Multinomial Logit")) #"Ordered Logit",
     test_that(paste("Testing outliers:", type),
     {
@@ -38,6 +58,25 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD"))#, "
         expect_error(capture.output(CooksDistance(z)), NA)
 
 })
+
+#
+# oldcon <- options(contrasts = c("contr.treatment", "contr.poly"))
+# ## Annette Dobson (1990) "An Introduction to Generalized Linear Models".
+# ## Page 9: Plant Weight Data.
+# ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
+# trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
+# group <- gl(2, 10, 20, labels = c("Ctl", "Trt"))
+# weight <- c(ctl, trt)
+# wgt = runif(length(group))
+# lm.D9 <- Regression(weight ~ group, weight = wgt)
+# lm.D9
+# summary(lm.D90 <- update(lm.D9, . ~ . - 1))
+# update(lm.D9)
+# getCall(lm.D90)  # "through the origin"
+#
+#
+# update(lm.D9, NULL, method = "model.frame")
+
 
 for (type in c("Linear", "Linear","Poisson", "Quasi-Poisson", "Binary Logit", "NBD"))
     test_that(paste("Cooks distance works:",type),

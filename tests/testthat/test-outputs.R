@@ -11,9 +11,10 @@ attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
 test_that("Outputs",{
- #   expect_that(
-    z = Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, detail  = FALSE)
-
-#    expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "NBD"), throws_error())
+    library(car)
+#  #   expect_that(
+#     z = Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, detail  = FALSE)
+#     expect_error(residualPlots(z), NA)
+# #    expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "NBD"), throws_error())
 #    expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "Quasi-Poisson"), throws_error())
 })

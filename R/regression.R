@@ -162,7 +162,7 @@ Regression <- function(formula,
         if (n < ncol(.estimation.data) + 1)
           stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
-        weights <- processed.data$weights
+        .weights <- processed.data$weights
         subset <-  processed.data$subset
         if (is.null(weights))
         {
@@ -195,32 +195,33 @@ Regression <- function(formula,
           if (robust.se)
             warningRobustInappropriate()
           if (type == "Linear")
-            original <- svyglm(.formula, weightedSurveyDesign(.estimation.data, weights))
+            original <- svyglm(.formula, weightedSurveyDesign(.estimation.data, .weights))
           else if (type == "Ordered Logit")
           {
             .estimation.data$weights <- CalibrateWeight(weights)
-            original <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+            original <- polr(.formula, .estimation.data, weights = .weights, Hess = TRUE, ...)
           }
           else if (type == "Multinomial Logit")
           {
             .estimation.data$weights <- CalibrateWeight(weights)
-            original <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+            original <- multinom(.formula, .estimation.data, weights = .weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
           }
           else if (type == "NBD")
           {
             .estimation.data$weights <- CalibrateWeight(weights)
-            original <- glm.nb(.formula, .estimation.data, weights = weights, ...)
+            original <- glm.nb(.formula, .estimation.data, weights = .weights, ...)
           }
           else
           {
-            wgt.svy.des <- weightedSurveyDesign(.estimation.data, weights)
+            .design <- weightedSurveyDesign(.estimation.data, .weights)
             original <- switch(type,
-                               "Binary Logit" = svyglm(.formula, wgt.svy.des, family = quasibinomial()),
-                               "Poisson" = svyglm(.formula, wgt.svy.des, family = poisson()),
-                               "Quasi-Poisson" = svyglm(.formula, wgt.svy.des, family = quasipoisson()))
-            assign("wgt.svy.des", wgt.svy.des, envir=.GlobalEnv)
+                               "Binary Logit" = svyglm(.formula, .design, family = quasibinomial()),
+                               "Poisson" = svyglm(.formula, .design, family = poisson()),
+                               "Quasi-Poisson" = svyglm(.formula, .design, family = quasipoisson()))
+            assign(".design", .design, envir=.GlobalEnv)
+            original$design <- .design
             original$aic <- AIC(original)[2]
-            remove("wgt.svy.des", envir=.GlobalEnv)
+            remove(".design", envir=.GlobalEnv)
 
           }
         }
@@ -285,6 +286,7 @@ coef.Regression <- function(object, ...)
 }
 
 #' @importFrom survey svydesign
+#' @export
 weightedSurveyDesign <- function(data, weights)
 {
     svydesign(ids = ~ 1, weights = weights, data = data)

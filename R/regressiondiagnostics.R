@@ -226,6 +226,53 @@ ncvTest.Regression <- function(model, ...)
   diagnosticTestFromCar(model, "ncvTest", ...)
 }
 
+#' @export
+termsToMf <- function(model, terms)
+{   # This is a modification of the original function from car. It hacks around problems
+    #with svyglm
+    gform <- function(formula)
+    {
+        if (is.null(formula))
+        {
+            return(list(vars = formula, groups = NULL))
+        }
+        has.response <- length(formula) == 3
+        rhs <- if (has.response) formula[[3]] else formula[[2]]
+        if (length(rhs) == 1)
+        {
+            return(list(vars = formula, groups = NULL))
+        }
+        if (length(rhs) != 3)
+            stop("incorrectly formatted 'terms' argument")
+        if (deparse(rhs[[1]] == "|"))
+        {
+            if (length(rhs[[3]]) > 1)
+                stop("Only one conditioning variable is permitted")
+            groups <- as.formula(paste("~", deparse(rhs[[3]])))
+            rhs <- rhs[[2]]
+        }
+        else
+            groups <- NULL
+        vars <- as.formula(paste("~ ", deparse(rhs)))
+        list(vars = vars, groups = groups)
+    }
+    terms <- gform(as.formula(terms))
+    mf.vars <- .estimation.data
+    if (!is.null(terms$groups)) {
+        mf.groups <- try(update(model, terms$groups, method = "model.frame"),
+            silent = TRUE)
+        if (class(mf.groups) == "try-error")
+            mf.groups <- try(update(model, terms$groups, method = "model.frame",
+                data = model.frame(model)), silent = TRUE)
+        if (class(mf.groups) == "try-error")
+            stop("argument 'terms' not interpretable.")
+    }
+    else {
+        mf.groups <- NULL
+    }
+    list(mf.vars = mf.vars, mf.groups = mf.groups)
+}
+
 
 #' @export
 residualPlots.Regression <- function(model, ...)
@@ -233,14 +280,116 @@ residualPlots.Regression <- function(model, ...)
   checkAcceptableModel(model, c("glm","lm"), "'residualPlots'")
   assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
   assign(".formula", model$formula, envir=.GlobalEnv)
-  assign("weights", model$weights, envir=.GlobalEnv)
-  t <- residualPlots(model$original)
-  remove("weights", envir=.GlobalEnv)
+  assign(".weights", model$weights[model$subset], envir=.GlobalEnv)
+  assign(".design", model$design, envir=.GlobalEnv)
+  t <- suppressWarnings(residualPlotsT(model$original))
+  remove(".design", envir=.GlobalEnv)
+  remove(".weights", envir=.GlobalEnv)
   remove(".formula", envir=.GlobalEnv)
   remove(".estimation.data", envir=.GlobalEnv)
   t
 }
 
+#' @importFrom effects allEffects
+#' @export
+allEffects.Regression <- function(model, ...)
+{
+    assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
+    assign(".formula", model$formula, envir=.GlobalEnv)
+    assign(".weights", model$weights[model$subset], envir=.GlobalEnv)
+    assign(".design", model$design, envir=.GlobalEnv)
+    effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
+    remove(".design", envir=.GlobalEnv)
+    remove(".weights", envir=.GlobalEnv)
+    remove(".formula", envir=.GlobalEnv)
+    remove(".estimation.data", envir=.GlobalEnv)
+    effects
+}
+
+#' @export
+residualPlotsT <- function (model, terms = ~., layout = NULL, ask, main = "", fitted = TRUE,
+          AsIs = TRUE, plot = TRUE, tests = TRUE, groups, ...)
+{   # This is a modification of the original function from car. It hacks around problems
+    #with svyglm
+    require(survey)
+    mf <- if (!is.null(terms))
+        termsToMf(model, terms)
+    else NULL
+    groups <- if (!missing(groups)) {
+        termsToMf(model, as.formula(paste("~", deparse(substitute(groups)))))$mf.vars[,
+                                                                                      2, drop = FALSE]
+    }
+    else {
+        if (is.null(mf$mf.groups))
+            NULL
+        else mf$mf.groups[, 2, drop = FALSE]
+    }
+    mf <- mf$mf.vars
+    vform <- formula(model)#update(formula(model), attr(mf, "terms"))
+    if (any(is.na(match(all.vars(vform), all.vars(formula(model))))))
+        stop("Only regressors in the formula can be plotted.")
+    terms <- attr(mf, "term.labels")
+    vterms <- attr(terms(vform), "term.labels")
+    vterms <- setdiff(vterms, terms[attr(mf, "order") > 1])
+    good <- NULL
+    for (term in vterms) if ((AsIs == TRUE & inherits(model$model[[term]],
+                                                      "AsIs")) | inherits(model$model[[term]], "numeric") |
+                             inherits(model$model[[term]], "integer") | (inherits(model$model[[term]],
+                                                                                  "factor") & is.null(groups)) | inherits(model$model[[term]],
+                                                                                                                          "matrix") | inherits(model$model[[term]], "poly"))
+        good <- c(good, term)
+    nt <- length(good) + fitted
+    nr <- 0
+    if (nt == 0)
+        stop("No plots specified")
+    if (nt > 1 & plot == TRUE & (is.null(layout) || is.numeric(layout))) {
+        if (is.null(layout)) {
+            layout <- switch(min(nt, 9), c(1, 1), c(1, 2), c(2,
+                                                             2), c(2, 2), c(3, 2), c(3, 2), c(3, 3), c(3,
+                                                                                                       3), c(3, 3))
+        }
+        ask <- if (missing(ask) || is.null(ask))
+            prod(layout) < nt
+        else ask
+        op <- par(mfrow = layout, ask = ask, no.readonly = TRUE,
+                  oma = c(0, 0, 1.5, 0), mar = c(5, 4, 1, 2) + 0.1)
+        on.exit(par(op))
+    }
+    ans <- NULL
+    if (!is.null(good)) {
+        for (term in good) {
+            nr <- nr + 1
+            qtest <- if (is.null(groups))
+                residualPlot(model, term, plot = plot, ...)
+            else residualPlot(model, term, plot = plot, groups = groups,
+                              ...)
+            if (!is.null(qtest)) {
+                ans <- rbind(ans, qtest)
+                row.names(ans)[nr] <- term
+            }
+        }
+    }
+    if (fitted == TRUE) {
+        tuk <- if (is.null(groups))
+            residualPlot(model, "fitted", plot = plot, ...)
+        else residualPlot(model, "fitted", plot = plot, groups = groups,
+                          ...)
+        if (!is.null(tuk) & class(model)[1] == "lm") {
+            ans <- rbind(ans, tuk)
+            row.names(ans)[nr + 1] <- "Tukey test"
+            ans[nr + 1, 2] <- 2 * pnorm(abs(ans[nr + 1, 1]),
+                                        lower.tail = FALSE)
+        }
+    }
+    if (plot == TRUE)
+        mtext(side = 3, outer = TRUE, main, cex = 1.2)
+    if (!is.null(ans)) {
+        dimnames(ans)[[2]] <- c("Test stat", "Pr(>|t|)")
+        return(if (tests == FALSE | !is.null(groups)) invisible(ans) else if (all(is.na(ans))) warning("No possible lack-of-fit tests") else round(ans,
+                                                                                                                                                   3))
+    }
+    else invisible(NULL)
+}
 
 #' @export
 influenceIndexPlot.Regression <- function(model, ...)
@@ -419,15 +568,6 @@ Accuracy <- function(obj, subset = NULL, weights = NULL)
   correct / n
 }
 
-#' @importFrom effects allEffects
-#' @export
-allEffects.Regression <- function(model, ...)
-{
-  assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
-  effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
-  remove(".estimation.data", envir=.GlobalEnv)
-  effects
-}
 
 
 
