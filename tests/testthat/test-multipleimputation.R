@@ -45,6 +45,10 @@ test_that("Multiple imputation with auxiliary variables ", {
     z4 = Regression(Overall ~ Branch + Interest, auxiliary.data = zaux, missing = "Multiple imputation")$coef[2]
     detach(zbank)
     expect_false(isTRUE(all.equal(z1, z4)))
+    # Auxiliary variables, incorrect number of rows.
+    zaux <- data.frame(a = zbank$Phone, b = zbank$Online)[1:10,]
+    Regression(Overall ~ Branch + Interest,auxiliary.data = zaux, data = zbank, missing = "Multiple imputation")$coef[2]
+    expect_false(isTRUE(all.equal(z1, z4)))
 
 })
 
