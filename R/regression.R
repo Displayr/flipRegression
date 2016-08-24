@@ -32,6 +32,8 @@
 #'  the quality of the imputation, it will dramatically slow down the time to estimate.
 #'  Factors and Character variables with a large number of categories should not be included,
 #'  as they will both slow down the data and are unlikely to be useful
+#' @param show.labels Shows the variable labels, as opposed to the labels, in the outputs, where a
+#' variables label is an attribute (e.g., attr(foo, "label")).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -73,6 +75,7 @@ Regression <- function(formula,
                        seed = 12321,
                        statistical.assumptions,
                        auxiliary.data = NULL,
+                       show.labels = FALSE,
                        ...)
 {
     cl <- match.call()
@@ -145,9 +148,21 @@ Regression <- function(formula,
                     weights = processed.data$weights,
                     type = type,
                     robust.se = FALSE,
-                    detail = detail))
+                    detail = detail,
+                    show.labels = show.labels))
             final.model <- models[[1]]
             coefs <- MultipleImputationCoefficientTable(models)
+            if (show.labels)
+            {
+                if(type == "Multinomial Logit")
+                {
+                    coef.labels <- colnames(final.model$summary$coefficients)#GetLabels(colnames(final.model$summary$coefficients), data)
+                    kc <- length(coef.labels)
+                    alt.labels <- rownames(final.model$summary$coefficients)
+                    kr <- length(alt.labels)
+                    rownames(coefs) <- paste(alt.labels, coef.labels[rep(1:kc, rep(kr, kc))])
+                }
+            }
             final.model$coefficient.table <- coefs
             final.model$summary$coefficients  <- coefs[, -4]
             final.model$coef <- final.model$original$coef <- coefs[, 1]
@@ -269,8 +284,14 @@ Regression <- function(formula,
         colnames(coefs)[1] <- "Estimate"
         result$summary$coefficients <- cbind(coefs, p = ps)
     }
-    # Replacing the variables with their labelsz$s
-    rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
+    # Replacing the variables with their labels
+    if (show.labels)
+    {
+        if(type == "Multinomial Logit")
+            colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- GetLabels(colnames(result$summary$coefficients), data)
+        else
+            rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
+    }
     result$summary$call <- cl
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
@@ -280,7 +301,10 @@ Regression <- function(formula,
     result$type = type
     result$weights <- unfiltered.weights
     result$detail <- detail
+    result$show.labels <- show.labels
     result$outcome.name <- outcome.name
+    result$outcome.label <- if(show.labels) attr(outcome.variable, "label") else outcome.name
+    #print(result$outcome.label)
     result$missing <- missing
     result$terms <- result$original$terms
     result$coef <- result$original$coef
@@ -288,6 +312,7 @@ Regression <- function(formula,
         result$summary$coefficients <- result$original$robust.coefficients
     return(result)
 }
+
 
 notValidForPartial <- function(object, method)
 {

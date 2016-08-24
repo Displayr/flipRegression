@@ -28,6 +28,5 @@ WarningFactorToNumeric <- function() {warning("Outcome variable is a factor; it 
 WarningMakingNumericBinary <- function() {warning("Outcome variable is numeric and contains more than two unique
                                                   values. It has been xxxis a factor; it has been made numeric.")}
 
-stopTooFewForBinary <- function() {warning("The Outcome variable needs to contain two or more categories. It does not.")}
 
 warningNotOrdered <- function() {warning("Outcome variable is a not an Ordered Factor; it has been converted into an Ordered Factor.")}

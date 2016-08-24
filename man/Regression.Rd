@@ -7,7 +7,8 @@
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
   robust.se = FALSE, method = "default", detail = TRUE, m = 10,
-  seed = 12321, statistical.assumptions, auxiliary.data = NULL, ...)
+  seed = 12321, statistical.assumptions, auxiliary.data = NULL,
+  show.labels = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -54,6 +55,9 @@ to be used in imputation (if required). While adding more variables will improve
 the quality of the imputation, it will dramatically slow down the time to estimate.
 Factors and Character variables with a large number of categories should not be included,
 as they will both slow down the data and are unlikely to be useful}
+
+\item{show.labels}{Shows the variable labels, as opposed to the labels, in the outputs, where a
+variables label is an attribute (e.g., attr(foo, "label")).}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}

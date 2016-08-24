@@ -86,7 +86,8 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     else # Pretty table.
     {
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
-        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ", x$outcome.name))
+        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ",
+                          if(x$show.labels) x$outcome.label else x$outcome.name))
         coefs <- x$summary$coefficients
         t <- "t" == substr(colnames(coefs)[3], 1, 1)
         caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
