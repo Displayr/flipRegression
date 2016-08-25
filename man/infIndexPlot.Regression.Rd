@@ -4,7 +4,7 @@
 \alias{infIndexPlot.Regression}
 \title{\code{infIndexPlot.Regression}}
 \usage{
-\method{infIndexPlot}{Regression}(model, ...)
+infIndexPlot.Regression(model, ...)
 }
 \arguments{
 \item{model}{A 'Regression'  model.}

@@ -10,7 +10,11 @@
 MultipleImputationCoefficientTable <- function(models, large.sample.df = FALSE)
 {
     m <- length(models)
-    coefs <- sapply(models, coef)
+    .coef <- function(object)
+    {
+        object$coef
+    }
+    coefs <- sapply(models, .coef)
     vars <- sapply(models, FUN = function(x) diag(vcov(x)))
     coef.mean <- apply(coefs, 1, mean)
     B <- apply(coefs, 1, var)

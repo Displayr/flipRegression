@@ -29,6 +29,9 @@ cola$Q3 <- unclass(cola$Q3)
 #
 
 
+Regression(Overall ~ Fees, data = bank, type = "Ordered Logit", missing = "Multiple imputation", detail = FALSE, show.labels = TRUE)
+
+
 test_that("Multiple imputation with auxiliary variables ", {
     # No auxiliary variables, data has an argument
     z1 = Regression(Overall ~ Branch + Interest, data = zbank, missing = "Multiple imputation")$coef[2]
@@ -47,8 +50,7 @@ test_that("Multiple imputation with auxiliary variables ", {
     expect_false(isTRUE(all.equal(z1, z4)))
     # Auxiliary variables, incorrect number of rows.
     zaux <- data.frame(a = zbank$Phone, b = zbank$Online)[1:10,]
-    Regression(Overall ~ Branch + Interest,auxiliary.data = zaux, data = zbank, missing = "Multiple imputation")$coef[2]
-    expect_false(isTRUE(all.equal(z1, z4)))
+    expect_error(Regression(Overall ~ Branch + Interest,auxiliary.data = zaux, data = zbank, missing = "Multiple imputation"))
 
 })
 

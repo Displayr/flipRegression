@@ -308,10 +308,19 @@ Regression <- function(formula,
     result$missing <- missing
     result$terms <- result$original$terms
     result$coef <- result$original$coef
+    if (type == "Ordered Logit")
+        result$coef <- c(result$coef, result$original$zeta)
     if (robust.se)
         result$summary$coefficients <- result$original$robust.coefficients
     return(result)
 }
+
+
+#' #' @export
+#' coef.Regression <- function(object, ...)
+#' {
+#'     object$coef
+#' }
 
 
 notValidForPartial <- function(object, method)
