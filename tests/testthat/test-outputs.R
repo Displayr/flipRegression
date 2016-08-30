@@ -14,6 +14,7 @@ attr(bank$fBranch, "label") <- "Branch as a factor"
 attr(bank$Overall, "label") <- "Overall satisfaction"
 
 attach(bank)
+z <- list(a = bank$Phone)
 z$q <- Fees
 Regression(Overall ~ z$q + Phone, details = FALSE, show.labels = TRUE)
 detach(bank)
