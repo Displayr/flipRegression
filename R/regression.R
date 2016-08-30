@@ -119,7 +119,7 @@ Regression <- function(formula,
     else if (is.factor(outcome.variable))
     {
         WarningFactorToNumeric()
-        data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable)
+        data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
     row.names <- rownames(data)
     if (robust.se & (missing == "Use partial data (pairwise correlations)" | missing == "Multiple imputation"))
