@@ -10,6 +10,18 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
+test_that(paste("Grand mean"),
+{
+    type  = "Linear"
+    z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank[, c("Overall", "Fees", "Interest","Phone", "Branch", "Online", "ATM")], type = type, subset = sb, weights = wgt)
+    subset <- sb & wgt > 0 & !is.na(subset) & !is.na(wgt)
+    subset <- subset & complete.cases(cbind(sb, wgt, bank[, c("Overall", "Fees", "Interest","Phone", "Branch", "Online", "ATM")]))
+    y <- bank$Overall[subset]
+    w <- wgt[subset]
+    mn <- sum(y * w) / sum(w)
+    expect_equal(mn, GrandMean(z))
+})
+
 
 test_that(paste("Confusion matrix for linear with non-integer dependent variables"),
 {

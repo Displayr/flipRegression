@@ -1,3 +1,26 @@
+#' \code{GrandMean}
+#'
+#' @param model A 'Regression'  model.
+#' @details Computes the mean of the dependent variable, taking missing values, weights,
+#' and the need to transform into numeric variables into account.
+#' #' @importFrom flipTransformations AsNumeric
+#' @importFrom flipStatistics Mean
+#' @importFrom flipTransformations AsNumeric
+#' @export
+GrandMean <- function(model)
+{
+    if (model$type != "Linear")
+        warning("GrandMean function has not been checked for non-Linear models.")
+    subset <- model$subset
+    y <- AsNumeric(Observed(model)[subset])
+    w <- model$weights[subset]
+    Mean(y, w)
+}
+
+
+
+
+
 numberParameters <- function(x)
 {
   if("Regression" %in% class(x))

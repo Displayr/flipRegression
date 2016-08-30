@@ -57,6 +57,7 @@
 #' @importFrom survey svyglm
 #' @importFrom MASS polr glm.nb
 #' @importFrom nnet multinom
+#' @importFrom flipTransformations AsNumeric
 #' @importFrom lmtest coeftest
 #' @importFrom car hccm
 #' @importFrom flipData CalibrateWeight
@@ -118,7 +119,7 @@ Regression <- function(formula,
     else if (is.factor(outcome.variable))
     {
         WarningFactorToNumeric()
-        data[, outcome.name] <- outcome.variable <- unclass(outcome.variable)
+        data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable)
     }
     row.names <- rownames(data)
     if (robust.se & (missing == "Use partial data (pairwise correlations)" | missing == "Multiple imputation"))
@@ -304,7 +305,6 @@ Regression <- function(formula,
     result$show.labels <- show.labels
     result$outcome.name <- outcome.name
     result$outcome.label <- if(show.labels) attr(outcome.variable, "label") else outcome.name
-    #print(result$outcome.label)
     result$missing <- missing
     result$terms <- result$original$terms
     result$coef <- result$original$coef

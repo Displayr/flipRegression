@@ -13,6 +13,23 @@ bank$fBranch <- factor(bank$Branch)
 attr(bank$fBranch, "label") <- "Branch as a factor"
 attr(bank$Overall, "label") <- "Overall satisfaction"
 
+attach(bank)
+z$q <- Fees
+Regression(Overall ~ z$q + Phone, details = FALSE, show.labels = TRUE)
+detach(bank)
+
+for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
+        test_that(paste("allEffects :", type),
+          {
+              zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+              expect_error(plot(effects::allEffects(zw)), NA)
+              z = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb)
+              expect_error(plot(effects::allEffects(z)), NA)
+          })
+
+zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+
+
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
         test_that(paste("allEffects :", type),
           {
