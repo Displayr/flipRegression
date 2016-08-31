@@ -407,7 +407,7 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
   predicted[predicted.na] <- NA
   #levels(observed) <- paste("Observed", levels(observed))
   #levels(predicted) <- paste("Predicted", levels(predicted))
-  ConfusionMatrixFromVariables(observed, predicted)
+  ConfusionMatrixFromVariables(observed, predicted, subset, weights)
 }
 
 
@@ -433,8 +433,11 @@ ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
   observed <- Observed(obj)
   predicted <- predict(obj)
 
-  if (is(obj,"Regression") & obj$type == "Linear")
-    return(ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights))
+  if (is(obj,"Regression"))
+  {
+      if(obj$type == "Linear")
+        return(ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights))
+  }
   return(ConfusionMatrixFromVariables(observed, predicted, subset, weights))
 }
 

@@ -296,7 +296,7 @@ Regression <- function(formula,
     result$summary$call <- cl
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
-    result$model <- data #over-riding the data that is automatically saved (which has had missing values removed).
+    result$model <- data
     result$robust.se <- robust.se
     class(result) <- "Regression"
     result$type = type

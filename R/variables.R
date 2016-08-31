@@ -113,16 +113,10 @@ fitted.values.Regression <- function(object, ...)
 #' @export
 Observed <- function(x) UseMethod("Observed", x)
 
-#' #' @export
-#' Observed.default <- function(x)
-#' {
-#'     fitted(x)
-#' }
-
 #' \code{observed} Observed values used in fitting a model with an outcome variable.
 #' @param x A 'Regression' model.
 #' @export
-Observed.Regression <- function(x)
+Observed.default <- function(x)
 {
     x$model[[x$outcome.name]]
 }
