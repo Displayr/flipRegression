@@ -12,6 +12,7 @@ attr(bank$Online, "label") <- "Online banking"
 bank$fBranch <- factor(bank$Branch)
 attr(bank$fBranch, "label") <- "Branch as a factor"
 attr(bank$Overall, "label") <- "Overall satisfaction"
+
 test_that("Labels are extracted from variables containinging $",
           {
               library(flipRegression)
@@ -21,11 +22,6 @@ test_that("Labels are extracted from variables containinging $",
               expect_equal(zz, "Fees paid")
               detach(bank)
           })
-
-
-
-
-
 
 test_that("PrettyRegressionTable",{
 
