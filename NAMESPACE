@@ -3,7 +3,7 @@
 S3method(AIC,Regression)
 S3method(GoodnessOfFit,Regression)
 S3method(GoodnessOfFit,default)
-S3method(Observed,Regression)
+S3method(Observed,default)
 S3method(allEffects,Regression)
 S3method(coef,Regression)
 S3method(cooks.distance,Regression)
