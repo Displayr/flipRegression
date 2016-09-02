@@ -52,7 +52,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom flipData GetData CleanSubset CleanWeights EstimationData DataFormula
 #' @importFrom flipU OutcomeName IsCount
-#' @importFrom flipFormat GetLabels
+#' @importFrom flipFormat Labels
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm
 #' @importFrom MASS polr glm.nb
@@ -157,7 +157,7 @@ Regression <- function(formula,
             {
                 if(type == "Multinomial Logit")
                 {
-                    coef.labels <- colnames(final.model$summary$coefficients)#GetLabels(colnames(final.model$summary$coefficients), data)
+                    coef.labels <- colnames(final.model$summary$coefficients)
                     kc <- length(coef.labels)
                     alt.labels <- rownames(final.model$summary$coefficients)
                     kr <- length(alt.labels)
@@ -291,7 +291,7 @@ Regression <- function(formula,
         if(type == "Multinomial Logit")
             colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- GetLabels(colnames(result$summary$coefficients), data)
         else
-            rownames(result$summary$coefficients) <- GetLabels(rownames(result$summary$coefficients), data)
+            rownames(result$summary$coefficients) <- Labels(rownames(result$summary$coefficients), data)
     }
     result$summary$call <- cl
     result$formula <- input.formula

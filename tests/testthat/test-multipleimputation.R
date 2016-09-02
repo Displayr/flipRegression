@@ -17,18 +17,6 @@ cola <- cola[1:150,]
 cola$Q3[1:100] <- NA
 cola$Q3 <- unclass(cola$Q3)
 
-
-# z = Regression(Q2 ~ Q3, data = cola, type = "Binary Logit", detail = FALSE, missing = "Multiple imputation")
-# z$coef[2]
-#
-# z = Regression(Q2 ~ Q3, data = cola[,c("Q2","Q3")], type = "Binary Logit", detail = FALSE, missing = "Multiple imputation")
-# z$coef[2]
-#
-# z = Regression(Q2 ~ Q3, data = cola, auxiliary = cola[,17:30], type = "Binary Logit", detail = FALSE, missing = "Multiple imputation")
-# z$coef[2]
-#
-
-
 Regression(Overall ~ Fees, data = bank, type = "Ordered Logit", missing = "Multiple imputation", detail = FALSE, show.labels = TRUE)
 
 
