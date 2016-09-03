@@ -289,7 +289,7 @@ Regression <- function(formula,
     if (show.labels)
     {
         if(type == "Multinomial Logit")
-            colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- GetLabels(colnames(result$summary$coefficients), data)
+            colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(colnames(result$summary$coefficients), data)
         else
             rownames(result$summary$coefficients) <- Labels(rownames(result$summary$coefficients), data)
     }
