@@ -17,6 +17,7 @@ cola <- cola[1:150,]
 cola$Q3[1:100] <- NA
 cola$Q3 <- unclass(cola$Q3)
 
+
 Regression(Overall ~ Fees, data = bank, type = "Ordered Logit", missing = "Multiple imputation", detail = FALSE, show.labels = TRUE)
 
 
