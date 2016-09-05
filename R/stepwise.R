@@ -48,7 +48,12 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     else
         formula(paste(outcome.name, "~ 1"))
 
-    params <- c(list(formula = reg.formula, data = object$estimation.data,
+    # Copy attributes from model data so that labels are included
+    d <- object$estimation.data
+    for (nms in names(d))
+        attributes(d[[nms]]) <- attributes(object$model[[nms]])
+
+    params <- c(list(formula = reg.formula, data = d,
                      weights = object$weights[object$subset], type = object$type,
                      robust.se = object$robust.se, show.labels = object$show.labels), object$ellipsis)
     # Use do.call so that we can pass the ellipsis parameters
