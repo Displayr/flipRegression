@@ -50,7 +50,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
 
     params <- c(list(formula = reg.formula, data = object$estimation.data,
                      weights = object$weights[object$subset], type = object$type,
-                     robust.se = object$robust.se), object$ellipsis)
+                     robust.se = object$robust.se, show.labels = object$show.labels), object$ellipsis)
     # Use do.call so that we can pass the ellipsis parameters
     reg.without.missing <- do.call("Regression", params)
     selected.model <- stepAIC(reg.without.missing, scope = scope, direction = tolower(direction),
