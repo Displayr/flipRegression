@@ -1,3 +1,108 @@
+
+#' @importFrom flipU IsCount
+#' @importFrom utils capture.output
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent
+#' @importFrom stats printCoefmat
+#' @export
+print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
+{
+    weighted <- !is.null(x$weights)
+    # Checking for unusual observations.
+    if (x$type != "Ordered Logit" & x$type != "Multinomial Logit" & x$missing != "Use partial data (pairwise correlations)")
+    {
+        capture.output(unusual <- UnusualObservations(x))
+        if (!is.null(unusual))
+            warning(unusual)
+    }
+    # Testing to see if there is multicollinearity.
+    if (ncol(x$model) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
+    {
+        vifs <- vif(x)
+        if (!is.null(vifs))
+        {
+            max.vif <- max(vifs)
+            if (max.vif >= 4)
+            {
+                pref <- if(x$type == "Linear") "" else "Generalized "
+                nms <- rownames(x$summary$coefficients)[-1]
+                VIFs <- paste0(nms,": ", FormatAsReal(vifs, 2), c(rep("; ", length(nms) - 1), ""), collapse = "")
+                warning(paste0("The ",pref, "Variance Inflation Factor of the coefficients are: ", VIFs,". A value of 4 or more indicates the confidence interval for the coefficient is twice as wide as they would be for uncorrelated predictors. A value of 10 or more indicates high multicollinearity."))
+            }
+        }
+    }
+    #Testing to see if the variance is non-constant.
+    partial <- x$missing == "Use partial data (pairwise correlations)"
+    if (x$type == "Linear" & !partial & !weighted)
+    {
+        bp.test <- ncvTest(x)#BreuschPagan(x$original)
+        if (bp.test$p <= 0.05)
+        {
+            suggest <- if(is.null(x$partial.coefs)) " Or, consider using Robust Standard Errors." else ""
+            warning(paste0("A Breusch Pagan Test for non-constant variance has been failed (p = ",
+                           FormatAsPValue(bp.test$p), "). A plot of the residuals versus the fitted values of the outcome variable may be useful (Insert > Advanced > Regression > Plots > Residuals vs Fitted). A transformation of the outcome or predictor variables may solve this problem.",
+                           suggest, "\n"))
+            outcome.variable <- outcomeVariableFromModel(x)
+        }
+    }
+    outcome.variable <- outcomeVariableFromModel(x)
+    if (length(unique(outcome.variable)) == 2 && x$type == "Linear")
+        warning(paste0("The outcome variable contains only two unique values. A Binary Logit may be
+                       more appropriate."))
+    else
+    {
+        if (x$type == "Linear" & IsCount(outcome.variable))
+            warning(paste0("The outcome variable appears to contain count data (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Quasi-Poisson Regression, Ordered Logit)."))
+    }
+    # Creating a nicely formatted text description of the model.
+    aic <- if(partial) NA else AIC(x)
+    rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
+    caption <- x$sample.description
+    caption <- if (partial)
+        paste0(caption," R-squared: ", FormatAsReal(x$original$original$R2, 4), "; ")
+    else
+        paste0(caption," R-squared: ", FormatAsReal(GoodnessOfFit(x)$value, 4),
+               "; Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
+               if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
+               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
+    if (x$detail) # Detailed text output.
+    {
+        cat(paste0(x$type, " regression\n"))
+        if (x$missing == "Multiple imputation")
+        {
+            printCoefmat(x$summary$coefficients)
+            cat(caption)
+        }
+        else
+        {
+            print(x$summary, ...)
+            # if (!is.null(x$original$original))
+            #     cat(paste0("Partial-data R-squared ", flipU::FormatAsReal(x$original$original$R2, 4), " (the R-squared and F above are based only on complete cases).\n"))
+            cat(caption)
+            if (x$robust.se)
+                cat("Heteroscedastic-robust standard errors.")
+        }
+
+
+    }
+    else # Pretty table.
+    {
+        add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
+        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ",
+                          x$outcome.label))
+        coefs <- x$summary$coefficients
+        t <- "t" == substr(colnames(coefs)[3], 1, 1)
+        caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
+        dt <- PrettyRegressionTable(coefs,
+                                    t,
+                                    title = title,
+                                    #subtitle = x$call,
+                                    footer = caption)
+        #dt <- createRegressionDataTable(x, p.cutoff = p.cutoff, caption = caption)
+        print(dt)
+    }
+}
+
+
 #' PrettyRegressionTable
 #'
 #' Creates a pretty formattable table.
@@ -139,110 +244,6 @@ PrettyRegressionTable <- function(coefficient.table, t, footer, title = "", subt
     ftw$x$html <- HTML(tbl)
     ftw
 
-}
-
-
-#' @importFrom flipU IsCount
-#' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent
-#' @importFrom stats printCoefmat
-#' @export
-print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
-{
-    weighted <- !is.null(x$weights)
-    # Checking for unusual observations.
-    if (x$type != "Ordered Logit" & x$type != "Multinomial Logit" & x$missing != "Use partial data (pairwise correlations)")
-    {
-        capture.output(unusual <- UnusualObservations(x))
-        if (!is.null(unusual))
-            warning(unusual)
-    }
-    # Testing to see if there is multicollinearity.
-    if (ncol(x$model) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
-    {
-        vifs <- vif(x)
-        if (!is.null(vifs))
-        {
-            max.vif <- max(vifs)
-            if (max.vif >= 4)
-            {
-                pref <- if(x$type == "Linear") "" else "Generalized "
-                nms <- rownames(x$summary$coefficients)[-1]
-                VIFs <- paste0(nms,": ", FormatAsReal(vifs, 2), c(rep("; ", length(nms) - 1), ""), collapse = "")
-                warning(paste0("The ",pref, "Variance Inflation Factor of the coefficients are: ", VIFs,". A value of 4 or more indicates the confidence interval for the coefficient is twice as wide as they would be for uncorrelated predictors. A value of 10 or more indicates high multicollinearity."))
-            }
-        }
-    }
-    #Testing to see if the variance is non-constant.
-    partial <- x$missing == "Use partial data (pairwise correlations)"
-    if (x$type == "Linear" & !partial & !weighted)
-    {
-        bp.test <- ncvTest(x)#BreuschPagan(x$original)
-        if (bp.test$p <= 0.05)
-        {
-            suggest <- if(is.null(x$partial.coefs)) " Or, consider using Robust Standard Errors." else ""
-            warning(paste0("A Breusch Pagan Test for non-constant variance has been failed (p = ",
-                           FormatAsPValue(bp.test$p), "). A plot of the residuals versus the fitted values of the outcome variable may be useful (Insert > Advanced > Regression > Plots > Residuals vs Fitted). A transformation of the outcome or predictor variables may solve this problem.",
-                           suggest, "\n"))
-            outcome.variable <- outcomeVariableFromModel(x)
-        }
-    }
-    outcome.variable <- outcomeVariableFromModel(x)
-    if (length(unique(outcome.variable)) == 2 && x$type == "Linear")
-        warning(paste0("The outcome variable contains only two unique values. A Binary Logit may be
-                       more appropriate."))
-    else
-    {
-        if (x$type == "Linear" & IsCount(outcome.variable))
-            warning(paste0("The outcome variable appears to contain count data (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Quasi-Poisson Regression, Ordered Logit)."))
-    }
-    # Creating a nicely formatted text description of the model.
-    aic <- if(partial) NA else AIC(x)
-    rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
-    caption <- x$sample.description
-    caption <- if (partial)
-                 paste0(caption," R-squared: ", FormatAsReal(x$original$original$R2, 4), "; ")
-            else
-                 paste0(caption," R-squared: ", FormatAsReal(GoodnessOfFit(x)$value, 4),
-                                  "; Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
-                                  if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-                                  if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
-    if (x$detail) # Detailed text output.
-    {
-        cat(paste0(x$type, " regression\n"))
-        if (x$missing == "Multiple imputation")
-        {
-            printCoefmat(x$summary$coefficients)
-            cat(caption)
-        }
-        else
-        {
-            print(x$summary, ...)
-            # if (!is.null(x$original$original))
-            #     cat(paste0("Partial-data R-squared ", flipU::FormatAsReal(x$original$original$R2, 4), " (the R-squared and F above are based only on complete cases).\n"))
-            cat(caption)
-            if (x$robust.se)
-                cat("Heteroscedastic-robust standard errors.")
-        }
-
-
-    }
-    else # Pretty table.
-    {
-        add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
-        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ",
-                          if(x$show.labels) x$outcome.label else x$outcome.name))
-        coefs <- x$summary$coefficients
-        t <- "t" == substr(colnames(coefs)[3], 1, 1)
-        caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
-        dt <- PrettyRegressionTable(coefs,
-             t,
-             title = title,
-             #subtitle = x$call,
-             footer = caption)
-        #dt <- createRegressionDataTable(x, p.cutoff = p.cutoff, caption = caption)
-        print(dt)
-    }
 }
 
 

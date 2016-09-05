@@ -152,6 +152,7 @@ Regression <- function(formula,
                     detail = detail,
                     show.labels = show.labels))
             final.model <- models[[1]]
+            final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
             coefs <- MultipleImputationCoefficientTable(models)
             if (show.labels)
             {
@@ -286,12 +287,14 @@ Regression <- function(formula,
         result$summary$coefficients <- cbind(coefs, p = ps)
     }
     # Replacing the variables with their labels
+    result$outcome.label <- result$outcome.name <- outcome.name
     if (show.labels)
     {
         if(type == "Multinomial Logit")
             colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, colnames(result$summary$coefficients))
         else
             rownames(result$summary$coefficients) <- Labels(data, rownames(result$summary$coefficients))
+        result$outcome.label <- Labels(outcome.variable)
     }
     result$summary$call <- cl
     result$formula <- input.formula
@@ -303,8 +306,6 @@ Regression <- function(formula,
     result$weights <- unfiltered.weights
     result$detail <- detail
     result$show.labels <- show.labels
-    result$outcome.name <- outcome.name
-    result$outcome.label <- if(show.labels) attr(outcome.variable, "label") else outcome.name
     result$missing <- missing
     result$terms <- result$original$terms
     result$coef <- result$original$coef
