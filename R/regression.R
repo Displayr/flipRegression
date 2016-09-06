@@ -85,8 +85,10 @@ Regression <- function(formula,
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
     subset <- eval(substitute(subset), data, parent.frame())
-    if (!is.null(subset.description))
+    if (!is.null(subset) & !is.null(subset.description))
         attr(subset, "description") <- subset.description
+    if (!is.null(list(...)$weights))
+        weights <- list(...)$weights
     weight.name <- deparse(substitute(weights))
     weights <- eval(substitute(weights), data, parent.frame())
     data <- GetData(input.formula, data, auxiliary.data)
@@ -94,6 +96,7 @@ Regression <- function(formula,
         return(data)
     outcome.name <- OutcomeName(input.formula)
     outcome.variable <- data[[outcome.name]]
+
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
