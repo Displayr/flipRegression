@@ -87,9 +87,7 @@ Regression <- function(formula,
     subset <- eval(substitute(subset), data, parent.frame())
     if (!is.null(subset.description))
         attr(subset, "description") <- subset.description
-    if(!is.null(weights))
-        if (is.null(attr(weights, "name")))
-            attr(weights, "name") <- deparse(substitute(weights))
+    weight.name <- deparse(substitute(weights))
     weights <- eval(substitute(weights), data, parent.frame())
     data <- GetData(input.formula, data, auxiliary.data)
     if (method == "model.frame")
@@ -292,7 +290,11 @@ Regression <- function(formula,
         result$summary$coefficients <- cbind(coefs, p = ps)
     }
     # Replacing the variables with their labels
+
     result$outcome.label <- result$outcome.name <- outcome.name
+    # if(!is.null(weights)) #Somehow changes the length of weight if run earlier in the code.
+    #     if (is.null(attr(weights, "name")))
+    #         attr(weights, "name") <- weight.name
     if (show.labels)
     {
         if(type == "Multinomial Logit")
