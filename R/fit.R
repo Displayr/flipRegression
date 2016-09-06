@@ -71,7 +71,7 @@ GoodnessOfFitInternal <- function(value, description, call) {
 #' @export
 GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
     if (object$missing == "Use partial data (pairwise correlations)")
-        r2 <- object$original$lm.cov$R2
+        r2 <- object$original$original$R2
     else if (object$type == "Linear" & is.null(object$weights))
         r2 <- object$summary$r.square
     else

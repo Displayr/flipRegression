@@ -87,10 +87,10 @@ Regression <- function(formula,
     subset <- eval(substitute(subset), data, parent.frame())
     if (!is.null(subset.description))
         attr(subset, "description") <- subset.description
-    weights <- eval(substitute(weights), data, parent.frame())
     if(!is.null(weights))
         if (is.null(attr(weights, "name")))
             attr(weights, "name") <- deparse(substitute(weights))
+    weights <- eval(substitute(weights), data, parent.frame())
     data <- GetData(input.formula, data, auxiliary.data)
     if (method == "model.frame")
         return(data)

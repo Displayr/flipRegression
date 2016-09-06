@@ -40,8 +40,6 @@ test_that("PrettyRegressionTable",{
     PrettyRegressionTable(z, TRUE, footer = ft,  title = "My awesome regression", subtitle = "Big brown dog")
 
     ## Linear regression
-    data(bank, package = "flipExampleData")
-    library(flipRegression)
     suppressWarnings(Regression(Overall ~  Fees + Interest + Phone + Branch + Online  +ATM, data = bank, detail = FALSE))
 
     # Linear regression with robust se
