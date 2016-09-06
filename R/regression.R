@@ -80,14 +80,17 @@ Regression <- function(formula,
                        ...)
 {
     cl <- match.call()
+    if(!missing(statistical.assumptions))
+        stop("'statistical.assumptions' objects are not yet supported.")
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
     subset <- eval(substitute(subset), data, parent.frame())
-    if(!missing(statistical.assumptions))
-        stop("'statistical.assumptions' objects are not yet supported.")
     if (!is.null(subset.description))
         attr(subset, "description") <- subset.description
     weights <- eval(substitute(weights), data, parent.frame())
+    if(!is.null(weights))
+        if (is.null(attr(weights, "name")))
+            attr(weights, "name") <- deparse(substitute(weights))
     data <- GetData(input.formula, data, auxiliary.data)
     if (method == "model.frame")
         return(data)
