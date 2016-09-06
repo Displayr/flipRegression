@@ -63,6 +63,44 @@ GoodnessOfFitInternal <- function(value, description, call) {
     result
 }
 
+#' @describeIn GoodnessOfFit  Goodness-of-fit for a Regression object. Computed as the \eqn{R^2} statistic.
+#' With factors, the index value of the factor is used. With unordered factors, this will often be
+#' grieviously-downward biased.
+#' @importFrom flipTransformations UnclassIfNecessary
+#' @importFrom stats predict lm summary.lm ts
+#' @export
+GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
+    if (object$missing == "Use partial data (pairwise correlations)")
+        r2 <- object$original$lm.cov$R2
+    else if (object$type == "Linear" & is.null(object$weights))
+        r2 <- object$summary$r.square
+    else
+    {
+        predicted <- UnclassIfNecessary(predict(object)[object$subset])
+        if (sd(predicted) == 0)
+            r2 <- 0
+        else
+        {
+            observed <- UnclassIfNecessary(Observed(object)[object$subset])
+            if (is.null(object$weights))
+                r2 <- cor(observed, predicted, use = "complete.obs") ^ 2
+            else
+            {
+                wgts <- object$weights[object$subset]
+                r2 <- summary(lm(predicted ~ observed, weights = wgts))$r.square
+
+            }
+        }
+    }
+    names(r2) <- "R-squared"
+    description <- list("Variance explained: ",
+                        formatC(100 * r2, digits = digits),
+                        "%\n(R-squared * 100)")
+    GoodnessOfFitInternal(r2, description, object$call)
+}
+
+
+
 #' Extracts fitted and observed.
 #' \code{FittedAndObserved} extracts vectors of fitted (or predicted) and observed values from an object for use in computing
 #' \code{GoodnessOfFit}.

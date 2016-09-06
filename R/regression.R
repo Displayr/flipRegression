@@ -125,11 +125,12 @@ Regression <- function(formula,
         data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
     row.names <- rownames(data)
-    if (robust.se & (missing == "Use partial data (pairwise correlations)" | missing == "Multiple imputation"))
+    partial <- missing == "Use partial data (pairwise correlations)"
+    if (robust.se & (partial | missing == "Multiple imputation"))
         stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
     if (robust.se & (type != "Linear" & type != "Poisson"))
         stop("Robust standard errors may only be computed using Linear or Poisson regressions.")
-    if (missing == "Use partial data (pairwise correlations)")
+    if (partial)
     {
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
@@ -281,6 +282,7 @@ Regression <- function(formula,
         result$n.observations <- n
         result$estimation.data <- .estimation.data
     }
+    class(result) <- "Regression"
     result$summary <- summary(result$original)
     if (type == "Ordered Logit" & missing != "Multiple imputation")
     {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
@@ -304,7 +306,6 @@ Regression <- function(formula,
     # Inserting the coefficients from the partial data.
     result$model <- data
     result$robust.se <- robust.se
-    class(result) <- "Regression"
     result$type = type
     result$weights <- unfiltered.weights
     result$detail <- detail
@@ -312,6 +313,7 @@ Regression <- function(formula,
     result$missing <- missing
     result$terms <- result$original$terms
     result$coef <- result$original$coef
+    result$r.squared <- GoodnessOfFit(result)$value
     if (type == "Ordered Logit")
         result$coef <- c(result$coef, result$original$zeta)
     if (robust.se)
