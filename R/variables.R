@@ -23,31 +23,6 @@ residuals.Regression <- function(object, type = "raw", ...)
     fillInMissingRowNames(rownames(object$model), resids)
 }
 
-#' \code{probabilities} Probabilities.
-#'
-#' @param object A model of some kind.
-#' @importFrom stats na.pass dpois
-#' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
-#' of class membership from a refression model.
-#' @export
-probabilities <- function(object)
-{
-    notValidForPartial(object, "probabilities")
-    if (object$type == "Linear")
-        stop("'probabilities' is not applicable to linear regression models.")
-    if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
-        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "probs")))
-    if (object$type == "Binary Logit")
-        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "response")))[, 2]
-    xs <- 0:max(Observed(object), na.rm = TRUE)
-    if (object$type == "Poisson")
-    {
-        log.lambdas <- suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "link"))
-        lambdas <- exp(log.lambdas)
-        return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
-    }
-    stop(paste0("Probabilities are not computed for models of type '", object$type, "."))
-}
 
 computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 {
@@ -61,6 +36,7 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 
 #' @export
 #' @importFrom stats predict.glm
+#' @importFrom flipData Observed
 predict.Regression <- function(object, newdata = object$model, na.action = na.pass, ...)
 {
     notValidForPartial(object, "predict")
@@ -111,14 +87,44 @@ fitted.values.Regression <- function(object, ...)
 #' \code{observed} Observed values used in fitting a model with an outcome variable.
 #' @param x A 'Regression' model.
 #' @export
-Observed <- function(x) UseMethod("Observed", x)
-
-#' \code{observed} Observed values used in fitting a model with an outcome variable.
-#' @param x A 'Regression' model.
-#' @export
-Observed.default <- function(x)
+Observed.Regression <- function(x)
 {
     x$model[[x$outcome.name]]
 }
+#' \code{probabilities} Probabilities.
+#'
+#' @param object A model of some kind.
+#' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
+#' of class membership from a refression model.
+#' @export
+probabilities <- function(object)
+{
+    Probabilities.regression(object)
+}
 
 
+#' \code{probabilities} Probabilities.
+#'
+#' @param object A model of some kind.
+#' @importFrom stats na.pass dpois
+#' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
+#' of class membership from a refression model.
+#' @export
+Probabilities.Regression <- function(object)
+{
+    notValidForPartial(object, "probabilities")
+    if (object$type == "Linear")
+        stop("'probabilities' is not applicable to linear regression models.")
+    if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
+        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "probs")))
+    if (object$type == "Binary Logit")
+        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "response")))[, 2]
+    xs <- 0:max(Observed(object), na.rm = TRUE)
+    if (object$type == "Poisson")
+    {
+        log.lambdas <- suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "link"))
+        lambdas <- exp(log.lambdas)
+        return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
+    }
+    stop(paste0("Probabilities are not computed for models of type '", object$type, "."))
+}
