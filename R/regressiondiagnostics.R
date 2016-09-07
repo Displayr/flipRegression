@@ -365,17 +365,18 @@ ConfusionMatrixFromVariables <- function(observed, predicted, subset = NULL, wei
   if (is.null(weights))
   {
     if (is.null(subset))
-      return(xtabs(~ observed + predicted))
+      cm <- (xtabs(~ observed + predicted))
     else
-      return(xtabs(~ observed + predicted, subset = subset))
+      cm <- (xtabs(~ observed + predicted, subset = subset))
   }
   else
   {
     if (is.null(subset))
-      return(xtabs(weights ~ observed + predicted))
+      cm <- (xtabs(weights ~ observed + predicted))
     else
-      return(xtabs(weights ~ observed + predicted, subset = subset))
+      cm <- (xtabs(weights ~ observed + predicted, subset = subset))
   }
+  return(removeIrrelevantCategoryFromConfusionMatrix(cm))
 }
 
 
@@ -410,7 +411,12 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
   ConfusionMatrixFromVariables(observed, predicted, subset, weights)
 }
 
-
+removeIrrelevantCategoryFromConfusionMatrix <- function(cm)
+{
+    rnames <- rownames(cm)
+    cnames <- colnames(cm)
+    cm[rnames %in% cnames, cnames %in% rnames]
+}
 
 
 #' \code{ConfusionMatrix}
@@ -427,6 +433,7 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
 #' value.
 #' @importFrom stats predict
 #' @importFrom methods is
+#' @importFrom flipData Observed
 #' @export
 ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
 {
@@ -459,9 +466,6 @@ Accuracy <- function(obj, subset = NULL, weights = NULL)
 {
   cm <- ConfusionMatrix(obj, subset, weights)
   n <- sum(cm)
-  rnames <- rownames(cm)
-  cnames <- colnames(cm)
-  cm <- cm[rnames %in% cnames, cnames %in% rnames]
   correct <- sum(diag(cm))
   correct / n
 }

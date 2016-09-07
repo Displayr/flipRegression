@@ -10,6 +10,11 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
+
+
+z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = TRUE,  weights = NULL, type = "Ordered Logit", detail = FALSE)
+Accuracy(z)
+
 test_that(paste("Grand mean"),
 {
     type  = "Linear"
