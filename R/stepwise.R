@@ -6,7 +6,7 @@
 #' @param always.include a vector of names of variables to always include in the model.
 #' @param steps the maximum number of steps to be considered.
 #' @importFrom MASS stepAIC
-#' @importFrom flipU OutcomeName
+#' @importFrom flipU OutcomeName AllVariablesNames
 #' @export
 Stepwise <- function(object, output = "Final", direction = "Backward", always.include = NULL, steps = 1000)
 {
@@ -51,7 +51,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     # Copy attributes from model data so that labels are included
     d <- object$estimation.data
     for (nms in names(d))
-        attributes(d[[nms]]) <- attributes(object$model[[nms]])
+        attr(d[[nms]], "label") <- attr(object$model[[nms]], "label")
 
     params <- c(list(formula = reg.formula, data = d,
                      weights = object$weights[object$subset], type = object$type,
