@@ -354,14 +354,6 @@ ConfusionMatrixFromVariables <- function(observed, predicted, subset = NULL, wei
 {
   if(IsCount(observed))
     predicted <- floor(predicted)
-  #     observed <- factor(observed)
-  # if(!is.factor(observed))
-  #     predicted <- factor(predicted)
-  # levels.observed <- levels(observed)
-  # n <- length(levels)
-  # # Ensuring that the observed and predicted values line up)
-  # predicted <- factor(match(predicted, levels.observed))
-  # levels(predicted) <- levels.observed
   if (is.null(weights))
   {
     if (is.null(subset))
@@ -376,7 +368,7 @@ ConfusionMatrixFromVariables <- function(observed, predicted, subset = NULL, wei
     else
       cm <- (xtabs(weights ~ observed + predicted, subset = subset))
   }
-  return(removeIrrelevantCategoryFromConfusionMatrix(cm))
+  return(makeConfusionMatrixSymmetrical(cm))
 }
 
 
@@ -411,11 +403,13 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
   ConfusionMatrixFromVariables(observed, predicted, subset, weights)
 }
 
-removeIrrelevantCategoryFromConfusionMatrix <- function(cm)
+makeConfusionMatrixSymmetrical <- function(cm)
 {
-    rnames <- rownames(cm)
-    cnames <- colnames(cm)
-    cm[rnames %in% cnames, cnames %in% rnames]
+    all.names <- row.names <- rownames(cm) #As the rows are the observed values
+    k <- length(all.names)
+    new.cm <- matrix(0, nrow = k, ncol = k, dimnames = list(Observed = all.names, predicted = all.names))
+    new.cm[, match(colnames(cm), row.names)] <- cm
+    new.cm
 }
 
 

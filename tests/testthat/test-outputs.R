@@ -13,6 +13,8 @@ bank$fBranch <- factor(bank$Branch)
 attr(bank$fBranch, "label") <- "Branch as a factor"
 attr(bank$Overall, "label") <- "Overall satisfaction"
 
+
+
 test_that("Labels are extracted from variables containinging $",
           {
               library(flipRegression)
@@ -107,9 +109,9 @@ test_that("Variable names to labels",
     expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
 
     # Small binary logit
-    data(colas, package = "flipExampleData")
-    attr(colas$Q2, "label") <- "Gender"
-    attr(colas$Q3, "label") <- "Age of person"
+    data(cola, package = "flipExampleData")
+    attr(cola$Q2, "label") <- "Gender"
+    attr(cola$Q3, "label") <- "Age of person"
     z <- Regression(Q3 ~ Q2, data = colas, type = "Binary Logit", detail = FALSE, show.labels = TRUE)
     expect_equal(rownames(z$summary$coefficients)[2], "Gender: Female")
 

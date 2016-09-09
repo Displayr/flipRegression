@@ -32,7 +32,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
     #Testing to see if the variance is non-constant.
     partial <- x$missing == "Use partial data (pairwise correlations)"
-    if (x$type == "Linear" & !partial & !weighted)
+    if (x$type == "Linear" & !partial & !weighted & !x$robust.se)
     {
         bp.test <- ncvTest(x)#BreuschPagan(x$original)
         if (bp.test$p <= 0.05)

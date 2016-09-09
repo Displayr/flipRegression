@@ -301,9 +301,15 @@ Regression <- function(formula,
     if (show.labels)
     {
         if(type == "Multinomial Logit")
-            colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, colnames(result$summary$coefficients))
+        {
+            nms <- colnames(result$summary$coefficients)
+            colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, nms)
+        }
         else
-            rownames(result$summary$coefficients) <- Labels(data, rownames(result$summary$coefficients))
+        {
+            nms <- rownames(result$summary$coefficients)
+            rownames(result$summary$coefficients) <- Labels(data, nms)
+        }
         result$outcome.label <- Labels(outcome.variable)
     }
     result$summary$call <- cl

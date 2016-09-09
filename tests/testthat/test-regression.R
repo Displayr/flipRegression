@@ -5,9 +5,17 @@ sb <- bank$ID > 100
 attr(sb, "label") <- "ID greater than 100"
 wgt <- bank$ID
 attr(wgt, "label") <- "ID"
-    bank$dep <- (unclass(bank$Overall) - 1) / 6
+bank$dep <- (unclass(bank$Overall) - 1) / 6
 
-Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, detail = FALSE, robust.se = TRUE)
+test_that("Heteroskedasticity",
+          {
+    y  <- 1:100
+    x <- rnorm(100, y, y)
+    # Show warning
+    Regression(y ~ x, robust.se = FALSE)
+    # No warning
+    Regression(y ~ x, robust.se = TRUE)
+})
 
 test_that("Counts are required for count models",{
     expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "Poisson"), throws_error())

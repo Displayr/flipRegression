@@ -254,6 +254,6 @@ test_that("VIF",
         expect_that(capture.output(vif(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = bank$ID > 100, weights = bank$ID))), (throws_error()))
  })
 
-data(colas, package = "flipExampleData")
+data(cola, package = "flipExampleData")
 Regression(Q2 ~ Q5_5_2 + Q5_5_1 + Q5_5_3 + Q5_5_4 + Q5_5_5 + Q5_5_6 + Q5_5_7 + Q5_7_3 + Q5_7_4 + Q5_13_2 + Q5_13_3 + Q5_13_5 + Q5_13_4 + Q5_13_6, type = "Multinomial Logit", data = colas)
 
