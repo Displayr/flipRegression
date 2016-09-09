@@ -51,7 +51,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     else
     {
         if (x$type == "Linear" & IsCount(outcome.variable))
-            warning(paste0("The outcome variable appears to contain count data (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Quasi-Poisson Regression, Ordered Logit)."))
+            warning(paste0("The outcome variable appears to contain categories (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Quasi-Poisson Regression, Ordered Logit, Multinomial Logit)."))
     }
     # Creating a nicely formatted text description of the model.
     aic <- if(partial) NA else AIC(x)
