@@ -1,4 +1,10 @@
 context("Regression")
+
+data(colas, package = "flipExampleData")
+colas$Sentiment <- c(2,0,1,0,2,0,1,0,0,0,2,0,0,0,4,3,0,0,0,0,0,3,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,-1,0,3,0,2,0,-1,0,0,1,0,1,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,2,0,0,4,1,-1,0,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,2,2,-1,0,1,0,0,1,0,0,0,3,0,0,0,1,0,0,0,0,0,1,0,0,0,0,-2,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,2,2,0,2,0,2,0,0,0,0,0,0,1,0,0,2,1,0,1,0,-1,0,0,0,2,-1,0,0,1,-1,0,1,0,1,0,1,0,-1,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,2,0,-1,0,1,0,0,2,0,-1,1,0,3,0,0,0,0,0,0,-1,1,0,0,-1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,2,-1,0,0,2,0,0,0,0,0,3,0,1,0,0,-1,2,0,0,0,0,2,0,0,0,0,1,0,-1,2,0,1,0,1,0,0,0,-1,-2,0,0,0,0,-1,1,0,0,-1,0,0,0,2,0,0,0,0,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,0,-1,0,0,1,0,0,0,0,0,0,-1,0,0,2,0,1,0,0,1)
+z <- Regression(Sentiment ~ q3 + d3, data = colas, detail = FALSE)
+ConfusionMatrix(z)
+
 data(bank, package = "flipExampleData")
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
 sb <- bank$ID > 100
@@ -7,15 +13,8 @@ wgt <- bank$ID
 attr(wgt, "label") <- "ID"
 bank$dep <- (unclass(bank$Overall) - 1) / 6
 
-test_that("Heteroskedasticity",
-          {
-    y  <- 1:100
-    x <- rnorm(100, y, y)
-    # Show warning
-    Regression(y ~ x, robust.se = FALSE)
-    # No warning
-    Regression(y ~ x, robust.se = TRUE)
-})
+Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type = "Linear")
+
 
 test_that("Counts are required for count models",{
     expect_that(Regression(dep ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type= "Poisson"), throws_error())

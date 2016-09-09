@@ -112,7 +112,7 @@ test_that("Variable names to labels",
     data(cola, package = "flipExampleData")
     attr(cola$Q2, "label") <- "Gender"
     attr(cola$Q3, "label") <- "Age of person"
-    z <- Regression(Q3 ~ Q2, data = colas, type = "Binary Logit", detail = FALSE, show.labels = TRUE)
+    z <- Regression(Q3 ~ Q2, data = cola, type = "Binary Logit", detail = FALSE, show.labels = TRUE)
     expect_equal(rownames(z$summary$coefficients)[2], "Gender: Female")
 
     # Multiple imputation
