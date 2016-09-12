@@ -1,4 +1,4 @@
-context("Pretty regression tables")
+context("Outputs")
 data(bank, package = "flipExampleData")
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
 sb <- bank$ID > 100
@@ -61,21 +61,21 @@ test_that("PrettyRegressionTable",{
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
         test_that(paste("allEffects :", type),
           {
-              zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+              zw = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
               expect_error(plot(effects::allEffects(zw)), NA)
-              z = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb)
+              z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb))
               expect_error(plot(effects::allEffects(z)), NA)
           })
 
-zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+zw = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
 
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
         test_that(paste("allEffects :", type),
           {
-              zw = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt)
+              zw = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
               expect_error(plot(effects::allEffects(zw)), NA)
-              z = Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb)
+              z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb))
               expect_error(plot(effects::allEffects(z)), NA)
           })
 
@@ -84,27 +84,27 @@ test_that("Variable names to labels",
 {
 
     # Variable names
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = FALSE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = FALSE))
     expect_equal(rownames(z$summary$coefficients)[5], "fBranch2")
     expect_equal(rownames(z$summary$coefficients)[2], "Fees")
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Binary Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = FALSE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Binary Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = FALSE))
     expect_equal(rownames(z$summary$coefficients)[5], "fBranch2")
     expect_equal(rownames(z$summary$coefficients)[2], "Fees")
 
     # Variable labels
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Binary Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Binary Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Multinomial Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Multinomial Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(colnames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(colnames(z$summary$coefficients)[5], "Branch as a factor: 2")
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Ordered Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Ordered Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(rownames(z$summary$coefficients)[1], "Fees paid")
     expect_equal(rownames(z$summary$coefficients)[4], "Branch as a factor: 2")
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Poisson", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE)
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Poisson", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
 
@@ -112,14 +112,13 @@ test_that("Variable names to labels",
     data(cola, package = "flipExampleData")
     attr(cola$Q2, "label") <- "Gender"
     attr(cola$Q3, "label") <- "Age of person"
-    z <- Regression(Q3 ~ Q2, data = cola, type = "Binary Logit", detail = FALSE, show.labels = TRUE)
+    z <- suppressWarnings(Regression(Q3 ~ Q2, data = cola, type = "Binary Logit", detail = FALSE, show.labels = TRUE))
     expect_equal(rownames(z$summary$coefficients)[2], "Gender: Female")
 
     # Multiple imputation
-    z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE, missing = "Multiple imputation")
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE, missing = "Multiple imputation"))
     expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
-    Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Multinomial Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE, missing = "Multiple imputation")
 })
 
 
