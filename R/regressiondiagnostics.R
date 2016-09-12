@@ -391,9 +391,9 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
     observed <- as.numeric(observed)
   if (is.factor(predicted))
     predicted <- as.numeric(predicted)
-  unique.observed <- unique(observed)
-  unique.observed <- unique.observed[!is.na(unique.observed)]
   predicted.na <- is.na(predicted)
+  unique.observed <- unique(observed[!predicted.na])
+  unique.observed <- unique.observed[!is.na(unique.observed)]
   if(any(predicted.na))
     predicted[predicted.na] <- -Inf
   predicted <- sapply(predicted, function(x) unique.observed[which.min(abs(unique.observed - x))])
@@ -405,9 +405,10 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
 
 makeConfusionMatrixSymmetrical <- function(cm)
 {
+
     all.names <- row.names <- rownames(cm) #As the rows are the observed values
     k <- length(all.names)
-    new.cm <- matrix(0, nrow = k, ncol = k, dimnames = list(Observed = all.names, predicted = all.names))
+    new.cm <- matrix(0, nrow = k, ncol = k, dimnames = list(Observed = all.names, Predicted = all.names))
     new.cm[, match(colnames(cm), row.names)] <- cm
     new.cm
 }

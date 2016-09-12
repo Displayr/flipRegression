@@ -8,40 +8,40 @@ linear.model <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online +
 
 for (type in c("Linear", "Poisson", "Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Stepwise: ", type), {
-        z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
-                        data = bank, type = type)
-        expect_error(Stepwise(z), NA)
+        z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
+                        data = bank, type = type))
+        expect_error(suppressWarnings(Stepwise(z)), NA)
     })
 
 test_that(paste("Stepwise: ", "Quasi-Poisson"), {
-    z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
-                    data = bank, type = "Quasi-Poisson")
-    expect_that(Stepwise(z), throws_error())
+    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
+                    data = bank, type = "Quasi-Poisson"))
+    expect_that(suppressWarnings(Stepwise(z)), throws_error())
 })
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Stepwise weighted: ", type), {
-        z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
-                        data = bank, type = type, weights = wgt)
-        expect_error(Stepwise(z), NA)
+        z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
+                        data = bank, type = type, weights = wgt))
+        expect_error(suppressWarnings(Stepwise(z)), NA)
     })
 
 test_that("Stepwise: detailed", {
-    expect_error(Stepwise(linear.model, output = "Detailed"), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model, output = "Detailed")), NA)
 })
 
 test_that("Stepwise: all", {
-    expect_error(Stepwise(linear.model, output = "All"), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model, output = "All")), NA)
 })
 
 test_that("Stepwise: forward", {
-    expect_error(Stepwise(linear.model, direction = "Forward"), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model, direction = "Forward")), NA)
 })
 
 test_that("Stepwise: always include fees and interest", {
-    expect_error(Stepwise(linear.model, direction = "Forward", always.include = c("Fees", "Interest")), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model, direction = "Forward", always.include = c("Fees", "Interest"))), NA)
 })
 
 test_that("Stepwise: 2 steps", {
-    expect_error(Stepwise(linear.model, direction = "Forward", steps = 2), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model, direction = "Forward", steps = 2)), NA)
 })

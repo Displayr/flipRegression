@@ -16,9 +16,9 @@ MultipleImputationCoefficientTable <- function(models, large.sample.df = FALSE)
     }
     coefs <- sapply(models, .coef)
     vars <- sapply(models, FUN = function(x) diag(vcov(x)))
-    coef.mean <- apply(coefs, 1, mean)
+    coef.mean <- apply(coefs, 1, mean, na.rm = FALSE)
     B <- apply(coefs, 1, var)
-    W <- apply(vars, 1, FUN = mean)
+    W <- apply(vars, 1, FUN = mean, na.rm = FALSE)
     T <- W + (1 + 1 / m) * B
     ses <- sqrt(T)
     df.c <- df.residual(models[[1]])
