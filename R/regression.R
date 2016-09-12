@@ -323,7 +323,7 @@ Regression <- function(formula,
     result$show.labels <- show.labels
     result$missing <- missing
     result$terms <- result$original$terms
-    result$coef <- result$original$coef
+    result$coef <- coef(result$original)
     result$r.squared <- GoodnessOfFit(result)$value
     if (type == "Ordered Logit")
         result$coef <- c(result$coef, result$original$zeta)
