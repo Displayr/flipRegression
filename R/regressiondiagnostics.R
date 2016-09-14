@@ -406,10 +406,17 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
 makeConfusionMatrixSymmetrical <- function(cm)
 {
 
-    all.names <- row.names <- rownames(cm) #As the rows are the observed values
+    row.names <- rownames(cm)
+    col.names <- colnames(cm)
+    all.names <- unique(c(row.names, col.names)) #As the rows are the observed values
+    # Sorting if numeric
+    re.numericed <- suppressWarnings(as.character(as.numeric(as.character(all.names))))
+    if (!any(is.na(re.numericed)))
+        if (all(re.numericed == all.names))
+            all.names <- as.character(sort(as.numeric(all.names)))
     k <- length(all.names)
     new.cm <- matrix(0, nrow = k, ncol = k, dimnames = list(Observed = all.names, Predicted = all.names))
-    new.cm[, match(colnames(cm), row.names)] <- cm
+    new.cm[match(row.names, all.names), match(col.names, all.names)] <- cm
     new.cm
 }
 
