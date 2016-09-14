@@ -18,9 +18,6 @@ GrandMean <- function(model)
 }
 
 
-
-
-
 numberParameters <- function(x)
 {
   if("Regression" %in% class(x))
