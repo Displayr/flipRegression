@@ -9,11 +9,6 @@ bank$dep <- (unclass(bank$Overall) - 1) / 6
 attr(bank$dep, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
-#
-#
-# z = LinearRegressionFromCorrelations(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank)
-# z = LinearRegressionFromCorrelations(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, weights = wgt, data = bank, subset = sb)
-# summary(z)
 
 missing <- "Use partial data (pairwise correlations)"
 test_that("Use partial data (pairwise correlations)",
