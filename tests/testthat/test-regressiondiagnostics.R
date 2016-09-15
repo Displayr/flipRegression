@@ -10,10 +10,6 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
-#
-#
-# z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = TRUE,  weights = NULL, type = "Ordered Logit", detail = FALSE)
-# Accuracy(z)
 
 test_that(paste("Grand mean"),
 {
@@ -25,24 +21,6 @@ test_that(paste("Grand mean"),
     w <- wgt[subset]
     mn <- sum(y * w) / sum(w)
     expect_equal(mn, GrandMean(z))
-})
-
-
-test_that(paste("Confusion matrix for linear with non-integer dependent variables"),
-{
-    type  = "Linear"
-    bank$overalldiv3 = bank$Overall / 3
-    z = suppressWarnings(Regression(overalldiv3 ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
-    expect_error(ConfusionMatrix(z), NA)
-
-})
-
-
-for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
-   test_that(paste("Confusion matrix :", type),
-    {
-        z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
-        expect_error(ConfusionMatrix(z), NA)
 })
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
@@ -164,6 +142,7 @@ for (type in c("Ordered Logit",  "Multinomial Logit"))
         z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, detail = FALSE, data = bank, type = type))
         expect_that(cooks.distance(z), throws_error())
     })
+
 missing = "Multiple imputation"
 type = "Ordered Logit"
 for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
