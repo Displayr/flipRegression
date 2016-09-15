@@ -1,7 +1,16 @@
 context("warnings")
 
 library(flipU)
-library(flipRegression)
+
+test_that("Predictor is outcome",
+          {
+              y  <- 1:100 + .001
+              x <- rnorm(100, y, y)
+
+              ExpectWarning(Regression(y ~ y, robust.se = FALSE), "Outcome' variable has been s")
+              ExpectNoWarning(Regression(y ~ x, robust.se = TRUE), "Outcome' variable has been s")
+
+          })
 test_that("Heteroskedasticity",
           {
               y  <- 1:100 + .001
