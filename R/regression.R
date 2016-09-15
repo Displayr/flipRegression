@@ -340,7 +340,8 @@ Regression <- function(formula,
 #'     object$coef
 #' }
 
-
+#' @param object A Regression object
+#' @param The regression ethod.
 notValidForPartial <- function(object, method)
 {
     ms <- "Use partial data (pairwise correlations)"
