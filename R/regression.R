@@ -96,7 +96,8 @@ Regression <- function(formula,
         return(data)
     outcome.name <- OutcomeName(input.formula)
     outcome.variable <- data[[outcome.name]]
-
+    if(sum(outcome.name == names(data)) > 1)
+        stop("The 'Outcome' variable has been selected a 'Predictor'. It must be one or the other, but may not be both.")
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
