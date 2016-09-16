@@ -10,6 +10,11 @@ coef.Regression <- function(object, ...)
 \usage{
 notValidForPartial(object, method)
 }
+\arguments{
+\item{object}{A Regression object}
+
+\item{The}{regression ethod.}
+}
 \description{
 #' @export
 coef.Regression <- function(object, ...)
