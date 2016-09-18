@@ -25,8 +25,6 @@ stopNotCount <- function() {stop("This analysis assumes that your Outcome variab
 WarningFactorToNumeric <- function() {warning("Outcome variable is a factor; it has been made numeric.
                                               Consider using another type of regression (e.g., Ordered Logit or Binary Logit).")}
 
-WarningMakingNumericBinary <- function() {warning("Outcome variable is numeric and contains more than two unique
-                                                  values. It has been xxxis a factor; it has been made numeric.")}
 
 
 warningNotOrdered <- function() {warning("Outcome variable is a not an Ordered Factor; it has been converted into an Ordered Factor.")}
