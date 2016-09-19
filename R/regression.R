@@ -32,7 +32,7 @@
 #'  the quality of the imputation, it will dramatically slow down the time to estimate.
 #'  Factors and Character variables with a large number of categories should not be included,
 #'  as they will both slow down the data and are unlikely to be useful
-#' @param show.labels Shows the variable labels, as opposed to the labels, in the outputs, where a
+#' @param show.labels Shows the variable labels, as opposed to the names, in the outputs, where a
 #' variables label is an attribute (e.g., attr(foo, "label")).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
