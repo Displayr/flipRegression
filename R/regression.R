@@ -20,7 +20,8 @@
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
 #' @param robust.se Computes standard errors that are robust to violations of
 #'   the assumption of constant variance, using the HC1 (degrees of freedom)
-#'   modification of White's (1980) estimator (Long and Ervin, 2000).
+#'   modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
+#'   if weights are applied (as weights already employ a sandwich estimator).
 #' @param detail More detailed outputs.
 #' @param method The method to be used; for fitting. This will only do something if
 #' method = "model.frame", which returns the model frame.
@@ -214,13 +215,6 @@ Regression <- function(formula,
                 original <- glm.nb(.formula, .estimation.data)
             else
                 stop("Unknown regression 'type'.")
-
-            if (robust.se)
-            {
-                original$robust.coefficients <- coeftest(original, vcov. = hccm(original, type = "hc1"))
-                colnames(original$robust.coefficients)[2] <- "Robust SE"
-                class(original$robust.coefficients) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
-            }
         }
         else
         {
@@ -286,7 +280,14 @@ Regression <- function(formula,
     }
     class(result) <- "Regression"
     result$summary <- summary(result$original)
-    if (type == "Ordered Logit" & missing != "Multiple imputation")
+    if (robust.se & is.null(weights))
+    {
+        robust.coef <-  coeftest(original, vcov. = hccm(result$original, type = "hc1"))
+        colnames(robust.coef)[2] <- "Robust SE"
+        class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
+        result$summary$coefficients <- robust.coef
+    }
+    else if (type == "Ordered Logit" & missing != "Multiple imputation")
     {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
         coefs <-  result$summary$coefficients
         ps <- 2 * pt(-abs(coefs[, 3]), df = result$summary$df.residual)
@@ -294,11 +295,7 @@ Regression <- function(formula,
         result$summary$coefficients <- cbind(coefs, p = ps)
     }
     # Replacing the variables with their labels
-
     result$outcome.label <- result$outcome.name <- outcome.name
-    # if(!is.null(weights)) #Somehow changes the length of weight if run earlier in the code.
-    #     if (is.null(attr(weights, "name")))
-    #         attr(weights, "name") <- weight.name
     if (show.labels)
     {
         if(type == "Multinomial Logit")
@@ -328,8 +325,6 @@ Regression <- function(formula,
     result$r.squared <- GoodnessOfFit(result)$value
     if (type == "Ordered Logit")
         result$coef <- c(result$coef, result$original$zeta)
-    if (robust.se)
-        result$summary$coefficients <- result$original$robust.coefficients
     return(result)
 }
 
