@@ -219,7 +219,7 @@ Regression <- function(formula,
         else
         {
             if (robust.se)
-                warningRobustInappropriate()
+                warning(warningRobustInappropriate())
             if (type == "Linear")
             {
                 .design <- weightedSurveyDesign(.estimation.data, .weights)
@@ -280,12 +280,17 @@ Regression <- function(formula,
     }
     class(result) <- "Regression"
     result$summary <- summary(result$original)
-    if (robust.se & is.null(weights))
+    if (robust.se)
     {
-        robust.coef <-  coeftest(original, vcov. = hccm(result$original, type = "hc1"))
-        colnames(robust.coef)[2] <- "Robust SE"
-        class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
-        result$summary$coefficients <- robust.coef
+        if(is.null(weights))
+        {
+            robust.coef <-  coeftest(original, vcov. = hccm(result$original, type = "hc1"))
+            colnames(robust.coef)[2] <- "Robust SE"
+            class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
+            result$summary$coefficients <- robust.coef
+        }
+        else
+            robust.se = FALSE
     }
     else if (type == "Ordered Logit" & missing != "Multiple imputation")
     {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
