@@ -40,8 +40,7 @@
 #' @details "Imputation (replace missing values with estimates)". All selected
 #'   outcome and predictor variables are included in the imputation, along with
 #'   all \code{auxiliary.data}, excluding cases that are excluded via subset or
-#'    have invalid weights, but including
-#'   cases with missing values of the outcome variable.
+#'    have invalid weights, but including cases with missing values of the outcome variable.
 #'   Then, cases with missing values in the outcome variable are excluded from
 #'   the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 #' @references von Hippel, Paul T. 2007. "Regression With Missing Y's: An
