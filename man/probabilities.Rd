@@ -2,7 +2,7 @@
 % Please edit documentation in R/variables.R
 \name{probabilities}
 \alias{probabilities}
-\title{\code{probabilities} Probabilities.}
+\title{\code{probabilities}}
 \usage{
 probabilities(object)
 }
@@ -10,10 +10,10 @@ probabilities(object)
 \item{object}{A model of some kind.}
 }
 \description{
-\code{probabilities} Probabilities.
+\code{probabilities}
 }
 \details{
 Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
-of class membership from a refression model.
+of class membership from a refression model. This is included for backwards compatibilty.
 }
 

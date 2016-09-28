@@ -76,12 +76,12 @@ GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits")
         r2 <- object$summary$r.square
     else
     {
-        predicted <- UnclassIfNecessary(predict(object)[object$subset])
+        predicted <- UnclassIfNecessary(predict(object)[object$subset], FALSE)
         if (sd(predicted) == 0)
             r2 <- 0
         else
         {
-            observed <- UnclassIfNecessary(Observed(object)[object$subset])
+            observed <- UnclassIfNecessary(Observed(object)[object$subset], FALSE)
             if (is.null(object$weights))
                 r2 <- cor(observed, predicted, use = "complete.obs") ^ 2
             else

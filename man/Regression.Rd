@@ -37,7 +37,8 @@ name of a variable in \code{data}. It may not be an expression.}
 
 \item{robust.se}{Computes standard errors that are robust to violations of
 the assumption of constant variance, using the HC1 (degrees of freedom)
-modification of White's (1980) estimator (Long and Ervin, 2000).}
+modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
+if weights are applied (as weights already employ a sandwich estimator).}
 
 \item{method}{The method to be used; for fitting. This will only do something if
 method = "model.frame", which returns the model frame.}
@@ -56,7 +57,7 @@ the quality of the imputation, it will dramatically slow down the time to estima
 Factors and Character variables with a large number of categories should not be included,
 as they will both slow down the data and are unlikely to be useful}
 
-\item{show.labels}{Shows the variable labels, as opposed to the labels, in the outputs, where a
+\item{show.labels}{Shows the variable labels, as opposed to the names, in the outputs, where a
 variables label is an attribute (e.g., attr(foo, "label")).}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
@@ -69,8 +70,7 @@ data is weighted,  \code{\link[survey]{svyglm}}.}
 "Imputation (replace missing values with estimates)". All selected
   outcome and predictor variables are included in the imputation, along with
   all \code{auxiliary.data}, excluding cases that are excluded via subset or
-   have invalid weights, but including
-  cases with missing values of the outcome variable.
+   have invalid weights, but including cases with missing values of the outcome variable.
   Then, cases with missing values in the outcome variable are excluded from
   the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 }

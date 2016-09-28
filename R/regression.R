@@ -333,14 +333,11 @@ Regression <- function(formula,
 }
 
 
-#' #' @export
-#' coef.Regression <- function(object, ...)
-#' {
-#'     object$coef
-#' }
 
+#' notValidForPartial
+#'
 #' @param object A Regression object
-#' @param The regression ethod.
+#' @param method The regression method.
 notValidForPartial <- function(object, method)
 {
     ms <- "Use partial data (pairwise correlations)"
@@ -362,6 +359,9 @@ coef.Regression <- function(object, ...)
     coef(object$original, ...)
 }
 
+#' weightedSurveyDesign
+#' @param data The data frame.
+#' @param Weights Weights The sampling weights.
 #' @importFrom survey svydesign
 #' @export
 weightedSurveyDesign <- function(data, weights)

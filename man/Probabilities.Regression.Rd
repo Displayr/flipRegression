@@ -2,15 +2,15 @@
 % Please edit documentation in R/variables.R
 \name{Probabilities.Regression}
 \alias{Probabilities.Regression}
-\title{\code{probabilities} Probabilities.}
+\title{\code{Probabilities.Regression}}
 \usage{
-Probabilities.Regression(object)
+\method{Probabilities}{Regression}(object)
 }
 \arguments{
 \item{object}{A model of some kind.}
 }
 \description{
-\code{probabilities} Probabilities.
+\code{Probabilities.Regression}
 }
 \details{
 Computes probabilities that are applicable from the relevant model. For exmaple, probabilities

@@ -15,7 +15,7 @@ residuals.Regression <- function(object, type = "raw", ...)
     {
         observed <- Observed(object)
         levs <- levels(observed)
-        observed <- UnclassIfNecessary(observed)
+        observed <- UnclassIfNecessary(observed, FALSE)
         predicted <- match(predict(object), levs) # Dealing with situations where the predictions omit a class.
         return(observed - predicted)
     }
@@ -91,22 +91,23 @@ Observed.Regression <- function(x)
 {
     x$model[[x$outcome.name]]
 }
-#' \code{probabilities} Probabilities.
+#' \code{probabilities}
 #'
 #' @param object A model of some kind.
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
-#' of class membership from a refression model.
+#' of class membership from a refression model. This is included for backwards compatibilty.
 #' @export
 probabilities <- function(object)
 {
-    Probabilities.regression(object)
+    Probabilities.Regression(object)
 }
 
 
-#' \code{probabilities} Probabilities.
+#' \code{Probabilities.Regression}
 #'
 #' @param object A model of some kind.
 #' @importFrom stats na.pass dpois
+#' @importFrom flipData Probabilities
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a refression model.
 #' @export
