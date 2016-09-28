@@ -50,8 +50,8 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
 
     # Copy attributes from model data so that labels are included
     d <- object$estimation.data
-    for (nms in names(d))
-        attr(d[[nms]], "label") <- attr(object$model[[nms]], "label")
+    for (nm in names(d))
+        attr(d[[nm]], "label") <- attr(object$model[[nm]], "label")
 
     params <- c(list(formula = reg.formula, data = d,
                      weights = object$weights[object$subset], type = object$type,
@@ -67,7 +67,26 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     selected.model$summary$call[attr(object$call, "name") == "formula"] <- call.formula
     selected.model$sample.description <- object$sample.description
 
-    result <- list(model = selected.model, output = output)
+    # Replace variable names in steps with labels
+    if (object$show.labels)
+    {
+        nms <- names(d)
+        steps <- levels(selected.model$anova$Step)
+        levels(selected.model$anova$Step) <- sapply(steps, function (x) {
+            if (nm %in% nms)
+            {
+                lbl <- attr(d[[nm]], "label")
+                if (!is.null(lbl))
+                    gsub(nm, lbl, x)
+                else
+                    x
+            }
+            else
+                x
+        })
+    }
+
+    result <- list(model = selected.model, output = output, direction = direction)
     class(result) <- "Stepwise"
 
     if (output == "All")
@@ -77,6 +96,5 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
                                                 direction = tolower(direction), steps = steps))
         result$steps.output <- paste(captured, collapse = "\n")
     }
-
     result
 }

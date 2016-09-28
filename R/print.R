@@ -94,12 +94,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
         se.name <- if (x$robust.se) "Robust SE" else "Standard Error"
         #"<span style='font-style:italic;'>t</span>",
+        subtitle <- if (!is.null(x$subtitle)) x$subtitle else ""
 
         dt <- RegressionTable(coefs,
                               title = title,
                               footer = caption,
                               se.name = se.name,
-                              statistic.name = statistic.name)
+                              statistic.name = statistic.name,
+                              subtitle = subtitle)
         print(dt)
     }
 }
@@ -135,6 +137,11 @@ print.Stepwise <- function(x, ...)
     if (x$output == "Final")
     {
         x$model$detail <- x$model$type == "Multinomial Logit"
+        if (x$direction == "Backward")
+        {
+            var.names <- sapply(as.character(x$model$anova$Step[-1]), function(x) substr(x, 3, nchar(x)))
+            x$model$subtitle <- paste("Variables excluded:", paste0(var.names, collapse = ", "))
+        }
         print(x$model)
     }
     else
@@ -146,8 +153,8 @@ print.Stepwise <- function(x, ...)
         cat(paste(heading[2:length(heading)], collapse = "\n"))
         cat("Overview of steps:")
         cat("\n")
-        results.table <- data.frame(AIC = x$mode$anova$AIC)
-        row.names(results.table) <- levels(x$mode$anova$Step)
+        results.table <- data.frame(AIC = x$model$anova$AIC)
+        row.names(results.table) <- as.character(x$model$anova$Step)
         row.names(results.table)[1] <- "Original model"
         print(results.table)
         if (x$output == "All")
