@@ -134,9 +134,9 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
 #' @export
 print.Stepwise <- function(x, ...)
 {
-    if (x$output == "Final")
+    if (x$output == "Final" && x$model$type != "Multinomial Logit")
     {
-        x$model$detail <- x$model$type == "Multinomial Logit"
+        x$model$detail <- FALSE
         if (x$direction == "Backward")
         {
             var.names <- sapply(as.character(x$model$anova$Step[-1]), function(x) substr(x, 3, nchar(x)))
