@@ -2,24 +2,16 @@
 % Please edit documentation in R/regression.R
 \name{notValidForPartial}
 \alias{notValidForPartial}
-\title{#' @export
-coef.Regression <- function(object, ...)
-{
-    object$coef
-}}
+\title{notValidForPartial}
 \usage{
 notValidForPartial(object, method)
 }
 \arguments{
 \item{object}{A Regression object}
 
-\item{The}{regression ethod.}
+\item{method}{The regression method.}
 }
 \description{
-#' @export
-coef.Regression <- function(object, ...)
-{
-    object$coef
-}
+notValidForPartial
 }
 

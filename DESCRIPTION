@@ -28,5 +28,6 @@ Imports:
     xml2
 Suggests:
     testthat,
-    flipExampleData
+    flipExampleData,
+    Rcpp
 RoxygenNote: 5.0.1
