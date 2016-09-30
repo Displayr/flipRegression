@@ -13,9 +13,9 @@ attr(bank$Online, "label") <- "Online banking"
 test_that("Check for NAs in correlation matrix",
           {
               df <- data.frame(y = 1:10, x = c(1:5, NA, NA, NA, NA, NA), z = c(NA, NA, NA, NA, NA, 3, 4, 7, 12, 8), j = 2)
-              expect_error(Regression(y ~ x + z + j, data = df,  missing = "Use partial data (pairwise correlations)"), NA)
-              expect_error(Regression(y ~ x + z, data = df,  missing = "Use partial data (pairwise correlations)"), NA)
-              expect_error(Regression(y ~ j, data = df,  missing = "Use partial data (pairwise correlations)"), NA)
+              expect_error(Regression(y ~ x + z + j, data = df,  missing = "Use partial data (pairwise correlations)"))
+              expect_error(Regression(y ~ x + z, data = df,  missing = "Use partial data (pairwise correlations)"))
+              expect_error(Regression(y ~ j, data = df,  missing = "Use partial data (pairwise correlations)"))
           })
 
 
