@@ -4,7 +4,7 @@
 \alias{Observed.Regression}
 \title{\code{observed} Observed values used in fitting a model with an outcome variable.}
 \usage{
-\method{Observed}{Regression}(x)
+Observed.Regression(x)
 }
 \arguments{
 \item{x}{A 'Regression' model.}

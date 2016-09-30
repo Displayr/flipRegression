@@ -15,7 +15,7 @@
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @importFrom flipStatistics CovarianceAndCorrelationMatrix  StandardDeviation Mean
 #' @importFrom psych setCor
-#' @importFrom flipData BaseDescription
+#' @importFrom flipData BaseDescription CheckForPositiveVariance CheckCorrelationMatrix
 #' @importFrom stats complete.cases
 #' @importFrom flipFormat Labels
 #' @export
@@ -58,21 +58,11 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
         CovarianceAndCorrelationMatrix(y.and.x, weights, TRUE, TRUE)
     else
         cor(y.and.x, use = "pairwise.complete.obs")
-    if (any(no.variation <- apply(y.and.x, 2, sd, na.rm = TRUE) == 0))
-    {
-        vars <- paste(full.variable.names[no.variation], collapse = ", ")
-        stop(paste0("Some variables have no variation: ", vars))
-    }
-    if (any(is.na(cors)))
-    {
-        cors[lower.tri(cors)] <- 0 # Avoiding duplicates.
-        NAs <- is.na(cors)
-        rs <- matrix(full.variable.names, k, k)[NAs]
-        cs <- matrix(full.variable.names, k, k, byrow = TRUE)[NAs]
-        vars <- paste(paste0(rs, ":", cs), collapse = ", ")
-        stop(paste0("Some variables have no overlapping data (i.e., there are some variables in the data where no respondents saw both variables. This makes it impossible to compute correlations: ",
-                    vars))
-    }
+    # Checking data
+    CheckForPositiveVariance(y.and.x)
+    CheckCorrelationMatrix(cors)
+    CheckForLinearDependence(cors)
+    # Doing the computation.
     original <- setCor(1, 2:ncol(cors), data = cors, n.obs = min.pairwise.n, plot = FALSE, z = NULL, ...)
     result$original <- original
     scaled.beta <- as.matrix(original$beta)

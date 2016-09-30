@@ -361,7 +361,7 @@ coef.Regression <- function(object, ...)
 
 #' weightedSurveyDesign
 #' @param data The data frame.
-#' @param Weights Weights The sampling weights.
+#' @param weights Weights The sampling weights.
 #' @importFrom survey svydesign
 #' @export
 weightedSurveyDesign <- function(data, weights)

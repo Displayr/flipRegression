@@ -9,7 +9,7 @@ weightedSurveyDesign(data, weights)
 \arguments{
 \item{data}{The data frame.}
 
-\item{Weights}{Weights The sampling weights.}
+\item{weights}{Weights The sampling weights.}
 }
 \description{
 weightedSurveyDesign
