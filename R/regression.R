@@ -50,7 +50,7 @@
 #'   Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
-#' @importFrom flipData GetData CleanSubset CleanWeights EstimationData DataFormula
+#' @importFrom flipData GetData CleanSubset CleanWeights EstimationData DataFormula WeightedSurveyDesign
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipFormat Labels
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
@@ -221,7 +221,7 @@ Regression <- function(formula,
                 warning(warningRobustInappropriate())
             if (type == "Linear")
             {
-                .design <- weightedSurveyDesign(.estimation.data, .weights)
+                .design <- WeightedSurveyDesign(.estimation.data, .weights)
                 original <- svyglm(.formula, .design)
                 if (all(original$residuals == 0)) # perfect fit
                     original$df <- NA
@@ -253,7 +253,7 @@ Regression <- function(formula,
             }
             else
             {
-                .design <- weightedSurveyDesign(.estimation.data, .weights)
+                .design <- WeightedSurveyDesign(.estimation.data, .weights)
                 original <- switch(type,
                                    "Binary Logit" = svyglm(.formula, .design, family = quasibinomial()),
                                    "Poisson" = svyglm(.formula, .design, family = poisson()),
@@ -359,15 +359,6 @@ coef.Regression <- function(object, ...)
     coef(object$original, ...)
 }
 
-#' weightedSurveyDesign
-#' @param data The data frame.
-#' @param weights Weights The sampling weights.
-#' @importFrom survey svydesign
-#' @export
-weightedSurveyDesign <- function(data, weights)
-{
-    svydesign(ids = ~ 1, weights = weights, data = data)
-}
 
 #' @importFrom stats nobs
 #' @export

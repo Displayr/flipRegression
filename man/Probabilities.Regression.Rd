@@ -4,7 +4,7 @@
 \alias{Probabilities.Regression}
 \title{\code{Probabilities.Regression}}
 \usage{
-Probabilities.Regression(object)
+\method{Probabilities}{Regression}(object)
 }
 \arguments{
 \item{object}{A model of some kind.}

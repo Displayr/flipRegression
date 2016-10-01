@@ -223,7 +223,7 @@ test_that("VIF",
      zBank$dd = zBank$Overall >= 4
      zwgt = wgt[z]
      zRegression <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = zBank, weights = zwgt, type = type))
-     zR <- survey::svyglm(dd ~ Fees + Interest + Phone + Branch + Online + ATM, data = zBank, design = weightedSurveyDesign(zBank, zwgt), family = quasibinomial())
+     zR <- survey::svyglm(dd ~ Fees + Interest + Phone + Branch + Online + ATM, data = zBank, design = flipData::WeightedSurveyDesign(zBank, zwgt), family = quasibinomial())
      expect_equal(vif(zRegression), vif(zR))
      # Checking for no errors
      for (type in c("Poisson","NBD", "Quasi-Poisson"))

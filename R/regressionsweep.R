@@ -15,7 +15,7 @@
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @importFrom flipStatistics CovarianceAndCorrelationMatrix  StandardDeviation Mean
 #' @importFrom psych setCor
-#' @importFrom flipData BaseDescription CheckForPositiveVariance CheckCorrelationMatrix
+#' @importFrom flipData BaseDescription CheckForPositiveVariance CheckCorrelationMatrix CheckForLinearDependence
 #' @importFrom stats complete.cases
 #' @importFrom flipFormat Labels
 #' @export
