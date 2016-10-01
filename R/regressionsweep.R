@@ -96,12 +96,9 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
     else
         description <- paste0("Pairwise correlations have been used to estimate this regression.\n",
                               "Sample sizes for the correlations range from ", n.min, " to ", rng[2], "")
-    subset.description <- attr(subset, "label")
-    if (is.null(subset.description))
-        subset.description <- attr(subset, "description")
     description <- BaseDescription(description,
                                    n.total, attr(subset, "n.subset"),
-                                   n.min, subset.description, NULL, "")
+                                   n.min, Labels(subset), NULL, "")
     if (!is.null(weights))
         description <- paste0(description, " Data have been resampled with probabilities proportional to the weights (",
                               weight.label, ").\n")

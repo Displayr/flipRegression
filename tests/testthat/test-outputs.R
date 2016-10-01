@@ -13,7 +13,6 @@ bank$fBranch <- factor(bank$Branch)
 attr(bank$fBranch, "label") <- "Branch as a factor"
 attr(bank$Overall, "label") <- "Overall satisfaction"
 
-
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
         test_that(paste("allEffects :", type),
           {

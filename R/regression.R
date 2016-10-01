@@ -52,7 +52,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom flipData GetData CleanSubset CleanWeights EstimationData DataFormula WeightedSurveyDesign
 #' @importFrom flipU OutcomeName IsCount
-#' @importFrom flipFormat Labels
+#' @importFrom flipFormat Labels OriginalName
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm
 #' @importFrom MASS polr glm.nb
@@ -83,10 +83,14 @@ Regression <- function(formula,
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
-    subset.description <- if (is.null(substitute(subset))) NULL else deparse(substitute(subset))
+    if (!is.null(subset))
+        subset.description <- deparse(substitute(subset))
     subset <- eval(substitute(subset), data, parent.frame())
-    if (!is.null(subset) & !is.null(subset.description))
-        attr(subset, "description") <- subset.description
+    if (!is.null(subset))
+    {
+        if (is.null(attr(subset, "name")))
+            attr(subset, "name") <- subset.description
+    }
     if (!is.null(list(...)$weights))
         weights <- list(...)$weights
     weight.name <- deparse(substitute(weights))
