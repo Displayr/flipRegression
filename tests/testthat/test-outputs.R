@@ -31,8 +31,9 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
               expect_error(plot(effects::allEffects(z)), NA)
           })
 
-
-
+z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, show.labels = TRUE, detail = FALSE)
+z <- Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, missing = "Multiple imputation", data = bank, show.labels = TRUE, detail = FALSE)
+flipFormat::Labels(z$model)
 
 
 

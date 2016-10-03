@@ -83,11 +83,12 @@ Regression <- function(formula,
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
-    if (!is.null(subset))
-        subset.description <- deparse(substitute(subset))
+    subset.description <- try(OriginalName(subset), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
     subset <- eval(substitute(subset), data, parent.frame())
     if (!is.null(subset))
     {
+        if (is.null(subset.description))
+            subset.description <- OriginalName(subset)
         if (is.null(attr(subset, "name")))
             attr(subset, "name") <- subset.description
     }

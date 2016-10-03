@@ -87,7 +87,7 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
     result$subset <- !is.na(data[outcome.index]) & !is.na(fitted) & (rownames(data) %in% rownames(subset.data))
     # Sample description.
     result$n.observations <- n.total <- nrow(data)
-    weight.label <- if(weighted <- !is.null(weights)) attr(weights, "label") else  ""
+    weight.label <- if(weighted <- !is.null(weights)) Labels(weights) else  ""
     rng <- range(pairwise.n[lower.tri(pairwise.n)], na.rm = TRUE)
     n.min <- rng[1]
     if (n.min == rng[2])

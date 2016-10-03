@@ -22,7 +22,6 @@ test_that(paste("Grand mean"),
     mn <- sum(y * w) / sum(w)
     expect_equal(mn, GrandMean(z))
 })
-z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, weights = wgt))
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("extractAIC :", type),

@@ -15,7 +15,7 @@ test_that(paste("Alternative ways of passing data in"),
       z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type = type))
       attach(bank)
       z1 = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, weights = NULL, type = type))
-      expect_true(all.equal(z$coefficients, z1$coefficients))
+      expect_true(all.equal(z$coef, z1$coef))
       detach(bank)
       # filter and weight a part of the data frame.
       zbank <- cbind(bank, w = wgt, ff = sb)
