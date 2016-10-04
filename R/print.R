@@ -147,7 +147,7 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
 #' @export
 print.Stepwise <- function(x, ...)
 {
-    if (x$output == "Final" && x$model$type != "Multinomial Logit")
+    if (x$output == "Final")
     {
         x$model$detail <- FALSE
         if (x$direction == "Backward")
