@@ -7,6 +7,7 @@
 #' @param steps the maximum number of steps to be considered.
 #' @importFrom MASS stepAIC
 #' @importFrom flipU OutcomeName AllVariablesNames CopyAttributes
+#' @importFrom flipFormat Labels
 #' @export
 Stepwise <- function(object, output = "Final", direction = "Backward", always.include = NULL, steps = 1000)
 {
@@ -75,7 +76,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
         levels(selected.model$anova$Step) <- sapply(steps, function (x) {
             if (nm %in% nms)
             {
-                lbl <- attr(d[[nm]], "label")
+                lbl <- Labels(d[[nm]])
                 if (!is.null(lbl))
                     gsub(nm, lbl, x)
                 else

@@ -1,7 +1,7 @@
 
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable
 #' @importFrom stats printCoefmat
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
@@ -96,13 +96,26 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         #"<span style='font-style:italic;'>t</span>",
         subtitle <- if (!is.null(x$subtitle)) x$subtitle else ""
 
-        dt <- RegressionTable(coefs,
-                              title = title,
-                              footer = caption,
-                              se.name = se.name,
-                              statistic.name = statistic.name,
-                              subtitle = subtitle)
-        print(dt)
+        if (x$type != "Multinomial Logit")
+        {
+            dt <- RegressionTable(coefs,
+                                  title = title,
+                                  footer = caption,
+                                  se.name = se.name,
+                                  statistic.name = statistic.name,
+                                  subtitle = subtitle)
+            print(dt)
+        }
+        else
+        {
+            dt <- MultinomialLogitTable(coefs,
+                                        x$z.statistics,
+                                        x$p.values,
+                                        title = title,
+                                        subtitle = subtitle,
+                                        footer = caption)
+            print(dt)
+        }
     }
 }
 
