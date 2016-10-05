@@ -91,7 +91,6 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         coefs <- x$summary$coefficients
         #statistic.name <- if ("t" == substr(colnames(coefs)[3], 1, 1)) "t" else
         statistic.name <- paste0("<span style='font-style:italic;'>", substr(colnames(coefs)[3], 1, 1) ,"</span>")
-        caption <- paste0(caption, "results highlighted when p <= " , p.cutoff)
         se.name <- if (x$robust.se) "Robust SE" else "Standard Error"
         #"<span style='font-style:italic;'>t</span>",
         subtitle <- if (!is.null(x$subtitle)) x$subtitle else ""
