@@ -59,8 +59,8 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
 }
 
 
-#' @export
 #' @importFrom stats fitted
+#' @export
 fitted.Regression <- function(object, ...)
 {
     notValidForPartial(object, "fitted")
@@ -84,13 +84,29 @@ fitted.values.Regression <- function(object, ...)
     fitted(object, ...)
 }
 
-#' \code{observed} Observed values used in fitting a model with an outcome variable.
+#' \code{Observed.Regression}
+#'
+#' Observed values used in fitting a model with an outcome variable.
 #' @param x A 'Regression' model.
+#' @importFrom flipData Observed
 #' @export
 Observed.Regression <- function(x)
 {
     x$model[[x$outcome.name]]
 }
+
+
+#' \code{Observed.FitRegression}
+#'
+#' Observed values used in fitting a model with an outcome variable.
+#' @param x A 'FitRegression' model.
+#' @importFrom flipData Observed
+#' @export
+Observed.FitRegression <- function(x)
+{
+    x$original$model[, OutcomeName(x$formula)]
+}
+
 #' \code{probabilities}
 #'
 #' @param object A model of some kind.

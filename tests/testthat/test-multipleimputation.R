@@ -17,10 +17,6 @@ cola <- cola[1:150,]
 cola$Q3[1:100] <- NA
 cola$Q3 <- unclass(cola$Q3)
 
-
-Regression(Overall ~ Fees, data = bank, type = "Ordered Logit", missing = "Multiple imputation", detail = FALSE, show.labels = TRUE)
-
-
 test_that("Multiple imputation with auxiliary variables ", {
     # No auxiliary variables, data has an argument
     z1 = Regression(Overall ~ Branch + Interest, data = zbank, missing = "Multiple imputation")$coef[2]

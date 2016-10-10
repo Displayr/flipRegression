@@ -66,8 +66,9 @@ GoodnessOfFitInternal <- function(value, description, call) {
 #' @describeIn GoodnessOfFit  Goodness-of-fit for a Regression object. Computed as the \eqn{R^2} statistic.
 #' With factors, the index value of the factor is used. With unordered factors, this will often be
 #' grieviously-downward biased.
+#' @importFrom flipStatistics Correlation
 #' @importFrom flipTransformations UnclassIfNecessary
-#' @importFrom stats predict lm summary.lm ts
+#' @importFrom stats predict
 #' @export
 GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
     if (object$missing == "Use partial data (pairwise correlations)")
@@ -82,14 +83,8 @@ GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits")
         else
         {
             observed <- UnclassIfNecessary(Observed(object)[object$subset], FALSE)
-            if (is.null(object$weights))
-                r2 <- cor(observed, predicted, use = "complete.obs") ^ 2
-            else
-            {
-                wgts <- object$weights[object$subset]
-                r2 <- summary(lm(predicted ~ observed, weights = wgts))$r.square
-
-            }
+            cor <- Correlation(predicted, observed, object$weights)
+            r2 <- cor * cor
         }
     }
     names(r2) <- "R-squared"

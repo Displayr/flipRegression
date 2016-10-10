@@ -8,7 +8,7 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
   robust.se = FALSE, method = "default", detail = TRUE, m = 10,
   seed = 12321, statistical.assumptions, auxiliary.data = NULL,
-  show.labels = FALSE, ...)
+  show.labels = FALSE, internal = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -59,6 +59,10 @@ as they will both slow down the data and are unlikely to be useful}
 
 \item{show.labels}{Shows the variable labels, as opposed to the names, in the outputs, where a
 variables label is an attribute (e.g., attr(foo, "label")).}
+
+\item{internal}{If \code{TRUE}, skips most of the tidying at the end. Only for use when it is
+desired to call a relatively light version of Regression for other purposes (e.g., in ANOVA).
+This leads to creation of an object of class \code{FitRegression}.)}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}

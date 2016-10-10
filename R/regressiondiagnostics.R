@@ -5,15 +5,24 @@
 #' and the need to transform into numeric variables into account.
 #' #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipStatistics Mean
+#' @importFrom flipData Observed
 #' @importFrom flipTransformations AsNumeric
 #' @export
 GrandMean <- function(model)
 {
-    if (model$type != "Linear")
-        warning("GrandMean function has not been checked for non-Linear models.")
-    subset <- model$subset
-    y <- AsNumeric(Observed(model)[subset])
-    w <- model$weights[subset]
+    if (class(model) == "FitRegression")
+    {
+        y <- Observed.FitRegression(model)
+        w <- model$weights
+    }
+    else
+    {
+        if (model$type != "Linear")
+            warning("GrandMean function has not been checked for non-Linear models.")
+        subset <- model$subset
+        y <- AsNumeric(Observed(model)[subset])
+        w <- model$weights[subset]
+    }
     Mean(y, w)
 }
 
@@ -271,7 +280,8 @@ residualPlots.Regression <- function(model, ...)
 #' @export
 allEffects.Regression <- function(model, ...)
 {
-    assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
+    .estimation.data <-  model$estimation.data
+    assign(".estimation.data",.estimation.data, envir=.GlobalEnv)
     assign(".formula", model$formula, envir=.GlobalEnv)
     assign(".design", model$design, envir=.GlobalEnv)
     attach(.estimation.data)
