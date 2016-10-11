@@ -113,15 +113,7 @@ Regression <- function(formula,
     else if (type == "Ordered Logit")
         data[, outcome.name] <- ordered(outcome.variable)
     else if (type == "Multinomial Logit")
-    {
         data[, outcome.name] <- factor(outcome.variable)
-        if (!detail)
-        {
-            warning("The 'Detailed output' option has not been selected. Only detailed output is available
-                  with Multinomial Logit.")
-            detail = TRUE
-        }
-    }
     else if (IsCount(type) & !IsCount(outcome.variable))
         stopNotCount()
     else if (is.factor(outcome.variable))
@@ -266,6 +258,11 @@ Regression <- function(formula,
     result$r.squared <- GoodnessOfFit(result)$value
     if (type == "Ordered Logit")
         result$coef <- c(result$coef, result$original$zeta)
+    if (type == "Multinomial Logit")
+    {
+        result$z.statistics <- result$summary$coefficients / result$summary$standard.errors
+        result$p.values <- 2 * (1 - pnorm(abs(result$z.statistics)))
+    }
     return(result)
 }
 

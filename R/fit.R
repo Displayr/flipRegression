@@ -83,7 +83,7 @@ GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits")
         else
         {
             observed <- UnclassIfNecessary(Observed(object)[object$subset], FALSE)
-            cor <- Correlation(predicted, observed, object$weights)
+            cor <- Correlation(predicted, observed, object$weights[object$subset])
             r2 <- cor * cor
         }
     }
