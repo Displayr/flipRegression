@@ -74,6 +74,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
         nms <- names(d)
         steps <- levels(selected.model$anova$Step)
         levels(selected.model$anova$Step) <- sapply(steps, function (x) {
+            nm <- substr(x, 3, nchar(x))
             if (nm %in% nms)
             {
                 lbl <- Labels(d[[nm]])
