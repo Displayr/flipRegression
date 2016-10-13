@@ -55,7 +55,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom stats pnorm
 #' @importFrom car hccm
-#' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData
+#' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData CleanBackticks
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary
@@ -227,6 +227,17 @@ Regression <- function(formula,
         ps <- 2 * pt(-abs(coefs[, 3]), df = result$summary$df.residual)
         colnames(coefs)[1] <- "Estimate"
         result$summary$coefficients <- cbind(coefs, p = ps)
+    }
+    # Removing extra backticks introduced by DataFormula, and unescaping original backticks
+    if(type == "Multinomial Logit")
+    {
+        nms <- CleanBackticks(colnames(result$summary$coefficients))
+        colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- nms
+    }
+    else
+    {
+        nms <- CleanBackticks(rownames(result$summary$coefficients))
+        rownames(result$summary$coefficients) <- nms
     }
     # Replacing the variables with their labels
     result$outcome.label <- result$outcome.name <- outcome.name
