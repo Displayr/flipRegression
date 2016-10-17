@@ -58,7 +58,7 @@
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData CleanBackticks
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
-#' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary
+#' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
 #' @export
 Regression <- function(formula,
@@ -112,9 +112,9 @@ Regression <- function(formula,
         outcome.variable <- data[[outcome.name]]
     }
     else if (type == "Ordered Logit")
-        data[, outcome.name] <- ordered(outcome.variable)
+        data[, outcome.name] <- Ordered(outcome.variable)
     else if (type == "Multinomial Logit")
-        data[, outcome.name] <- factor(outcome.variable)
+        data[, outcome.name] <- Factor(outcome.variable)
     else if (IsCount(type) & !IsCount(outcome.variable))
         stopNotCount()
     else if (is.factor(outcome.variable))
