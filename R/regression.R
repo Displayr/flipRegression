@@ -208,7 +208,7 @@ Regression <- function(formula,
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
-    result$summary <- summary(result$original)
+    suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"
     if (robust.se)
     {
         if(is.null(weights))
