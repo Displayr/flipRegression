@@ -45,15 +45,16 @@ numberObservations <- function(x)
 #'
 #' @param model A 'Regression'  model.
 #' @param n.permutations Number of permutations used in computing the p-value.
-#' @details "Computes the Durbin-Watson statistic. A permutation test is used for
+#' @param seed The random nmber seed.
+#' @details Computes the Durbin-Watson statistic. A permutation test is used for
 #' computing the p-value. Tests to a lag of 1 (two-sided).
 #'
 #' Durbin, J., Watson, G. S. (1950). 'Testing for Serial Correlation in Least Squares
 #' Regression, I'. Biometrika 37, (pp. 3 - 4.
 #' @export
-DurbinWatson <- function(model, n.permutations = 1000)
+DurbinWatson <- function(model, n.permutations = 1000, seed = 123)
 {
-  set.seed(123)
+  set.seed(seed)
   residuals <- resid(model)
   if("Regression" %in% class(model))
     residuals <- residuals[model$subset]
