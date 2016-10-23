@@ -1,7 +1,7 @@
 
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix
 #' @importFrom stats printCoefmat
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
@@ -86,8 +86,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     else # Pretty table.
     {
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
-        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ",
-                          x$outcome.label))
+        title <- paste0(x$type, (if(add.regression) " Regression" else ""), ": ", x$outcome.label)
         coefs <- x$summary$coefficients
         #statistic.name <- if ("t" == substr(colnames(coefs)[3], 1, 1)) "t" else
         statistic.name <- paste0("<span style='font-style:italic;'>", substr(colnames(coefs)[3], 1, 1) ,"</span>")
@@ -97,6 +96,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
         if (x$type != "Multinomial Logit")
         {
+            lbls <- colnames(coefs)
+            res <- ExtractCommonPrefix(lbls)
+            if (!is.na(res$common.prefix))
+            {
+                colnames(coefs) <- res$shortened.labels
+                title <- paste0(title, " by ", res$common.prefix)
+            }
             dt <- RegressionTable(coefs,
                                   title = title,
                                   footer = caption,
@@ -107,6 +113,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         else
         {
+            lbls <- rownames(coefs)
+            res <- ExtractCommonPrefix(lbls)
+            if (!is.na(res$common.prefix))
+            {
+                rownames(coefs) <- res$shortened.labels
+                title <- paste0(title, " by ", res$common.prefix)
+            }
             dt <- MultinomialLogitTable(coefs,
                                         x$z.statistics,
                                         x$p.values,
