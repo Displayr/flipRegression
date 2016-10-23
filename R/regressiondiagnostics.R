@@ -252,6 +252,27 @@ vif.Regression <- function (mod, ...)
   diagnosticTestFromCar(mod, "vif", ...)
 }
 
+#' @importFrom car Anova
+#' @export
+Anova.Regression <- function (mod, ...)
+{
+  #checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
+    anova <- diagnosticTestFromCar(mod, "Anova", ...)
+    attr(anova, "type") <- mod$type
+    attr(anova, "footer") <- mod$footer
+    attr(anova, "outcome.label") <- mod$outcome.label
+    class(anova) <- c("Anova", class(anova))
+    anova
+}
+
+#'
+#' #' @importMethodsFrom car Anova
+#' #' @export
+#' setMethod("Anova", "missing", function "<No Object>")
+
+#' ncvTest.Regression
+#' @param model A \code{\link{Regression}} model.
+#' @param ... Additional parameters to \code{\link{ncvTest}}
 #' @export
 ncvTest.Regression <- function(model, ...)
 {
@@ -262,6 +283,9 @@ ncvTest.Regression <- function(model, ...)
 }
 
 
+#' residualPlots.Regression
+#' @param model A \code{\link{Regression}} model.
+#' @param ... Additional parameters to \code{\link{residualPlots}}
 #' @export
 residualPlots.Regression <- function(model, ...)
 {

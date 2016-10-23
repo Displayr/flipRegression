@@ -15,7 +15,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             warning(unusual)
     }
     # Testing to see if there is multicollinearity.
-    if (ncol(x$model) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
+    if (length(x$original$coefficients) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
     {
         vifs <- vif(x)
         if (!is.null(vifs))
@@ -53,16 +53,17 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         if (x$type == "Linear" & IsCount(outcome.variable))
             warning(paste0("The outcome variable appears to contain categories (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Ordered Logit for ordered categories, Multinomial Logit for unordered categories, Quasi-Poisson Regression for counts)."))
     }
-    # Creating a nicely formatted text description of the model.
-    aic <- if(partial) NA else AIC(x)
-    rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
-    caption <- x$sample.description
-    caption <- paste0(caption," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
-    if (!partial)
-        caption <- paste0(caption,
-               "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
-               if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
+    # # Creating a nicely formatted text description of the model.
+    # aic <- if(partial) NA else AIC(x)
+    # rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
+    # caption <- x$sample.description
+    # caption <- paste0(caption," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
+    # if (!partial)
+    #     caption <- paste0(caption,
+    #            "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
+    #            if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
+    #            if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
+    caption <- x$footer
     if (x$detail) # Detailed text output.
     {
         cat(paste0(x$type, " regression\n"))
@@ -86,8 +87,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     else # Pretty table.
     {
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
-        title <- c(paste0(x$type, (if(add.regression) " Regression" else ""), ": ",
-                          x$outcome.label))
+        title <- paste0(regressionType(x$type), ": ", x$outcome.label)
         coefs <- x$summary$coefficients
         #statistic.name <- if ("t" == substr(colnames(coefs)[3], 1, 1)) "t" else
         statistic.name <- paste0("<span style='font-style:italic;'>", substr(colnames(coefs)[3], 1, 1) ,"</span>")
@@ -119,6 +119,30 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 }
 
 
+regressionType <- function(type)
+{
+    add.regression <- type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
+    c(paste0(type, (if(add.regression) " Regression" else "")))
+}
+#' print.Anova
+#'
+#' @param x An \link{Anova} object.
+#' @param ... Additional parameters to \code{\link{print.anova}}
+#' @importFrom flipFormat AnovaTable
+#' @export
+print.Anova <- function(x, ...)
+{
+    col.names <- colnames(x)
+    subtitle <- attr(x, "heading")[1]
+    subtitle <- substr(subtitle, 1, nchar(subtitle) - 1)
+    subtitle <- paste0(regressionType(attr(x, "type")), ": ", subtitle)
+    statistic.name <- if (ncol(x) == 4)  col.names[3] else NULL
+    dt <- AnovaTable(x,
+              title = paste("Analysis of Variance: ", attr(x, "outcome.label")),
+              footer = attr(x, "footer"),
+              subtitle = subtitle)
+    print(dt)
+}
 
 
 #' @importFrom stats printCoefmat pt pt pf

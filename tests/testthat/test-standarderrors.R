@@ -18,9 +18,15 @@ test_that("Stata Linearized Standard Errors with weights", {
 })
 
 test_that("Stata Robust Standard Errors", {
-    z = Regression(like.coke~d1, data = colas, robust.se = TRUE)
+    z = suppressWarnings(Regression(like.coke~d1, data = colas, robust.se = TRUE))
+    Regression(like.coke~d1, data = colas, robust.se = TRUE, show.labels = TRUE)
+    xtabs(~d1 + like.coke, data = colas)
+    data.frame(colas$d1, colas$like.coke)
+    table(colas$d1)
+    lm(like.coke ~ d1, data = colas)
+    #Regression(like.coke~d1, data = colas, robust.se = FALSE)
     # se
-    expect_equal(as.numeric(z$summary$coefficients[1:3, 2]), c( .1201564, .2232395, .1760013 ), tolerance = 0.0000001)
+    expect_equal(as.numeric(z$summary$coefficients[1:3, 2]), c( .1201564, .2232395, .1760013 ), tolerance = 0.0000005)
     # p
     expect_equal(as.numeric(z$summary$coefficients[1:4, 4]), c( 0.000, 0.127 , 0.667 , 0.593), tolerance = 0.0005)
 })
