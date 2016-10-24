@@ -275,9 +275,29 @@ Regression <- function(formula,
         result$z.statistics <- result$summary$coefficients / result$summary$standard.errors
         result$p.values <- 2 * (1 - pnorm(abs(result$z.statistics)))
     }
+    # Creating the subtitle.
+    result$footer <- regressionFooter(result)
     return(result)
 }
 
+
+
+regressionFooter <- function(x)
+{
+    # Creating a nicely formatted text description of the model.
+    partial <- x$missing == "Use partial data (pairwise correlations)"
+    aic <- if(partial) NA else AIC(x)
+    rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
+    footer <- x$sample.description
+    footer <- paste0(footer," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
+    if (!partial)
+        footer <- paste0(footer,
+               "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
+               if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
+               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
+    footer
+
+}
 #' \code{FitRegression}
 #'
 #' Fits a regression model.

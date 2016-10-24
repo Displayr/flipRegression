@@ -45,15 +45,16 @@ numberObservations <- function(x)
 #'
 #' @param model A 'Regression'  model.
 #' @param n.permutations Number of permutations used in computing the p-value.
-#' @details "Computes the Durbin-Watson statistic. A permutation test is used for
+#' @param seed The random nmber seed.
+#' @details Computes the Durbin-Watson statistic. A permutation test is used for
 #' computing the p-value. Tests to a lag of 1 (two-sided).
 #'
 #' Durbin, J., Watson, G. S. (1950). 'Testing for Serial Correlation in Least Squares
 #' Regression, I'. Biometrika 37, (pp. 3 - 4.
 #' @export
-DurbinWatson <- function(model, n.permutations = 1000)
+DurbinWatson <- function(model, n.permutations = 1000, seed = 123)
 {
-  set.seed(123)
+  set.seed(seed)
   residuals <- resid(model)
   if("Regression" %in% class(model))
     residuals <- residuals[model$subset]
@@ -251,6 +252,27 @@ vif.Regression <- function (mod, ...)
   diagnosticTestFromCar(mod, "vif", ...)
 }
 
+#' @importFrom car Anova
+#' @export
+Anova.Regression <- function (mod, ...)
+{
+  #checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
+    anova <- diagnosticTestFromCar(mod, "Anova", ...)
+    attr(anova, "type") <- mod$type
+    attr(anova, "footer") <- mod$footer
+    attr(anova, "outcome.label") <- mod$outcome.label
+    class(anova) <- c("Anova", class(anova))
+    anova
+}
+
+#'
+#' #' @importMethodsFrom car Anova
+#' #' @export
+#' setMethod("Anova", "missing", function "<No Object>")
+
+#' ncvTest.Regression
+#' @param model A \code{\link{Regression}} model.
+#' @param ... Additional parameters to \code{\link{ncvTest}}
 #' @export
 ncvTest.Regression <- function(model, ...)
 {
@@ -261,6 +283,9 @@ ncvTest.Regression <- function(model, ...)
 }
 
 
+#' residualPlots.Regression
+#' @param model A \code{\link{Regression}} model.
+#' @param ... Additional parameters to \code{\link{residualPlots}}
 #' @export
 residualPlots.Regression <- function(model, ...)
 {
