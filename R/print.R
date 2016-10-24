@@ -97,11 +97,11 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
         if (x$type != "Multinomial Logit")
         {
-            lbls <- colnames(coefs)
+            lbls <- rownames(coefs)
             res <- ExtractCommonPrefix(lbls)
             if (!is.na(res$common.prefix))
             {
-                colnames(coefs) <- res$shortened.labels
+                rownames(coefs) <- res$shortened.labels
                 title <- paste0(title, " by ", res$common.prefix)
             }
             dt <- RegressionTable(coefs,
@@ -114,11 +114,11 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         else
         {
-            lbls <- rownames(coefs)
+            lbls <- colnames(coefs)
             res <- ExtractCommonPrefix(lbls)
             if (!is.na(res$common.prefix))
             {
-                rownames(coefs) <- res$shortened.labels
+                colnames(coefs) <- res$shortened.labels
                 title <- paste0(title, " by ", res$common.prefix)
             }
             dt <- MultinomialLogitTable(coefs,
