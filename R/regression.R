@@ -243,7 +243,7 @@ Regression <- function(formula,
     result$outcome.label <- result$outcome.name <- outcome.name
     if (show.labels)
     {
-        if (type == "Multinomial Logit")
+        if(type == "Multinomial Logit")
         {
             nms <- colnames(result$summary$coefficients)
             colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, nms)
