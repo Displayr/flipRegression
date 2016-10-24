@@ -1,7 +1,7 @@
 
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix
 #' @importFrom stats printCoefmat
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
@@ -97,6 +97,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
         if (x$type != "Multinomial Logit")
         {
+            lbls <- colnames(coefs)
+            res <- ExtractCommonPrefix(lbls)
+            if (!is.na(res$common.prefix))
+            {
+                colnames(coefs) <- res$shortened.labels
+                title <- paste0(title, " by ", res$common.prefix)
+            }
             dt <- RegressionTable(coefs,
                                   title = title,
                                   footer = caption,
@@ -107,6 +114,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         else
         {
+            lbls <- rownames(coefs)
+            res <- ExtractCommonPrefix(lbls)
+            if (!is.na(res$common.prefix))
+            {
+                rownames(coefs) <- res$shortened.labels
+                title <- paste0(title, " by ", res$common.prefix)
+            }
             dt <- MultinomialLogitTable(coefs,
                                         x$z.statistics,
                                         x$p.values,
@@ -127,7 +141,7 @@ regressionType <- function(type)
 #' print.Anova
 #'
 #' @param x An \link{Anova} object.
-#' @param ... Additional parameters to \code{\link{print.anova}}
+#' @param ... Additional parameters to \code{\link{print.Anova}}
 #' @importFrom flipFormat AnovaTable
 #' @export
 print.Anova <- function(x, ...)

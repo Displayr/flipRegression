@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An \link{Anova} object.}
 
-\item{...}{Additional parameters to \code{\link{print.anova}}}
+\item{...}{Additional parameters to \code{\link{print.Anova}}}
 }
 \description{
 print.Anova
