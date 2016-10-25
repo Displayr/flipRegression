@@ -89,7 +89,7 @@ test_that("Durbin Watson",
     x = runif(100) * 2
     y = x + rep(1:2,50)
     dat = data.frame(x, y)
-    reg = Regression(y ~ x, data = dat, type = "Binary Logit")
+    reg = suppressWarnings(Regression(y ~ x, data = dat, type = "Binary Logit"))
     z = suppressWarnings(DurbinWatson(reg))
     expect_equal(z$statistic, c(d = 2.62), tolerance = 1.0e-3)
     expect_equal(z$p, 0, tolerance = 1.0e-5)
@@ -100,7 +100,7 @@ test_that("Durbin Watson",
     # Positive autocorrelation
     y = x + c(rep(0,50),rep(1,50))
     dat = data.frame(x, y)
-    reg = Regression(y ~ x, data = dat, type = "Binary Logit")
+    reg = suppressWarnings(Regression(y ~ x, data = dat, type = "Binary Logit"))
     z = DurbinWatson(suppressWarnings(reg))
     expect_equal(z$statistic, c(d = 1.49), tolerance = 1.0e-2)
     expect_equal(z$p, 0.004, tolerance = 1.0e-2)
