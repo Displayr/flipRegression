@@ -70,13 +70,14 @@ GoodnessOfFitInternal <- function(value, description, call) {
 #' @importFrom flipTransformations UnclassIfNecessary
 #' @importFrom stats predict
 #' @export
-GoodnessOfFit.Regression = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
+GoodnessOfFit.Regression <- function(object, digits = max(3L, getOption("digits") - 3L), ...) {
     if (object$missing == "Use partial data (pairwise correlations)")
         r2 <- object$original$original$R2
     else if (object$type == "Linear" & is.null(object$weights))
         r2 <- object$summary$r.square
     else
     {
+        set.seed(1223)
         predicted <- UnclassIfNecessary(predict(object)[object$subset], FALSE)
         if (sd(predicted) == 0)
             r2 <- 0
