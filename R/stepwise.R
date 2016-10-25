@@ -66,7 +66,9 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     call.formula <- selected.model$call[attr(selected.model$call, "name") == "formula"]
     selected.model$summary$call <- object$call
     selected.model$summary$call[attr(object$call, "name") == "formula"] <- call.formula
+    # Recreate the footer with the sample description from the input model
     selected.model$sample.description <- object$sample.description
+    selected.model$footer <- regressionFooter(selected.model)
 
     # Replace variable names in steps with labels
     if (object$show.labels)
