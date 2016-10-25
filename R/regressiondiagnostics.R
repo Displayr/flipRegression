@@ -257,7 +257,11 @@ vif.Regression <- function (mod, ...)
 Anova.Regression <- function (mod, ...)
 {
   #checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
-    anova <- diagnosticTestFromCar(mod, "Anova", ...)
+
+    anova <- if (mod$robust.se)
+        diagnosticTestFromCar(mod, "Anova", ...)
+    else
+        diagnosticTestFromCar(mod, "Anova", white.adjust = "hc1", ...)
     # Updating labels
     if (mod$show.labels)
     {
