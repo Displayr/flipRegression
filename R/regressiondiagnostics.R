@@ -258,6 +258,15 @@ Anova.Regression <- function (mod, ...)
 {
   #checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
     anova <- diagnosticTestFromCar(mod, "Anova", ...)
+    # Updating labels
+    if (mod$show.labels)
+    {
+        row.names <- attr(anova, "row.names")
+        k <- length(row.names)
+        labels <- Labels(mod$model)
+        row.names[-k] <- labels[match(row.names[-k], names(labels))]
+        attr(anova, "row.names") <- row.names
+    }
     attr(anova, "type") <- mod$type
     attr(anova, "footer") <- mod$footer
     attr(anova, "outcome.label") <- mod$outcome.label
