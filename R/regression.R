@@ -174,6 +174,7 @@ Regression <- function(formula,
             final.model$coef <- final.model$original$coef <- coefs[, 1]
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
+            final.model$footer <- regressionFooter(final.model)
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -188,9 +189,9 @@ Regression <- function(formula,
         fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
         if (internal)
         {
+            fit$subset <- row.names %in% rownames(.estimation.data)
             fit$sample.description <- processed.data$description
             return(fit)
-
         }
         original <- fit$original
         .design <- fit$design
@@ -276,6 +277,8 @@ Regression <- function(formula,
         result$p.values <- 2 * (1 - pnorm(abs(result$z.statistics)))
     }
     # Creating the subtitle.
+    if (!partial)
+        result$sample.description <- processed.data$description
     result$footer <- regressionFooter(result)
     return(result)
 }
@@ -369,7 +372,12 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             else
             {
                 assign(".design", .design, envir=.GlobalEnv)
-                aic <- extractAIC(model)
+                aic <- try(extractAIC(model), silent = TRUE)
+                if (any("try-error" %in% class(aic)))
+                {
+                    warning("Error occurred when computing AIC. The most likely explanation for this is this is a small sample size in some aspect of the analysis. ")
+                    aic <- rep(NA, 2)
+                }
                 remove(".design", envir=.GlobalEnv)
                 model$df <- aic[1]
                 model$aic <- aic[2]
