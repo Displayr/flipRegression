@@ -1,4 +1,4 @@
-context("OneWayANOVA")
+context("Stamdard errors")
 data(colas, package = "flipExampleData")
 z <- unclass(colas$q4a)
 #z[z == 4] <- 9
@@ -19,7 +19,7 @@ test_that("Stata Linearized Standard Errors with weights", {
 
 test_that("Stata Robust Standard Errors", {
     z = suppressWarnings(Regression(like.coke~d1, data = colas, robust.se = TRUE))
-    Regression(like.coke~d1, data = colas, robust.se = TRUE, show.labels = TRUE)
+    Regression(like.coke~d1, data = colas, robust.se = "hc1", show.labels = TRUE)
     xtabs(~d1 + like.coke, data = colas)
     data.frame(colas$d1, colas$like.coke)
     table(colas$d1)

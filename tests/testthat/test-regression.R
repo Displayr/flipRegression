@@ -69,8 +69,8 @@ test_that(paste("Robust se does something"),
 
 })
 
-# type = "Poisson"
-# missing = "Exclude cases with missing data"
+type = "Multinomial Logit"
+missing = "Multiple imputation"
 for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Type by residual", missing, type),
