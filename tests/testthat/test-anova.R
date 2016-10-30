@@ -23,7 +23,8 @@ test_that(paste("Alternative ways of passing data in"),
       type = "Linear"
       # no weight, no filter
       z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = NULL, type = type))
-      expect_error(print(Anova(z)), NA)
+      # Checking ANOVA works
+      expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,output = "ANOVA", data = bank, weights = NULL, type = type)), NA)
       # filter and weight a part of the data frame.
       zbank <- cbind(bank, w = wgt, ff = sb)
       z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = zbank, subset = ff, weights = w, type = type))
@@ -61,9 +62,10 @@ test_that(paste("Robust se does something"),
     expect_false(zreg$summary$coefficients[2,4] == zregRobust$summary$coefficients[2,4])
 
     # Treatment within Anova - no effect regardless of regression specification
-    expect_equal(Anova(zreg)[[4]][2], Anova(zregRobust)[[4]][2])
+    expect_equal(Anova(zreg)[[3]][4], Anova(zregRobust)[[3]][4])
     # Robust works
-    expect_false(Anova(zreg)[[4]][2] == Anova(zregRobust, white.adjust = "hc1")[[3]][2])
+    expect_equal(zregRobust$summary$coefficients[3,4], Anova(zregRobust, white.adjust = "hc3")[[3]][2])
+    zregRobust <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, robust.se = "hc1", subset = TRUE,  weights = NULL, type = type))
     expect_equal(zregRobust$summary$coefficients[3,4], Anova(zregRobust, white.adjust = "hc1")[[3]][2])
 
 })

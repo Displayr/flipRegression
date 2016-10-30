@@ -254,14 +254,9 @@ vif.Regression <- function (mod, ...)
 
 #' @importFrom car Anova
 #' @export
-Anova.Regression <- function (mod, ...)
+Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 {
-  #checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
-
-    anova <- if (mod$robust.se)
-        diagnosticTestFromCar(mod, "Anova", ...)
-    else
-        diagnosticTestFromCar(mod, "Anova", white.adjust = "hc1", ...)
+    anova <- diagnosticTestFromCar(mod, "Anova", white.adjust = white.adjust, ...)
     # Updating labels
     if (mod$show.labels)
     {
@@ -302,7 +297,7 @@ ncvTest.Regression <- function(model, ...)
 #' @export
 residualPlots.Regression <- function(model, ...)
 {
-    if(inherits(model$original, "svyglm"))
+    if(issvyglm(model))
         stop("'residualPlots' does not work with weights. Instead, run the model without weights but including the weight variable as a predictor.")
     checkAcceptableModel(model, c("glm","lm"), "'residualPlots'")
     assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
@@ -313,6 +308,12 @@ residualPlots.Regression <- function(model, ...)
   t
 }
 
+issvyglm <- function(model)
+{
+    if (!is.null(model$original))
+        model <- model$original
+    inherits(model, "svyglm")
+}
 
 #' @importFrom effects allEffects
 #' @export

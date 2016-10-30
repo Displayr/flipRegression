@@ -64,7 +64,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     #            if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
     #            if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
     caption <- x$footer
-    if (x$detail) # Detailed text output.
+    if (x$output == "R")
     {
         cat(paste0(x$type, " regression\n"))
         if (x$missing == "Multiple imputation")
@@ -81,11 +81,11 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             if (x$robust.se)
                 cat("Heteroscedastic-robust standard errors.")
         }
-
-
     }
-    else # Pretty table.
-    {
+    else if (x$output == "ANOVA")
+        print(x$anova)
+    else
+    {    # Pretty table.
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
         title <- paste0(regressionType(x$type), ": ", x$outcome.label)
         coefs <- x$summary$coefficients

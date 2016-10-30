@@ -18,11 +18,15 @@
 #' @param type Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
-#' @param robust.se Computes standard errors that are robust to violations of
-#'   the assumption of constant variance, using the HC1 (degrees of freedom)
-#'   modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
-#'   if weights are applied (as weights already employ a sandwich estimator).
-#' @param detail More detailed outputs.
+#' @param robust.se If \code{TRUE}, computes standard errors that are robust to violations of
+#'   the assumption of constant variance for linear and Poisson models, using the HC3 modification of White's (1980) estimator
+#'   (Long and Ervin, 2000). This parameter is ignored if weights are applied (as weights already
+#'   employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
+#'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @param output \code{"Coefficients"} returns a table of coefficients and various
+#' summary and model statistics. It is the default. \code{"ANOVA"} returns an
+#' ANOVA table. \code{"R"} returns a more traditional R output.
+#' @param detail This is a deprecated fuction. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #' method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
@@ -54,7 +58,6 @@
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom stats pnorm
-#' @importFrom car hccm
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData CleanBackticks
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
@@ -69,7 +72,8 @@ Regression <- function(formula,
                        type = "Linear",
                        robust.se = FALSE,
                        method = "default",
-                       detail = TRUE,
+                       output = "Coefficients",
+                       detail = FALSE,
                        m = 10,
                        seed = 12321,
                        statistical.assumptions,
@@ -78,6 +82,10 @@ Regression <- function(formula,
                        internal = FALSE,
                        ...)
 {
+    if (detail)
+        output <- "R"
+    if (robust.se == "No")
+        robust.se <- FALSE
     cl <- match.call()
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
@@ -124,9 +132,9 @@ Regression <- function(formula,
     }
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
-    if (robust.se & (partial | missing == "Multiple imputation"))
+    if (robust.se != FALSE & (partial | missing == "Multiple imputation"))
         stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
-    if (robust.se & (type != "Linear" & type != "Poisson"))
+    if (robust.se != FALSE & (type != "Linear" & type != "Poisson"))
         stop("Robust standard errors may only be computed using Linear or Poisson regressions.")
     if (partial)
     {
@@ -210,11 +218,11 @@ Regression <- function(formula,
     }
     class(result) <- "Regression"
     suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"
-    if (robust.se)
+    if (robust.se != FALSE)
     {
         if(is.null(weights))
         {
-            robust.coef <-  coeftest(original, vcov. = hccm(result$original, type = "hc1"))
+            robust.coef <-  coeftest(original, vcov. = vcov(result, robust.se))
             colnames(robust.coef)[2] <- "Robust SE"
             class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
             result$summary$coefficients <- robust.coef
@@ -263,7 +271,7 @@ Regression <- function(formula,
     result$robust.se <- robust.se
     result$type = type
     result$weights <- unfiltered.weights
-    result$detail <- detail
+    result$output <- output
     result$show.labels <- show.labels
     result$missing <- missing
     result$terms <- result$original$terms
@@ -278,7 +286,10 @@ Regression <- function(formula,
     }
     # Creating the subtitle.
     if (!partial)
+    {
         result$sample.description <- processed.data$description
+        result$anova <- Anova(result, robust.se)
+    }
     result$footer <- regressionFooter(result)
     return(result)
 }
@@ -451,3 +462,89 @@ nobs.Regression <- function(object, ...)
 {
     object$n.observations
 }
+
+#' vcov.Regression
+#'
+#' @param model A \link{code{Regression}} mode.
+#' @param robust.se If \code{TRUE}, computes standard errors that are robust
+#' to violations of the assumption of constant variance for linear and Poisson
+#' models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
+#' 2000). This parameter is ignored if weights are applied (as weights already
+#' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
+#' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @importFrom car hccm
+#' @importFrom stats vcov
+#' @export
+vcov.Regression <- function(model, robust.se = FALSE)
+{
+    if (robust.se == FALSE)
+    {
+        v <- vcov(model$original)
+        if(!issvyglm(model))
+            return(v)
+    }
+    else
+    {
+        if (robust.se == TRUE)
+            robust.se <- "hc3"
+        v <- hccm(model$original, type = robust.se)
+    }
+    FixVarianceCovarianceMatrix(v)
+}
+
+#' vcov.Regression
+#'
+#' @param model A \link{code{Regression}} mode.
+#' @param robust.se If \code{TRUE}, computes standard errors that are robust
+#' to violations of the assumption of constant variance for linear and Poisson
+#' models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
+#' 2000). This parameter is ignored if weights are applied (as weights already
+#' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
+#' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @importFrom car hccm
+#' @importFrom stats vcov
+#' @export
+vcov.FitRegression <- function(model, robust.se = FALSE)
+{
+    vcov.Regression(model, robust.se)
+}
+
+#' FixVarianceCovarianceMatrix
+#'
+#' Makes some adjustments to permit a covariance-marix to be inverted, if required.
+#' @param x A variance-covariance matrix of parameter estimates.
+#' @param min.eigenvalue Minimm acceptable eigenvalue.
+#' @details Sandwich and sandwich-like standard errors can result uninvertable
+#' covariance matrices (e.g., if a parameter represents a sub-group, and the sub-group has no
+#' residual variance). This function checks to see if there are any eigenvalues less than \code{min.eigenvalue},
+#' which defaults to 1e-12. If there are, an attempt is made to guess the  offending variances, and they are multiplied by 1.01.
+#' @export
+FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
+{
+    wng <- "There is a technical problem with the parameter variance-covariance matrix. This is most likely due to either a problem or the appropriateness of the statistical model (e.g., using weights or robust standard errors where a sub-group in the analysis has no variation in its residuals, or lack of variation in one or more predictors."
+    v <- x
+    v <- try(
+        {
+            if (min(eigen(v)$values) >= min.eigenvalue)
+                return(v)
+            v.diag <- diag(v)
+            n.similar.to.diag <- abs(sweep(v, 1, v.diag, "/"))
+            high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
+            diag(v)[high.r] <- v.diag[high.r] * 1.01
+            v
+        }, silent = TRUE
+    )
+    if (tryError(v))
+        stop(wng)
+    else
+       warning(wng)
+    v
+}
+
+tryError <- function(x)
+{
+    if (any("try-error" %in% class(x)))
+        return(TRUE)
+    FALSE
+}
+

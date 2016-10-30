@@ -6,9 +6,9 @@
 \usage{
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
-  robust.se = FALSE, method = "default", detail = TRUE, m = 10,
-  seed = 12321, statistical.assumptions, auxiliary.data = NULL,
-  show.labels = FALSE, internal = FALSE, ...)
+  robust.se = FALSE, method = "default", output = "Coefficients",
+  detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
+  auxiliary.data = NULL, show.labels = FALSE, internal = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -35,15 +35,20 @@ name of a variable in \code{data}. It may not be an expression.}
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
 
-\item{robust.se}{Computes standard errors that are robust to violations of
-the assumption of constant variance, using the HC1 (degrees of freedom)
-modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
-if weights are applied (as weights already employ a sandwich estimator).}
+\item{robust.se}{If \code{TRUE}, computes standard errors that are robust to violations of
+the assumption of constant variance for linear and Poisson models, using the HC3 modification of White's (1980) estimator
+(Long and Ervin, 2000). This parameter is ignored if weights are applied (as weights already
+employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
+thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.}
 
 \item{method}{The method to be used; for fitting. This will only do something if
 method = "model.frame", which returns the model frame.}
 
-\item{detail}{More detailed outputs.}
+\item{output}{\code{"Coefficients"} returns a table of coefficients and various
+summary and model statistics. It is the default. \code{"ANOVA"} returns an
+ANOVA table. \code{"R"} returns a more traditional R output.}
+
+\item{detail}{This is a deprecated fuction. If \code{TRUE}, \code{output} is set to \code{R}.}
 
 \item{m}{The number of imputed samples, if using multiple imputation.}
 
