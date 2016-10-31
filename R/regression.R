@@ -295,13 +295,13 @@ Regression <- function(formula,
     if (!partial)
     {
         result$sample.description <- processed.data$description
-        result$anova <- Anova(result, robust.se)
+        if (output == "ANOVA")
+            result$anova <- Anova(result, robust.se)
     }
     result$footer <- regressionFooter(result)
-    options(old.contrasts)
+    options(contrasts = old.contrasts[[1]])
     return(result)
 }
-
 
 
 regressionFooter <- function(x)
