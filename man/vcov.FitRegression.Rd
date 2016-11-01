@@ -7,7 +7,7 @@
 \method{vcov}{FitRegression}(object, robust.se = FALSE, ...)
 }
 \arguments{
-\item{object}{A \code{\link{Regression}} model.}
+\item{object}{A \code{Regression} model.}
 
 \item{robust.se}{If \code{TRUE}, computes standard errors that are robust
 to violations of the assumption of constant variance for linear and Poisson

@@ -467,7 +467,7 @@ nobs.Regression <- function(object, ...)
 
 #' vcov.Regression
 #'
-#' @param object A \code{\link{Regression}} model.
+#' @param object A \code{Regression} model.
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust
 #' to violations of the assumption of constant variance for linear and Poisson
 #' models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
@@ -497,7 +497,7 @@ vcov.Regression <- function(object, robust.se = FALSE, ...)
 
 #' vcov.Regression
 #'
-#' @param object A \code{\link{Regression}} model.
+#' @param object A \code{Regression} model.
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust
 #' to violations of the assumption of constant variance for linear and Poisson
 #' models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
