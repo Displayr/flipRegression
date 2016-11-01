@@ -42,7 +42,7 @@
 #' @param internal If \code{TRUE}, skips most of the tidying at the end. Only for use when it is
 #' desired to call a relatively light version of Regression for other purposes (e.g., in ANOVA).
 #' This leads to creation of an object of class \code{FitRegression}.)
-#' @param ... contrasts A vector of the contrasts to be used for \code{\link{factor}} and
+#' @param contrasts A vector of the contrasts to be used for \code{\link{factor}} and
 #' \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
@@ -449,12 +449,6 @@ notValidForPartial <- function(object, method)
         stop(paste0("'", method, "' not available when 'missing' = ",ms, "'." ))
 }
 
-#' @importFrom stats vcov
-#' @export
-vcov.Regression <- function(object, ...)
-{
-    vcov(object$original, ...)
-}
 
 #' @importFrom stats coef
 #' @export
@@ -473,48 +467,50 @@ nobs.Regression <- function(object, ...)
 
 #' vcov.Regression
 #'
-#' @param model A \link{code{Regression}} mode.
+#' @param object A \code{\link{Regression}} model.
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust
 #' to violations of the assumption of constant variance for linear and Poisson
 #' models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
 #' 2000). This parameter is ignored if weights are applied (as weights already
 #' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 #' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @param ... Additional arguments.
 #' @importFrom car hccm
 #' @importFrom stats vcov
 #' @export
-vcov.Regression <- function(model, robust.se = FALSE)
+vcov.Regression <- function(object, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
     {
-        v <- vcov(model$original)
-        if(!issvyglm(model))
+        v <- vcov(object$original)
+        if(!issvyglm(object))
             return(v)
     }
     else
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
-        v <- hccm(model$original, type = robust.se)
+        v <- hccm(object$original, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
 }
 
 #' vcov.Regression
 #'
-#' @param model A \link{code{Regression}} mode.
+#' @param object A \code{\link{Regression}} model.
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust
 #' to violations of the assumption of constant variance for linear and Poisson
 #' models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
 #' 2000). This parameter is ignored if weights are applied (as weights already
 #' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 #' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @param ... Additional arguments.
 #' @importFrom car hccm
 #' @importFrom stats vcov
 #' @export
-vcov.FitRegression <- function(model, robust.se = FALSE)
+vcov.FitRegression <- function(object, robust.se = FALSE, ...)
 {
-    vcov.Regression(model, robust.se)
+    vcov.Regression(object, robust.se)
 }
 
 #' FixVarianceCovarianceMatrix

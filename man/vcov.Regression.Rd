@@ -4,10 +4,10 @@
 \alias{vcov.Regression}
 \title{vcov.Regression}
 \usage{
-\method{vcov}{Regression}(model, robust.se = FALSE)
+\method{vcov}{Regression}(object, robust.se = FALSE, ...)
 }
 \arguments{
-\item{model}{A \link{code{Regression}} mode.}
+\item{object}{A \code{\link{Regression}} model.}
 
 \item{robust.se}{If \code{TRUE}, computes standard errors that are robust
 to violations of the assumption of constant variance for linear and Poisson
@@ -15,6 +15,8 @@ models, using the HC3 modification of White's (1980) estimator (Long and Ervin,
 2000). This parameter is ignored if weights are applied (as weights already
 employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.}
+
+\item{...}{Additional arguments.}
 }
 \description{
 vcov.Regression

@@ -8,7 +8,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   missing = "Exclude cases with missing data", type = "Linear",
   robust.se = FALSE, method = "default", output = "Coefficients",
   detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
-  auxiliary.data = NULL, show.labels = FALSE, internal = FALSE, ...)
+  auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
+  contrasts = c("contr.treatment", "contr.treatment"), ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -68,6 +69,11 @@ variables label is an attribute (e.g., attr(foo, "label")).}
 \item{internal}{If \code{TRUE}, skips most of the tidying at the end. Only for use when it is
 desired to call a relatively light version of Regression for other purposes (e.g., in ANOVA).
 This leads to creation of an object of class \code{FitRegression}.)}
+
+\item{contrasts}{A vector of the contrasts to be used for \code{\link{factor}} and
+\code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
+Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
+See \code{\link{contrasts}} for more information.}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}

@@ -95,7 +95,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         #"<span style='font-style:italic;'>t</span>",
         subtitle <- if (!is.null(x$subtitle)) x$subtitle else ""
 
-        if (x$type != "Multinomial Logit")
+        if (x$type != "Multinomial Logit" || x$missing == "Multiple imputation")
         {
             lbls <- rownames(coefs)
             ind <- if (x$type != "Ordered Logit")
@@ -191,7 +191,7 @@ print.Stepwise <- function(x, ...)
 {
     if (x$output == "Final")
     {
-        x$model$detail <- FALSE
+        x$model$output <- "Coefficients"
         if (x$direction == "Backward")
         {
             var.names <- sapply(as.character(x$model$anova$Step[-1]), function(x) substr(x, 3, nchar(x)))
@@ -201,7 +201,7 @@ print.Stepwise <- function(x, ...)
     }
     else
     {
-        x$model$detail <- TRUE
+        x$model$output <- "R"
         print(x$model)
         cat("\n\n")
         heading <- attr(x$model$anova, "heading")
