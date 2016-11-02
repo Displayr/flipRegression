@@ -156,8 +156,11 @@ print.Anova <- function(x, ...)
     subtitle <- substr(subtitle, 1, nchar(subtitle) - 1)
     subtitle <- paste0(regressionType(attr(x, "type")), ": ", subtitle)
     statistic.name <- if (ncol(x) == 4)  col.names[3] else NULL
+    title <- paste("Analysis of Variance: ", attr(x, "outcome.label"))
+    if (!is.null(attr(x, "by.label")))
+        title <- paste0(title, attr(x, "by.label"))
     dt <- AnovaTable(x,
-              title = paste("Analysis of Variance: ", attr(x, "outcome.label")),
+              title = title,
               footer = attr(x, "footer"),
               subtitle = subtitle)
     print(dt)

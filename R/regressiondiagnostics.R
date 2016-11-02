@@ -253,6 +253,7 @@ vif.Regression <- function (mod, ...)
 }
 
 #' @importFrom car Anova
+#' @importFrom flipFormat ExtractCommonPrefix
 #' @export
 Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 {
@@ -261,10 +262,13 @@ Anova.Regression <- function (mod, white.adjust = FALSE, ...)
     if (mod$show.labels)
     {
         row.names <- attr(anova, "row.names")
-        k <- length(row.names)
         labels <- Labels(mod$model)
-        row.names[-k] <- labels[match(row.names[-k], names(labels))]
+        not.residuals <- row.names != "Residuals"
+        extracted <- ExtractCommonPrefix(labels[match(row.names[not.residuals], names(labels))])
+        row.names[not.residuals] <- extracted$shortened.labels
         attr(anova, "row.names") <- row.names
+        if (!is.na(extracted$common.prefix))
+            attr(anova, "by.label") <- paste0(" by ", extracted$common.prefix)
     }
     attr(anova, "type") <- mod$type
     attr(anova, "footer") <- mod$footer
