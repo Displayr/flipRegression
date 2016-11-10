@@ -83,7 +83,10 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
     }
     else if (x$output == "ANOVA")
+    {
+        attr(x$anova, "footer") <- x$footer
         print(x$anova)
+    }
     else
     {    # Pretty table.
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
