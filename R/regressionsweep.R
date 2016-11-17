@@ -15,7 +15,7 @@
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @importFrom flipStatistics CovarianceAndCorrelationMatrix  StandardDeviation Mean
 #' @importFrom psych setCor
-#' @importFrom flipData BaseDescription CheckForPositiveVariance CheckCorrelationMatrix CheckForLinearDependence
+#' @importFrom flipData BaseDescription CheckForPositiveVariance CheckCorrelationMatrix CheckForLinearDependence CalibrateWeight
 #' @importFrom stats complete.cases
 #' @importFrom flipFormat Labels
 #' @export
@@ -44,6 +44,8 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
         weights <- subset(weights, subset)
     y <- subset.data[, outcome.index]
     x <- subset.data[, predictors.index]
+    if (weighted)
+        weights <- CalibrateWeight(weights)
     y.and.x <- subset.data[, c(outcome.index, predictors.index)]
     k <- ncol(y.and.x)
     pairwise.n <- matrix(NA, k, k)
