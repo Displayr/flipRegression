@@ -225,6 +225,12 @@ Regression <- function(formula,
     }
     class(result) <- "Regression"
     suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"
+    if (!is.matrix(result$summary$coefficients)) # Tidying up MNL outputs with only one two categories.
+    {
+        result$summary$coefficients <- t(as.matrix(result$summary$coefficients))
+        result$summary$standard.errors <- t(as.matrix(result$summary$standard.errors))
+        rownames(result$summary$standard.errors) <- rownames(result$summary$coefficients) <- levels(outcome.variable)[[2]]
+    }
     if (robust.se != FALSE)
     {
         if(is.null(weights))
