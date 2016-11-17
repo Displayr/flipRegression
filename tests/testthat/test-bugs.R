@@ -29,3 +29,11 @@ test_that("DS-884 MNL with 2 category dependent variable")
           })
 
 }
+
+test_that("Poisson ANOVA p-values are very different to Regression + ignore robust SE")
+{
+    # Removed support for robust se from regression 17 Nov 2016
+    exect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = "Poisson", robust.se = TRUE)))
+}
+
+

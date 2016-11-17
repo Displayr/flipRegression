@@ -19,7 +19,7 @@
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust to violations of
-#'   the assumption of constant variance for linear and Poisson models, using the HC3 modification of White's (1980) estimator
+#'   the assumption of constant variance for linear models, using the HC3 modification of White's (1980) estimator
 #'   (Long and Ervin, 2000). This parameter is ignored if weights are applied (as weights already
 #'   employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
@@ -141,8 +141,8 @@ Regression <- function(formula,
     partial <- missing == "Use partial data (pairwise correlations)"
     if (robust.se != FALSE & (partial | missing == "Multiple imputation"))
         stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
-    if (robust.se != FALSE & (type != "Linear" & type != "Poisson"))
-        stop("Robust standard errors may only be computed using Linear or Poisson regressions.")
+    if (robust.se != FALSE & type != "Linear")
+        stop("Robust standard errors may only be computed using Linear regressions.")
     if (partial)
     {
         if (internal)

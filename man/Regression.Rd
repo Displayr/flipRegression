@@ -37,7 +37,7 @@ name of a variable in \code{data}. It may not be an expression.}
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
 
 \item{robust.se}{If \code{TRUE}, computes standard errors that are robust to violations of
-the assumption of constant variance for linear and Poisson models, using the HC3 modification of White's (1980) estimator
+the assumption of constant variance for linear models, using the HC3 modification of White's (1980) estimator
 (Long and Ervin, 2000). This parameter is ignored if weights are applied (as weights already
 employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
 thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.}
