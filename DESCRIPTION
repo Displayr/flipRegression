@@ -7,6 +7,13 @@ Maintainer: Tim Bock  <tim.bock@numbers.net.au>
 Description: Regression models according to the flip Project's principles.
 License: GPL-3
 LazyData: TRUE
+Remotes: 
+    NumbersInternational/flipU,
+    NumbersInternational/flipFormat,
+    NumbersInternational/flipData,
+    NumbersInternational/flipStatistics,
+    NumbersInternational/flipTransformations,
+    NumbersInternational/flipExampleData
 Imports:
     car,
     effects,
