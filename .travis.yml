@@ -12,4 +12,4 @@ r_github_packages: hadley/devtools#1263
 
 script:
   - R CMD build .
-  - travis_wait 60 R CMD check flipRegression.tar.gz
+  - travis_wait 60 R CMD check flipRegression_0.1.0.tar.gz
