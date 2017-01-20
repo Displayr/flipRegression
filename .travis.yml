@@ -16,7 +16,9 @@ r_github_packages: hadley/devtools#1263
 
 script:
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
-  - R CMD check --as-cran --no-manual --no-build-vignettes *.tar.gz
+  - R CMD check --as-cran --no-manual --no-build-vignettes --no-tests *.tar.gz
+  - sudo Rscript -e 'install.packages("roxygen2")'
+  - Rscript -e 'devtools::test()'
 
 notifications:
   slack:
