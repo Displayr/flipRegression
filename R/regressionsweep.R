@@ -102,7 +102,7 @@ LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weigh
                                    n.total, attr(subset, "n.subset"),
                                    n.min, Labels(subset), NULL, "")
     if (!is.null(weights))
-        description <- paste0(description, " Data have been resampled with probabilities proportional to the weights (",
+        description <- paste0(description, " Standard errors and statistical tests use calibrated weights (",
                               weight.label, ").\n")
     result$sample.description <- description
     result$outcome.index <- outcome.index

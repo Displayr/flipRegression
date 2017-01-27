@@ -46,10 +46,10 @@ test_that("Use partial data (pairwise correlations) - weighted",
           {
               z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing, weights = bank$weight)
               expect_equal(0.458160, z$original$original$R2[1, 1], tolerance=1e-5)
-              expect_equal(43.744, z$original$original$F[1,1], tolerance=1e-5)
-              expect_equal(0.360394, as.numeric(z$original$coef[2]), tolerance=1e-5)
-              expect_equal(310.400635, z$original$original$df[2], tolerance=1e-5)
-              expect_equal(0.044873, summary(z$original)$coef[2,2], tolerance=1e-5)
+              expect_equal(41.17282, z$original$original$F[1,1], tolerance=1e-5)
+              expect_equal(0.3603956, as.numeric(z$original$coef[2]), tolerance=1e-5)
+              expect_equal(292.1565, z$original$original$df[2], tolerance=1e-5)
+              expect_equal(0.04625331, summary(z$original)$coef[2,2], tolerance=1e-5)
           })
 
 
@@ -57,10 +57,10 @@ test_that("Use partial data (pairwise correlations) - popoulation weighted and f
           {
               z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing, weights = bank$ID, subset = bank$weight > 1)
               expect_equal(0.414488, z$original$original$R2[1, 1], tolerance=1e-5)
-              expect_equal(2414.432, z$original$original$F[1, 1], tolerance=1e-5)
-              expect_equal(0.302402, as.numeric(z$original$coef[2]), tolerance=1e-5)
-              expect_equal(20464.000000, z$original$original$df[2], tolerance=1e-5)
-              expect_equal(0.005474, summary(z$original)$coef[2, 2], tolerance=1e-5)
+              expect_equal(8.858319, z$original$original$F[1, 1], tolerance=1e-5)
+              expect_equal(0.3024816, as.numeric(z$original$coef[2]), tolerance=1e-5)
+              expect_equal(75.08045, z$original$original$df[2], tolerance=1e-5)
+              expect_equal(0.09039705, summary(z$original)$coef[2, 2], tolerance=1e-5)
           })
 
 
