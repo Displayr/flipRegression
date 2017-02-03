@@ -31,8 +31,5 @@ notifications:
 
 after_success: >-
   if [ $TRAVIS_EVENT_TYPE == 'push' ] ; then
-    Rscript -e 'require(devtools); install_github("NumbersInternational/travisCI"); library(travisCI); UpdateUpstream(use.local=T)';
-    curl -s -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "Travis-API-Version: 3" -H "Authorization: token $ACCESS_TOKEN" -d '{"request":{"message":"Build triggered by flipRegression", "branch":"master"}}' "https://api.travis-ci.org/repo/NumbersInternational%2FflipAnalysisOfVariance/requests";
-    curl -s -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "Travis-API-Version: 3" -H "Authorization: token $ACCESS_TOKEN" -d '{"request":{"message":"Build triggered by flipRegression", "branch":"master"}}' "https://api.travis-ci.org/repo/NumbersInternational%2FflipMultivariates/requests";
-    curl -s -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "Travis-API-Version: 3" -H "Authorization: token $ACCESS_TOKEN" -d '{"request":{"message":"Build triggered by flipRegression", "branch":"master"}}' "https://api.travis-ci.org/repo/NumbersInternational%2FflipCluster/requests";
+    Rscript -e 'require(devtools); install_github("NumbersInternational/travisCI"); travisCI::TriggerDownstreamBuilds()';
   fi
