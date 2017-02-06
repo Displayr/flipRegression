@@ -12,8 +12,7 @@ Remotes:
     NumbersInternational/flipFormat,
     NumbersInternational/flipData,
     NumbersInternational/flipStatistics,
-    NumbersInternational/flipTransformations,
-    NumbersInternational/flipExampleData
+    NumbersInternational/flipTransformations
 Imports:
     car,
     effects,
