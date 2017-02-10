@@ -15,9 +15,9 @@
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @importFrom flipStatistics CovarianceAndCorrelationMatrix  StandardDeviation Mean
 #' @importFrom psych setCor
-#' @importFrom flipData BaseDescription CheckForPositiveVariance CheckCorrelationMatrix CheckForLinearDependence CalibrateWeight
+#' @importFrom flipData CheckForPositiveVariance CheckCorrelationMatrix CheckForLinearDependence CalibrateWeight
 #' @importFrom stats complete.cases
-#' @importFrom flipFormat Labels
+#' @importFrom flipFormat Labels BaseDescription
 #' @export
 LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weights = NULL, ...)
 {
