@@ -8,11 +8,11 @@ Description: Regression models according to the flip Project's principles.
 License: GPL-3
 LazyData: TRUE
 Remotes: 
-    NumbersInternational/flipU,
-    NumbersInternational/flipFormat,
-    NumbersInternational/flipData,
-    NumbersInternational/flipStatistics,
-    NumbersInternational/flipTransformations
+    Displayr/flipU,
+    Displayr/flipFormat,
+    Displayr/flipData,
+    Displayr/flipStatistics,
+    Displayr/flipTransformations
 Imports:
     car,
     effects,
