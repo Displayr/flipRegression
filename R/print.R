@@ -3,6 +3,7 @@
 #' @importFrom utils capture.output
 #' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix
 #' @importFrom stats printCoefmat
+#' @method print Regression
 #' @export
 print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("digits") - 3L), ...)
 {
@@ -146,11 +147,14 @@ regressionType <- function(type)
     add.regression <- type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
     c(paste0(type, (if(add.regression) " Regression" else "")))
 }
+
 #' print.Anova
 #'
+#' Prints the Anova object
 #' @param x An \link{Anova} object.
 #' @param ... Additional parameters to \code{\link{print.Anova}}
 #' @importFrom flipFormat AnovaTable
+#' @method print Anova
 #' @export
 print.Anova <- function(x, ...)
 {
@@ -171,6 +175,7 @@ print.Anova <- function(x, ...)
 
 
 #' @importFrom stats printCoefmat pt pt pf
+#' @method print RegressionCorrelationsSummary
 #' @export
 print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("digits") - 3L), symbolic.cor = x$symbolic.cor,
                                                 signif.stars = getOption("show.signif.stars"), ...)
@@ -192,6 +197,7 @@ print.RegressionCorrelationsSummary <- function(x, digits = max(3L, getOption("d
     }
 }
 
+#' @method print Stepwise
 #' @export
 print.Stepwise <- function(x, ...)
 {
