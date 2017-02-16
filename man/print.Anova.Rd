@@ -12,6 +12,5 @@
 \item{...}{Additional parameters to \code{\link{print.Anova}}}
 }
 \description{
-print.Anova
+Prints the Anova object
 }
-
