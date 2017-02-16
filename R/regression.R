@@ -396,14 +396,12 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 model$df <- NA
             else
             {
-                assign(".design", .design, envir=.GlobalEnv)
-                aic <- try(extractAIC(model), silent = TRUE)
+                aic <- try(do.call("extractAIC", list(model)), silent = TRUE)
                 if (any("try-error" %in% class(aic)))
                 {
                     warning("Error occurred when computing AIC. The most likely explanation for this is this is a small sample size in some aspect of the analysis. ")
                     aic <- rep(NA, 2)
                 }
-                remove(".design", envir=.GlobalEnv)
                 model$df <- aic[1]
                 model$aic <- aic[2]
             }
@@ -432,9 +430,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                             "Binary Logit" = svyglm(.formula, .design, family = quasibinomial()),
                             "Poisson" = svyglm(.formula, .design, family = poisson()),
                             "Quasi-Poisson" = svyglm(.formula, .design, family = quasipoisson()))
-            assign(".design", .design, envir=.GlobalEnv)
-            aic <- extractAIC(model)
-            remove(".design", envir=.GlobalEnv)
+            aic <- do.call("extractAIC", list(model))
             model$df <- aic[1]
             model$aic <- aic[2]
         }
