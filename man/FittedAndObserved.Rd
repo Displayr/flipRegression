@@ -21,4 +21,3 @@ Extracts fitted and observed.
 \code{FittedAndObserved} extracts vectors of fitted (or predicted) and observed values from an object for use in computing
 \code{GoodnessOfFit}.
 }
-
