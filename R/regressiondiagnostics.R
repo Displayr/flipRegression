@@ -82,6 +82,12 @@ DurbinWatson <- function(model, n.permutations = 1000, seed = 123)
   result
 }
 
+
+#' \code{print.DurbinWatson}
+#'
+#' @param x Results from the DurbinWatson test.
+#' @param ... Other arugments.
+#' @method print DurbinWatson
 #' @export
 print.DurbinWatson <- function(x, ...)
 {
@@ -90,7 +96,12 @@ print.DurbinWatson <- function(x, ...)
 }
 
 
+#' \code{cooks.distance.Regression}
+#'
+#' @param model Regression model.
+#' @param ... Other arugments.
 #' @importFrom stats cooks.distance
+#' @method cooks.distance Regression
 #' @export
 cooks.distance.Regression <- function(model, ...)
 {
@@ -327,9 +338,10 @@ allEffects.Regression <- function(model, ...)
     assign(".estimation.data",.estimation.data, envir=.GlobalEnv)
     assign(".formula", model$formula, envir=.GlobalEnv)
     assign(".design", model$design, envir=.GlobalEnv)
-    attach(.estimation.data)
-    effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
-    detach(.estimation.data)
+    effects <- with(.estimation.data, allEffects(model$original, ...))#BreuschPagan(x$original)
+    # attach(.estimation.data)
+    # effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
+    # detach(.estimation.data)
     remove(".design", envir=.GlobalEnv)
     remove(".formula", envir=.GlobalEnv)
     remove(".estimation.data", envir=.GlobalEnv)
