@@ -16,4 +16,3 @@ probabilities(object)
 Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 of class membership from a refression model. This is included for backwards compatibilty.
 }
-
