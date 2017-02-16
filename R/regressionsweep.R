@@ -119,6 +119,11 @@ df.residual.RegressionCorrelations <- function(object, ...)
     object$original$df[2]
 }
 
+#' summary.RegressionCorrelations
+#'
+#' @param object Regression model.
+#' @param ... Other arugments.
+#' @method summary RegressionCorrelations
 #' @importFrom xml2 read_xml
 #' @export
 summary.RegressionCorrelations <- function(object, ...)
