@@ -26,4 +26,3 @@ name of a variable in \code{data}. It may not be an expression.}
 A contingency table showing the observed versus predicted values from a model, for linear models.
 Prediced values are assigned the value of the closest observed value.
 }
-

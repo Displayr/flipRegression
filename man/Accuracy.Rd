@@ -25,4 +25,3 @@ Where the outcome
 variable in the model is not a factor and not a count, predicted values are assigned to the closest observed
 value.
 }
-

@@ -25,4 +25,3 @@ name of a variable in \code{data}. It may not be an expression.}
 \details{
 A contingency table showing the observed versus predicted values from a model.
 }
-
