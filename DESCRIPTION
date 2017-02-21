@@ -7,8 +7,7 @@ Maintainer: Tim Bock  <tim.bock@numbers.net.au>
 Description: Regression models according to the flip Project's principles.
 License: GPL-3
 LazyData: TRUE
-Remotes: 
-    Displayr/flipU,
+Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,
     Displayr/flipStatistics,
@@ -33,4 +32,4 @@ Suggests:
     testthat,
     flipExampleData,
     Rcpp
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1

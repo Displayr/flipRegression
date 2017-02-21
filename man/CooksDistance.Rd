@@ -15,3 +15,4 @@ CooksDistance(model)
 \details{
 Computes Cook's distance and a threshold value.
 }
+

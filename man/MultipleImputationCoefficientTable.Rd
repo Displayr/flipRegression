@@ -19,3 +19,4 @@ large sample or sample sample approach.}
 J Barnard and DB Rubin (1999) 'Small-sample degrees of freedom with multiple imputation' Biometrika (1999) 86 (4): 948-955.
 DB Rubin (1987) 'Multiple Imputation for Nonresponse in Surveys', John Wiley & Sons.
 }
+

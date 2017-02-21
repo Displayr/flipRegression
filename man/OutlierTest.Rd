@@ -15,3 +15,4 @@ OutlierTest(model)
 \details{
 Computes studentized residuals.
 }
+

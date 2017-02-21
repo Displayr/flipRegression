@@ -33,3 +33,4 @@ if weights are applied (as weights already employ a sandwich estimator).}
 \description{
 Fits a regression model.
 }
+

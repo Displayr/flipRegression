@@ -15,3 +15,4 @@ HatValues(model)
 \details{
 Computes hat values and a threshold value.
 }
+

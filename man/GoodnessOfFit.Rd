@@ -2,8 +2,8 @@
 % Please edit documentation in R/fit.R
 \name{GoodnessOfFit}
 \alias{GoodnessOfFit}
-\alias{GoodnessOfFit.default}
 \alias{GoodnessOfFit.Regression}
+\alias{GoodnessOfFit.default}
 \title{Object Goodness-of-Fit
 \code{GoodnessOfFit} summary is a generic function used to produce result summaries of the
 results of the model object. The function invokes particular \code{\link{methods}}
