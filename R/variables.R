@@ -36,9 +36,10 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 
 #' @export
 #' @importFrom stats predict.glm
-#' @importFrom flipData Observed
+#' @importFrom flipData Observed CheckPredictionVariables
 predict.Regression <- function(object, newdata = object$model, na.action = na.pass, ...)
 {
+    newdata <- CheckPredictionVariables(object, newdata)
     notValidForPartial(object, "predict")
     predicted <- if (any(class(object$original) == "glm"))
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
