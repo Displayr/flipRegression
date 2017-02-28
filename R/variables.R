@@ -34,6 +34,17 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
     result
 }
 
+#' \code{predict.Regression}
+#'
+#' Predicts a model outcome based on \code{newdata} and a fitted Regression \code{object}.
+#' NA is returned for cases with unfitted factor levels.
+#' @param object A \code{Regression} object.
+#' @param newdata Optionally, a data frame including the variables used to fit the model.
+#' If omitted, the \code{data} supplied to \code{Regression()} is used after any filtering.
+#' @param na.action Function determining what should be done with missing values in \code{newdata}.
+#' The default is to predict \code{NA}.
+#' @param ... Additional arguments to pass to predict.LDA.
+
 #' @export
 #' @importFrom stats predict.glm
 #' @importFrom flipData Observed CheckPredictionVariables
