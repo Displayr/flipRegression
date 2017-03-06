@@ -33,6 +33,6 @@ Remotes:
     Displayr/flipFormat,
     Displayr/flipData,
     Displayr/flipStatistics,
-    Displayr/flipTransformations
+    Displayr/flipTransformations,
     Displayr/rhtmlHeatmap
 RoxygenNote: 5.0.1
