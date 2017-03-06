@@ -149,7 +149,7 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @importFrom utils read.table
 #' @importFrom flipData GetTidyTwoDimensionalArray
 #' @export
-print.ConfusionMatrix <- function(x, ...) {
+PrintConfusionMatrix <- function(x, ...) {
 
     mat <- GetTidyTwoDimensionalArray(x$confusion)
     color <- "Reds"
