@@ -2,34 +2,27 @@
 % Please edit documentation in R/confusion.R
 \name{ConfusionMatrix}
 \alias{ConfusionMatrix}
-\alias{ConfusionMatrix.default}
 \title{\code{ConfusionMatrix}}
 \usage{
 ConfusionMatrix(obj, subset = NULL, weights = NULL)
-
-\method{ConfusionMatrix}{default}(obj, subset = NULL, weights = NULL)
 }
 \arguments{
 \item{obj}{A model with an outcome variable.}
 
 \item{subset}{An optional vector specifying a subset of observations to be
-used in the fitting process, or, the name of a variable in \code{data}. It
+used in the fitting process or the name of a variable in \code{data}. It
 may not be an expression.}
 
-\item{weights}{An optional vector of sampling weights, or, the name or, the
+\item{weights}{An optional vector of sampling weights or the
 name of a variable in \code{data}. It may not be an expression.}
 }
 \description{
 \code{ConfusionMatrix}
 }
 \details{
-The proportion of observed values that take the same values as the predicted values.
-Where the outcome
-variable in the model is not a factor and not a count, predicted values are assigned to the closest observed
-value.
+Produces a confusion matrix for a trained model showing the proportion
+of observed values that take the same values as the predicted values. Predictions
+are based on the training data (not a separate test set).  Where the outcome variable
+in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{default}: Default confusion matrix method.
-}}
 

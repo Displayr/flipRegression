@@ -13,16 +13,17 @@ ConfusionMatrixFromVariables(observed, predicted, subset = NULL,
 \item{predicted}{A \code{factor}.}
 
 \item{subset}{An optional vector specifying a subset of observations to be
-used in the fitting process, or, the name of a variable in \code{data}. It
+used in the fitting process or the name of a variable in \code{data}. It
 may not be an expression. \code{subset} may not}
 
-\item{weights}{An optional vector of sampling weights, or, the name or, the
+\item{weights}{An optional vector of sampling weights or the
 name of a variable in \code{data}. It may not be an expression.}
 }
 \description{
 \code{ConfusionMatrixFromVariables}
 }
 \details{
-A contingency table showing the observed versus predicted values from a model.
+A contingency table showing the observed versus predicted values
+where both inputs are factor variables.
 }
 

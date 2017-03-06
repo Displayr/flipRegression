@@ -2,29 +2,19 @@
 #'
 #' @param obj A model with an outcome variable.
 #' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression.
-#' @param weights An optional vector of sampling weights, or, the name or, the
-#'   name of a variable in \code{data}. It may not be an expression.
-#' @details The proportion of observed values that take the same values as the predicted values.
-#' Where the outcome
-#' variable in the model is not a factor and not a count, predicted values are assigned to the closest observed
-#' value.
-#' @export
-ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
-{
-    UseMethod("ConfusionMatrix")
-}
-
-
-
-
+#' used in the fitting process or the name of a variable in \code{data}. It
+#' may not be an expression.
+#' @param weights An optional vector of sampling weights or the
+#' name of a variable in \code{data}. It may not be an expression.
+#' @details Produces a confusion matrix for a trained model showing the proportion
+#' of observed values that take the same values as the predicted values. Predictions
+#' are based on the training data (not a separate test set).  Where the outcome variable
+#' in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 #' @importFrom stats predict
 #' @importFrom methods is
 #' @importFrom flipData Observed
-#' @describeIn ConfusionMatrix  Default confusion matrix method.
 #' @export
-ConfusionMatrix.default <- function(obj, subset = NULL, weights = NULL)
+ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
 {
     observed <- Observed(obj)
     predicted <- predict(obj)
@@ -36,7 +26,7 @@ ConfusionMatrix.default <- function(obj, subset = NULL, weights = NULL)
     }
     else if (IsCount(observed))
     {
-        confusion <- ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights)
+        confusion <- ConfusionMatrixFromVariablesNumeric(observed, predicted, subset, weights)
         attr(confusion, "type") <- "count"
     }
     else
@@ -51,13 +41,6 @@ ConfusionMatrix.default <- function(obj, subset = NULL, weights = NULL)
         attr(confusion, "type") <- "numeric"
     }
     return(confusion)
-
-    #if (is(obj,"Regression"))
-    #{
-    #    if(obj$type == "Linear")
-    #      return(ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights))
-    #}
-    #return(ConfusionMatrixFromVariables(observed, predicted, subset, weights))
 }
 
 
@@ -66,11 +49,12 @@ ConfusionMatrix.default <- function(obj, subset = NULL, weights = NULL)
 #' @param observed A \code{factor}.
 #' @param predicted A \code{factor}.
 #' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression. \code{subset} may not
-#' @param weights An optional vector of sampling weights, or, the name or, the
-#'   name of a variable in \code{data}. It may not be an expression.
-#' @details A contingency table showing the observed versus predicted values from a model.
+#' used in the fitting process or the name of a variable in \code{data}. It
+#' may not be an expression. \code{subset} may not
+#' @param weights An optional vector of sampling weights or the
+#' name of a variable in \code{data}. It may not be an expression.
+#' @details A contingency table showing the observed versus predicted values
+#' where both inputs are factor variables.
 #' @importFrom flipU IsCount
 #' @importFrom stats xtabs
 #' @export
@@ -96,20 +80,19 @@ ConfusionMatrixFromVariables <- function(observed, predicted, subset = NULL, wei
 }
 
 
-#' \code{ConfusionMatrixFromVariablesLinear}
+#' \code{ConfusionMatrixFromVariablesNumeric}
 #'
-#' @param observed A \code{factor}.
-#' @param predicted A \code{factor}.
+#' @param observed A \code{numeric}.
+#' @param predicted A \code{numeric}.
 #' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression. \code{subset} may not
-#' @param weights An optional vector of sampling weights, or, the name or, the
-#'   name of a variable in \code{data}. It may not be an expression.
-#'
-#' @details A contingency table showing the observed versus predicted values from a model, for linear models.
-#' Prediced values are assigned the value of the closest observed value.
+#' used in the fitting process, or the name of a variable in \code{data}. It
+#' may not be an expression.
+#' @param weights An optional vector of sampling weights or the name
+#' name of a variable in \code{data}. It may not be an expression.
+#' @details A contingency table showing the observed versus predicted values
+#' where predicted values are assigned their closest observed value.
 #' @export
-ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NULL, weights = NULL)
+ConfusionMatrixFromVariablesNumeric <- function(observed, predicted, subset = NULL, weights = NULL)
 {
   if (is.factor(observed))
     observed <- as.numeric(observed)
@@ -122,8 +105,6 @@ ConfusionMatrixFromVariablesLinear <- function(observed, predicted, subset = NUL
     predicted[predicted.na] <- -Inf
   predicted <- sapply(predicted, function(x) unique.observed[which.min(abs(unique.observed - x))])
   predicted[predicted.na] <- NA
-  #levels(observed) <- paste("Observed", levels(observed))
-  #levels(predicted) <- paste("Predicted", levels(predicted))
   ConfusionMatrixFromVariables(observed, predicted, subset, weights)
 }
 
@@ -145,11 +126,17 @@ makeConfusionMatrixSymmetrical <- function(cm)
 }
 
 
+#' \code{PrintConfusionMatrix}
+#'
+#' @param x A fitted model.
+#' @details Displays a confusion matrix as a heatmap.
+#' @export
+#'
 #' @importFrom flipU IsCount
 #' @importFrom utils read.table
 #' @importFrom flipData GetTidyTwoDimensionalArray
 #' @export
-PrintConfusionMatrix <- function(x, ...) {
+PrintConfusionMatrix <- function(x) {
 
     mat <- GetTidyTwoDimensionalArray(x$confusion)
     color <- "Reds"
