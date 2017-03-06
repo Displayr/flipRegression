@@ -128,10 +128,8 @@ makeConfusionMatrixSymmetrical <- function(cm)
 
 #' \code{PrintConfusionMatrix}
 #'
-#' @param x A fitted model.
+#' @param x A fitted model with a 'confusion' attribute storing a confusion matrix.
 #' @details Displays a confusion matrix as a heatmap.
-#' @export
-#'
 #' @importFrom flipU IsCount
 #' @importFrom utils read.table
 #' @importFrom flipData GetTidyTwoDimensionalArray

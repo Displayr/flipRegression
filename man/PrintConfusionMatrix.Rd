@@ -7,7 +7,7 @@
 PrintConfusionMatrix(x)
 }
 \arguments{
-\item{x}{A fitted model.}
+\item{x}{A fitted model with a 'confusion' attribute storing a confusion matrix.}
 }
 \description{
 \code{PrintConfusionMatrix}
