@@ -23,8 +23,9 @@ Imports:
     lmtest,
     MASS,
     methods,
-    psych,
     nnet,
+    psych,
+    rhtmlHeatmap,
     stats,
     survey,
     xml2

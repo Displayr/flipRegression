@@ -17,6 +17,8 @@ ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
 }
 
 
+
+
 #' @importFrom stats predict
 #' @importFrom methods is
 #' @importFrom flipData Observed
@@ -24,15 +26,38 @@ ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
 #' @export
 ConfusionMatrix.default <- function(obj, subset = NULL, weights = NULL)
 {
-  observed <- Observed(obj)
-  predicted <- predict(obj)
+    observed <- Observed(obj)
+    predicted <- predict(obj)
 
-  if (is(obj,"Regression"))
-  {
-      if(obj$type == "Linear")
-        return(ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights))
-  }
-  return(ConfusionMatrixFromVariables(observed, predicted, subset, weights))
+    if (is.factor(observed))
+    {
+        confusion <- ConfusionMatrixFromVariables(observed, predicted, subset, weights)
+        attr(confusion, "type") <- "factor"
+    }
+    else if (IsCount(observed))
+    {
+        confusion <- ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights)
+        attr(confusion, "type") <- "count"
+    }
+    else
+    {
+        # numeric variable and not a count - bucket predicted and observed based on range of values
+        min.value <- min(predicted[subset = TRUE], observed[subset = TRUE], na.rm = TRUE)
+        max.value <- max(predicted[subset = TRUE], observed[subset = TRUE], na.rm = TRUE)
+        range <- max.value - min.value
+        buckets <- min(floor(sqrt(length(predicted[subset = TRUE]) / 3)), 30)
+        breakpoints <- seq(min.value, max.value, range / buckets)
+        confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints), cut(predicted, breakpoints), subset, weights)
+        attr(confusion, "type") <- "numeric"
+    }
+    return(confusion)
+
+    #if (is(obj,"Regression"))
+    #{
+    #    if(obj$type == "Linear")
+    #      return(ConfusionMatrixFromVariablesLinear(observed, predicted, subset, weights))
+    #}
+    #return(ConfusionMatrixFromVariables(observed, predicted, subset, weights))
 }
 
 
@@ -118,4 +143,60 @@ makeConfusionMatrixSymmetrical <- function(cm)
     new.cm[match(row.names, all.names), match(col.names, all.names)] <- cm
     new.cm
 }
+
+
+#' @importFrom flipU IsCount
+#' @importFrom utils read.table
+#' @importFrom flipData GetTidyTwoDimensionalArray
+#' @export
+print.ConfusionMatrix <- function(x, ...) {
+
+    mat <- GetTidyTwoDimensionalArray(x$confusion)
+    color <- "Reds"
+    n.row <- nrow(mat)
+    show.cellnote.in.cell <- (n.row <= 10)
+    if (attr(x$confusion, "type") == "numeric")
+    {
+        breakpoints <- read.table(text = gsub("[^.0-9]", " ", rownames(mat)), col.names = c("lower", "upper"))
+        rownames(mat) <- breakpoints$upper
+        colnames(mat) <- breakpoints$upper
+    }
+
+    # create tooltip matrices of percentages
+    cell.pct <- 100 * mat / sum(mat)
+    cell.pct <- matrix(sprintf("%s%% of all cases",
+                               format(round(cell.pct, 2), nsmall = 2)),
+                       nrow = n.row, ncol = n.row)
+
+    column.sums <- t(data.frame(colSums(mat)))
+    column.sums <- column.sums[rep(row.names(column.sums), n.row), ]
+    column.pct <- 100 * mat / column.sums
+    column.pct <- matrix(sprintf("%s%% of Predicted class",
+                                 format(round(column.pct, 2), nsmall = 2)),
+                         nrow = n.row, ncol = n.row)
+    column.pct[mat == 0] <- "-"
+
+    row.sums <- t(data.frame(rowSums(mat)))
+    row.sums <- row.sums[rep(row.names(row.sums), n.row), ]
+    row.pct <- 100 * mat / t(row.sums)
+    row.pct <- matrix(sprintf("%s%% of Observed class",
+                              format(round(row.pct, 2), nsmall = 2)),
+                      nrow = n.row, ncol = n.row)
+    row.pct[mat == 0] <- "-"
+
+    heatmap <- rhtmlHeatmap::Heatmap(mat, Rowv = FALSE, Colv = FALSE,
+                                     scale = "none", dendrogram = "none",
+                                     xaxis_location = "top", yaxis_location = "left",
+                                     colors = color, color_range = NULL, cexRow = 0.79,
+                                     cellnote = mat, show_cellnote_in_cell = show.cellnote.in.cell,
+                                     xaxis_title = "Predicted", yaxis_title = "Observed",
+                                     title = paste0("Confusion Matrix: ", x$outcome.label),
+                                     footer = x$sample.description,
+                                     extra_tooltip_info = list("% cases" = cell.pct,
+                                                               "% Predicted" = column.pct,
+                                                               "% Observed" = row.pct))
+    print(heatmap)
+
+}
+
 
