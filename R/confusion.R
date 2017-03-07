@@ -32,8 +32,8 @@ ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
     else
     {
         # numeric variable and not a count - bucket predicted and observed based on range of values
-        min.value <- min(predicted[subset = TRUE], observed[subset = TRUE], na.rm = TRUE)
-        max.value <- max(predicted[subset = TRUE], observed[subset = TRUE], na.rm = TRUE)
+        min.value <- min(predicted[subset == TRUE], observed[subset == TRUE], na.rm = TRUE)
+        max.value <- max(predicted[subset == TRUE], observed[subset == TRUE], na.rm = TRUE)
         range <- max.value - min.value
         buckets <- min(floor(sqrt(length(predicted[subset = TRUE]) / 3)), 30)
         breakpoints <- seq(min.value, max.value, range / buckets)
