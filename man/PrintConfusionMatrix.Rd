@@ -4,10 +4,12 @@
 \alias{PrintConfusionMatrix}
 \title{\code{PrintConfusionMatrix}}
 \usage{
-PrintConfusionMatrix(x)
+PrintConfusionMatrix(confusion, footer = "")
 }
 \arguments{
-\item{x}{A fitted model with a 'confusion' attribute storing a confusion matrix.}
+\item{confusion}{An object of class \code{\link{ConfusionMatrix}}.}
+
+\item{footer}{The text to display as the footer of the output.}
 }
 \description{
 \code{PrintConfusionMatrix}

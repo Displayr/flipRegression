@@ -40,6 +40,8 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
         confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints), cut(predicted, breakpoints), subset, weights)
         attr(confusion, "type") <- "numeric"
     }
+    attr(confusion, "outcome.label") <- obj$outcome.label
+    class(confusion) <- "ConfusionMatrix"
     return(confusion)
 }
 
@@ -110,7 +112,6 @@ ConfusionMatrixFromVariablesNumeric <- function(observed, predicted, subset = NU
 
 makeConfusionMatrixSymmetrical <- function(cm)
 {
-
     row.names <- rownames(cm)
     col.names <- colnames(cm)
     all.names <- unique(c(row.names, col.names)) #As the rows are the observed values
@@ -128,19 +129,20 @@ makeConfusionMatrixSymmetrical <- function(cm)
 
 #' \code{PrintConfusionMatrix}
 #'
-#' @param x A fitted model with a 'confusion' attribute storing a confusion matrix.
+#' @param confusion An object of class \code{\link{ConfusionMatrix}}.
+#' @param footer The text to display as the footer of the output.
 #' @details Displays a confusion matrix as a heatmap.
 #' @importFrom flipU IsCount
 #' @importFrom utils read.table
 #' @importFrom flipData GetTidyTwoDimensionalArray
 #' @export
-PrintConfusionMatrix <- function(x) {
+PrintConfusionMatrix <- function(confusion, footer = "") {
 
-    mat <- GetTidyTwoDimensionalArray(x$confusion)
+    mat <- GetTidyTwoDimensionalArray(confusion)
     color <- "Reds"
     n.row <- nrow(mat)
     show.cellnote.in.cell <- (n.row <= 10)
-    if (attr(x$confusion, "type") == "numeric")
+    if (attr(confusion, "type") == "numeric")
     {
         breakpoints <- read.table(text = gsub("[^.0-9]", " ", rownames(mat)), col.names = c("lower", "upper"))
         rownames(mat) <- breakpoints$upper
@@ -175,13 +177,12 @@ PrintConfusionMatrix <- function(x) {
                                      colors = color, color_range = NULL, cexRow = 0.79,
                                      cellnote = mat, show_cellnote_in_cell = show.cellnote.in.cell,
                                      xaxis_title = "Predicted", yaxis_title = "Observed",
-                                     title = paste0("Confusion Matrix: ", x$outcome.label),
-                                     footer = x$sample.description,
+                                     title = paste0("Confusion Matrix: ", attr(confusion, "outcome.label")),
+                                     footer = footer,
                                      extra_tooltip_info = list("% cases" = cell.pct,
                                                                "% Predicted" = column.pct,
                                                                "% Observed" = row.pct))
     print(heatmap)
-
 }
 
 
