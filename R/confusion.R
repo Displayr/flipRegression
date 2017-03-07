@@ -14,7 +14,7 @@
 #' @importFrom methods is
 #' @importFrom flipData Observed
 #' @export
-ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
+ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 {
     observed <- Observed(obj)
     predicted <- predict(obj)
@@ -35,7 +35,7 @@ ConfusionMatrix <- function(obj, subset = NULL, weights = NULL)
         min.value <- min(predicted[subset == TRUE], observed[subset == TRUE], na.rm = TRUE)
         max.value <- max(predicted[subset == TRUE], observed[subset == TRUE], na.rm = TRUE)
         range <- max.value - min.value
-        buckets <- min(floor(sqrt(length(predicted[subset = TRUE]) / 3)), 30)
+        buckets <- min(floor(sqrt(length(predicted[subset == TRUE]) / 3)), 30)
         breakpoints <- seq(min.value, max.value, range / buckets)
         confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints), cut(predicted, breakpoints), subset, weights)
         attr(confusion, "type") <- "numeric"

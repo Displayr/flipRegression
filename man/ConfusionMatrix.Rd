@@ -4,7 +4,7 @@
 \alias{ConfusionMatrix}
 \title{\code{ConfusionMatrix}}
 \usage{
-ConfusionMatrix(obj, subset = NULL, weights = NULL)
+ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights)
 }
 \arguments{
 \item{obj}{A model with an outcome variable.}
