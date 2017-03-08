@@ -177,7 +177,7 @@ PrintConfusionMatrix <- function(confusion, footer = "") {
                                      colors = color, color_range = NULL, cexRow = 0.79,
                                      cellnote = mat, show_cellnote_in_cell = show.cellnote.in.cell,
                                      xaxis_title = "Predicted", yaxis_title = "Observed",
-                                     title = paste0("Confusion Matrix: ", attr(confusion, "outcome.label")),
+                                     title = paste0("Prediction-Accuracy Table: ", attr(confusion, "outcome.label")),
                                      footer = footer,
                                      extra_tooltip_info = list("% cases" = cell.pct,
                                                                "% Predicted" = column.pct,
