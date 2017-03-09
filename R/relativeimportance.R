@@ -6,7 +6,11 @@ estimateRelativeImportance <- function(formula, data, weights, type)
     X <- data[setdiff(formula.names, outcome.name)]
 
     if (type == "Linear")
-        ria <- relativeImportanceLinear(y, X, weights)
+    {
+        num.y <- AsNumeric(y)
+        num.X <- AsNumeric(X, remove.first = TRUE)
+        ria <- relativeImportanceLinear(num.y, num.X, weights)
+    }
     else
         stop(paste("Relative importance analysis is not available for", type))
 }
