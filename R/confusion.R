@@ -38,9 +38,10 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
         min.value <- min(predicted[subset == TRUE], observed[subset == TRUE], na.rm = TRUE)
         max.value <- max(predicted[subset == TRUE], observed[subset == TRUE], na.rm = TRUE)
         range <- max.value - min.value
-        buckets <- min(floor(sqrt(length(predicted[subset == TRUE]) / 3)), 30)
+        # between 3 and 30 buckets depending on the number of values
+        buckets <- max(min(floor(sqrt(length(predicted[subset == TRUE]) / 3)), 30), 3)
         breakpoints <- seq(min.value, max.value, range / buckets)
-        confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints), cut(predicted, breakpoints), subset, weights)
+        confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints, include.lowest = TRUE), cut(predicted, breakpoints, include.lowest = TRUE), subset, weights)
         attr(confusion, "type") <- "numeric"
     }
     attr(confusion, "outcome.label") <- obj$outcome.label
