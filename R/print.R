@@ -67,9 +67,15 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     caption <- x$footer
     if (!is.null(x$relative.importance))
     {
-        dt <- RelativeImportanceTable(x$relative.importance, rownames(x$summary$coefficients)[-1],
-                                      title = "Relative Importance Analysis",
-                                      footer = x$relative.importance.footer)
+        lbls <- rownames(x$summary$coefficients)[-1]
+        title <- paste0("Relative Importance Analysis", ": ", x$outcome.label)
+        extracted <- ExtractCommonPrefix(lbls)
+        if (!is.na(extracted$common.prefix))
+        {
+            lbls <- extracted$shortened.labels
+            title <- paste0(title, " by ", extracted$common.prefix)
+        }
+        dt <- RelativeImportanceTable(x$relative.importance, lbls, title, footer = x$relative.importance.footer)
         print(dt)
     }
     else if (x$output == "R")
