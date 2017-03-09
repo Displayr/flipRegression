@@ -1,7 +1,7 @@
 
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix RelativeImportanceTable
 #' @importFrom stats printCoefmat
 #' @method print Regression
 #' @export
@@ -65,7 +65,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     #            if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
     #            if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
     caption <- x$footer
-    if (x$output == "R")
+    if (!is.null(x$relative.importance))
+    {
+        dt <- RelativeImportanceTable(x$relative.importance, rownames(x$summary$coefficients)[-1],
+                                      title = "Relative Importance Analysis",
+                                      footer = x$relative.importance.footer)
+        print(dt)
+    }
+    else if (x$output == "R")
     {
         cat(paste0(x$type, " regression\n"))
         if (x$missing == "Multiple imputation")

@@ -46,6 +46,7 @@
 #' \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
+#' @param relative.importance Whether to compute relative importance.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -85,6 +86,7 @@ Regression <- function(formula,
                        show.labels = FALSE,
                        internal = FALSE,
                        contrasts = c("contr.treatment", "contr.treatment"),
+                       relative.importance = FALSE,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -147,6 +149,8 @@ Regression <- function(formula,
     {
         if (internal)
             stop("'internal' may not be selected with regressions based on correlation matrices.")
+        if (relative.importance)
+            stop("Relative importance analysis is not available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
         if (type != "Linear")
@@ -169,20 +173,18 @@ Regression <- function(formula,
                     type = type,
                     robust.se = FALSE,
                     detail = detail,
-                    show.labels = show.labels))
+                    show.labels = show.labels,
+                    relative.importance = relative.importance))
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
             coefs <- MultipleImputationCoefficientTable(models)
-            if (show.labels)
+            if (show.labels && type == "Multinomial Logit")
             {
-                if(type == "Multinomial Logit")
-                {
-                    coef.labels <- colnames(final.model$summary$coefficients)
-                    kc <- length(coef.labels)
-                    alt.labels <- rownames(final.model$summary$coefficients)
-                    kr <- length(alt.labels)
-                    rownames(coefs) <- paste(alt.labels, coef.labels[rep(1:kc, rep(kr, kc))])
-                }
+                coef.labels <- colnames(final.model$summary$coefficients)
+                kc <- length(coef.labels)
+                alt.labels <- rownames(final.model$summary$coefficients)
+                kr <- length(alt.labels)
+                rownames(coefs) <- paste(alt.labels, coef.labels[rep(1:kc, rep(kr, kc))])
             }
             final.model$coefficient.table <- coefs
             final.model$summary$coefficients  <- coefs[, -4]
@@ -190,6 +192,8 @@ Regression <- function(formula,
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
             final.model$footer <- regressionFooter(final.model)
+            if (relative.importance)
+                final.model$relative.importance <- multipleImputationRelativeImportance(models)
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -222,6 +226,8 @@ Regression <- function(formula,
         result$n.predictors <- ncol(.estimation.data) - 1
         result$n.observations <- n
         result$estimation.data <- .estimation.data
+        if (relative.importance)
+            result$relative.importance <- estimateRelativeImportance(.formula, .estimation.data, .weights, type)
     }
     class(result) <- "Regression"
     suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"
@@ -305,6 +311,8 @@ Regression <- function(formula,
             result$anova <- Anova(result, robust.se)
     }
     result$footer <- regressionFooter(result)
+    if (!is.null(result$relative.importance))
+        result$relative.importance.footer <- relativeImportanceFooter(result)
     options(contrasts = old.contrasts[[1]])
     return(result)
 }
@@ -326,6 +334,12 @@ regressionFooter <- function(x)
     footer
 
 }
+
+relativeImportanceFooter <- function(x)
+{
+    paste0(x$sample.description ," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
+}
+
 #' \code{FitRegression}
 #'
 #' Fits a regression model.

@@ -17,12 +17,9 @@ MultipleImputationCoefficientTable <- function(models, large.sample.df = FALSE)
     coefs <- sapply(models, .coef)
     vars <- sapply(models, FUN = function(x) diag(vcov(x)))
     coef.mean <- apply(coefs, 1, mean, na.rm = FALSE)
-    B <- apply(coefs, 1, var)
-    W <- apply(vars, 1, FUN = mean, na.rm = FALSE)
-    T <- W + (1 + 1 / m) * B
-    ses <- sqrt(T)
+    ses <- multipleImputationStandardErrors(coefs, vars)
     df.c <- df.residual(models[[1]])
-    dfs <- multipleImputationDegreesOfFreedom(m, B, W, df.c, large.sample.df)
+    dfs <- multipleImputationDegreesOfFreedom(coefs, vars, df.c, large.sample.df)
     tvals <- coef.mean / ses
     pvals <-  2 * pt(abs(tvals), dfs, lower.tail = FALSE)
     results <- cbind(coef.mean, ses, tvals, dfs, pvals)
@@ -44,9 +41,12 @@ MultipleImputationCoefficientTable <- function(models, large.sample.df = FALSE)
 }
 
 
-multipleImputationDegreesOfFreedom <- function(m, B, W, df.complete, large.sample.df = FALSE)
+multipleImputationDegreesOfFreedom <- function(coefs, vars, df.complete, large.sample.df = FALSE)
 {
     #  https://www.stata.com/manuals13/mi.pdf    Page 71 of the pDF  Rubin 1987
+    m <- ncol(coefs)
+    B <- apply(coefs, 1, var)
+    W <- apply(vars, 1, FUN = mean, na.rm = FALSE)
     r <- (1 + m ^ -1) * B / W
     df.large <- (m - 1) * (1 + 1 / r) ^ 2
     if (large.sample.df)
@@ -59,8 +59,31 @@ multipleImputationDegreesOfFreedom <- function(m, B, W, df.complete, large.sampl
     df.small
 }
 
+multipleImputationStandardErrors <- function(coefs, vars)
+{
+    B <- apply(coefs, 1, var)
+    W <- apply(vars, 1, FUN = mean, na.rm = FALSE)
+    T <- W + (1 + 1 / ncol(coefs)) * B
+    sqrt(T)
+}
 
+multipleImputationRelativeImportance <- function(models)
+{
+    coefs <- sapply(models, function(object) object$coef)
+    signs <- sign(unname(apply(coefs, 1, mean, na.rm = FALSE)[-1]))
 
+    result <- list()
+    models.raw.importance <- sapply(models, function(m) m$relative.importance$raw.importance)
+    result$raw.importance <- apply(models.raw.importance, 1, mean, na.rm = FALSE)
+    result$importance <- signs * 100 * prop.table(result$raw.importance)
+    vars <- sapply(models, function(m) m$relative.importance$standard.errors ^ 2)
+    result$standard.errors <- multipleImputationStandardErrors(models.raw.importance, vars)
+    df.c <- models[[1]]$relative.importance$df
+    result$df <- multipleImputationDegreesOfFreedom(models.raw.importance, vars, df.c, FALSE)
+    result$t.statistics <- signs * result$raw.importance / result$standard.errors
+    result$p.values <-  2 * pt(abs(result$t.statistic), result$df, lower.tail = FALSE)
+    result
+}
 
 # # #
 # # # # Alternative formula (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4029775/)

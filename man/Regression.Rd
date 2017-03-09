@@ -9,7 +9,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   robust.se = FALSE, method = "default", output = "Coefficients",
   detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
   auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
-  contrasts = c("contr.treatment", "contr.treatment"), ...)
+  contrasts = c("contr.treatment", "contr.treatment"),
+  relative.importance = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -74,6 +75,8 @@ This leads to creation of an object of class \code{FitRegression}.)}
 \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 See \code{\link{contrasts}} for more information.}
+
+\item{relative.importance}{Whether to compute relative importance.}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}
