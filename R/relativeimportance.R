@@ -1,3 +1,5 @@
+#' @importFrom flipTransformations AsNumeric
+#' @importFrom flipU OutcomeName AllVariablesNames
 estimateRelativeImportance <- function(formula, data, weights, type)
 {
     formula.names <- AllVariablesNames(formula)
