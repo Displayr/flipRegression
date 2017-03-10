@@ -9,7 +9,9 @@ estimateRelativeImportance <- function(formula, data, weights, type)
 
     if (type == "Linear")
     {
-        num.y <- AsNumeric(y)
+        dput(y)
+        dput(X)
+        num.y <- AsNumeric(y, binary = FALSE)
         num.X <- AsNumeric(X, remove.first = TRUE)
         ria <- relativeImportanceLinear(num.y, num.X, weights)
     }
