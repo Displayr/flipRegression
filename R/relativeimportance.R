@@ -4,13 +4,14 @@ estimateRelativeImportance <- function(formula, data, weights, type)
 {
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)
+    print(formula)
+    print(outcome.name)
+    dput(data)
     y <- data[[outcome.name]]
     X <- data[setdiff(formula.names, outcome.name)]
 
     if (type == "Linear")
     {
-        dput(y)
-        dput(X)
         num.y <- AsNumeric(y, binary = FALSE)
         num.X <- AsNumeric(X, remove.first = TRUE)
         ria <- relativeImportanceLinear(num.y, num.X, weights)
