@@ -185,7 +185,7 @@ print.ConfusionMatrix <- function(x, ...) {
                                      cellnote = mat, show_cellnote_in_cell = show.cellnote.in.cell,
                                      xaxis_title = "Predicted", yaxis_title = "Observed",
                                      title = paste0("Prediction-Accuracy Table: ", attr(x, "outcome.label")),
-                                     footer = x$description,
+                                     footer = attr(x, "description"),
                                      extra_tooltip_info = list("% cases" = cell.pct,
                                                                "% Predicted" = column.pct,
                                                                "% Observed" = row.pct))
