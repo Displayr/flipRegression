@@ -6,6 +6,8 @@
 #' may not be an expression.
 #' @param weights An optional vector of sampling weights or the
 #' name of a variable in \code{data}. It may not be an expression.
+#' @param description An optional string used to describe the data that created the
+#' confusion matrix.
 #' @details Produces a confusion matrix for a trained model showing the proportion
 #' of observed values that take the same values as the predicted values. Predictions
 #' are based on the training data (not a separate test set).  Where the outcome variable
@@ -14,7 +16,7 @@
 #' @importFrom methods is
 #' @importFrom flipData Observed
 #' @export
-ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, description = obj$sample.description)
 {
     if (!is.null(obj$confusion))
         return(obj$confusion)
@@ -45,6 +47,7 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
         attr(confusion, "type") <- "numeric"
     }
     attr(confusion, "outcome.label") <- obj$outcome.label
+    attr(confusion, "description") <- description
     class(confusion) <- "ConfusionMatrix"
     return(confusion)
 }
@@ -131,22 +134,22 @@ makeConfusionMatrixSymmetrical <- function(cm)
 }
 
 
-#' \code{PrintConfusionMatrix}
+#' \code{print.ConfusionMatrix}
 #'
-#' @param confusion An object of class \code{\link{ConfusionMatrix}}.
-#' @param footer The text to display as the footer of the output.
+#' @param x An object of class \code{\link{ConfusionMatrix}}.
+#' @param ... Further arguments, currently unusued.
 #' @details Displays a confusion matrix as a heatmap.
 #' @importFrom flipU IsCount
 #' @importFrom utils read.table
 #' @importFrom flipData GetTidyTwoDimensionalArray
 #' @export
-PrintConfusionMatrix <- function(confusion, footer = "") {
+print.ConfusionMatrix <- function(x, ...) {
 
-    mat <- GetTidyTwoDimensionalArray(confusion)
+    mat <- GetTidyTwoDimensionalArray(x)
     color <- "Reds"
     n.row <- nrow(mat)
     show.cellnote.in.cell <- (n.row <= 10)
-    if (attr(confusion, "type") == "numeric")
+    if (attr(x, "type") == "numeric")
     {
         breakpoints <- read.table(text = gsub("[^.0-9]", " ", rownames(mat)), col.names = c("lower", "upper"))
         rownames(mat) <- breakpoints$upper
@@ -181,8 +184,8 @@ PrintConfusionMatrix <- function(confusion, footer = "") {
                                      colors = color, color_range = NULL, cexRow = 0.79,
                                      cellnote = mat, show_cellnote_in_cell = show.cellnote.in.cell,
                                      xaxis_title = "Predicted", yaxis_title = "Observed",
-                                     title = paste0("Prediction-Accuracy Table: ", attr(confusion, "outcome.label")),
-                                     footer = footer,
+                                     title = paste0("Prediction-Accuracy Table: ", attr(x, "outcome.label")),
+                                     footer = x$description,
                                      extra_tooltip_info = list("% cases" = cell.pct,
                                                                "% Predicted" = column.pct,
                                                                "% Observed" = row.pct))
