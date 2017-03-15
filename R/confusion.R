@@ -151,9 +151,9 @@ print.ConfusionMatrix <- function(x, ...) {
     show.cellnote.in.cell <- (n.row <= 10)
     if (attr(x, "type") == "numeric")
     {
-        breakpoints <- read.table(text = gsub("[^.0-9]", " ", rownames(mat)), col.names = c("lower", "upper"))
-        rownames(mat) <- breakpoints$upper
-        colnames(mat) <- breakpoints$upper
+        breakpoints <- sub("[^,]*,([^]]*)\\]", "\\1", rownames(mat))
+        rownames(mat) <- breakpoints
+        colnames(mat) <- breakpoints
     }
 
     # create tooltip matrices of percentages
