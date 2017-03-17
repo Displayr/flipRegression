@@ -15,9 +15,6 @@
 #' @export
 ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 {
-    if (!is.null(obj$confusion))
-        return(obj$confusion)
-
     observed <- Observed(obj)
     predicted <- predict(obj)
 
