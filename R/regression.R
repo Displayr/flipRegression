@@ -193,7 +193,10 @@ Regression <- function(formula,
             final.model$sample.description <- processed.data$description
             final.model$footer <- regressionFooter(final.model)
             if (relative.importance)
+            {
                 final.model$relative.importance <- multipleImputationRelativeImportance(models)
+                final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
+            }
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
