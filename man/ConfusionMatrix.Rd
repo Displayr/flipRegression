@@ -4,7 +4,8 @@
 \alias{ConfusionMatrix}
 \title{\code{ConfusionMatrix}}
 \usage{
-ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights,
+  description = obj$sample.description)
 }
 \arguments{
 \item{obj}{A model with an outcome variable.}
@@ -15,6 +16,9 @@ may not be an expression.}
 
 \item{weights}{An optional vector of sampling weights or the
 name of a variable in \code{data}. It may not be an expression.}
+
+\item{description}{An optional string used to describe the data that created the
+confusion matrix.}
 }
 \description{
 \code{ConfusionMatrix}
