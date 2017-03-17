@@ -230,7 +230,7 @@ Regression <- function(formula,
         result$n.observations <- n
         result$estimation.data <- .estimation.data
         if (relative.importance)
-            result$relative.importance <- estimateRelativeImportance(.formula, .estimation.data, .weights, type)
+            result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights, type)
     }
     class(result) <- "Regression"
     suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"
