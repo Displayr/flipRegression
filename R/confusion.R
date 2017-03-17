@@ -6,17 +6,14 @@
 #' may not be an expression.
 #' @param weights An optional vector of sampling weights or the
 #' name of a variable in \code{data}. It may not be an expression.
-#' @param description An optional string used to describe the data that created the
-#' confusion matrix.
 #' @details Produces a confusion matrix for a trained model showing the proportion
-#' of observed values that take the same values as the predicted values. Predictions
-#' are based on the training data (not a separate test set).  Where the outcome variable
+#' of observed values that take the same values as the predicted values. Where the outcome variable
 #' in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 #' @importFrom stats predict
 #' @importFrom methods is
-#' @importFrom flipData Observed
+#' @importFrom flipData Observed EstimationData
 #' @export
-ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, description = obj$sample.description)
+ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 {
     if (!is.null(obj$confusion))
         return(obj$confusion)
@@ -47,6 +44,8 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, des
         attr(confusion, "type") <- "numeric"
     }
     attr(confusion, "outcome.label") <- obj$outcome.label
+    description <- EstimationData(obj$formula, obj$model, subset, weights, obj$missing)$description
+    # TODO - calculate accuracy and append to description
     attr(confusion, "description") <- description
     class(confusion) <- "ConfusionMatrix"
     return(confusion)
