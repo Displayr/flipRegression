@@ -4,7 +4,8 @@
 \alias{ConfusionMatrix}
 \title{\code{ConfusionMatrix}}
 \usage{
-ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights,
+  description = obj$sample.description)
 }
 \arguments{
 \item{obj}{A model with an outcome variable.}
@@ -15,13 +16,17 @@ may not be an expression.}
 
 \item{weights}{An optional vector of sampling weights or the
 name of a variable in \code{data}. It may not be an expression.}
+
+\item{description}{An optional string used to describe the data that created the
+confusion matrix.}
 }
 \description{
 \code{ConfusionMatrix}
 }
 \details{
 Produces a confusion matrix for a trained model showing the proportion
-of observed values that take the same values as the predicted values. Where the outcome variable
+of observed values that take the same values as the predicted values. Predictions
+are based on the training data (not a separate test set).  Where the outcome variable
 in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 }
 
