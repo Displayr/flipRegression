@@ -6,17 +6,14 @@
 #' may not be an expression.
 #' @param weights An optional vector of sampling weights or the
 #' name of a variable in \code{data}. It may not be an expression.
-#' @param description An optional string used to describe the data that created the
-#' confusion matrix.
 #' @details Produces a confusion matrix for a trained model showing the proportion
-#' of observed values that take the same values as the predicted values. Predictions
-#' are based on the training data (not a separate test set).  Where the outcome variable
+#' of observed values that take the same values as the predicted values. Where the outcome variable
 #' in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 #' @importFrom stats predict
 #' @importFrom methods is
-#' @importFrom flipData Observed
+#' @importFrom flipData Observed EstimationData
 #' @export
-ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, description = obj$sample.description)
+ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 {
     observed <- Observed(obj)
     predicted <- predict(obj)
@@ -40,10 +37,15 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, des
         # between 3 and 30 buckets depending on the number of values
         buckets <- max(min(floor(sqrt(length(predicted[subset == TRUE]) / 3)), 30), 3)
         breakpoints <- seq(min.value, max.value, range / buckets)
-        confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints, include.lowest = TRUE), cut(predicted, breakpoints, include.lowest = TRUE), subset, weights)
+        confusion <- ConfusionMatrixFromVariables(cut(observed, breakpoints, include.lowest = TRUE),
+                                                  cut(predicted, breakpoints, include.lowest = TRUE), subset, weights)
         attr(confusion, "type") <- "numeric"
     }
     attr(confusion, "outcome.label") <- obj$outcome.label
+    n.predictions <- sum(confusion)
+    accuracy <- FormatAsPercent(sum(diag(confusion)) / n.predictions, 4)
+    description <- paste0("Fitted model : ", obj$sample.description, "  ", n.predictions, " predictions made with ",
+                          accuracy, " accuracy;")
     attr(confusion, "description") <- description
     class(confusion) <- "ConfusionMatrix"
     return(confusion)
