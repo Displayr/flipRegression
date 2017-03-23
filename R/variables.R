@@ -137,7 +137,7 @@ probabilities <- function(object)
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Probabilities
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
-#' of class membership from a refression model.
+#' of class membership from a regression model.
 #' @export
 Probabilities.Regression <- function(object)
 {

@@ -42,9 +42,9 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
         attr(confusion, "type") <- "numeric"
     }
     attr(confusion, "outcome.label") <- obj$outcome.label
-    n.predictions <- sum(confusion)
-    accuracy <- FormatAsPercent(sum(diag(confusion)) / n.predictions, 4)
-    description <- paste0("Fitted model : ", obj$sample.description, "  ", n.predictions, " predictions made with ",
+    n.pairs <- sum(confusion)
+    accuracy <- FormatAsPercent(sum(diag(confusion)) / n.pairs, 4)
+    description <- paste0("Fitted model : ", obj$sample.description, "  ", n.pairs, " observed/predicted pairs with ",
                           accuracy, " accuracy;")
     attr(confusion, "description") <- description
     class(confusion) <- "ConfusionMatrix"
