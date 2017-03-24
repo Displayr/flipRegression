@@ -27,7 +27,7 @@ test_that("Multiple imputation", {
 
 f4 <- (1:nrow(bank)) %% 4
 test_that("Robust SE", {
-    expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, robust.se = T)))
+    expect_warning(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, robust.se = T), "Robust SE not used")
     expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = f4, data = bank, robust.se = T)), NA)
 })
 

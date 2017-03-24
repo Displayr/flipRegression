@@ -323,27 +323,26 @@ Regression <- function(formula,
         result$interaction.model <- fit2$original
 
         # Compute table of coefficients
-        rsum2 <- summary(fit2$original)
-        rsum2 <- tidySummary(rsum2, fit2$original, result)
-        tmp.coef2 <- rsum2$coef[,1]
-        if (any(is.na(tmp.coef2)) && result$robust.se)
-        {
-            warning("Robust SE not used as some coefficients are undefined\n")
-            result$robust.se <- FALSE
-        }
-
-        tmp.sd2 <- rsum2$coef[,2]^2
         tmp.coef <- summary(fit$original)$coef[,1]
         num.var <- length(tmp.coef)
         split.labels <- levels(.estimation.data[,interaction.name])
         split.names <- paste0(interaction.name, split.labels)
         num.split <- length(split.names)
         split.size <- table(.estimation.data[,interaction.name])
-
         var.names <- names(tmp.coef)
         all.names <- sprintf("%s%s", var.names,
                     rep(c("", paste0(":", split.names[-1])), each=length(var.names)))
         all.names <- gsub("(Intercept):", "", all.names, fixed=T)
+
+        rsum2 <- summary(fit2$original)
+        if (result$robust.se && length(rsum2$coef[,1]) < num.split * num.var)
+        {
+            warning("Robust SE not used as some coefficients are undefined\n")
+            result$robust.se <- FALSE
+        }
+        rsum2 <- tidySummary(rsum2, fit2$original, result)
+        tmp.coef2 <- rsum2$coef[,1]
+        tmp.sd2 <- rsum2$coef[,2]^2
 
         coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
         sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
