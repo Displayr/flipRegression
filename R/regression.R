@@ -47,7 +47,7 @@
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
 #' @param relative.importance Whether to compute relative importance.
-#' @param interaction Optional variable to test for interaction with other variables in the model.
+#' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -270,12 +270,14 @@ Regression <- function(formula,
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
     result$model <- data
-    result$robust.se <- robust.se #1
-    result$type = type #!
-    result$weights <- unfiltered.weights #!
+    result$robust.se <- robust.se 
+    result$type = type 
+    result$weights <- unfiltered.weights 
     result$output <- output
     result$show.labels <- show.labels
-    result$missing <- missing #!
+    result$missing <- missing 
+    result$test.interaction <- !is.null(interaction)
+
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
@@ -309,7 +311,6 @@ Regression <- function(formula,
     }
 
     # Crosstab-interaction
-    result$test.interaction <- !is.null(interaction)
     result$interaction.name <- interaction.name
     if (result$test.interaction)
     {

@@ -78,7 +78,7 @@ See \code{\link{contrasts}} for more information.}
 
 \item{relative.importance}{Whether to compute relative importance.}
 
-\item{interaction}{Optional variable to test for interaction with other variables in the model.}
+\item{interaction}{Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}
