@@ -99,7 +99,7 @@ extractVariableCoefficientNames <- function(obj)
     coef.names <- rownames(obj$summary$coefficients)
     if (obj$type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         coef.names[-1]
-    else if (type %in% c("Ordered Logit"))
+    else if (obj$type %in% c("Ordered Logit"))
         coef.names[-length(coef.names):-(length(obj$original$coefficients) + 1)]
     else
         stop(paste("Type not handled: ", obj$type))
