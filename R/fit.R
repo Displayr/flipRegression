@@ -1,8 +1,8 @@
-#' Object Goodness-of-Fit
+#' Goodness-of-Fit
+#'
 #' \code{GoodnessOfFit} summary is a generic function used to produce result summaries of the
 #' results of the model object. The function invokes particular \code{\link{methods}}
 #' which depend on the \code{\link{class}} of the first argument.
-#'
 #' reports the goodness-of-fit of an object.
 #' @param object An object for which a summary is desired..
 #' @param digits Minimal number of significant digits, see \code{\link{print.default}}.

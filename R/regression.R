@@ -1,5 +1,5 @@
-#' \code{Regression} Generalized Regression.
-#'
+#' \code{Regression} 
+#' @description Generalized Regression.
 #' @param formula An object of class \code{\link{formula}} (or one that can be
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
@@ -47,6 +47,7 @@
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
 #' @param relative.importance Whether to compute relative importance.
+#' @param interaction Optional variable to test for interaction with other variables in the model.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -62,7 +63,7 @@
 #'   Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
-#' @importFrom stats pnorm
+#' @importFrom stats pnorm anova update
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData CleanBackticks
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
@@ -74,7 +75,6 @@ Regression <- function(formula,
                        subset = NULL,
                        weights = NULL,
                        missing = "Exclude cases with missing data",
-                       interaction = NULL,
                        type = "Linear",
                        robust.se = FALSE,
                        method = "default",
@@ -88,6 +88,7 @@ Regression <- function(formula,
                        internal = FALSE,
                        contrasts = c("contr.treatment", "contr.treatment"),
                        relative.importance = FALSE,
+                       interaction = NULL,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -117,8 +118,10 @@ Regression <- function(formula,
 
     interaction.name <- deparse(substitute(interaction))
     interaction <- eval(substitute(interaction), data, parent.frame())
-    if (!is.null(interaction))
-        relative.importance <- FALSE
+    if (!is.null(interaction) && relative.importance)
+        stop("Relative importance is incompatible with Crosstab interaction.")
+    if (!is.null(interaction) && type == "Multinomial Logit")
+        stop("Crosstab interaction is incompatible with Multinomial logit regression.")
 
     formula2 <- if (is.null(interaction)) input.formula
                 else update(input.formula, sprintf(".~.*%s",interaction.name))
@@ -321,13 +324,15 @@ Regression <- function(formula,
 
         # Compute table of coefficients
         rsum2 <- summary(fit2$original)
-        #print(rsum2$coef)
+        cat("line 325\n")
+        print(rsum2$coef)
         rsum2 <- tidySummary(rsum2, fit2$original, result)
-        #print(rsum2$coef)
+        cat("line 328\n")
+        print(rsum2$coef)
         tmp.coef2 <- rsum2$coef[,1]
         if (any(is.na(tmp.coef2)) && result$robust.se)
         {
-            warning("No robust SEs as some coefficients are undefined\n")
+            warning("Robust SE not used as some coefficients are undefined\n")
             result$robust.se <- FALSE
         }
 
@@ -346,8 +351,9 @@ Regression <- function(formula,
         all.names <- gsub("(Intercept):", "", all.names, fixed=T)
 
         coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
-        #print(coef.tab)
+        print(matrix(all.names, ncol=num.split))
         sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
+        print(sd2.tab)
         diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
 
         # Only check differences between coefficients if we accept fit2

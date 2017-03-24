@@ -2,15 +2,15 @@
 % Please edit documentation in R/regression.R
 \name{Regression}
 \alias{Regression}
-\title{\code{Regression} Generalized Regression.}
+\title{\code{Regression}}
 \usage{
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
-  missing = "Exclude cases with missing data", interaction = NULL,
-  type = "Linear", robust.se = FALSE, method = "default",
-  output = "Coefficients", detail = FALSE, m = 10, seed = 12321,
-  statistical.assumptions, auxiliary.data = NULL, show.labels = FALSE,
-  internal = FALSE, contrasts = c("contr.treatment", "contr.treatment"),
-  relative.importance = FALSE, ...)
+  missing = "Exclude cases with missing data", type = "Linear",
+  robust.se = FALSE, method = "default", output = "Coefficients",
+  detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
+  auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
+  contrasts = c("contr.treatment", "contr.treatment"),
+  relative.importance = FALSE, interaction = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -78,11 +78,13 @@ See \code{\link{contrasts}} for more information.}
 
 \item{relative.importance}{Whether to compute relative importance.}
 
+\item{interaction}{Optional variable to test for interaction with other variables in the model.}
+
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}
 }
 \description{
-\code{Regression} Generalized Regression.
+Generalized Regression.
 }
 \details{
 "Imputation (replace missing values with estimates)". All selected

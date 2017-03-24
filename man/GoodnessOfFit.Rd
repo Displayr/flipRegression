@@ -4,10 +4,7 @@
 \alias{GoodnessOfFit}
 \alias{GoodnessOfFit.default}
 \alias{GoodnessOfFit.Regression}
-\title{Object Goodness-of-Fit
-\code{GoodnessOfFit} summary is a generic function used to produce result summaries of the
-results of the model object. The function invokes particular \code{\link{methods}}
-which depend on the \code{\link{class}} of the first argument.}
+\title{Goodness-of-Fit}
 \usage{
 GoodnessOfFit(object, digits = max(3L, getOption("digits") - 3L), ...)
 
@@ -42,6 +39,9 @@ data(breakfast)
 GoodnessOfFit(smacofRect(breakfast))}
 }
 \description{
+\code{GoodnessOfFit} summary is a generic function used to produce result summaries of the
+results of the model object. The function invokes particular \code{\link{methods}}
+which depend on the \code{\link{class}} of the first argument.
 reports the goodness-of-fit of an object.
 }
 \section{Methods (by class)}{
