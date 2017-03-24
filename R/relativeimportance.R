@@ -94,15 +94,15 @@ extractVariableStandardErrors <- function(model, type)
         stop(paste("Type not handled: ", type))
 }
 
-extractVariableCoefficientNames <- function(model, type)
+extractVariableCoefficientNames <- function(obj)
 {
-    coef.names <- rownames(summary(model)$coefficients)
-    if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+    coef.names <- rownames(obj$summary$coefficients)
+    if (obj$type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         coef.names[-1]
     else if (type %in% c("Ordered Logit"))
-        coef.names[-length(coef.names):-(length(model$coefficients) + 1)]
+        coef.names[-length(coef.names):-(length(obj$original$coefficients) + 1)]
     else
-        stop(paste("Type not handled: ", type))
+        stop(paste("Type not handled: ", obj$type))
 }
 
 isTStatisticUsed <- function(model)

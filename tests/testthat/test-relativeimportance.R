@@ -181,18 +181,18 @@ test_that("Relative importance linear weighted", {
 })
 
 data(bank, package = "flipExampleData")
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Linear", relative.importance = TRUE)), NA)
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Binary Logit", relative.importance = TRUE)), NA)
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Ordered Logit", relative.importance = TRUE)), NA)
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Multinomial Logit", relative.importance = TRUE)),
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Linear", relative.importance = TRUE))), NA)
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Binary Logit", relative.importance = TRUE))), NA)
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Ordered Logit", relative.importance = TRUE))), NA)
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Multinomial Logit", relative.importance = TRUE))),
              "Type not handled:  Multinomial Logit")
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Poisson", relative.importance = TRUE)), NA)
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Quasi-Poisson", relative.importance = TRUE)), NA)
-expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "NBD", relative.importance = TRUE)), NA)
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Poisson", relative.importance = TRUE))), NA)
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Quasi-Poisson", relative.importance = TRUE))), NA)
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "NBD", relative.importance = TRUE))), NA)

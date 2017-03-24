@@ -83,7 +83,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
     if (!is.null(x$relative.importance))
     {
-        lbls <- extractVariableCoefficientNames(x$original, x$type)
+        lbls <- extractVariableCoefficientNames(x)
         title <- paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
         extracted <- ExtractCommonPrefix(lbls)
         if (!is.na(extracted$common.prefix))
