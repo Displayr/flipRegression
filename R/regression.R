@@ -15,7 +15,7 @@
 #'   \code{"Use partial data (pairwise correlations)"},
 #'   \code{"Imputation (replace missing values with estimates)"}, and
 #'   \code{"Multiple imputation"}.
-#' @param type Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
+#' @param type Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust to violations of
@@ -26,7 +26,7 @@
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
 #' summary and model statistics. It is the default. \code{"ANOVA"} returns an
 #' ANOVA table. \code{"R"} returns a more traditional R output.
-#' @param detail This is a deprecated fuction. If \code{TRUE}, \code{output} is set to \code{R}.
+#' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #' method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
@@ -74,6 +74,7 @@ Regression <- function(formula,
                        subset = NULL,
                        weights = NULL,
                        missing = "Exclude cases with missing data",
+                       interaction = NULL,
                        type = "Linear",
                        robust.se = FALSE,
                        method = "default",
@@ -98,6 +99,7 @@ Regression <- function(formula,
     cl <- match.call()
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
+
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
     subset <- eval(substitute(subset), data, parent.frame())
@@ -112,7 +114,21 @@ Regression <- function(formula,
         weights <- list(...)$weights
     weight.name <- deparse(substitute(weights))
     weights <- eval(substitute(weights), data, parent.frame())
+
+    interaction.name <- deparse(substitute(interaction))
+    interaction <- eval(substitute(interaction), data, parent.frame())
+    if (!is.null(interaction))
+        relative.importance <- FALSE
+
+    formula2 <- if (is.null(interaction)) input.formula
+                else update(input.formula, sprintf(".~.*%s",interaction.name))
     data <- GetData(input.formula, data, auxiliary.data)
+    if (!is.null(interaction))
+    {
+        data <- cbind(data, Factor(interaction))
+        colnames(data)[ncol(data)] <- interaction.name
+    }
+
     if (method == "model.frame")
         return(data)
     outcome.name <- OutcomeName(input.formula)
@@ -162,11 +178,15 @@ Regression <- function(formula,
     }
     else
     {
-        processed.data <- EstimationData(input.formula, data, subset, weights, missing, m = m, seed = seed)
+        processed.data <- EstimationData(formula2, data, subset, weights, missing, m = m, seed = seed)
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
-                FUN = function(x) Regression(formula,
+                FUN = function(x)
+                {
+                    int.copy <- if (!is.null(interaction)) x[,interaction.name]
+                                else                       NULL
+                    Regression(formula,
                     data = x,
                     missing = "Error if missing data",
                     weights = processed.data$weights,
@@ -174,7 +194,9 @@ Regression <- function(formula,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
-                    relative.importance = relative.importance))
+                    relative.importance = relative.importance,
+                    interaction = int.copy)
+                })
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
             coefs <- MultipleImputationCoefficientTable(models)
@@ -197,6 +219,7 @@ Regression <- function(formula,
                 final.model$relative.importance <- multipleImputationRelativeImportance(models)
                 final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
             }
+            final.model$interaction.name <- interaction.name
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -219,6 +242,7 @@ Regression <- function(formula,
         .design <- fit$design
 
         result <- list(original = original, call = cl)
+
         if (!is.null(.design))
             result$design <- .design
         requireNamespace("car")
@@ -229,6 +253,8 @@ Regression <- function(formula,
         result$n.predictors <- ncol(.estimation.data) - 1
         result$n.observations <- n
         result$estimation.data <- .estimation.data
+
+
         if (relative.importance)
         {
             signs <- sign(extractVariableCoefficients(original, type))
@@ -237,43 +263,20 @@ Regression <- function(formula,
         }
     }
     class(result) <- "Regression"
-    suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"
-    if (!is.matrix(result$summary$coefficients)) # Tidying up MNL outputs with only one two categories.
-    {
-        result$summary$coefficients <- t(as.matrix(result$summary$coefficients))
-        result$summary$standard.errors <- t(as.matrix(result$summary$standard.errors))
-        rownames(result$summary$standard.errors) <- rownames(result$summary$coefficients) <- levels(outcome.variable)[[2]]
-    }
-    if (robust.se != FALSE)
-    {
-        if(is.null(weights))
-        {
-            robust.coef <-  coeftest(original, vcov. = vcov(result, robust.se))
-            colnames(robust.coef)[2] <- "Robust SE"
-            class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
-            result$summary$coefficients <- robust.coef
-        }
-        else
-            robust.se = FALSE
-    }
-    else if (type == "Ordered Logit" & missing != "Multiple imputation")
-    {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
-        coefs <-  result$summary$coefficients
-        ps <- 2 * pt(-abs(coefs[, 3]), df = result$summary$df.residual)
-        colnames(coefs)[1] <- "Estimate"
-        result$summary$coefficients <- cbind(coefs, p = ps)
-    }
-    # Removing extra backticks introduced by DataFormula, and unescaping original backticks
-    if(type == "Multinomial Logit")
-    {
-        nms <- CleanBackticks(colnames(result$summary$coefficients))
-        colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- nms
-    }
-    else
-    {
-        nms <- CleanBackticks(rownames(result$summary$coefficients))
-        rownames(result$summary$coefficients) <- nms
-    }
+    result$summary$call <- cl
+    result$formula <- input.formula
+    # Inserting the coefficients from the partial data.
+    result$model <- data
+    result$robust.se <- robust.se #1
+    result$type = type #!
+    result$weights <- unfiltered.weights #!
+    result$output <- output
+    result$show.labels <- show.labels
+    result$missing <- missing #!
+
+    suppressWarnings(tmpSummary <- summary(result$original))
+    result$summary <- tidySummary(tmpSummary, result$original, result)
+
     # Replacing the variables with their labels
     result$outcome.label <- result$outcome.name <- outcome.name
     if (show.labels)
@@ -290,16 +293,7 @@ Regression <- function(formula,
         }
         result$outcome.label <- Labels(outcome.variable)
     }
-    result$summary$call <- cl
-    result$formula <- input.formula
-    # Inserting the coefficients from the partial data.
-    result$model <- data
-    result$robust.se <- robust.se
-    result$type = type
-    result$weights <- unfiltered.weights
-    result$output <- output
-    result$show.labels <- show.labels
-    result$missing <- missing
+
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
     result$r.squared <- GoodnessOfFit(result)$value
@@ -310,7 +304,66 @@ Regression <- function(formula,
         result$z.statistics <- result$summary$coefficients / result$summary$standard.errors
         result$p.values <- 2 * (1 - pnorm(abs(result$z.statistics)))
     }
-    # Creating the subtitle.
+
+    # Crosstab-interaction
+    result$test.interaction <- !is.null(interaction)
+    result$interaction.name <- interaction.name
+    if (result$test.interaction)
+    {
+        fit2 <- FitRegression(formula2, .estimation.data, subset, .weights, type, robust.se, ...)
+
+        atest <- if (type %in% c("Linear", "Quasi-Poisson")) "F"
+                 else                                        "Chisq"
+        atmp <- anova(fit$original, fit2$original, test=atest)
+        result$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
+        result$interaction.pvalue <- atmp$Pr[2]
+        result$interaction.model <- fit2$original
+
+        # Compute table of coefficients
+        rsum2 <- summary(fit2$original)
+        #print(rsum2$coef)
+        rsum2 <- tidySummary(rsum2, fit2$original, result)
+        #print(rsum2$coef)
+        tmp.coef2 <- rsum2$coef[,1]
+        if (any(is.na(tmp.coef2)) && result$robust.se)
+        {
+            warning("No robust SEs as some coefficients are undefined\n")
+            result$robust.se <- FALSE
+        }
+
+        tmp.sd2 <- rsum2$coef[,2]^2
+        #print(tmp.sd2)
+        tmp.coef <- summary(fit$original)$coef[,1]
+        num.var <- length(tmp.coef)
+        split.labels <- levels(.estimation.data[,interaction.name])
+        split.names <- paste0(interaction.name, split.labels)
+        num.split <- length(split.names)
+        split.size <- table(.estimation.data[,interaction.name])
+
+        var.names <- names(tmp.coef)
+        all.names <- sprintf("%s%s", var.names,
+                    rep(c("", paste0(":", split.names[-1])), each=length(var.names)))
+        all.names <- gsub("(Intercept):", "", all.names, fixed=T)
+
+        coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
+        #print(coef.tab)
+        sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
+        diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
+
+        # Only check differences between coefficients if we accept fit2
+        if (result$interaction.pvalue < 0.05)
+            diff.coef <- compareCoef(coef.tab, sd2.tab, split.size)
+
+        split.size <- c(split.size, NET=sum(split.size))
+        combined.coefs <- cbind(coef.tab, tmp.coef)
+        colnames(combined.coefs) <- c(split.labels, "NET")
+        rownames(combined.coefs) <- names(tmp.coef)
+        result$combined.coefs <- combined.coefs
+        result$coef.sign <- diff.coef
+        result$split.size <- split.size
+    }
+
+    # Creating the subtitle/footer
     if (!partial)
     {
         result$sample.description <- processed.data$description
@@ -321,8 +374,55 @@ Regression <- function(formula,
     if (!is.null(result$relative.importance))
         result$relative.importance.footer <- relativeImportanceFooter(result)
     options(contrasts = old.contrasts[[1]])
+
     return(result)
 }
+
+# Tidies up inconsistencies in summary output
+# And applies robust standard errors
+tidySummary <- function(rsummary, fit.reg, result)
+{
+    if (!is.matrix(rsummary$coefficients)) # Tidying up MNL outputs with only one two categories.
+    {
+        rsummary$coefficients <- t(as.matrix(rsummary$coefficients))
+        rsummary$standard.errors <- t(as.matrix(rsummary$standard.errors))
+        outcome.variable <- result$model[,result$outcome.name]
+        rownames(rsummary$standard.errors) <- rownames(rsummary$coefficients) <- levels(outcome.variable)[[2]]
+    }
+    if (result$robust.se != FALSE)
+    {
+        if(is.null(result$weights))
+        {
+            #robust.coef <-  coeftest(result, vcov. = vcov(result, result$robust.se))
+            robust.coef <-  coeftest(fit.reg, vcov. = vcov2(fit.reg, result$robust.se))
+            colnames(robust.coef)[2] <- "Robust SE"
+            class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
+            rsummary$coefficients <- robust.coef
+        }
+        else
+            robust.se = FALSE
+    }
+    else if (result$type == "Ordered Logit" & result$missing != "Multiple imputation")
+    {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
+        coefs <-  rsummary$coefficients
+        ps <- 2 * pt(-abs(coefs[, 3]), df = rsummary$df.residual)
+        colnames(coefs)[1] <- "Estimate"
+        rsummary$coefficients <- cbind(coefs, p = ps)
+    }
+    # Removing extra backticks introduced by DataFormula, and unescaping original backticks
+    if(result$type == "Multinomial Logit")
+    {
+        nms <- CleanBackticks(colnames(rsummary$coefficients))
+        colnames(rsummary$coefficients) <- colnames(rsummary$standard.errors) <- nms
+    }
+    else
+    {
+        nms <- CleanBackticks(rownames(rsummary$coefficients))
+        rownames(rsummary$coefficients) <- nms
+    }
+    return(rsummary)
+}
+
 
 
 regressionFooter <- function(x)
@@ -332,6 +432,22 @@ regressionFooter <- function(x)
     aic <- if(partial) NA else AIC(x)
     rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
     footer <- x$sample.description
+
+    if (x$test.interaction)
+    {
+        if (x$type == "Linear")
+            footer <- paste0(footer, " R-squared of pooled model: ",
+                                       FormatAsReal(summary(x$original)$r.square, 4),
+                                    "; R-squared of interaction model: ",
+                                       FormatAsReal(summary(x$interaction.model)$r.square, 4))
+        else
+            footer <- paste0(footer, " McFadden's rho-squared of pooled model: ",
+                                       round(1 - deviance(x$original)/nullDeviance(x), 4),
+                                    "; McFaddens's rho-squared of interaction model: ",
+                                       round(1 - deviance(x$interaction.model)/nullDeviance(x), 4))
+        return(footer)
+    }
+
     footer <- paste0(footer," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
     if (!partial)
         footer <- paste0(footer,
@@ -465,6 +581,35 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
     result
 }
 
+compareCoef <- function(bb, ss, nn, alpha = 0.05)
+{
+    if (any(dim(bb) != dim(ss)))
+        stop("Dimensions of bb and ss must be the same\n")
+    if (length(nn) != ncol(bb))
+        stop("Length of nn should match columns in bb\n")
+    res <- matrix(0, nrow=nrow(bb), ncol=ncol(ss))
+
+    for (i in 1:nrow(bb))
+    {
+    for (j in 1:ncol(bb))
+    {
+        n0 <- sum(nn[-j], na.rm=T)
+        b0 <- sum(nn[-j] * bb[i,-j], na.rm=T)/n0
+        s0 <- sum((nn[-j]-1) * ss[i,-j], na.rm=T)/sum(nn[-j]-1, na.rm=T)
+        v <- (ss[i,j] + s0)^2/(ss[i,j]^2/(nn[j]-1) + s0^2/(n0-1))
+
+        t.stat <- (bb[i,j] - b0)/sqrt(ss[i,j] + s0)
+        tc <- qt(1-alpha/2, v)
+        if (!is.na(t.stat) && t.stat < -tc)
+            res[i,j] <- -1
+        if (!is.na(t.stat) && t.stat > tc)
+            res[i,j] <- 1
+    }
+    }
+    return (res)
+}
+
+
 #' notValidForPartial
 #'
 #' @param object A Regression object
@@ -521,6 +666,24 @@ vcov.Regression <- function(object, robust.se = FALSE, ...)
     }
     FixVarianceCovarianceMatrix(v)
 }
+
+vcov2 <- function(fit.reg, robust.se = FALSE, ...)
+{
+    if (robust.se == FALSE)
+    {
+        v <- vcov(fit.reg)
+        if(!inherits(fit.reg, "svyglm"))
+            return(v)
+    }
+    else
+    {
+        if (robust.se == TRUE)
+            robust.se <- "hc3"
+        v <- hccm(fit.reg, type = robust.se)
+    }
+    FixVarianceCovarianceMatrix(v)
+}
+
 
 #' vcov.Regression
 #'

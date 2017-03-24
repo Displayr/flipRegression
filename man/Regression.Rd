@@ -5,11 +5,11 @@
 \title{\code{Regression} Generalized Regression.}
 \usage{
 Regression(formula, data = NULL, subset = NULL, weights = NULL,
-  missing = "Exclude cases with missing data", type = "Linear",
-  robust.se = FALSE, method = "default", output = "Coefficients",
-  detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
-  auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
-  contrasts = c("contr.treatment", "contr.treatment"),
+  missing = "Exclude cases with missing data", interaction = NULL,
+  type = "Linear", robust.se = FALSE, method = "default",
+  output = "Coefficients", detail = FALSE, m = 10, seed = 12321,
+  statistical.assumptions, auxiliary.data = NULL, show.labels = FALSE,
+  internal = FALSE, contrasts = c("contr.treatment", "contr.treatment"),
   relative.importance = FALSE, ...)
 }
 \arguments{
@@ -33,7 +33,7 @@ name of a variable in \code{data}. It may not be an expression.}
 \code{"Imputation (replace missing values with estimates)"}, and
 \code{"Multiple imputation"}.}
 
-\item{type}{Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
+\item{type}{Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
 
@@ -50,7 +50,7 @@ method = "model.frame", which returns the model frame.}
 summary and model statistics. It is the default. \code{"ANOVA"} returns an
 ANOVA table. \code{"R"} returns a more traditional R output.}
 
-\item{detail}{This is a deprecated fuction. If \code{TRUE}, \code{output} is set to \code{R}.}
+\item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}
 
 \item{m}{The number of imputed samples, if using multiple imputation.}
 

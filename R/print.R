@@ -1,7 +1,7 @@
 
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix RelativeImportanceTable
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix RelativeImportanceTable CrosstabInteractionTable
 #' @importFrom stats printCoefmat
 #' @method print Regression
 #' @export
@@ -65,6 +65,22 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     #            if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
     #            if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
     caption <- x$footer
+    if (x$test.interaction)
+    {
+        add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
+        title <- paste0(regressionType(x$type), ": ", x$outcome.label)
+        subtitle <- paste0(x$anova.test, " for interaction on ", x$interaction.name, ": P-value ", round(x$interaction.pvalue,4))
+        #subtitle <- if (!is.null(x$subtitle)) x$subtitle else ""
+        dt <- CrosstabInteractionTable(x$combined.coefs,
+                                       x$coef.sign,
+                                       x$split.size,
+                                       title = title,
+                                       footer = caption,
+                                       subtitle = subtitle)
+        print(dt)
+        return()
+    }
+
     if (!is.null(x$relative.importance))
     {
         lbls <- extractVariableCoefficientNames(x$original, x$type)
