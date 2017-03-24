@@ -33,7 +33,7 @@ name of a variable in \code{data}. It may not be an expression.}
 \code{"Imputation (replace missing values with estimates)"}, and
 \code{"Multiple imputation"}.}
 
-\item{type}{Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
+\item{type}{Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
 
@@ -101,4 +101,3 @@ von Hippel, Paul T. 2007. "Regression With Missing Y's: An
   heteroscedasticity consistent standard errors in the linear regression
   model. The American Statistician, 54(3): 217-224.
 }
-

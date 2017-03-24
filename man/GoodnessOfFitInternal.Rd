@@ -31,4 +31,3 @@ Packages up the object goodness of fit,
 \code{GoodnessOfFitInternal} puts together the various bits of \code{GoodnessOfFit}.  These should usually not
 be used directly unless by experienced users.
 }
-

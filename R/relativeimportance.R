@@ -1,36 +1,36 @@
+#' @importFrom stats cov.wt as.formula
+#' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
-estimateRelativeImportance <- function(formula, data, weights, type)
-{
-    formula.names <- AllVariablesNames(formula)
-    outcome.name <- OutcomeName(formula)
-    y <- data[[outcome.name]]
-    X <- data[setdiff(formula.names, outcome.name)]
-
-    if (type == "Linear")
-    {
-        num.y <- AsNumeric(y, binary = FALSE)
-        num.X <- AsNumeric(X, remove.first = TRUE)
-        ria <- relativeImportanceLinear(num.y, num.X, weights)
-    }
-    else
-        stop(paste("Relative importance analysis is not available for", type))
-}
-
-#' @importFrom stats cov.wt
-#' @importFrom flipData CalibrateWeight
-relativeImportanceLinear <- function(y, X, weights = NULL)
+estimateRelativeImportance <- function(formula, data, weights, type, signs, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
 
+    if (type == "Multinomial Logit")
+        stop(paste("Relative importance analysis is not available for", type))
+
+    formula.names <- AllVariablesNames(formula)
+    outcome.name <- OutcomeName(formula)
+    X <- data[setdiff(formula.names, outcome.name)]
+
+    num.X <- AsNumeric(X, remove.first = TRUE)
+
+    input.weights <- weights
     if (is.null(weights))
-        weights <- rep(1, length(y))
+        weights <- rep(1, nrow(data))
 
     result <- list()
 
     x.zscore <- sapply(X, function(x) weightedZScores(x, weights))
-    y.zscore <- weightedZScores(y, weights)
+
+    y <- if (type == "Linear")
+    {
+        num.y <- AsNumeric(data[[outcome.name]], binary = FALSE)
+        weightedZScores(num.y, weights)
+    }
+    else
+        data[[outcome.name]]
 
     corr.x <- cov.wt(X, wt = weights, cor = TRUE)$cor
     eigen.corr.x <- eigen(corr.x)
@@ -40,19 +40,26 @@ relativeImportanceLinear <- function(y, X, weights = NULL)
     lambda_inverse <- eigen.corr.x$vectors %*% delta_inverse %*% t(eigen.corr.x$vectors) # Lambda^-1 = V * Delta^-1 * V^T
 
     z <- x.zscore %*% lambda_inverse # orthogonal regressors
-    lm.z <- lm(y.zscore ~ z, weights = weights)
-    beta <- unname(lm.z$coefficients[-1])
-    beta.se <- sqrt(diag(vcov(lm.z)))[1] # all identical, just take the first one.
+
+    reg.data <- cbind(data.frame(y = y), as.data.frame(z))
+    data.formula <- as.formula(paste0("y ~ ", paste(paste0("V", 1:ncol(z)), collapse = "+")))
+
+    fit <- FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)
+    beta <- extractVariableCoefficients(fit$original, type)
+    beta.se <- extractVariableStandardErrors(fit$original, type)
+
     result$raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
     result$standard.errors <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2))
 
-    lm.x <- lm(y ~ as.matrix(X), weights = weights)
-    signs <- sign(unname(lm.x$coefficients[-1]))
-
     result$importance <- signs * 100 * prop.table(result$raw.importance)
-    result$t.statistics <- signs * result$raw.importance / result$standard.errors
-    result$p.values <- 2 * pt(abs(result$t.statistic), lm.x$df.residual, lower.tail = FALSE)
-    result$df <- lm.x$df.residual
+
+    result$statistics <- signs * result$raw.importance / result$standard.errors
+    is.t.statistic.used <- isTStatisticUsed(fit$original)
+    result$statistic.name <- if (is.t.statistic.used) "t" else "z"
+    result$p.values <- if (is.t.statistic.used)
+        2 * pt(abs(result$statistics), fit$original$df.residual, lower.tail = FALSE)
+    else
+        2 * pnorm(abs(result$statistics), lower.tail = FALSE)
     result
 }
 
@@ -63,4 +70,42 @@ weightedZScores <- function(x, weights)
     m <- weighted.mean(x, weights)
     std <- sqrt(Correlation(x, x, weights = weights, correlation = FALSE))
     (x - m) / std
+}
+
+# Only extract coefficients for variables, not intercepts
+extractVariableCoefficients <- function(model, type)
+{
+    if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+        model$coefficients[-1]
+    else if (type %in% c("Ordered Logit"))
+        model$coefficients
+    else
+        stop(paste("Type not handled: ", type))
+}
+
+extractVariableStandardErrors <- function(model, type)
+{
+    standard.errors <- summary(model)$coefficients[, 2]
+    if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+        standard.errors[-1]
+    else if (type %in% c("Ordered Logit"))
+        standard.errors[-length(standard.errors):-(length(model$coefficients) + 1)]
+    else
+        stop(paste("Type not handled: ", type))
+}
+
+extractVariableCoefficientNames <- function(model, type)
+{
+    coef.names <- rownames(summary(model)$coefficients)
+    if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+        coef.names[-1]
+    else if (type %in% c("Ordered Logit"))
+        coef.names[-length(coef.names):-(length(model$coefficients) + 1)]
+    else
+        stop(paste("Type not handled: ", type))
+}
+
+isTStatisticUsed <- function(model)
+{
+    grepl("^t", colnames(summary(model)$coefficients)[3])
 }

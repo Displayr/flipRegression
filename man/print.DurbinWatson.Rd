@@ -14,4 +14,3 @@
 \description{
 \code{print.DurbinWatson}
 }
-

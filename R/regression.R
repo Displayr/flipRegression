@@ -15,7 +15,7 @@
 #'   \code{"Use partial data (pairwise correlations)"},
 #'   \code{"Imputation (replace missing values with estimates)"}, and
 #'   \code{"Multiple imputation"}.
-#' @param type Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
+#' @param type Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust to violations of
@@ -230,7 +230,11 @@ Regression <- function(formula,
         result$n.observations <- n
         result$estimation.data <- .estimation.data
         if (relative.importance)
-            result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights, type)
+        {
+            signs <- sign(extractVariableCoefficients(original, type))
+            result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
+                                                                     type, signs, ...)
+        }
     }
     class(result) <- "Regression"
     suppressWarnings(result$summary <- summary(result$original)) # Multinomial logit was showing the warning "NaNs produced"

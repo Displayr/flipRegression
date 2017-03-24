@@ -1,6 +1,6 @@
 context("Relative importance analysis")
 
-X <- structure(list(`Colas (e.g., Coca Cola, Pepsi Max)?` = c(9, 8,
+X <- structure(list(v1 = c(9, 8,
     7, 8, 9, 9, 5, 7, 5, 7, 8, 6, 5, 6, 9, 8, 5, 7, 7, 4, 6, 9, 9,
     5, 9, 9, 7, 9, 6, 5, 5, 7, 7, 9, 5, 9, 9, 7, 9, 9, 9, 6, 9, 8,
     7, 7, 7, 5, 9, 9, 9, 9, 9, 7, 6, 6, 9, 7, 6, 8, 9, 4, 8, 7, 8,
@@ -17,7 +17,7 @@ X <- structure(list(`Colas (e.g., Coca Cola, Pepsi Max)?` = c(9, 8,
     7, 7, 9, 4, 7, 6, 5, 8, 4, 9, 6, 9, 7, 7, 4, 6, 6, 9, 8, 9, 7,
     4, 5, 7, 7, 9, 8, 9, 9, 6, 7, 9, 9, 9, 8, 9, 6, 6, 5, 9, 8, 4,
     6, 4, 9, 8, 7, 7, 9, 7, 6, 4),
-    `Sparkling mineral water` = c(7,
+    v2 = c(7,
     9, 3, 1, 3, 1, 8, 4, 3, 4, 3, 6, 2, 4, 2, 1, 1, 7, 1, 3, 4, 9,
     2, 2, 6, 4, 4, 2, 1, 7, 2, 4, 9, 3, 9, 4, 3, 1, 5, 2, 4, 6, 4,
     7, 7, 1, 3, 3, 3, 6, 1, 2, 1, 7, 4, 7, 7, 5, 8, 3, 4, 2, 8, 3,
@@ -34,7 +34,7 @@ X <- structure(list(`Colas (e.g., Coca Cola, Pepsi Max)?` = c(9, 8,
     6, 6, 1, 4, 1, 4, 9, 2, 1, 1, 3, 6, 2, 1, 2, 7, 3, 4, 2, 6, 4,
     3, 2, 7, 4, 1, 3, 3, 3, 7, 5, 2, 7, 5, 6, 5, 6, 1, 1, 6, 3, 9,
     1, 1, 1, 1, 8, 5, 3, 1, 1, 9, 3),
-    Coffee = c(7, 9, 9, 8, 1, 1,
+    v3 = c(7, 9, 9, 8, 1, 1,
     9, 9, 9, 9, 9, 8, 1, 5, 6, 9, 1, 1, 9, 1, 9, 2, 1, 9, 6, 1, 9,
     1, 1, 8, 9, 9, 9, 5, 9, 9, 8, 1, 6, 9, 9, 9, 9, 9, 9, 5, 9, 9,
     9, 7, 1, 9, 7, 1, 9, 1, 9, 6, 9, 8, 9, 9, 6, 7, 6, 8, 9, 9, 9,
@@ -51,7 +51,7 @@ X <- structure(list(`Colas (e.g., Coca Cola, Pepsi Max)?` = c(9, 8,
     9, 6, 9, 9, 9, 1, 9, 2, 1, 1, 9, 3, 3, 9, 5, 9, 9, 9, 9, 8, 6,
     1, 8, 7, 1, 9, 1, 9, 1, 9, 9, 1, 1, 9, 9, 9, 9, 5, 9, 1, 7, 8,
     1, 9, 9, 8, 8, 5)),
-    .Names = c("Colas (e.g., Coca Cola, Pepsi Max)?", "Sparkling mineral water", "Coffee"),
+    .Names = c("v1", "v2", "v3"),
     row.names = c(NA, 327L),
     questiontype = "PickOneMulti",
     question = "Q4. Frequency of drinking", class = "data.frame")
@@ -158,25 +158,26 @@ w <- structure(c(1.02849002849003, 0.587708587708588, 0.587708587708588,
                  0.587708587708588, 0.734635734635735, 0.587708587708588, 0.440781440781441),
                name = "Q32", label = "Q32. Income")
 
+dat <- cbind(y, X)
+
 test_that("Relative importance linear", {
-    ria <- relativeImportanceLinear(y, X)
-    expect_equal(ria$importance[3], 84.254254422183)
-    expect_equal(ria$raw.importance[1], 0.00427583141764991)
-    expect_equal(ria$standard.errors[2], 0.0063992259854952)
-    expect_equal(ria$t.statistics[3], 1.67705299149539)
-    expect_equal(ria$p.values[1], 0.601691734700789)
+    ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1))
+    expect_equal(unname(ria$importance[3]), 84.254254422183)
+    expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
+    expect_equal(unname(ria$standard.errors[2]), 0.0063255437734088)
+    expect_equal(unname(ria$t.statistics[3]), 1.67657589953606)
+    expect_equal(unname(ria$p.values[1]), 0.596423803897342)
 })
 
 test_that("Relative importance linear weighted", {
-    ria <- relativeImportanceLinear(y, X, w)
-    expect_equal(ria$importance[3], 80.657438103125)
-    expect_equal(ria$raw.importance[1], 0.00356269285452153)
-    expect_equal(ria$standard.errors[2], 0.0092182725648075)
-    expect_equal(ria$t.statistics[3], 1.8049754730595)
-    expect_equal(ria$p.values[1], 0.639595650772237)
+    ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1))
+    expect_equal(unname(ria$importance[3]), 80.657438103125)
+    expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
+    expect_equal(unname(ria$standard.errors[2]), 0.0107061227893571)
+    expect_equal(unname(ria$t.statistics[3]), 1.58251703919732)
+    expect_equal(unname(ria$p.values[1]), 0.639061445729629)
 })
 
 data(bank, package = "flipExampleData")
 expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                          data = bank, type = "Linear", relative.importance = TRUE)), NA)
-

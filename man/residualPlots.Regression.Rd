@@ -14,4 +14,3 @@
 \description{
 residualPlots.Regression
 }
-

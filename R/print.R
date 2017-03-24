@@ -67,8 +67,8 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     caption <- x$footer
     if (!is.null(x$relative.importance))
     {
-        lbls <- rownames(x$summary$coefficients)[-1]
-        title <- paste0("Relative Importance Analysis", ": ", x$outcome.label)
+        lbls <- extractVariableCoefficientNames(x$original, x$type)
+        title <- paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
         extracted <- ExtractCommonPrefix(lbls)
         if (!is.na(extracted$common.prefix))
         {

@@ -23,4 +23,3 @@ average effect. With factors, the first level is from the intercept, and
 the other levels are the intercept plus the parameter (thus, if you modify
 the contrats, this plot will not display the predicted values correctly).
 }
-

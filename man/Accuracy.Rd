@@ -21,8 +21,6 @@ name of a variable in \code{data}. It may not be an expression.}
 }
 \details{
 The proportion of observed values that take the same values as the predicted values.
-Where the outcome
-variable in the model is not a factor and not a count, predicted values are assigned to the closest observed
-value.
+Where the outcome variable in the model is not a factor and not a count, predicted values are
+assigned to buckets as per \code{\link{ConfusionMatrix}}.
 }
-
