@@ -1,5 +1,7 @@
 context("Relative importance analysis")
 
+data(bank, package = "flipExampleData")
+
 X <- structure(list(v1 = c(9, 8,
     7, 8, 9, 9, 5, 7, 5, 7, 8, 6, 5, 6, 9, 8, 5, 7, 7, 4, 6, 9, 9,
     5, 9, 9, 7, 9, 6, 5, 5, 7, 7, 9, 5, 9, 9, 7, 9, 9, 9, 6, 9, 8,
@@ -164,9 +166,9 @@ test_that("Relative importance linear", {
     ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1))
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
-    expect_equal(unname(ria$standard.errors[2]), 0.0063255437734088)
-    expect_equal(unname(ria$t.statistics[3]), 1.67657589953606)
-    expect_equal(unname(ria$p.values[1]), 0.596423803897342)
+    expect_equal(unname(ria$standard.errors[2]), 0.0064131971633685)
+    expect_equal(unname(ria$statistics[3]), 1.67438163150951)
+    expect_equal(unname(ria$p.values[1]), 0.602392540480551)
 })
 
 test_that("Relative importance linear weighted", {
@@ -174,10 +176,23 @@ test_that("Relative importance linear weighted", {
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
     expect_equal(unname(ria$standard.errors[2]), 0.0107061227893571)
-    expect_equal(unname(ria$t.statistics[3]), 1.58251703919732)
+    expect_equal(unname(ria$statistics[3]), 1.58251703919732)
     expect_equal(unname(ria$p.values[1]), 0.639061445729629)
 })
 
 data(bank, package = "flipExampleData")
 expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                          data = bank, type = "Linear", relative.importance = TRUE)), NA)
+expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Binary Logit", relative.importance = TRUE)), NA)
+expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Ordered Logit", relative.importance = TRUE)), NA)
+expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Multinomial Logit", relative.importance = TRUE)),
+             "Type not handled:  Multinomial Logit")
+expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Poisson", relative.importance = TRUE)), NA)
+expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Quasi-Poisson", relative.importance = TRUE)), NA)
+expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "NBD", relative.importance = TRUE)), NA)
