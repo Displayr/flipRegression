@@ -11,6 +11,7 @@ resid.Regression <- function(object, ...)
 residuals.Regression <- function(object, type = "raw", ...)
 {
     notValidForPartial(object, "residuals")
+    notValidForCrosstabInteraction(object, "residuals")
     if (type == "raw" & object$type %in% c("Ordered Logit", "Multinomial Logit", "Binary Logit"))
     {
         observed <- Observed(object)
@@ -50,8 +51,12 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 #' @importFrom flipData Observed CheckPredictionVariables
 predict.Regression <- function(object, newdata = object$model, na.action = na.pass, ...)
 {
+    if (object$test.interaction)
+        stop("Cannot predict from regression model with Crosstab interaction.")
+
     newdata <- CheckPredictionVariables(object, newdata)
     notValidForPartial(object, "predict")
+    notValidForCrosstabInteraction(object, "predict")
     predicted <- if (any(class(object$original) == "glm"))
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
     else
@@ -76,6 +81,7 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
 fitted.Regression <- function(object, ...)
 {
     notValidForPartial(object, "fitted")
+    notValidForCrosstabInteraction(object, "fitted")
     fitted.values <- fitted(object$original)
     fillInMissingRowNames(rownames(object$model), fitted.values)
 }
@@ -142,6 +148,7 @@ probabilities <- function(object)
 Probabilities.Regression <- function(object)
 {
     notValidForPartial(object, "probabilities")
+    notValidForCrosstabInteraction(object, "probabilities")
     if (object$type == "Linear")
         stop("'probabilities' is not applicable to linear regression models.")
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))

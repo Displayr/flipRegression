@@ -1,4 +1,4 @@
-#' \code{Regression} 
+#' \code{Regression}
 #' @description Generalized Regression.
 #' @param formula An object of class \code{\link{formula}} (or one that can be
 #'   coerced to that class): a symbolic description of the model to be fitted.
@@ -625,6 +625,17 @@ notValidForPartial <- function(object, method)
     ms <- "Use partial data (pairwise correlations)"
     if (object$missing == ms)
         stop(paste0("'", method, "' not available when 'missing' = ",ms, "'." ))
+}
+
+
+#' notValidForCrosstabInteraction
+#'
+#' @param object A Regression object
+#' @param method The regression method.
+notValidForCrosstabInteraction <- function(object, method)
+{
+    if (object$test.interaction)
+        stop(paste0("'", method, "' not available when Crosstab interaction variable is supplied." ))
 }
 
 

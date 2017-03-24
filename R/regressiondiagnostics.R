@@ -54,6 +54,7 @@ numberObservations <- function(x)
 #' @export
 DurbinWatson <- function(model, n.permutations = 1000, seed = 123)
 {
+  notValidForCrosstabInteraction(model, "DurbinWatson")
   set.seed(seed)
   residuals <- resid(model)
   if("Regression" %in% class(model))

@@ -14,6 +14,9 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     if (class(object) != "Regression")
         stop("Invalid regression model object supplied.")
 
+    if (object$test.interaction)
+        stop("Stepwise regression is incompatible with regression models with a Crosstab interaction variable supplied.")
+
     if (object$type == "Quasi-Poisson" && is.null(object$weight))
         stop("Stepwise regression is currently incompatible with unweighted Quasi-Poisson regression models. Consider using a Poisson or NBD model instead.")
 
