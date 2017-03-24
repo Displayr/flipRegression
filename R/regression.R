@@ -256,28 +256,19 @@ Regression <- function(formula,
         result$n.predictors <- ncol(.estimation.data) - 1
         result$n.observations <- n
         result$estimation.data <- .estimation.data
-
-
-        if (relative.importance)
-        {
-            signs <- sign(extractVariableCoefficients(original, type))
-            result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
-                                                                     type, signs, ...)
-        }
     }
     class(result) <- "Regression"
     result$summary$call <- cl
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
     result$model <- data
-    result$robust.se <- robust.se 
-    result$type = type 
-    result$weights <- unfiltered.weights 
+    result$robust.se <- robust.se
+    result$type <- type
+    result$weights <- unfiltered.weights
     result$output <- output
     result$show.labels <- show.labels
-    result$missing <- missing 
+    result$missing <- missing
     result$test.interaction <- !is.null(interaction)
-
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
@@ -308,6 +299,13 @@ Regression <- function(formula,
     {
         result$z.statistics <- result$summary$coefficients / result$summary$standard.errors
         result$p.values <- 2 * (1 - pnorm(abs(result$z.statistics)))
+    }
+
+    if (relative.importance)
+    {
+        signs <- sign(extractVariableCoefficients(result$original, type))
+        result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
+                                                                 type, signs, result$r.squared, ...)
     }
 
     # Crosstab-interaction

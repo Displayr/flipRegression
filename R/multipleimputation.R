@@ -80,8 +80,9 @@ multipleImputationRelativeImportance <- function(models)
     result$standard.errors <- multipleImputationStandardErrors(models.raw.importance, vars)
     df.c <- df.residual(models[[1]])
     result$df <- multipleImputationDegreesOfFreedom(models.raw.importance, vars, df.c, FALSE)
-    result$t.statistics <- signs * result$raw.importance / result$standard.errors
+    result$statistics <- signs * result$raw.importance / result$standard.errors
     result$p.values <-  2 * pt(abs(result$t.statistic), result$df, lower.tail = FALSE)
+    result$statistic.name <- "t"
     result
 }
 

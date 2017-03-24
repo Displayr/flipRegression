@@ -163,7 +163,7 @@ w <- structure(c(1.02849002849003, 0.587708587708588, 0.587708587708588,
 dat <- cbind(y, X)
 
 test_that("Relative importance linear", {
-    ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1))
+    ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1), 0.0409055316886271)
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
     expect_equal(unname(ria$standard.errors[2]), 0.0064131971633685)
@@ -172,7 +172,7 @@ test_that("Relative importance linear", {
 })
 
 test_that("Relative importance linear weighted", {
-    ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1))
+    ria <- estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1), 0.0488985219292419)
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
     expect_equal(unname(ria$standard.errors[2]), 0.0107061227893571)
