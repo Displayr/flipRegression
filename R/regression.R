@@ -292,7 +292,8 @@ Regression <- function(formula,
 
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
-    result$r.squared <- GoodnessOfFit(result)$value
+    if (!result$test.interaction)
+        result$r.squared <- GoodnessOfFit(result)$value
     if (type == "Ordered Logit")
         result$coef <- c(result$coef, result$original$zeta)
     if (type == "Multinomial Logit")
@@ -323,11 +324,7 @@ Regression <- function(formula,
 
         # Compute table of coefficients
         rsum2 <- summary(fit2$original)
-        cat("line 325\n")
-        print(rsum2$coef)
         rsum2 <- tidySummary(rsum2, fit2$original, result)
-        cat("line 328\n")
-        print(rsum2$coef)
         tmp.coef2 <- rsum2$coef[,1]
         if (any(is.na(tmp.coef2)) && result$robust.se)
         {
@@ -336,7 +333,6 @@ Regression <- function(formula,
         }
 
         tmp.sd2 <- rsum2$coef[,2]^2
-        #print(tmp.sd2)
         tmp.coef <- summary(fit$original)$coef[,1]
         num.var <- length(tmp.coef)
         split.labels <- levels(.estimation.data[,interaction.name])
@@ -350,9 +346,7 @@ Regression <- function(formula,
         all.names <- gsub("(Intercept):", "", all.names, fixed=T)
 
         coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
-        print(matrix(all.names, ncol=num.split))
         sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
-        print(sd2.tab)
         diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
 
         # Only check differences between coefficients if we accept fit2
