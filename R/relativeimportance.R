@@ -2,7 +2,7 @@
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
-estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, ...)
+estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,  ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -49,10 +49,12 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     beta.se <- extractVariableStandardErrors(fit$original, type)
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
+    names(raw.importance) <- variable.names
     scaling.factor <- r.square / sum(raw.importance)
     result$raw.importance <- raw.importance * scaling.factor
-    result$standard.errors <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
-
+    se  <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
+    names(se) <- variable.names
+    result$standard.errors <- se
     result$importance <- signs * 100 * prop.table(raw.importance)
 
     result$statistics <- signs * result$raw.importance / result$standard.errors

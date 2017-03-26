@@ -304,9 +304,12 @@ Regression <- function(formula,
 
     if (relative.importance)
     {
+        labels <- rownames(result$summary$coefficients)
+        labels <- if (type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
-                                                                 type, signs, result$r.squared, ...)
+                                                                 type, signs, result$r.squared,
+                                                                 labels, ...)
     }
 
     # Crosstab-interaction
