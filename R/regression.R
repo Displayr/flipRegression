@@ -258,7 +258,6 @@ Regression <- function(formula,
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
-    result$summary$call <- cl
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
     result$model <- data
@@ -272,6 +271,7 @@ Regression <- function(formula,
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
+    result$summary$call <- cl
 
     # Replacing the variables with their labels
     result$outcome.label <- result$outcome.name <- outcome.name
@@ -375,7 +375,7 @@ Regression <- function(formula,
     if (!is.null(result$relative.importance))
         result$relative.importance.footer <- relativeImportanceFooter(result)
     options(contrasts = old.contrasts[[1]])
-
+    
     return(result)
 }
 
