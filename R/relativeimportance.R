@@ -22,7 +22,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
 
     result <- list()
 
-    x.zscore <- sapply(X, function(x) weightedZScores(x, weights))
+    x.zscore <- sapply(num.X, function(x) weightedZScores(x, weights))
 
     y <- if (type == "Linear")
     {
@@ -32,7 +32,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     else
         data[[outcome.name]]
 
-    corr.x <- cov.wt(X, wt = weights, cor = TRUE)$cor
+    corr.x <- cov.wt(num.X, wt = weights, cor = TRUE)$cor
     eigen.corr.x <- eigen(corr.x)
     delta <- diag(sqrt(eigen.corr.x$values))
     delta_inverse <- diag(1 / sqrt(eigen.corr.x$values))
