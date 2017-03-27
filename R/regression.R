@@ -128,12 +128,10 @@ Regression <- function(formula,
             stop("Relative importance is incompatible with Crosstab interaction.")
         if (type == "Multinomial Logit")
             stop("Crosstab interaction is incompatible with Multinomial logit regression.")
-        print(str(interaction))
     }
 
     formula2 <- if (is.null(interaction)) input.formula
                 else update(input.formula, sprintf(".~.*%s",interaction.name))
-    print(formula2)
     data <- GetData(input.formula, data, auxiliary.data)
     if (!is.null(interaction))
     {
@@ -142,9 +140,7 @@ Regression <- function(formula,
             data <- data[,-ind]
         data <- cbind(data, Factor(interaction))
         colnames(data)[ncol(data)] <- interaction.name
-        print(head(data))
     }
-    print(str(data))
 
     if (method == "model.frame")
         return(data)
@@ -241,8 +237,6 @@ Regression <- function(formula,
         }
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
-        cat("line 241\n")
-        print(str(.estimation.data))
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
             stop(warningSampleSizeTooSmall())
@@ -338,22 +332,14 @@ Regression <- function(formula,
                  else                                        "Chisq"
         atmp <- anova(fit$original, fit2$original, test=atest)
         result$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
-        print(result$anova.test)
         result$interaction.pvalue <- atmp$Pr[2]
-        cat("p-value:", result$interaction.pvalue, "\n")
         result$interaction.model <- fit2$original
 
         # Compute table of coefficients
         tmp.coef <- summary(fit$original)$coef[,1]
         num.var <- length(tmp.coef)
-        print(head(.estimation.data))
-        print(str(.estimation.data))
         split.labels <- levels(.estimation.data[,interaction.name])
-        cat("interaction.name:", interaction.name, "\n")
-        cat("interaction.label:", interaction.label, "\n")
-        cat("split.labels:", split.labels, "\n")
         split.names <- paste0(interaction.name, split.labels)
-        cat("split.names:", split.names, "\n")
         num.split <- length(split.labels)
         split.size <- table(.estimation.data[,interaction.name])
         var.names <- names(tmp.coef)
@@ -368,15 +354,11 @@ Regression <- function(formula,
             result$robust.se <- FALSE
         }
         rsum2 <- tidySummary(rsum2, fit2$original, result)
-        print(rsum2)
         tmp.coef2 <- rsum2$coef[,1]
         tmp.sd2 <- rsum2$coef[,2]^2
 
-        print(matrix(all.names, ncol=num.split))
         coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
-        print(coef.tab)
         sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
-        print(sd2.tab)
         diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
 
         # Only check differences between coefficients if we accept fit2
