@@ -55,9 +55,9 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     se  <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
     names(se) <- variable.names
     result$standard.errors <- se
-    result$importance <- signs * 100 * prop.table(raw.importance)
+    result$importance <- unname(signs) * 100 * prop.table(raw.importance)
 
-    result$statistics <- signs * result$raw.importance / result$standard.errors
+    result$statistics <- unname(signs) * result$raw.importance / result$standard.errors
     is.t.statistic.used <- isTStatisticUsed(fit$original)
     result$statistic.name <- if (is.t.statistic.used) "t" else "z"
     result$p.values <- if (is.t.statistic.used)
