@@ -122,7 +122,7 @@ Regression <- function(formula,
     {
         if (!is.null(attr(interaction, "name")))
             interaction.name <- attr(interaction, "name")
-        interaction.label <- if (show.label && !is.null(Labels(interaction))) Labels(interaction)
+        interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
                              else interaction.name
         if (relative.importance)
             stop("Relative importance is incompatible with Crosstab interaction.")
