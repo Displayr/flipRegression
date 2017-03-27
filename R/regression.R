@@ -118,10 +118,17 @@ Regression <- function(formula,
 
     interaction.name <- deparse(substitute(interaction))
     interaction <- eval(substitute(interaction), data, parent.frame())
-    if (!is.null(interaction) && relative.importance)
-        stop("Relative importance is incompatible with Crosstab interaction.")
-    if (!is.null(interaction) && type == "Multinomial Logit")
-        stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+    if (!is.null(interaction))
+    {
+        if (!is.null(attr(interaction, "name")))
+            interaction.name <- attr(interaction, "name")
+        interaction.label <- if (show.label && !is.null(Labels(interaction))) Labels(interaction)
+                             else interaction.name
+        if (relative.importance)
+            stop("Relative importance is incompatible with Crosstab interaction.")
+        if (type == "Multinomial Logit")
+            stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+    }
 
     formula2 <- if (is.null(interaction)) input.formula
                 else update(input.formula, sprintf(".~.*%s",interaction.name))
@@ -362,6 +369,7 @@ Regression <- function(formula,
         result$combined.coefs <- combined.coefs
         result$coef.sign <- diff.coef
         result$split.size <- split.size
+        result$interaction.label <- interaction.label
     }
 
     # Creating the subtitle/footer
@@ -375,7 +383,7 @@ Regression <- function(formula,
     if (!is.null(result$relative.importance))
         result$relative.importance.footer <- relativeImportanceFooter(result)
     options(contrasts = old.contrasts[[1]])
-    
+
     return(result)
 }
 
