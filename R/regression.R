@@ -339,7 +339,7 @@ Regression <- function(formula,
         tmp.coef <- summary(fit$original)$coef[,1]
         num.var <- length(tmp.coef)
         print(head(.estimation.data))
-        split.labels <- levels(.estimation.data[,interaction.name])
+        split.labels <- levels(as.factor(.estimation.data[,interaction.name]))
         cat("interaction.name:", interaction.name, "\n")
         cat("split.labels:", split.labels, "\n")
         split.names <- paste0(interaction.name, split.labels)
