@@ -136,8 +136,10 @@ Regression <- function(formula,
     if (!is.null(interaction))
     {
         ind <- which(colnames(data) == interaction.name)
-        if (length(ind) > 0 && !all(apply(data[,ind, drop=F], 2, is.factor)))
-            data <- data[,-ind]
+        if (length(ind) > 0)
+            stop("Crosstab interaction variable should not be one of the predictor variables.")
+        #if (length(ind) > 0 && !all(apply(data[,ind, drop=F], 2, is.factor)))
+        #    data <- data[,-ind]
         data <- cbind(data, Factor(interaction))
         colnames(data)[ncol(data)] <- interaction.name
     }
