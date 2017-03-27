@@ -163,8 +163,8 @@ w <- structure(c(1.02849002849003, 0.587708587708588, 0.587708587708588,
 dat <- cbind(y, X)
 
 test_that("Relative importance linear", {
-    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1), 0.0409055316886271,
-                                                       variable.names = LETTERS[1:3])
+    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1),
+                                                       0.0409055316886271, variable.names = LETTERS[1:3])
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
     expect_equal(unname(ria$standard.errors[2]), 0.0064131971633685)
@@ -173,8 +173,8 @@ test_that("Relative importance linear", {
 })
 
 test_that("Relative importance linear weighted", {
-    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1), 0.0488985219292419,
-                                                       variable.names = LETTERS[1:3])
+    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1),
+                                                       0.0488985219292419, variable.names = LETTERS[1:3])
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
     expect_equal(unname(ria$standard.errors[2]), 0.0107061227893571)
@@ -182,19 +182,26 @@ test_that("Relative importance linear weighted", {
     expect_equal(unname(ria$p.values[1]), 0.639061445729629)
 })
 
+types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson", "NBD")
+
 data(bank, package = "flipExampleData")
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Linear", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Binary Logit", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Ordered Logit", relative.importance = TRUE))), NA)
+for (t in types)
+    expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                                   data = bank, type = t, relative.importance = TRUE))), NA)
 expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                          data = bank, type = "Multinomial Logit", relative.importance = TRUE))),
              "Type not handled:  Multinomial Logit")
+
+# Weights
+for (t in types)
+    expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = t, relative.importance = TRUE,
+                                               weights = bank$weight))), NA)
 expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Poisson", relative.importance = TRUE))), NA)
+                                           data = bank, type = "Multinomial Logit", relative.importance = TRUE,
+                                           weights = bank$weight))), "Type not handled:  Multinomial Logit")
+
+# Filter
 expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Quasi-Poisson", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "NBD", relative.importance = TRUE))), NA)
+                                               data = bank, type = "Linear", relative.importance = TRUE,
+                                               subset = bank$ID < 100))), NA)
