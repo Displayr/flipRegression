@@ -141,6 +141,7 @@ Regression <- function(formula,
         colnames(data)[ncol(data)] <- interaction.name
         print(head(data))
     }
+    print(str(data))
 
     if (method == "model.frame")
         return(data)
@@ -237,6 +238,8 @@ Regression <- function(formula,
         }
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
+        cat("line 241\n")
+        print(str(.estimation.data))
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
             stop(warningSampleSizeTooSmall())
@@ -339,6 +342,7 @@ Regression <- function(formula,
         tmp.coef <- summary(fit$original)$coef[,1]
         num.var <- length(tmp.coef)
         print(head(.estimation.data))
+        print(str(.estimation.data))
         split.labels <- levels(as.factor(.estimation.data[,interaction.name]))
         cat("interaction.name:", interaction.name, "\n")
         cat("split.labels:", split.labels, "\n")
