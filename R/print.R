@@ -78,10 +78,8 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                                        footer = caption,
                                        subtitle = subtitle)
         print(dt)
-        return()
     }
-
-    if (!is.null(x$relative.importance))
+    else if (!is.null(x$relative.importance))
     {
         lbls <- extractVariableCoefficientNames(x)
         title <- paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
