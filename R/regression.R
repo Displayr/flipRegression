@@ -338,7 +338,9 @@ Regression <- function(formula,
                  else                                        "Chisq"
         atmp <- anova(fit$original, fit2$original, test=atest)
         result$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
+        print(result$anova.test)
         result$interaction.pvalue <- atmp$Pr[2]
+        cat("p-value:", result$interaction.pvalue, "\n")
         result$interaction.model <- fit2$original
 
         # Compute table of coefficients
@@ -346,7 +348,7 @@ Regression <- function(formula,
         num.var <- length(tmp.coef)
         print(head(.estimation.data))
         print(str(.estimation.data))
-        split.labels <- levels(as.factor(.estimation.data[,interaction.name]))
+        split.labels <- levels(.estimation.data[,interaction.name])
         cat("interaction.name:", interaction.name, "\n")
         cat("interaction.label:", interaction.label, "\n")
         cat("split.labels:", split.labels, "\n")
