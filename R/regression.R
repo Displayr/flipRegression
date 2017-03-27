@@ -630,9 +630,9 @@ compareCoef <- function(bb, ss, nn, alpha = 0.05)
 
         t.stat <- (bb[i,j] - b0)/sqrt(ss[i,j] + s0)
         tc <- qt(1-alpha/2, v)
-        if (!is.na(t.stat) && t.stat < -tc)
+        if (!is.na(t.stat) && !is.na(tc) && t.stat < -tc)
             res[i,j] <- -1
-        if (!is.na(t.stat) && t.stat > tc)
+        if (!is.na(t.stat) && !is.na(tc) && t.stat > tc)
             res[i,j] <- 1
     }
     }
