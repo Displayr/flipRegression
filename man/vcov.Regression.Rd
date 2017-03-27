@@ -21,3 +21,4 @@ employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 \description{
 vcov.Regression
 }
+

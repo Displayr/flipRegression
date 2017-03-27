@@ -48,3 +48,4 @@ FactorToNumeric <- function(variable, variable.name = deparse(substitute(variabl
 }
 #' Converts a data frame into a vector if it only contains a single variable.
 }
+

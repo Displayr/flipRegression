@@ -124,6 +124,10 @@ Regression <- function(formula,
             interaction.name <- attr(interaction, "name")
         interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
                              else interaction.name
+        if (length(unique(interaction)) < 2)
+            stop("Crosstab interaction variable must contain more than one unique value.")
+        if (missing == "Multiple imputation")
+            stop("Multiple imputation is not applicable to Crosstab interaction.")
         if (relative.importance)
             stop("Relative importance is incompatible with Crosstab interaction.")
         if (type == "Multinomial Logit")
@@ -328,8 +332,19 @@ Regression <- function(formula,
     result$interaction.name <- interaction.name
     if (result$test.interaction)
     {
-        fit2 <- FitRegression(formula2, .estimation.data, subset, .weights, type, robust.se, ...)
+        # Compute table of coefficients
+        tmp.coef <- summary(fit$original)$coef[,1]
+        num.var <- length(tmp.coef)
+        split.labels <- levels(.estimation.data[,interaction.name])
+        num.split <- length(split.labels)
+        #split.names <- paste0(interaction.name, split.labels)
+        split.names <- paste0(interaction.name, 0:(num.split-1))
+        split.size <- table(.estimation.data[,interaction.name])
+        var.names <- names(tmp.coef)
 
+        contrasts(.estimation.data[,interaction.name]) <- contr.sum(num.split, contrasts=F)
+        fit2 <- FitRegression(formula2, .estimation.data, subset, .weights, type, robust.se, ...)
+        print(summary(fit2$original))
         atest <- if (type %in% c("Linear", "Quasi-Poisson")) "F"
                  else                                        "Chisq"
         atmp <- anova(fit$original, fit2$original, test=atest)
@@ -337,14 +352,7 @@ Regression <- function(formula,
         result$interaction.pvalue <- atmp$Pr[2]
         result$interaction.model <- fit2$original
 
-        # Compute table of coefficients
-        tmp.coef <- summary(fit$original)$coef[,1]
-        num.var <- length(tmp.coef)
-        split.labels <- levels(.estimation.data[,interaction.name])
-        split.names <- paste0(interaction.name, split.labels)
-        num.split <- length(split.labels)
-        split.size <- table(.estimation.data[,interaction.name])
-        var.names <- names(tmp.coef)
+
         all.names <- sprintf("%s%s", var.names,
                     rep(c("", paste0(":", split.names[-1])), each=length(var.names)))
         all.names <- gsub("(Intercept):", "", all.names, fixed=T)
@@ -358,14 +366,22 @@ Regression <- function(formula,
         rsum2 <- tidySummary(rsum2, fit2$original, result)
         tmp.coef2 <- rsum2$coef[,1]
         tmp.sd2 <- rsum2$coef[,2]^2
+        tmp.pp <- rsum2$coef[,4]
 
+        #print(matrix(all.names, ncol=num.split))
         coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
-        sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
+        sign.tab <- cbind(sign(coef.tab[,-1]), 0)
+        coef.tab <- cbind(sweep(coef.tab[,-1], 1, coef.tab[,1], "+"), coef.tab[,1])
+        #sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
         diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
+        pp.tab <- matrix(tmp.pp[all.names], ncol=num.split)
+        pp.tab <- cbind(pp.tab[,-1], NA)
+        diff.coef <- sign.tab * (pp.tab < 0.025)
+        diff.coef[is.na(diff.coef)] <- 0
 
         # Only check differences between coefficients if we accept fit2
-        if (result$interaction.pvalue < 0.05)
-            diff.coef <- compareCoef(coef.tab, sd2.tab, split.size)
+        #if (result$interaction.pvalue < 0.05)
+        #    diff.coef <- compareCoef(coef.tab, sd2.tab, split.size)
 
         split.size <- c(split.size, NET=sum(split.size))
         combined.coefs <- cbind(coef.tab, tmp.coef)

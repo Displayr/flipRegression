@@ -22,3 +22,4 @@ The default is to predict \code{NA}.}
 Predicts a model outcome based on \code{newdata} and a fitted Regression \code{object}.
 NA is returned for cases with unfitted factor levels.
 }
+

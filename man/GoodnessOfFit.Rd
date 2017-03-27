@@ -2,8 +2,8 @@
 % Please edit documentation in R/fit.R
 \name{GoodnessOfFit}
 \alias{GoodnessOfFit}
-\alias{GoodnessOfFit.default}
 \alias{GoodnessOfFit.Regression}
+\alias{GoodnessOfFit.default}
 \title{Goodness-of-Fit}
 \usage{
 GoodnessOfFit(object, digits = max(3L, getOption("digits") - 3L), ...)

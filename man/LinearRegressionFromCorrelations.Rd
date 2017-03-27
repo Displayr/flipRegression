@@ -30,3 +30,4 @@ name of a variable in \code{data}. It may not be an expression.}
 Estimates regression using sweep operations on the correlation matrix.
 The sample size assumed in tests is the smallest pairwise correlation sample size.
 }
+

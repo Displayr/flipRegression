@@ -17,3 +17,4 @@ Computes the mean of the dependent variable, taking missing values, weights,
 and the need to transform into numeric variables into account.
 #' @importFrom flipTransformations AsNumeric
 }
+

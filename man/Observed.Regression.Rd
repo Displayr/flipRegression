@@ -12,3 +12,4 @@
 \description{
 Observed values used in fitting a model with an outcome variable.
 }
+

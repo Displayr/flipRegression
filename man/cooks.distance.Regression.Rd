@@ -14,3 +14,4 @@
 \description{
 \code{cooks.distance.Regression}
 }
+

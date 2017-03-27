@@ -28,11 +28,10 @@ Suggests:
     testthat,
     flipExampleData,
     Rcpp
-Remotes:
-    Displayr/flipU,
+Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,
     Displayr/flipStatistics,
     Displayr/flipTransformations,
     Displayr/rhtmlHeatmap
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1

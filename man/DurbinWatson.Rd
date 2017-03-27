@@ -23,3 +23,4 @@ computing the p-value. Tests to a lag of 1 (two-sided).
 Durbin, J., Watson, G. S. (1950). 'Testing for Serial Correlation in Least Squares
 Regression, I'. Biometrika 37, (pp. 3 - 4.
 }
+
