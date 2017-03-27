@@ -128,6 +128,7 @@ Regression <- function(formula,
             stop("Relative importance is incompatible with Crosstab interaction.")
         if (type == "Multinomial Logit")
             stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+        print(str(interaction))
     }
 
     formula2 <- if (is.null(interaction)) input.formula
@@ -137,6 +138,7 @@ Regression <- function(formula,
     {
         data <- cbind(data, Factor(interaction))
         colnames(data)[ncol(data)] <- interaction.name
+        print(head(data))
     }
 
     if (method == "model.frame")
@@ -351,6 +353,7 @@ Regression <- function(formula,
             result$robust.se <- FALSE
         }
         rsum2 <- tidySummary(rsum2, fit2$original, result)
+        print(rsum2)
         tmp.coef2 <- rsum2$coef[,1]
         tmp.sd2 <- rsum2$coef[,2]^2
 
