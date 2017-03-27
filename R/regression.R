@@ -137,6 +137,9 @@ Regression <- function(formula,
     data <- GetData(input.formula, data, auxiliary.data)
     if (!is.null(interaction))
     {
+        ind <- which(colnames(data) == interaction.name)
+        if (length(ind) > 0 && any(apply(data[,ind, drop=F], 2, !is.factor)))
+            data[,-ind]
         data <- cbind(data, Factor(interaction))
         colnames(data)[ncol(data)] <- interaction.name
         print(head(data))
@@ -345,6 +348,7 @@ Regression <- function(formula,
         print(str(.estimation.data))
         split.labels <- levels(as.factor(.estimation.data[,interaction.name]))
         cat("interaction.name:", interaction.name, "\n")
+        cat("interaction.label:", interaction.label, "\n")
         cat("split.labels:", split.labels, "\n")
         split.names <- paste0(interaction.name, split.labels)
         cat("split.names:", split.names, "\n")
