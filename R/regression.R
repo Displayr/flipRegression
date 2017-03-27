@@ -139,7 +139,7 @@ Regression <- function(formula,
     {
         ind <- which(colnames(data) == interaction.name)
         if (length(ind) > 0 && !all(apply(data[,ind, drop=F], 2, is.factor)))
-            data[,-ind]
+            data <- data[,-ind]
         data <- cbind(data, Factor(interaction))
         colnames(data)[ncol(data)] <- interaction.name
         print(head(data))
