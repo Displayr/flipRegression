@@ -133,6 +133,7 @@ Regression <- function(formula,
 
     formula2 <- if (is.null(interaction)) input.formula
                 else update(input.formula, sprintf(".~.*%s",interaction.name))
+    print(formula2)
     data <- GetData(input.formula, data, auxiliary.data)
     if (!is.null(interaction))
     {
@@ -357,8 +358,11 @@ Regression <- function(formula,
         tmp.coef2 <- rsum2$coef[,1]
         tmp.sd2 <- rsum2$coef[,2]^2
 
+        print(matrix(all.names, ncol=num.split))
         coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
+        print(coef.tab)
         sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
+        print(sd2.tab)
         diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
 
         # Only check differences between coefficients if we accept fit2
