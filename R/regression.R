@@ -327,7 +327,7 @@ Regression <- function(formula,
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,
-                                                                 labels, robust.se, importance.absolute, ...)
+                                                                 labels, robust.se, ...)
     }
 
     # Crosstab-interaction
