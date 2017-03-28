@@ -32,18 +32,28 @@ test_that("Robust SE", {
 })
 
 test_that("Coefficients", {
+
     n <- 500
     x1 <- rnorm(n)
     x2 <- rnorm(n)
     x3 <- rnorm(n)
     f3 <- round(runif(n, 5, 10))
     ee <- 0.1 * rnorm(n)
+
+    # Only interactions to the x3 coefficient should be significant
     yy <- 1 * x1 + 1 * x2 + 1 * x3 * f3 + ee
-    #yy <- 3 * x1 + 2 * x2 + 1 * x3 * f3 + ee
     zz <- Regression(yy~x1+x2+x3, interaction=f3)
     expect_equal(sum(abs(zz$coef.sign[1,])), 0)
     expect_equal(sum(abs(zz$coef.sign[4,])), 5)
+
+    # No interaction effect - but there is heteroskacity
+    yh <- 3 * x1 + 5 * x2 + 1 * x3 +  f3 * ee
+    zh1 <- Regression(yh~x1+x2+x3, interaction=f3)
+    zh2 <- Regression(yh~x1+x2+x3, interaction=f3, robust.se=T)
+
 })
+
+
 
 
 

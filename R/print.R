@@ -69,10 +69,10 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     {
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
         title <- paste0(regressionType(x$type), ": ", x$outcome.label)
-        subtitle <- paste0(x$anova.test, " for interaction on ", x$interaction.label, ": P-value ", FormatAsPValue(x$interaction.pvalue))
-        dt <- CrosstabInteractionTable(x$combined.coefs,
-                                       x$coef.sign,
-                                       x$split.size,
+        subtitle <- paste0(x$interaction$anova.test, " for interaction on ", x$interaction$label, ": P-value ", FormatAsPValue(x$interaction$pvalue))
+        dt <- CrosstabInteractionTable(x$interaction$coefficients,
+                                       x$interaction$coef.sign,
+                                       x$interaction$split.size,
                                        title = title,
                                        footer = caption,
                                        subtitle = subtitle)

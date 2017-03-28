@@ -136,7 +136,8 @@ Regression <- function(formula,
             stop("Crosstab interaction is incompatible with Multinomial logit regression.")
     }
 
-    formula2 <- if (is.null(interaction)) input.formula
+    # Includes interaction to formula if there is one
+    formula.with.interaction <- if (is.null(interaction)) input.formula
                 else update(input.formula, sprintf(".~.*%s",interaction.name))
     data <- GetData(input.formula, data, auxiliary.data)
     if (!is.null(interaction))
@@ -199,7 +200,7 @@ Regression <- function(formula,
     }
     else
     {
-        processed.data <- EstimationData(formula2, data, subset, weights, missing, m = m, seed = seed)
+        processed.data <- EstimationData(formula.with.interaction, data, subset, weights, missing, m = m, seed = seed)
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
@@ -331,68 +332,10 @@ Regression <- function(formula,
     }
 
     # Crosstab-interaction
-    result$interaction.name <- interaction.name
     if (result$test.interaction)
     {
-        # Compute table of coefficients
-        tmp.coef <- summary(fit$original)$coef[,1]
-        num.var <- length(tmp.coef)
-        split.labels <- levels(.estimation.data[,interaction.name])
-        num.split <- length(split.labels)
-        #split.names <- paste0(interaction.name, split.labels)
-        split.names <- paste0(interaction.name, 0:(num.split-1))
-        split.size <- table(.estimation.data[,interaction.name])
-        var.names <- names(tmp.coef)
-
-        contrasts(.estimation.data[,interaction.name]) <- contr.sum(num.split, contrasts=F)
-        fit2 <- FitRegression(formula2, .estimation.data, subset, .weights, type, robust.se, ...)
-        print(summary(fit2$original))
-        atest <- if (type %in% c("Linear", "Quasi-Poisson")) "F"
-                 else                                        "Chisq"
-        atmp <- anova(fit$original, fit2$original, test=atest)
-        result$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
-        result$interaction.pvalue <- atmp$Pr[2]
-        result$interaction.model <- fit2$original
-
-
-        all.names <- sprintf("%s%s", var.names,
-                    rep(c("", paste0(":", split.names[-1])), each=length(var.names)))
-        all.names <- gsub("(Intercept):", "", all.names, fixed=T)
-
-        rsum2 <- summary(fit2$original)
-        if (result$robust.se && length(rsum2$coef[,1]) < num.split * num.var)
-        {
-            warning("Robust SE not used as some coefficients are undefined\n")
-            result$robust.se <- FALSE
-        }
-        rsum2 <- tidySummary(rsum2, fit2$original, result)
-        tmp.coef2 <- rsum2$coef[,1]
-        tmp.sd2 <- rsum2$coef[,2]^2
-        tmp.pp <- rsum2$coef[,4]
-
-        #print(matrix(all.names, ncol=num.split))
-        coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
-        sign.tab <- cbind(sign(coef.tab[,-1]), 0)
-        coef.tab <- cbind(sweep(coef.tab[,-1], 1, coef.tab[,1], "+"), coef.tab[,1])
-        #sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
-        diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
-        pp.tab <- matrix(tmp.pp[all.names], ncol=num.split)
-        pp.tab <- cbind(pp.tab[,-1], NA)
-        diff.coef <- sign.tab * (pp.tab < 0.025)
-        diff.coef[is.na(diff.coef)] <- 0
-
-        # Only check differences between coefficients if we accept fit2
-        #if (result$interaction.pvalue < 0.05)
-        #    diff.coef <- compareCoef(coef.tab, sd2.tab, split.size)
-
-        split.size <- c(split.size, NET=sum(split.size))
-        combined.coefs <- cbind(coef.tab, tmp.coef)
-        colnames(combined.coefs) <- c(split.labels, "NET")
-        rownames(combined.coefs) <- names(tmp.coef)
-        result$combined.coefs <- combined.coefs
-        result$coef.sign <- diff.coef
-        result$split.size <- split.size
-        result$interaction.label <- interaction.label
+        result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
+                                                     formula.with.interaction, ...)
     }
 
     # Creating the subtitle/footer
@@ -471,12 +414,12 @@ regressionFooter <- function(x)
             footer <- paste0(footer, " R-squared of pooled model: ",
                                        FormatAsReal(summary(x$original)$r.square, 4),
                                     "; R-squared of interaction model: ",
-                                       FormatAsReal(summary(x$interaction.model)$r.square, 4))
+                                       FormatAsReal(summary(x$interaction$fit)$r.square, 4))
         else
             footer <- paste0(footer, " McFadden's rho-squared of pooled model: ",
                                        round(1 - deviance(x$original)/nullDeviance(x), 4),
                                     "; McFaddens's rho-squared of interaction model: ",
-                                       round(1 - deviance(x$interaction.model)/nullDeviance(x), 4))
+                                       round(1 - deviance(x$interaction$fit)/nullDeviance(x), 4))
         return(footer)
     }
 
@@ -611,34 +554,6 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
     result <- list(original = model, formula = .formula, design = .design, weights = .weights, robust.se = robust.se)
     class(result) <- "FitRegression"
     result
-}
-
-compareCoef <- function(bb, ss, nn, alpha = 0.05)
-{
-    if (any(dim(bb) != dim(ss)))
-        stop("Dimensions of bb and ss must be the same\n")
-    if (length(nn) != ncol(bb))
-        stop("Length of nn should match columns in bb\n")
-    res <- matrix(0, nrow=nrow(bb), ncol=ncol(ss))
-
-    for (i in 1:nrow(bb))
-    {
-    for (j in 1:ncol(bb))
-    {
-        n0 <- sum(nn[-j], na.rm=T)
-        b0 <- sum(nn[-j] * bb[i,-j], na.rm=T)/n0
-        s0 <- sum((nn[-j]-1) * ss[i,-j], na.rm=T)/sum(nn[-j]-1, na.rm=T)
-        v <- (ss[i,j] + s0)^2/(ss[i,j]^2/(nn[j]-1) + s0^2/(n0-1))
-
-        t.stat <- (bb[i,j] - b0)/sqrt(ss[i,j] + s0)
-        tc <- qt(1-alpha/2, v)
-        if (!is.na(t.stat) && !is.na(tc) && t.stat < -tc)
-            res[i,j] <- -1
-        if (!is.na(t.stat) && !is.na(tc) && t.stat > tc)
-            res[i,j] <- 1
-    }
-    }
-    return (res)
 }
 
 
