@@ -88,6 +88,7 @@ Regression <- function(formula,
                        internal = FALSE,
                        contrasts = c("contr.treatment", "contr.treatment"),
                        relative.importance = FALSE,
+                       importance.absolute = FALSE,
                        interaction = NULL,
                        ...)
 {
@@ -322,10 +323,10 @@ Regression <- function(formula,
     {
         labels <- rownames(result$summary$coefficients)
         labels <- if (type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
-        signs <- sign(extractVariableCoefficients(result$original, type))
+        signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,
-                                                                 labels, ...)
+                                                                 labels, robust.se, importance.absolute, ...)
     }
 
     # Crosstab-interaction

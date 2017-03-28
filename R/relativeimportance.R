@@ -2,7 +2,8 @@
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
-estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,  ...)
+estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,
+                                       robust.se, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -46,7 +47,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
 
     fit <- FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)
     beta <- extractVariableCoefficients(fit$original, type)
-    beta.se <- extractVariableStandardErrors(fit$original, type)
+    beta.se <- extractVariableStandardErrors(fit$original, type, robust.se)
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
     names(raw.importance) <- variable.names
@@ -87,9 +88,13 @@ extractVariableCoefficients <- function(model, type)
         stop(paste("Type not handled: ", type))
 }
 
-extractVariableStandardErrors <- function(model, type)
+extractVariableStandardErrors <- function(model, type, robust.se)
 {
-    standard.errors <- summary(model)$coefficients[, 2]
+    standard.errors <- if (robust.se != FALSE)
+        coeftest(model, vcov. = vcov2(model, robust.se))[, 2]
+    else
+        summary(model)$coefficients[, 2]
+
     if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         standard.errors[-1]
     else if (type %in% c("Ordered Logit"))
