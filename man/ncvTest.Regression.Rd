@@ -20,4 +20,3 @@ ncvTest.Regression}
 setMethod("Anova", "missing", function "<No Object>")
 ncvTest.Regression
 }
-

@@ -20,4 +20,3 @@ covariance matrices (e.g., if a parameter represents a sub-group, and the sub-gr
 residual variance). This function checks to see if there are any eigenvalues less than \code{min.eigenvalue},
 which defaults to 1e-12. If there are, an attempt is made to guess the  offending variances, and they are multiplied by 1.01.
 }
-

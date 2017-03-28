@@ -24,4 +24,3 @@ The proportion of observed values that take the same values as the predicted val
 Where the outcome variable in the model is not a factor and not a count, predicted values are
 assigned to buckets as per \code{\link{ConfusionMatrix}}.
 }
-

@@ -10,7 +10,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
   auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
   contrasts = c("contr.treatment", "contr.treatment"),
-  relative.importance = FALSE, interaction = NULL, ...)
+  relative.importance = FALSE, importance.absolute = FALSE,
+  interaction = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -103,4 +104,3 @@ von Hippel, Paul T. 2007. "Regression With Missing Y's: An
   heteroscedasticity consistent standard errors in the linear regression
   model. The American Statistician, 54(3): 217-224.
 }
-

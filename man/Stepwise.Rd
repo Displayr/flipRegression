@@ -21,4 +21,3 @@ Stepwise(object, output = "Final", direction = "Backward",
 \description{
 Stepwise selection of predictor variables by AIC.
 }
-

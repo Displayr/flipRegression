@@ -26,4 +26,3 @@ name of a variable in \code{data}. It may not be an expression.}
 A contingency table showing the observed versus predicted values
 where both inputs are factor variables.
 }
-

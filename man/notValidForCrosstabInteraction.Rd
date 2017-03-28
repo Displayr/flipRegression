@@ -14,4 +14,3 @@ notValidForCrosstabInteraction(object, method)
 \description{
 notValidForCrosstabInteraction
 }
-

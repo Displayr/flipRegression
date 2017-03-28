@@ -15,4 +15,3 @@ UnusualObservations(model)
 \details{
 Computes studentized residuals, Cook's distance, and hat values, and reports if any are above the threshhold values.
 }
-

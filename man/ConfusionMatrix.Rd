@@ -24,4 +24,3 @@ Produces a confusion matrix for a trained model showing the proportion
 of observed values that take the same values as the predicted values. Where the outcome variable
 in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 }
-
