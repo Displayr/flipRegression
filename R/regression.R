@@ -48,6 +48,7 @@
 #' See \code{\link{contrasts}} for more information.
 #' @param relative.importance Whether to compute relative importance.
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
+#' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected

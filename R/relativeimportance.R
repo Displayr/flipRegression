@@ -3,7 +3,7 @@
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
 estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,
-                                       robust.se, ...)
+                                       robust.se = FALSE, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -20,6 +20,8 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     input.weights <- weights
     if (is.null(weights))
         weights <- rep(1, nrow(data))
+    else
+        robust.se <- FALSE
 
     result <- list()
 

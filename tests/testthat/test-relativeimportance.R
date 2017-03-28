@@ -205,3 +205,8 @@ expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone
 expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                                data = bank, type = "Linear", relative.importance = TRUE,
                                                subset = bank$ID < 100))), NA)
+
+# Robust standard error
+expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = "Linear", relative.importance = TRUE,
+                                               robust.se = F))), NA)
