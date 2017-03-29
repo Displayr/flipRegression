@@ -142,11 +142,8 @@ Regression <- function(formula,
     data <- GetData(input.formula, data, auxiliary.data)
     if (!is.null(interaction))
     {
-        ind <- which(colnames(data) == interaction.name)
-        if (length(ind) > 0)
-            stop("Crosstab interaction variable should not be one of the predictor variables.")
-        #if (length(ind) > 0 && !all(apply(data[,ind, drop=F], 2, is.factor)))
-        #    data <- data[,-ind]
+        if (interaction.name %in% colnames(data))
+            stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
         data <- cbind(data, Factor(interaction))
         colnames(data)[ncol(data)] <- interaction.name
     }
@@ -156,7 +153,7 @@ Regression <- function(formula,
     outcome.name <- OutcomeName(input.formula)
     outcome.variable <- data[[outcome.name]]
     if(sum(outcome.name == names(data)) > 1)
-        stop("The 'Outcome' variable has been selected a 'Predictor'. It must be one or the other, but may not be both.")
+        stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
@@ -204,11 +201,7 @@ Regression <- function(formula,
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
-                FUN = function(x)
-                {
-                    int.copy <- if (!is.null(interaction)) x[,interaction.name]
-                                else                       NULL
-                    Regression(formula,
+                FUN = function(x) Regression(formula,
                     data = x,
                     missing = "Error if missing data",
                     weights = processed.data$weights,
@@ -216,9 +209,8 @@ Regression <- function(formula,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
-                    relative.importance = relative.importance,
-                    interaction = int.copy)
-                })
+                    relative.importance = relative.importance))
+
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
             coefs <- MultipleImputationCoefficientTable(models)
@@ -333,10 +325,8 @@ Regression <- function(formula,
 
     # Crosstab-interaction
     if (result$test.interaction)
-    {
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                      formula.with.interaction, ...)
-    }
 
     # Creating the subtitle/footer
     if (!partial)
@@ -445,9 +435,7 @@ relativeImportanceFooter <- function(x)
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
 #' @param .estimation.data A \code{\link{data.frame}}.
-#' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression. \code{subset} may not
+#' @param subset Not used.
 #' @param .weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
 #' @param type See \link{Regression}.

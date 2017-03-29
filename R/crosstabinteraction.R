@@ -1,6 +1,6 @@
 
 computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, ...)
-{ 
+{
         # Compute table of coefficients
         tmp.coef <- summary(result$original)$coef[,1]
         num.var <- length(tmp.coef)
@@ -33,7 +33,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         coef.tab <- cbind(coef.tab[,1], sweep(coef.tab[,-1], 1, coef.tab[,1], "+"))
 
         # Only check differences between coefficients if we accept fit2
-        diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
+        coef.sign <- matrix(0, nrow(coef.tab), ncol(coef.tab))
         if (pvalue < 0.05)
         {
             bb <- matrix(NA, num.var, num.split)
@@ -88,7 +88,7 @@ compareCoef <- function(bb, bc, ss, sc, nn, alpha = 0.05)
         for (i in 1:nrow(bb))
         {
             pp <- 2 * pt(abs(t.stat[i]), vv[i], lower.tail=F)
-            if (pp < alpha)
+            if (!is.na(pp) && pp < alpha)
                 res[i,j] <- sign(t.stat[i])
 
             #cat(round(bb[i,j],3), round(t.stat[i], 3), round(pp, 3), ";")

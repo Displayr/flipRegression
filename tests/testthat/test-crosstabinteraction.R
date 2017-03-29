@@ -3,10 +3,10 @@ context("Crosstab interaction")
 data(bank, package = "flipExampleData")
 test_that("Basic output", {
     zz <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank))
-    expect_equal(nrow(zz$combined.coefs), 3)
-    expect_equal(ncol(zz$combined.coefs), 7)
-    expect_equal(sum(is.na(zz$combined.coefs)), 1)
-    expect_equal(zz$interaction.pvalue, 0.002888697)
+    expect_equal(nrow(zz$interaction$coefficients), 3)
+    expect_equal(ncol(zz$interaction$coefficients), 7)
+    expect_equal(sum(is.na(zz$interaction$coefficients)), 1)
+    expect_equal(zz$interaction$pvalue, 0.002888697)
 })
 
 all.types <- c("Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
@@ -43,8 +43,8 @@ test_that("Coefficients", {
     # Only interactions to the x3 coefficient should be significant
     yy <- 1 * x1 + 1 * x2 + 1 * x3 * f3 + ee
     zz <- Regression(yy~x1+x2+x3, interaction=f3)
-    expect_equal(sum(abs(zz$coef.sign[1,])), 0)
-    expect_equal(sum(abs(zz$coef.sign[4,])), 5)
+    expect_equal(sum(abs(zz$interaction$coef.sign[1,])), 0)
+    expect_equal(sum(abs(zz$interaction$coef.sign[4,])), 6)
 
     # No interaction effect - but there is heteroskacity
     yh <- 3 * x1 + 5 * x2 + 1 * x3 +  f3 * ee
