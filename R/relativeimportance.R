@@ -47,9 +47,12 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     reg.data <- cbind(data.frame(y = y), as.data.frame(z))
     data.formula <- as.formula(paste0("y ~ ", paste(paste0("V", 1:ncol(z)), collapse = "+")))
 
-    fit <- FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)
-    beta <- extractVariableCoefficients(fit$original, type)
-    beta.se <- extractVariableStandardErrors(fit$original, type, robust.se)
+    fit <- if (type == "Linear")
+        lm.z <- lm(y ~ z, weights = weights)
+    else
+        FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)$original
+    beta <- extractVariableCoefficients(fit, type)
+    beta.se <- extractVariableStandardErrors(fit, type, robust.se)
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
     names(raw.importance) <- variable.names
@@ -61,10 +64,10 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     result$importance <- unname(signs) * 100 * prop.table(raw.importance)
 
     result$statistics <- unname(signs) * result$raw.importance / result$standard.errors
-    is.t.statistic.used <- isTStatisticUsed(fit$original)
+    is.t.statistic.used <- isTStatisticUsed(fit)
     result$statistic.name <- if (is.t.statistic.used) "t" else "z"
     result$p.values <- if (is.t.statistic.used)
-        2 * pt(abs(result$statistics), fit$original$df.residual, lower.tail = FALSE)
+        2 * pt(abs(result$statistics), fit$df.residual, lower.tail = FALSE)
     else
         2 * pnorm(abs(result$statistics), lower.tail = FALSE)
     result
@@ -97,7 +100,9 @@ extractVariableStandardErrors <- function(model, type, robust.se)
     else
         summary(model)$coefficients[, 2]
 
-    if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+    if (type == "Linear")
+        standard.errors[1]
+    else if (type %in% c("Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         standard.errors[-1]
     else if (type %in% c("Ordered Logit"))
         standard.errors[-length(standard.errors):-(length(model$coefficients) + 1)]
