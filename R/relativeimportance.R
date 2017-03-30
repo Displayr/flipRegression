@@ -48,11 +48,11 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     data.formula <- as.formula(paste0("y ~ ", paste(paste0("V", 1:ncol(z)), collapse = "+")))
 
     fit <- if (type == "Linear")
-        lm.z <- lm(y ~ z, weights = weights)
+        lm.z <- lm(y ~ 0 + z, weights = weights)
     else
         FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)$original
-    beta <- extractVariableCoefficients(fit, type)
-    beta.se <- extractVariableStandardErrors(fit, type, robust.se)
+    beta <- extractVariableCoefficients(fit, type, FALSE)
+    beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
     names(raw.importance) <- variable.names
@@ -83,9 +83,11 @@ weightedZScores <- function(x, weights)
 }
 
 # Only extract coefficients for variables, not intercepts
-extractVariableCoefficients <- function(model, type)
+extractVariableCoefficients <- function(model, type, linear.regression.intercept = TRUE)
 {
-    if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+    if (type == "Linear" && !linear.regression.intercept)
+        model$coefficients
+    else if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         model$coefficients[-1]
     else if (type %in% c("Ordered Logit"))
         model$coefficients
@@ -93,16 +95,16 @@ extractVariableCoefficients <- function(model, type)
         stop(paste("Type not handled: ", type))
 }
 
-extractVariableStandardErrors <- function(model, type, robust.se)
+extractVariableStandardErrors <- function(model, type, robust.se, linear.regression.intercept = TRUE)
 {
     standard.errors <- if (robust.se != FALSE)
         coeftest(model, vcov. = vcov2(model, robust.se))[, 2]
     else
         summary(model)$coefficients[, 2]
 
-    if (type == "Linear")
-        standard.errors[1]
-    else if (type %in% c("Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
+    if (type == "Linear" && !linear.regression.intercept)
+        standard.errors
+    else if (type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         standard.errors[-1]
     else if (type %in% c("Ordered Logit"))
         standard.errors[-length(standard.errors):-(length(model$coefficients) + 1)]
