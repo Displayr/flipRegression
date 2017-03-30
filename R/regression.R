@@ -209,9 +209,9 @@ Regression <- function(formula,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
-                    relative.importance = relative.importance,
-                    interaction=F,
-                    interaction.formula = formula.with.interaction))
+                    relative.importance = relative.importance))
+                    #interaction=F,
+                    #interaction.formula = formula.with.interaction))
 
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
