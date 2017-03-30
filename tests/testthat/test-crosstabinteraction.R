@@ -1,13 +1,7 @@
 context("Crosstab interaction")
 
 data(bank, package = "flipExampleData")
-n <- 500
-x1 <- rnorm(n)
-x2 <- rnorm(n)
-x3 <- rnorm(n)
-f3 <- round(runif(n, 5, 10))
-ee <- 0.1 * rnorm(n)
-yy <- 1 * x1 + 1 * x2 + 1 * x3 * f3 + ee
+
 
 test_that("Basic output", {
     zz <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, interaction.pvalue = T))
@@ -50,6 +44,15 @@ test_that("Robust SE", {
 })
 
 test_that("Coefficients", {
+
+    set.seed(1232)
+    n <- 500
+    x1 <- rnorm(n)
+    x2 <- rnorm(n)
+    x3 <- rnorm(n)
+    f3 <- round(runif(n, 5, 10))
+    ee <- 0.1 * rnorm(n)
+    yy <- 1 * x1 + 1 * x2 + 1 * x3 * f3 + ee
 
     # Only interactions to the x3 coefficient should be significant
     z5 <- Regression(yy~x1+x2+x3, interaction=f3)

@@ -1,4 +1,4 @@
-context("Stamdard errors")
+context("Standard errors")
 data(colas, package = "flipExampleData")
 z <- unclass(colas$q4a)
 #z[z == 4] <- 9
