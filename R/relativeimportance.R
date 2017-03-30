@@ -11,6 +11,15 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     if (type == "Multinomial Logit")
         stop(paste("Relative importance analysis is not available for", type))
 
+    if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
+    {
+        fit <- FitRegression(formula, data, NULL, NULL, type, robust.se, ...)
+        if (is.null(signs) || any(is.na(signs)))
+            signs <- sign(extractVariableCoefficients(fit$original, type))
+        if (is.null(r.square) || is.na(r.square))
+            r.square <- GoodnessOfFit(fit$original)$value 
+    }
+
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)
     X <- data[setdiff(formula.names, outcome.name)]

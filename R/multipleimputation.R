@@ -86,6 +86,34 @@ multipleImputationRelativeImportance <- function(models)
     result
 }
 
+#multipleImputationCrosstabInteraction <- function(models, final.model)
+#{
+#    m.list <- lapply(models, function(x){x, ....)
+#    resN <- combineNetCoefficients(m.list)
+#    resI <- combineInteractionCoefficients(m.list)
+#    coef.sign <- compareCoef(resI$bb, resI$bc, resI$ss^2, resI$sc^2, resI$split.size)
+#
+#    combine.coefs <- cbind(resI$bb, resN$bb)
+#    ...
+#    return(list(name=....))
+#}
+#
+## Input is a list, with each element containing (bb, bc, ss, sc)
+## Returns a list of the same format
+#combineInteractionCoefficients <- function(m.list)
+#{
+#    n.var <- nrow(bb)
+#    n.split <- ncol(bb)
+#    
+#    bb.all <- sapply(m.list, function(m){m$bb})
+#    bb.mean <- apply(bb.all, 1, mean, na.rm=T)
+#    bb.mean <- matrix(bb.mean, ncol=n.split)
+#
+#    return(list(bb=bb.mean, ...., split.size = ...))
+#
+#}
+#
+#
 # # #
 # # # # Alternative formula (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4029775/)
 # # # df.hash = df.large

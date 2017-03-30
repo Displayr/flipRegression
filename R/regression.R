@@ -49,6 +49,7 @@
 #' @param relative.importance Whether to compute relative importance.
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
+#' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -91,6 +92,7 @@ Regression <- function(formula,
                        relative.importance = FALSE,
                        importance.absolute = FALSE,
                        interaction = NULL,
+                       interaction.pvalue = FALSE,     # only used for testing
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -130,8 +132,6 @@ Regression <- function(formula,
             stop("Crosstab interaction variable must contain more than one unique value.")
         if (missing == "Multiple imputation")
             stop("Multiple imputation is not applicable to Crosstab interaction.")
-        if (relative.importance)
-            stop("Relative importance is incompatible with Crosstab interaction.")
         if (type == "Multinomial Logit")
             stop("Crosstab interaction is incompatible with Multinomial logit regression.")
     }
@@ -202,14 +202,16 @@ Regression <- function(formula,
         {
             models <- lapply(processed.data$estimation.data,
                 FUN = function(x) Regression(formula,
-                    data = x,
+                    data = x,                               # make sure that data contains interaction variable; how to keep it??
                     missing = "Error if missing data",
                     weights = processed.data$weights,
                     type = type,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
-                    relative.importance = relative.importance))
+                    relative.importance = relative.importance,
+                    interaction=F,
+                    interaction.formula = formula.with.interaction))
 
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
@@ -228,12 +230,16 @@ Regression <- function(formula,
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
             final.model$footer <- regressionFooter(final.model)
-            if (relative.importance)
+            if (relative.importance && is.null(interaction))
             {
                 final.model$relative.importance <- multipleImputationRelativeImportance(models)
                 final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
             }
-            final.model$interaction.name <- interaction.name
+            #if (!is.null(interaction))
+            #{
+            #    final.model$interaction <- multipleImputationCrosstabInteraction(models, ...)
+            #}
+            #final.model$interaction.name <- interaction.name
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -326,7 +332,8 @@ Regression <- function(formula,
     # Crosstab-interaction
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
-                                                     formula.with.interaction, ...)
+                                                     formula.with.interaction, relative.importance, 
+                                                     importance.absolute, interaction.pvalue, ...)
 
     # Creating the subtitle/footer
     if (!partial)
@@ -400,6 +407,8 @@ regressionFooter <- function(x)
 
     if (x$test.interaction)
     {
+        if (is.null(x$interaction$fit))
+            return(footer)
         if (x$type == "Linear")
             footer <- paste0(footer, " R-squared of pooled model: ",
                                        FormatAsReal(summary(x$original)$r.square, 4),
@@ -425,6 +434,8 @@ regressionFooter <- function(x)
 
 relativeImportanceFooter <- function(x)
 {
+    if (x$test.interaction)
+        return("")
     paste0(x$sample.description ," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
 }
 
