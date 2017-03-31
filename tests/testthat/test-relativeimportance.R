@@ -183,30 +183,38 @@ test_that("Relative importance linear weighted", {
 })
 
 types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson", "NBD")
+output <- "Relative Importance Analysis"
 
 data(bank, package = "flipExampleData")
+
 for (t in types)
-    expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                                   data = bank, type = t, relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Multinomial Logit", relative.importance = TRUE))),
-             "Type not handled:  Multinomial Logit")
+    test_that(paste("Relative importance", t),
+              expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                                   data = bank, type = t, output = output))), NA))
+test_that("Relative importance Multinomial Logit",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Multinomial Logit", output = output))),
+                                        "Type not handled:  Multinomial Logit"))
 
 # Weights
 for (t in types)
-    expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                               data = bank, type = t, relative.importance = TRUE,
-                                               weights = bank$weight))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                           data = bank, type = "Multinomial Logit", relative.importance = TRUE,
-                                           weights = bank$weight))), "Type not handled:  Multinomial Logit")
+    test_that(paste("Relative importance weighted", t),
+              expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = t, output = output,
+                                               weights = bank$weight))), NA))
+test_that("Relative importance weighted Multinomial Logit",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                           data = bank, type = "Multinomial Logit", output = output,
+                                           weights = bank$weight))), "Type not handled:  Multinomial Logit"))
 
 # Filter
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                               data = bank, type = "Linear", relative.importance = TRUE,
-                                               subset = bank$ID < 100))), NA)
+test_that("Relative importance filtered",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = "Linear", output = output,
+                                               subset = bank$ID < 100))), NA))
 
 # Robust standard error
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                               data = bank, type = "Linear", relative.importance = TRUE,
-                                               robust.se = F))), NA)
+test_that("Relative importance robust SE",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = "Linear", output = output,
+                                               robust.se = F))), NA))

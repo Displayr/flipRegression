@@ -10,8 +10,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
   auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
   contrasts = c("contr.treatment", "contr.treatment"),
-  relative.importance = FALSE, importance.absolute = FALSE,
-  interaction = NULL, interaction.pvalue = FALSE, ...)
+  importance.absolute = FALSE, interaction = NULL,
+  interaction.pvalue = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -49,7 +49,8 @@ method = "model.frame", which returns the model frame.}
 
 \item{output}{\code{"Coefficients"} returns a table of coefficients and various
 summary and model statistics. It is the default. \code{"ANOVA"} returns an
-ANOVA table. \code{"R"} returns a more traditional R output.}
+ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+returns a table with Relative Importance scores.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}
 
@@ -76,8 +77,6 @@ This leads to creation of an object of class \code{FitRegression}.)}
 \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 See \code{\link{contrasts}} for more information.}
-
-\item{relative.importance}{Whether to compute relative importance.}
 
 \item{importance.absolute}{Whether the absolute value of the relative importance should be shown.}
 

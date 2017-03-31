@@ -25,7 +25,8 @@
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
 #' summary and model statistics. It is the default. \code{"ANOVA"} returns an
-#' ANOVA table. \code{"R"} returns a more traditional R output.
+#' ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+#' returns a table with Relative Importance scores.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #' method = "model.frame", which returns the model frame.
@@ -46,7 +47,6 @@
 #' \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
-#' @param relative.importance Whether to compute relative importance.
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
@@ -89,7 +89,6 @@ Regression <- function(formula,
                        show.labels = FALSE,
                        internal = FALSE,
                        contrasts = c("contr.treatment", "contr.treatment"),
-                       relative.importance = FALSE,
                        importance.absolute = FALSE,
                        interaction = NULL,
                        interaction.pvalue = FALSE,     # only used for testing
@@ -104,6 +103,8 @@ Regression <- function(formula,
     cl <- match.call()
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
+
+    relative.importance <- output == "Relative Importance Analysis"
 
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
@@ -332,7 +333,7 @@ Regression <- function(formula,
     # Crosstab-interaction
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
-                                                     formula.with.interaction, relative.importance, 
+                                                     formula.with.interaction, relative.importance,
                                                      importance.absolute, interaction.pvalue, ...)
 
     # Creating the subtitle/footer
