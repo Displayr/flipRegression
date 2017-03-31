@@ -178,6 +178,10 @@ test_that("Tests of non-constant variance (Breush-Pagen test)",
     z1 = car::ncvTest(lm(zformula, data = bank))
     expect_equal(z$p, z1$p, tolerance = 1.0e-8)
 
+    # Correct error for ncvTest
+    ncvTest(suppressWarnings(Regression(zformula, data = bank, type = "Ordered Logit")))
+
+
     # Filitered
     z = ncvTest(suppressWarnings(Regression(zformula, data = bank, subset = sb)))
     z1 = car::ncvTest(lm(zformula, data = bank, subset = sb))
