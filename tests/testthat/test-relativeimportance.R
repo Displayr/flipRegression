@@ -218,3 +218,11 @@ test_that("Relative importance robust SE",
           expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                                data = bank, type = "Linear", output = output,
                                                robust.se = F))), NA))
+
+# Negative sign warning
+test_that("Relative importance negative sign",
+          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, -1 ,1),
+                                                             0.0409055316886271, variable.names = LETTERS[1:3]),
+                         paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
+                                " in Linear Regression. To disable this feature, check the Absolute importance",
+                                " scores option.")))

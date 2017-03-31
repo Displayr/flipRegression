@@ -15,7 +15,8 @@ test_that("Basic output", {
 })
 
 test_that("Relative importance", {
-    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, relative.importance = T, interaction.pvalue = T))
+    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank,
+                                      output = "Relative Importance Analysis", interaction.pvalue = T))
     expect_equal(round(z2$interaction$coefficients[2,1],4), 0.0203)
     expect_equal(round(z2$interaction$coef.pvalue[2,1],4), 0.4664)
 })

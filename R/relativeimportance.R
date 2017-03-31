@@ -17,8 +17,12 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
         if (is.null(signs) || any(is.na(signs)))
             signs <- sign(extractVariableCoefficients(fit$original, type))
         if (is.null(r.square) || is.na(r.square))
-            r.square <- GoodnessOfFit(fit$original)$value 
+            r.square <- GoodnessOfFit(fit$original)$value
     }
+
+    if (any(signs < 0))
+        warning(paste0("Negative signs in Relative Importance scores were applied from coefficient signs in ",
+                      regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
 
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)

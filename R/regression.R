@@ -210,7 +210,7 @@ Regression <- function(formula,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
-                    relative.importance = relative.importance))
+                    output = output))
                     #interaction=F,
                     #interaction.formula = formula.with.interaction))
 
