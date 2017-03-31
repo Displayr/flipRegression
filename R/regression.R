@@ -50,6 +50,7 @@
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
+#' @param interaction.formula Used internally for multiple imputation.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -92,6 +93,7 @@ Regression <- function(formula,
                        importance.absolute = FALSE,
                        interaction = NULL,
                        interaction.pvalue = FALSE,     # only used for testing
+                       interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -128,26 +130,43 @@ Regression <- function(formula,
         if (!is.null(attr(interaction, "name")))
             interaction.name <- attr(interaction, "name")
         interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
-                             else interaction.name
-        if (length(unique(interaction)) < 2)
-            stop("Crosstab interaction variable must contain more than one unique value.")
-        if (missing == "Multiple imputation")
-            stop("Multiple imputation is not applicable to Crosstab interaction.")
-        if (type == "Multinomial Logit")
-            stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+                                 else interaction.name
     }
 
-    # Includes interaction to formula if there is one
-    formula.with.interaction <- if (is.null(interaction)) input.formula
-                else update(input.formula, sprintf(".~.*%s",interaction.name))
-    data <- GetData(input.formula, data, auxiliary.data)
-    if (!is.null(interaction))
+    if (!is.null(interaction.formula))
     {
-        if (interaction.name %in% colnames(data))
-            stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
-        data <- cbind(data, Factor(interaction))
-        colnames(data)[ncol(data)] <- interaction.name
+        # Inside internal loop, data is already set up properly
+        formula.with.interaction <- interaction.formula
+        data <- GetData(interaction.formula, data, auxiliary.data)
+        interaction.name <- tail(colnames(data), 1)
+    
+    } else
+    {
+        # Includes interaction in formula if there is one
+        formula.with.interaction <- if (is.null(interaction)) input.formula
+                else update(input.formula, sprintf(".~.*%s",interaction.name))
+        data <- GetData(input.formula, data, auxiliary.data)
+        if (!is.null(interaction))
+        {
+            interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+                                     else interaction.name
+            if (length(unique(interaction)) < 2)
+                stop("Crosstab interaction variable must contain more than one unique value.")
+            if (type == "Multinomial Logit")
+                stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+
+            if (interaction.name %in% colnames(data))
+                stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
+            data <- cbind(data, Factor(interaction))
+            colnames(data)[ncol(data)] <- interaction.name
+
+            # No imputation occurs on interaction variable
+            tmp.sub <- !is.na(interaction)
+            subset <- if (is.null(subset)) tmp.sub
+                      else subset & tmp.sub
+        }
     }
+
 
     if (method == "model.frame")
         return(data)
@@ -203,16 +222,16 @@ Regression <- function(formula,
         {
             models <- lapply(processed.data$estimation.data,
                 FUN = function(x) Regression(formula,
-                    data = x,                               # make sure that data contains interaction variable; how to keep it??
+                    data = x,                               # contains interaction factor; filters already applied
                     missing = "Error if missing data",
                     weights = processed.data$weights,
                     type = type,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
+                    interaction = interaction,
+                    interaction.formula = formula.with.interaction,
                     output = output))
-                    #interaction=F,
-                    #interaction.formula = formula.with.interaction))
 
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
@@ -230,17 +249,13 @@ Regression <- function(formula,
             final.model$coef <- final.model$original$coef <- coefs[, 1]
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
-            final.model$footer <- regressionFooter(final.model)
-            if (relative.importance && is.null(interaction))
+            if (!is.null(interaction))
             {
-                final.model$relative.importance <- multipleImputationRelativeImportance(models)
-                final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
+                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance)
+                final.model$interaction$label <- interaction.label
             }
-            #if (!is.null(interaction))
-            #{
-            #    final.model$interaction <- multipleImputationCrosstabInteraction(models, ...)
-            #}
-            #final.model$interaction.name <- interaction.name
+            
+            final.model$footer <- regressionFooter(final.model)
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -334,7 +349,8 @@ Regression <- function(formula,
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                      formula.with.interaction, relative.importance,
-                                                     importance.absolute, interaction.pvalue, ...)
+                                                     importance.absolute, interaction.pvalue, 
+                                                     internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
     if (!partial)

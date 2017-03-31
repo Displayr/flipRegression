@@ -86,34 +86,56 @@ multipleImputationRelativeImportance <- function(models)
     result
 }
 
-#multipleImputationCrosstabInteraction <- function(models, final.model)
-#{
-#    m.list <- lapply(models, function(x){x, ....)
-#    resN <- combineNetCoefficients(m.list)
-#    resI <- combineInteractionCoefficients(m.list)
-#    coef.sign <- compareCoef(resI$bb, resI$bc, resI$ss^2, resI$sc^2, resI$split.size)
-#
-#    combine.coefs <- cbind(resI$bb, resN$bb)
-#    ...
-#    return(list(name=....))
-#}
-#
-## Input is a list, with each element containing (bb, bc, ss, sc)
-## Returns a list of the same format
-#combineInteractionCoefficients <- function(m.list)
-#{
-#    n.var <- nrow(bb)
-#    n.split <- ncol(bb)
-#    
-#    bb.all <- sapply(m.list, function(m){m$bb})
-#    bb.mean <- apply(bb.all, 1, mean, na.rm=T)
-#    bb.mean <- matrix(bb.mean, ncol=n.split)
-#
-#    return(list(bb=bb.mean, ...., split.size = ...))
-#
-#}
-#
-#
+multipleImputationCrosstabInteraction <- function(models, relative.importance)
+{
+    n <- nrow(models[[1]]$interaction$bb)
+    m <- ncol(models[[1]]$interaction$bb)
+    split.size <- models[[1]]$interaction$split.size    
+    res <- list(label = models[[1]]$interaction$label,
+                split.size = split.size, pvalue = NA,
+                original.r2 = mean(sapply(models, function(m){m$interaction$original.r2})),
+                full.r2 = mean(sapply(models, function(m){m$interaction$full.r2})))
+
+    bb.all <- sapply(models, function(m){m$interaction$bb})
+    bc.all <- sapply(models, function(m){m$interaction$bc})
+    ss.all <- sapply(models, function(m){m$interaction$ss^2})
+    sc.all <- sapply(models, function(m){m$interaction$sc^2})
+    bb <- apply(bb.all, 1, mean, na.rm=T)
+    bc <- apply(bc.all, 1, mean, na.rm=T)
+    ss <- multipleImputationStandardErrors(bb.all, ss.all)
+    sc <- multipleImputationStandardErrors(bc.all, sc.all)
+    res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
+                                 matrix(ss, nrow=n), matrix(sc, nrow=n), split.size[1:m]) 
+
+    net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
+    net.coef <- apply(net.coef.all, 1, mean)
+    bb <- matrix(bb, nrow=n)
+    combined.coefs <- cbind(bb, net.coef)
+    colnames(combined.coefs) <- names(split.size)
+    res$coefficients <- combined.coefs
+
+
+    if (relative.importance)
+        return(res)
+
+    if (models[[1]]$type %in% c("Linear", "Quasi-Poisson"))
+    {
+        fstat <- mean(sapply(models, function(m){m$interaction$anova.fstat}))
+        df1 <- models[[1]]$interaction$anova.df1
+        df2 <- models[[1]]$interaction$anova.df2
+        res$anova.test <- "F test"
+        res$pvalue <-  pf(fstat, df1, df2, lower.tail=F)
+    } else
+    {
+        cstat <- mean(sapply(models, function(m){m$interaction$anova.dev}))
+        df1 <- models[[1]]$interaction$anova.df1
+        res$anova.test <- "Chi-square test"
+        res$pvalue <- pchisq(cstat, df1, lower.tail=F)
+    }        
+    return(res)
+}
+
+
 # # #
 # # # # Alternative formula (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4029775/)
 # # # df.hash = df.large

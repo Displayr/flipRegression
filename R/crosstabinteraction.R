@@ -1,4 +1,4 @@
-computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, ...)
+computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
     num.var <- length(net.coef)
@@ -9,23 +9,43 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     var.names <- names(net.coef)
     var.labels <- if (result$show.labels) Labels(result$model, var.names)
                   else                    var.names
+    names(net.coef) <- var.labels
+    names(split.size) <- split.labels
+
     weights <- result$weights[result$subset]
-    
-    anova.test <- ""
-    pvalue <- NA
-    fit2 <- NULL
+    original.r2 <- if (result$type == "Linear") summary(result$original)$r.square
+                   else 1 - deviance(result$original)/nullDeviance(result)
+   
+    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), net.coef = net.coef, 
+                pvalue = NA, #anova.test = "", anova.stat = NA, anova.df1, anova.df2 = NA,
+                original.r2 = original.r2, full.r2 = NA, fit = NULL)
+ 
     if (!relative.importance)
     {
-        fit2 <- FitRegression(formula.with.interaction, result$estimation.data, result$subset, weights, result$type, result$robust.se, ...)
-        atest <- if (result$type %in% c("Linear", "Quasi-Poisson")) "F"
-                 else                                        "Chisq"
+        fit2 <- FitRegression(formula.with.interaction, result$estimation.data, 
+                              result$subset, weights, result$type, result$robust.se, ...)
+        atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
         atmp <- anova(result$original, fit2$original, test=atest)
-        anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
-        pvalue <- atmp$Pr[2]
+        res$full.r2 <- ifelse (result$type == "Linear", summary(fit2$original)$r.square,
+                                                        1 - deviance(fit2$original)/nullDeviance(result))
+       
+        if (!internal.loop)
+        {
+            res$fit <- fit2$original
+            res$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
+            res$pvalue <- atmp$Pr[2]
+
+        } else
+        {
+            res$anova.fstat <- atmp[2,5]
+            res$anova.dev <- atmp[2,4]
+            res$anova.df1 <- -diff(atmp[,1])
+            res$anova.df2 <- atmp[2,1]
+        }
     }
+
     if (relative.importance)
         num.var <- num.var - 1
-    
     coef.sign <- matrix(0, num.var, num.split)
     bb <- matrix(NA, num.var, num.split)
     bc <- matrix(NA, num.var, num.split)
@@ -37,7 +57,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         var.labels <- if (result$type == "Ordered Logit") var.labels[1:(num.var-1)] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
         net.ri <- estimateRelativeImportance(result$formula, result$estimation.data, NULL, result$type, signs, NA, var.labels, result$robust.se) 
-        net.coef <- net.ri$raw.importance
+        res$net.coef <- net.ri$raw.importance
 
         for (j in 1:num.split)
         {
@@ -77,22 +97,24 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             }
         }
     }
-    coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size)
-    coef.pvalues <- NULL
+    if (internal.loop)
+    {
+        res$bb <- bb
+        res$ss <- ss
+        res$bc <- bc
+        res$sc <- sc
+        return(res)
+    }
+
+    res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size)
     if (interaction.pvalue)
-        coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalues=TRUE)
+        res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalues=TRUE)
     
-    # Tidy results for printing
-    split.size <- c(split.size, NET=sum(split.size))
-    combined.coefs <- cbind(bb, net.coef)
+    combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
     rownames(combined.coefs) <- var.labels
-    result$interaction.label <- interaction.label
-
-    return(list(name = interaction.name, label = interaction.label,
-                anova.test = anova.test, pvalue = pvalue, fit = fit2$original,
-                coefficients = combined.coefs, coef.sign = coef.sign, 
-                coef.pvalues = coef.pvalues, split.size = split.size))
+    res$coefficients <- combined.coefs
+    return(res) 
 }
 
 
