@@ -301,7 +301,7 @@ Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 ncvTest.Regression <- function(model, ...)
 {
   if (!any("lm" %in% class(model$original)))
-    stop(paste0("'ncvTest is not applicable for models with sampling weights."))
+    stop(paste0("'ncvTest is only applicable for models with 'type' of 'Linear' with no 'weights'."))
   checkAcceptableModel(model, "lm", "'ncvTest'")
   diagnosticTestFromCar(model, "ncvTest", ...)
 }
