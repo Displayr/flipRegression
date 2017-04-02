@@ -48,6 +48,7 @@
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
+#' @param relative.importance Deprecated. To run Relative Importance Analysis, use the output variable.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
 #' @param interaction.formula Used internally for multiple imputation.
@@ -90,6 +91,7 @@ Regression <- function(formula,
                        show.labels = FALSE,
                        internal = FALSE,
                        contrasts = c("contr.treatment", "contr.treatment"),
+                       relative.importance = FALSE,
                        importance.absolute = FALSE,
                        interaction = NULL,
                        interaction.pvalue = FALSE,     # only used for testing
@@ -139,8 +141,8 @@ Regression <- function(formula,
         formula.with.interaction <- interaction.formula
         data <- GetData(interaction.formula, data, auxiliary.data)
         interaction.name <- tail(colnames(data), 1)
-    
-    } else
+    }
+    else
     {
         # Includes interaction in formula if there is one
         formula.with.interaction <- if (is.null(interaction)) input.formula
@@ -166,7 +168,6 @@ Regression <- function(formula,
                       else subset & tmp.sub
         }
     }
-
 
     if (method == "model.frame")
         return(data)
@@ -254,7 +255,6 @@ Regression <- function(formula,
                 final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance)
                 final.model$interaction$label <- interaction.label
             }
-            
             final.model$footer <- regressionFooter(final.model)
             return(final.model)
         }
@@ -349,7 +349,7 @@ Regression <- function(formula,
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                      formula.with.interaction, relative.importance,
-                                                     importance.absolute, interaction.pvalue, 
+                                                     importance.absolute, interaction.pvalue,
                                                      internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
