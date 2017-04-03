@@ -15,10 +15,9 @@ test_that("Basic output", {
 })
 
 test_that("Relative importance", {
-    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank,
-                                      output = "Relative Importance Analysis", interaction.pvalue = T))
-    expect_equal(round(z2$interaction$coefficients[2,1],4), 0.0203)
-    expect_equal(round(z2$interaction$coef.pvalue[2,1],4), 0.4664)
+    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, interaction.pvalue = T, output="Relative Importance Analysis"))
+    expect_equal(round(z2$interaction$coefficients[2,1], 4), 0.0203)
+    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
 })
 
 
@@ -30,13 +29,17 @@ test_that("Other types", {
     expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = "Multinomial Logit")))
 })
 
-#test_that("Multiple imputation", {
-#    zz <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, missing = "Multiple imputation", seed=123))
-#    expect_equal(nrow(zz$combined.coefs), 3)
-#    expect_equal(ncol(zz$combined.coefs), 7)
-#    expect_equal(sum(is.na(zz$combined.coefs)), 1)
-#    expect_equal(zz$interaction.pvalue, 0.002152381)
-#})
+test_that("Multiple imputation", {
+    z1 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, interaction.pvalue = T))
+    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, interaction.pvalue = T, missing = "Multiple imputation", seed=123))
+    expect_equal(round(z2$interaction$pvalue, 4), 0.0019)
+    c1 <- as.vector(z1$interaction$coefficients)
+    c2 <- as.vector(z2$interaction$coefficients)
+    p1 <- as.vector(z1$interaction$coef.pvalues)
+    p2 <- as.vector(z2$interaction$coef.pvalues)
+    expect_equal(cor(c1, c2, use="pairwise.complete.obs") > 0.99, TRUE)
+    expect_equal(cor(p1, p2, use="pairwise.complete.obs") > 0.74, TRUE)
+})
 
 f4 <- (1:nrow(bank)) %% 4
 test_that("Robust SE", {

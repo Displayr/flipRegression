@@ -252,7 +252,7 @@ Regression <- function(formula,
             final.model$sample.description <- processed.data$description
             if (!is.null(interaction))
             {
-                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance)
+                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance, interaction.pvalue)
                 final.model$interaction$label <- interaction.label
             }
             final.model$footer <- regressionFooter(final.model)

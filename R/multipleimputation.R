@@ -86,11 +86,11 @@ multipleImputationRelativeImportance <- function(models)
     result
 }
 
-multipleImputationCrosstabInteraction <- function(models, relative.importance)
+multipleImputationCrosstabInteraction <- function(models, relative.importance, interaction.pvalue)
 {
     n <- nrow(models[[1]]$interaction$bb)
     m <- ncol(models[[1]]$interaction$bb)
-    split.size <- models[[1]]$interaction$split.size    
+    split.size <- models[[1]]$interaction$split.size
     res <- list(label = models[[1]]$interaction$label,
                 split.size = split.size, pvalue = NA,
                 original.r2 = mean(sapply(models, function(m){m$interaction$original.r2})),
@@ -105,7 +105,11 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance)
     ss <- multipleImputationStandardErrors(bb.all, ss.all)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
     res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
-                                 matrix(ss, nrow=n), matrix(sc, nrow=n), split.size[1:m]) 
+                                 matrix(ss, nrow=n), matrix(sc, nrow=n), split.size[1:m])
+    if (interaction.pvalue)
+        res$coef.pvalues <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
+                                        matrix(ss, nrow=n), matrix(sc, nrow=n),
+                                        split.size[1:m], pvalues = TRUE)
 
     net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
     net.coef <- apply(net.coef.all, 1, mean)
@@ -131,7 +135,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance)
         df1 <- models[[1]]$interaction$anova.df1
         res$anova.test <- "Chi-square test"
         res$pvalue <- pchisq(cstat, df1, lower.tail=F)
-    }        
+    }
     return(res)
 }
 

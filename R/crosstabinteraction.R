@@ -15,20 +15,20 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     weights <- result$weights[result$subset]
     original.r2 <- if (result$type == "Linear") summary(result$original)$r.square
                    else 1 - deviance(result$original)/nullDeviance(result)
-   
-    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), net.coef = net.coef, 
+
+    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), net.coef = net.coef,
                 pvalue = NA, #anova.test = "", anova.stat = NA, anova.df1, anova.df2 = NA,
                 original.r2 = original.r2, full.r2 = NA, fit = NULL)
- 
+
     if (!relative.importance)
     {
-        fit2 <- FitRegression(formula.with.interaction, result$estimation.data, 
+        fit2 <- FitRegression(formula.with.interaction, result$estimation.data,
                               result$subset, weights, result$type, result$robust.se, ...)
         atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
         atmp <- anova(result$original, fit2$original, test=atest)
         res$full.r2 <- ifelse (result$type == "Linear", summary(fit2$original)$r.square,
                                                         1 - deviance(fit2$original)/nullDeviance(result))
-       
+
         if (!internal.loop)
         {
             res$fit <- fit2$original
@@ -51,12 +51,12 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     bc <- matrix(NA, num.var, num.split)
     ss <- matrix(NA, num.var, num.split)
     sc <- matrix(NA, num.var, num.split)
- 
+
     if (relative.importance)
     {
         var.labels <- if (result$type == "Ordered Logit") var.labels[1:(num.var-1)] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
-        net.ri <- estimateRelativeImportance(result$formula, result$estimation.data, NULL, result$type, signs, NA, var.labels, result$robust.se) 
+        net.ri <- estimateRelativeImportance(result$formula, result$estimation.data, NULL, result$type, signs, NA, var.labels, result$robust.se)
         res$net.coef <- net.ri$raw.importance
 
         for (j in 1:num.split)
@@ -66,8 +66,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
 
-            tmp.ri <- estimateRelativeImportance(result$formula, result$estimation.data[is.split,], weights[is.split], result$type, signs, NA, var.labels, result$robust.se) 
-            tmpC.ri <- estimateRelativeImportance(result$formula, result$estimation.data[-is.split,], weights[-is.split], result$type, signs, NA, var.labels, result$robust.se) 
+            tmp.ri <- estimateRelativeImportance(result$formula, result$estimation.data[is.split,], weights[is.split], result$type, signs, NA, var.labels, result$robust.se)
+            tmpC.ri <- estimateRelativeImportance(result$formula, result$estimation.data[-is.split,], weights[-is.split], result$type, signs, NA, var.labels, result$robust.se)
 
             bb[,j] <- tmp.ri$raw.importance
             ss[,j] <- tmp.ri$standard.errors
@@ -109,12 +109,12 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size)
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalues=TRUE)
-    
+
     combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
     rownames(combined.coefs) <- var.labels
     res$coefficients <- combined.coefs
-    return(res) 
+    return(res)
 }
 
 
