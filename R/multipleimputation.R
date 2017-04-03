@@ -86,7 +86,8 @@ multipleImputationRelativeImportance <- function(models)
     result
 }
 
-multipleImputationCrosstabInteraction <- function(models, relative.importance, interaction.pvalue)
+#' @importFrom stats pchisq
+multipleImputationCrosstabInteraction <- function(models, relative.importance, pvalue.correction, interaction.pvalue)
 {
     n <- nrow(models[[1]]$interaction$bb)
     m <- ncol(models[[1]]$interaction$bb)
@@ -94,7 +95,8 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, i
     res <- list(label = models[[1]]$interaction$label,
                 split.size = split.size, pvalue = NA,
                 original.r2 = mean(sapply(models, function(m){m$interaction$original.r2})),
-                full.r2 = mean(sapply(models, function(m){m$interaction$full.r2})))
+                full.r2 = mean(sapply(models, function(m){m$interaction$full.r2})),
+                pvalue.correction = pvalue.correction)
 
     bb.all <- sapply(models, function(m){m$interaction$bb})
     bc.all <- sapply(models, function(m){m$interaction$bc})
@@ -105,11 +107,12 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, i
     ss <- multipleImputationStandardErrors(bb.all, ss.all)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
     res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
-                                 matrix(ss, nrow=n), matrix(sc, nrow=n), split.size[1:m])
+                                 matrix(ss, nrow=n), matrix(sc, nrow=n), 
+                                 split.size[1:m], pvalue.correction)
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
                                         matrix(ss, nrow=n), matrix(sc, nrow=n),
-                                        split.size[1:m], pvalues = TRUE)
+                                        split.size[1:m], pvalue.correction, pvalues = TRUE)
 
     net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
     net.coef <- apply(net.coef.all, 1, mean)

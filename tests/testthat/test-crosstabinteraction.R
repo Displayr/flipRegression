@@ -39,6 +39,14 @@ test_that("Multiple imputation", {
     p2 <- as.vector(z2$interaction$coef.pvalues)
     expect_equal(cor(c1, c2, use="pairwise.complete.obs") > 0.99, TRUE)
     expect_equal(cor(p1, p2, use="pairwise.complete.obs") > 0.74, TRUE)
+
+    z3 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank,
+                                      output="Relative Importance Analysis", interaction.pvalue = T, missing = "Multiple imputation", seed=123))
+    z4 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank,
+                                      output="Relative Importance Analysis", interaction.pvalue = T))
+    expect_equal(length(grep("R-squared", z2$footer)), 1)
+    expect_equal(length(grep("R-squared", z3$footer)), 0)
+    expect_equal(length(grep("R-squared", z4$footer)), 0)
 })
 
 f4 <- (1:nrow(bank)) %% 4

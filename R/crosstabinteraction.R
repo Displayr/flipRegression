@@ -1,4 +1,4 @@
-computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, internal.loop, ...)
+computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, pvalue.correction, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
     num.var <- length(net.coef)
@@ -16,9 +16,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     original.r2 <- if (result$type == "Linear") summary(result$original)$r.square
                    else 1 - deviance(result$original)/nullDeviance(result)
 
-    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), net.coef = net.coef,
-                pvalue = NA, #anova.test = "", anova.stat = NA, anova.df1, anova.df2 = NA,
-                original.r2 = original.r2, full.r2 = NA, fit = NULL)
+    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), 
+                net.coef = net.coef, pvalue.correction = pvalue.correction,
+                pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL)
 
     if (!relative.importance)
     {
@@ -106,9 +106,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         return(res)
     }
 
-    res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size)
+    res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalue.correction)
     if (interaction.pvalue)
-        res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalues=TRUE)
+        res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalue.correction, pvalues=TRUE)
 
     combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
@@ -117,9 +117,19 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     return(res)
 }
 
-
-compareCoef <- function(bb, bc, ss, sc, nn, alpha = 0.05, pvalues=FALSE)
+#' @importFrom stats pt p.adjust
+compareCoef <- function(bb, bc, ss, sc, nn, pvalue.correction, alpha = 0.05, pvalues=FALSE)
 {
+    pvalue.correction <- switch(pvalue.correction,
+                                'None' = 'none',
+                                'False Discovery Rate' = 'fdr',
+                                'Benjamini & Yekutieli' = 'BY',
+                                'Bonferroni' = 'bonferroni',
+                                'Hochberg' = 'hochberg',
+                                'Holm' = 'holm',
+                                'Hommel' = 'hommel',
+                                pvalue.correction)
+                                
     if (any(dim(bb) != dim(ss)))
         stop("Dimensions of bb and ss must be the same\n")
     if (length(nn) != ncol(bb))
@@ -128,21 +138,27 @@ compareCoef <- function(bb, bc, ss, sc, nn, alpha = 0.05, pvalues=FALSE)
 
     nc <- sum(nn) - nn
     pp <- matrix(NA, nrow(bb), ncol(bb))
+    tt <- matrix(NA, nrow(bb), ncol(bb))
     for (j in 1:ncol(bb))
     {
         vv <- (ss[,j] + sc[,j])^2/(ss[,j]^2/(nn[j]-1) + sc[,j]^2/(nc[j]-1))
-        t.stat <- (bb[,j] - bc[,j])/sqrt(ss[,j] + sc[,j])
+        tt[,j] <- (bb[,j] - bc[,j])/sqrt(ss[,j] + sc[,j])
 
         for (i in 1:nrow(bb))
-        {
-            pp[i,j] <- 2 * pt(abs(t.stat[i]), vv[i], lower.tail=F)
-            if (!is.na(pp[i,j]) && pp[i,j] < alpha)
-                res[i,j] <- sign(t.stat[i])
-            #cat(round(bb[i,j],3), round(t.stat[i], 3), round(sqrt(ss[i,j]), 3), round(pp[i,j], 3), "\n")
-        }
+            pp[i,j] <- 2 * pt(abs(tt[i,j]), vv[i], lower.tail=F)
     }
+    #cat("\nUnadjusted p-values\n")
+    #print(pp)
+    pp <- p.adjust(pp, method = pvalue.correction)
+    pp <- matrix(pp, nrow=nrow(bb))
+    #cat("\nAdjusted p-values\n")
+    #print(pp)
+    
     if (pvalues)
         return(pp)
+
+    pp[is.na(pp)] <- 1
+    res <- sign(tt) * (pp < alpha)
     return (res)
 }
 

@@ -50,6 +50,8 @@
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
 #' @param relative.importance Deprecated. To run Relative Importance Analysis, use the output variable.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
+#' @param pvalue.correction Method to correct for multiple comparisons. Can be one of \code{"None"},
+#'    \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.
 #' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
 #' @param interaction.formula Used internally for multiple imputation.
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
@@ -73,6 +75,7 @@
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
+#' @importFrom utils tail
 #' @export
 Regression <- function(formula,
                        data = NULL,
@@ -94,6 +97,7 @@ Regression <- function(formula,
                        relative.importance = FALSE,
                        importance.absolute = FALSE,
                        interaction = NULL,
+                       pvalue.correction = "None",
                        interaction.pvalue = FALSE,     # only used for testing
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        ...)
@@ -252,7 +256,7 @@ Regression <- function(formula,
             final.model$sample.description <- processed.data$description
             if (!is.null(interaction))
             {
-                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance, interaction.pvalue)
+                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance, pvalue.correction, interaction.pvalue)
                 final.model$interaction$label <- interaction.label
             }
             final.model$footer <- regressionFooter(final.model)
@@ -349,7 +353,7 @@ Regression <- function(formula,
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                      formula.with.interaction, relative.importance,
-                                                     importance.absolute, interaction.pvalue,
+                                                     importance.absolute, interaction.pvalue, pvalue.correction,
                                                      internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
@@ -424,18 +428,22 @@ regressionFooter <- function(x)
 
     if (x$test.interaction)
     {
-        if (is.null(x$interaction$fit))
+        if (x$missing == "Multiple imputation" && !is.null(x$interaction$anova.test))
+            footer <- paste0(footer, " ", x$interaction$anova.test, " uses statistic averaged over multiple imputations;")
+
+        if (x$interaction$pvalue.correction != "None")
+            footer <- paste0(footer, " multiple comparison correction performed using the ",
+                             x$interaction$pvalue.correction, " method;")
+
+        if (is.na(x$interaction$original.r2) || is.na(x$interaction$full.r2))
             return(footer)
-        if (x$type == "Linear")
-            footer <- paste0(footer, " R-squared of pooled model: ",
-                                       FormatAsReal(summary(x$original)$r.square, 4),
-                                    "; R-squared of interaction model: ",
-                                       FormatAsReal(summary(x$interaction$fit)$r.square, 4))
-        else
-            footer <- paste0(footer, " McFadden's rho-squared of pooled model: ",
-                                       round(1 - deviance(x$original)/nullDeviance(x), 4),
-                                    "; McFaddens's rho-squared of interaction model: ",
-                                       round(1 - deviance(x$interaction$fit)/nullDeviance(x), 4))
+
+        r.desc <- ifelse(x$type == "Linear", "R-squared", "McFaddens's rho-squared")
+        footer <- sprintf("%s %s of pooled model: %.4f; %s of interaction model %.4f;",
+            footer, r.desc, x$interaction$original.r2, r.desc, x$interaction$full.r2)
+
+        if (x$missing == "Multiple imputation")
+            footer <- sprintf("%s %s averaged over multiple imputations", footer, r.desc)
         return(footer)
     }
 
