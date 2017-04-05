@@ -3,7 +3,7 @@
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
 estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,
-                                       robust.se = FALSE, ...)
+                                       robust.se = FALSE, show.sign.warning = TRUE, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -20,7 +20,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
             r.square <- GoodnessOfFit(fit$original)$value
     }
 
-    if (any(signs < 0))
+    if (show.sign.warning && any(signs < 0))
         warning(paste0("Negative signs in Relative Importance scores were applied from coefficient signs in ",
                       regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
 

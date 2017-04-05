@@ -54,6 +54,7 @@
 #'    \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.
 #' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
 #' @param interaction.formula Used internally for multiple imputation.
+#' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -100,6 +101,7 @@ Regression <- function(formula,
                        pvalue.correction = "None",
                        interaction.pvalue = FALSE,     # only used for testing
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
+                       recursive.call = FALSE,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -236,7 +238,9 @@ Regression <- function(formula,
                     show.labels = show.labels,
                     interaction = interaction,
                     interaction.formula = formula.with.interaction,
-                    output = output))
+                    output = output,
+                    recursive.call = TRUE
+                    ))
 
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
@@ -346,7 +350,7 @@ Regression <- function(formula,
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,
-                                                                 labels, robust.se, ...)
+                                                                 labels, robust.se, !recursive.call, ...)
     }
 
     # Crosstab-interaction
