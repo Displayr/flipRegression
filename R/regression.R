@@ -439,7 +439,8 @@ regressionFooter <- function(x)
             footer <- paste0(footer, " multiple comparison correction performed using the ",
                              x$interaction$pvalue.correction, " method;")
 
-        if (is.na(x$interaction$original.r2) || is.na(x$interaction$full.r2))
+        if (is.null(x$interaction$original.r2) || is.null(x$interaction$full.r2) ||
+            is.na(x$interaction$original.r2) || is.na(x$interaction$full.r2))
             return(footer)
 
         r.desc <- ifelse(x$type == "Linear", "R-squared", "McFaddens's rho-squared")

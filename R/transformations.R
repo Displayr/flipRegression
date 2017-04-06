@@ -48,3 +48,23 @@ dataFrameToVariableIfAppropriate <- function(data.frame.object)
         return(data.frame.object[, 1])
     data.frame.object
 }
+
+#' Adjust P-values for multiple comparisons using FDR
+#' @description This method gives different values from those outputted by \code{p.adjust} with \code{method = "fdr"}.
+#'    This difference is that our method uses a single scaling factor to multiply the p-values. However, conclusions
+#'    (i.e. significant or not) does not change.
+#' @param p Vector of unadjusted p-values.
+#' @param alpha Overall significance level.
+
+PValueAdjustFDR <- function(p, alpha = 0.05)
+{
+    p <- as.numeric(p)
+    ord <- order(p, decreasing = F)
+    n <- length(p)
+
+    ii <- which(p[ord] * n/(1:n) < alpha)
+    i <- if (length(ii) == 0) 1
+         else max(ii)
+    p.adjust <- pmin(1, n/i * p)
+    return(p.adjust)
+}

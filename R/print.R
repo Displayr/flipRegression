@@ -67,9 +67,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     caption <- x$footer
     if (x$test.interaction)
     {
+        if (x$output %in% c("R", "ANOVA"))
+            warning(sprintf("Output '%s' is not available with Crosstab Interaction", x$output))
+
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
-        title <- paste0(regressionType(x$type), ": ", x$outcome.label)
-        if (is.na(x$interaction$pvalue))
+        title <- if (x$interaction$relative.importance)  paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
+                 else                                    paste0(regressionType(x$type), ": ", x$outcome.label)
+        if (is.na(x$interaction$pvalue) || !is.numeric(x$interaction$pvalue))
             subtitle <- paste("Interaction with", x$interaction$label)
         else
             subtitle <- paste0(x$interaction$anova.test, " for interaction with ", x$interaction$label, ": P-value ", FormatAsPValue(x$interaction$pvalue))

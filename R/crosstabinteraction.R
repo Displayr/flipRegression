@@ -18,22 +18,32 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), 
                 net.coef = net.coef, pvalue.correction = pvalue.correction,
-                pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL)
+                pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL,
+                relative.importance = relative.importance)
 
     if (!relative.importance)
     {
         fit2 <- FitRegression(formula.with.interaction, result$estimation.data,
                               result$subset, weights, result$type, result$robust.se, ...)
         atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
+        if (!is.null(weights))
+        {
+            .design <- fit2$design
+            assign(".design", .design, envir=.GlobalEnv)
+        }
         atmp <- anova(result$original, fit2$original, test=atest)
+        res$anova.output <- atmp
         res$full.r2 <- ifelse (result$type == "Linear", summary(fit2$original)$r.square,
                                                         1 - deviance(fit2$original)/nullDeviance(result))
+        if (!is.null(weights))
+            remove(".design", envir=.GlobalEnv)
 
         if (!internal.loop)
         {
             res$fit <- fit2$original
             res$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
-            res$pvalue <- atmp$Pr[2]
+            res$pvalue <- if(is.null(weights)) atmp$Pr[2]
+                          else atmp$p
 
         } else
         {
@@ -56,8 +66,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     {
         var.labels <- if (result$type == "Ordered Logit") var.labels[1:(num.var-1)] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
-        net.ri <- estimateRelativeImportance(result$formula, result$estimation.data, NULL, result$type, signs, NA, var.labels, result$robust.se)
-        res$net.coef <- net.ri$raw.importance
+        #net.ri <- estimateRelativeImportance(result$formula, result$estimation.data, NULL, result$type, signs, NA, var.labels, result$robust.se)
+        #res$net.coef <- net.ri$raw.importance
+        res$net.coef <- result$relative.importance$raw.importance
 
         for (j in 1:num.split)
         {
@@ -84,9 +95,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
 
-            tmp.fit <- try(FitRegression(result$formula, result$estimation.data[is.split,], NULL, weights, result$type, result$robust.se))
+            tmp.fit <- try(FitRegression(result$formula, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
-            tmpC.fit <- try(FitRegression(result$formula, result$estimation.data[-is.split,], NULL, weights, result$type, result$robust.se))
+            tmpC.fit <- try(FitRegression(result$formula, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
             if (nrow(tmp.coefs) == num.var)
             {
@@ -147,12 +158,12 @@ compareCoef <- function(bb, bc, ss, sc, nn, pvalue.correction, alpha = 0.05, pva
         for (i in 1:nrow(bb))
             pp[i,j] <- 2 * pt(abs(tt[i,j]), vv[i], lower.tail=F)
     }
-    #cat("\nUnadjusted p-values\n")
-    #print(pp)
-    pp <- p.adjust(pp, method = pvalue.correction)
+    
+    if (pvalues && pvalue.correction == 'fdr')
+        pp <- PValueAdjustFDR(pp)
+    else
+        pp <- p.adjust(pp, method = pvalue.correction)
     pp <- matrix(pp, nrow=nrow(bb))
-    #cat("\nAdjusted p-values\n")
-    #print(pp)
     
     if (pvalues)
         return(pp)
