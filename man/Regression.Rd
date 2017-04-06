@@ -12,7 +12,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   contrasts = c("contr.treatment", "contr.treatment"),
   relative.importance = FALSE, importance.absolute = FALSE,
   interaction = NULL, pvalue.correction = "None",
-  interaction.pvalue = FALSE, interaction.formula = NULL, ...)
+  interaction.pvalue = FALSE, interaction.formula = NULL,
+  recursive.call = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -91,6 +92,8 @@ See \code{\link{contrasts}} for more information.}
 \item{interaction.pvalue}{Option to return p-values for interaction coefficients inside the Regression object.}
 
 \item{interaction.formula}{Used internally for multiple imputation.}
+
+\item{recursive.call}{Used internally to indicate if call is a result of recursion (e.g., multiple imputation).}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}
