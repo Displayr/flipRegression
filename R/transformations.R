@@ -55,7 +55,7 @@ dataFrameToVariableIfAppropriate <- function(data.frame.object)
 #'    (i.e. significant or not) does not change.
 #' @param p Vector of unadjusted p-values.
 #' @param alpha Overall significance level.
-
+#' @export
 PValueAdjustFDR <- function(p, alpha = 0.05)
 {
     p <- as.numeric(p)
