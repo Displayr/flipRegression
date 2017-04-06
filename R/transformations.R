@@ -59,12 +59,16 @@ dataFrameToVariableIfAppropriate <- function(data.frame.object)
 PValueAdjustFDR <- function(p, alpha = 0.05)
 {
     p <- as.numeric(p)
+    p.adj <- rep(NA, length(p))
+    nna <- which(!is.na(p))
+
+    p <- p[nna]
     ord <- order(p, decreasing = F)
     n <- length(p)
 
     ii <- which(p[ord] * n/(1:n) < alpha)
     i <- if (length(ii) == 0) 1
          else max(ii)
-    p.adjust <- pmin(1, n/i * p)
-    return(p.adjust)
+    p.adj[nna] <- pmin(1, n/i * p)
+    return(p.adj)
 }
