@@ -81,7 +81,7 @@ multipleImputationRelativeImportance <- function(models)
     df.c <- df.residual(models[[1]])
     result$df <- multipleImputationDegreesOfFreedom(models.raw.importance, vars, df.c, FALSE)
     result$statistics <- signs * result$raw.importance / result$standard.errors
-    result$p.values <-  2 * pt(abs(result$t.statistic), result$df, lower.tail = FALSE)
+    result$p.values <-  2 * pt(abs(result$statistics), result$df, lower.tail = FALSE)
     result$statistic.name <- "t"
     result
 }
@@ -107,7 +107,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, p
     ss <- multipleImputationStandardErrors(bb.all, ss.all)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
     res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
-                                 matrix(ss, nrow=n), matrix(sc, nrow=n), 
+                                 matrix(ss, nrow=n), matrix(sc, nrow=n),
                                  split.size[1:m], pvalue.correction)
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
