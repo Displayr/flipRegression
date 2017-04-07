@@ -118,6 +118,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
     else if (x$output == "ANOVA")
     {
+        if (x$missing == "Multiple imputation")
+            warning("ANOVA output is based on only the first imputed dataset.")
+
         attr(x$anova, "footer") <- x$footer
         print(x$anova)
     }

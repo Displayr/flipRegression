@@ -264,6 +264,11 @@ Regression <- function(formula,
                 final.model$interaction$label <- interaction.label
             }
             final.model$footer <- regressionFooter(final.model)
+            if (relative.importance && is.null(interaction))
+            {
+                final.model$relative.importance <- multipleImputationRelativeImportance(models)
+                final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
+            }
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
