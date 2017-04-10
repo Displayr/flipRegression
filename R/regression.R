@@ -479,7 +479,7 @@ regressionFooter <- function(x)
             footer <- paste0(footer,
                    "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
                    if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
+               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5)), "; ")
     }
     footer <- sprintf("%s multiple comparisons correction: %s", footer, x$correction)
     footer
