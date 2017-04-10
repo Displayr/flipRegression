@@ -164,7 +164,7 @@ dat <- cbind(y, X)
 
 test_that("Relative importance linear", {
     ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1),
-                                                       0.0409055316886271, variable.names = LETTERS[1:3])
+                                                       0.0409055316886271, variable.names = LETTERS[1:3], FALSE, TRUE, "None")
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
     expect_equal(unname(ria$standard.errors[2]), 0.00639909659943047)
@@ -174,7 +174,7 @@ test_that("Relative importance linear", {
 
 test_that("Relative importance linear weighted", {
     ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1),
-                                                       0.0488985219292419, variable.names = LETTERS[1:3])
+                                                       0.0488985219292419, variable.names = LETTERS[1:3], FALSE, TRUE, "None")
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
     expect_equal(unname(ria$standard.errors[2]), 0.00922207572739253)
@@ -222,7 +222,7 @@ test_that("Relative importance robust SE",
 # Negative sign warning
 test_that("Relative importance negative sign",
           expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, -1 ,1),
-                                                             0.0409055316886271, variable.names = LETTERS[1:3]),
+                                                             0.0409055316886271, variable.names = LETTERS[1:3], correction = "None"),
                          paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
                                 " in Linear Regression. To disable this feature, check the Absolute importance",
                                 " scores option.")))

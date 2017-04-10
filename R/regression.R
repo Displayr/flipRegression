@@ -351,7 +351,7 @@ Regression <- function(formula,
         raw.pvalues <- 2 * (1 - pnorm(abs(result$z.statistics)))
         dnn <- dimnames(raw.pvalues)
         adj.pvalues <- pvalAdjust(raw.pvalues, correction)
-        result$p.values <- matrix(adj.pvalues, nrow=length(dnn[[1]]), dimnames=dnn)
+        result$p.values <- matrix(adj.pvalues, ncol=length(dnn[[2]]), dimnames=dnn)
     }
     else
     {
