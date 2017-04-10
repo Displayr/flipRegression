@@ -1,6 +1,9 @@
-computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, pvalue.correction, internal.loop, ...)
+computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
+    correction <- result$correction
+    if (internal.loop)
+        correction <- "None"
     num.var <- length(net.coef)
     split.labels <- levels(result$estimation.data[,interaction.name])
     num.split <- length(split.labels)
@@ -13,13 +16,12 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     names(split.size) <- split.labels
 
     weights <- result$weights[result$subset]
-    original.r2 <- if (result$type == "Linear") summary(result$original)$r.square
+    original.r2 <- if (result$type == "Linear" & is.null(weights)) summary(result$original)$r.square
                    else 1 - deviance(result$original)/nullDeviance(result)
 
     res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), 
-                net.coef = net.coef, pvalue.correction = pvalue.correction,
                 pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL,
-                relative.importance = relative.importance)
+                net.coef = net.coef, relative.importance = relative.importance)
 
     if (!relative.importance)
     {
@@ -33,7 +35,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
         atmp <- anova(result$original, fit2$original, test=atest)
         res$anova.output <- atmp
-        res$full.r2 <- ifelse (result$type == "Linear", summary(fit2$original)$r.square,
+        res$full.r2 <- ifelse (result$type == "Linear" & is.null(weights), summary(fit2$original)$r.square,
                                                         1 - deviance(fit2$original)/nullDeviance(result))
         if (!is.null(weights))
             remove(".design", envir=.GlobalEnv)
@@ -77,8 +79,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
 
-            tmp.ri <- estimateRelativeImportance(result$formula, result$estimation.data[is.split,], weights[is.split], result$type, signs, NA, var.labels, result$robust.se)
-            tmpC.ri <- estimateRelativeImportance(result$formula, result$estimation.data[-is.split,], weights[-is.split], result$type, signs, NA, var.labels, result$robust.se)
+            tmp.ri <- estimateRelativeImportance(result$formula, result$estimation.data[is.split,], weights[is.split], result$type, signs, NA, var.labels, result$robust.se, !internal.loop, correction)
+            tmpC.ri <- estimateRelativeImportance(result$formula, result$estimation.data[-is.split,], weights[-is.split], result$type, signs, NA, var.labels, result$robust.se, !internal.loop, correction)
 
             bb[,j] <- tmp.ri$raw.importance
             ss[,j] <- tmp.ri$standard.errors
@@ -117,9 +119,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         return(res)
     }
 
-    res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalue.correction)
+    res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction)
     if (interaction.pvalue)
-        res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, pvalue.correction, pvalues=TRUE)
+        res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, pvalues=TRUE)
 
     combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
@@ -129,18 +131,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 }
 
 #' @importFrom stats pt p.adjust
-compareCoef <- function(bb, bc, ss, sc, nn, pvalue.correction, alpha = 0.05, pvalues=FALSE)
+compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FALSE)
 {
-    pvalue.correction <- switch(pvalue.correction,
-                                'None' = 'none',
-                                'False Discovery Rate' = 'fdr',
-                                'Benjamini & Yekutieli' = 'BY',
-                                'Bonferroni' = 'bonferroni',
-                                'Hochberg' = 'hochberg',
-                                'Holm' = 'holm',
-                                'Hommel' = 'hommel',
-                                pvalue.correction)
-                                
     if (any(dim(bb) != dim(ss)))
         stop("Dimensions of bb and ss must be the same\n")
     if (length(nn) != ncol(bb))
@@ -158,11 +150,7 @@ compareCoef <- function(bb, bc, ss, sc, nn, pvalue.correction, alpha = 0.05, pva
         for (i in 1:nrow(bb))
             pp[i,j] <- 2 * pt(abs(tt[i,j]), vv[i], lower.tail=F)
     }
-    
-    if (pvalues && pvalue.correction == 'fdr')
-        pp <- PValueAdjustFDR(pp)
-    else
-        pp <- p.adjust(pp, method = pvalue.correction)
+    pp <- pvalAdjust(pp, correction)
     pp <- matrix(pp, nrow=nrow(bb))
     
     if (pvalues)

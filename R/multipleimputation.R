@@ -21,7 +21,8 @@ MultipleImputationCoefficientTable <- function(models, large.sample.df = FALSE)
     df.c <- df.residual(models[[1]])
     dfs <- multipleImputationDegreesOfFreedom(coefs, vars, df.c, large.sample.df)
     tvals <- coef.mean / ses
-    pvals <-  2 * pt(abs(tvals), dfs, lower.tail = FALSE)
+    correct <- models[[1]]$correction
+    pvals <-  pvalAdjust(2 * pt(abs(tvals), dfs, lower.tail = FALSE), correct)
     results <- cbind(coef.mean, ses, tvals, dfs, pvals)
     coef.names <- rownames(models[[1]]$summary$coef)
     if(models[[1]]$type == "Multinomial Logit")
@@ -73,6 +74,7 @@ multipleImputationRelativeImportance <- function(models)
     signs <- sign(unname(apply(coefs, 1, mean, na.rm = FALSE)[-1]))
 
     result <- list()
+    correct <- models[[1]]$correction
     models.raw.importance <- sapply(models, function(m) m$relative.importance$raw.importance)
     result$raw.importance <- apply(models.raw.importance, 1, mean, na.rm = FALSE)
     result$importance <- signs * 100 * prop.table(result$raw.importance)
@@ -81,22 +83,24 @@ multipleImputationRelativeImportance <- function(models)
     df.c <- df.residual(models[[1]])
     result$df <- multipleImputationDegreesOfFreedom(models.raw.importance, vars, df.c, FALSE)
     result$statistics <- signs * result$raw.importance / result$standard.errors
-    result$p.values <-  2 * pt(abs(result$statistics), result$df, lower.tail = FALSE)
+    result$p.values.raw <-  2 * pt(abs(result$statistics), result$df, lower.tail = FALSE)
+    result$p.values <- pvalAdjust(result$p.values.raw, correct)
     result$statistic.name <- "t"
     result
 }
 
 #' @importFrom stats pchisq
-multipleImputationCrosstabInteraction <- function(models, relative.importance, pvalue.correction, interaction.pvalue)
+multipleImputationCrosstabInteraction <- function(models, relative.importance, interaction.pvalue)
 {
     n <- nrow(models[[1]]$interaction$bb)
     m <- ncol(models[[1]]$interaction$bb)
     split.size <- models[[1]]$interaction$split.size
+    correction <- models[[1]]$correction
     res <- list(label = models[[1]]$interaction$label,
                 split.size = split.size, pvalue = NA,
+                relative.importance = relative.importance,
                 original.r2 = mean(sapply(models, function(m){m$interaction$original.r2})),
-                full.r2 = mean(sapply(models, function(m){m$interaction$full.r2})),
-                pvalue.correction = pvalue.correction)
+                full.r2 = mean(sapply(models, function(m){m$interaction$full.r2})))
 
     bb.all <- sapply(models, function(m){m$interaction$bb})
     bc.all <- sapply(models, function(m){m$interaction$bc})
@@ -107,12 +111,12 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, p
     ss <- multipleImputationStandardErrors(bb.all, ss.all)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
     res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
-                                 matrix(ss, nrow=n), matrix(sc, nrow=n),
-                                 split.size[1:m], pvalue.correction)
+                                 matrix(ss, nrow=n), matrix(sc, nrow=n), 
+                                 split.size[1:m], correction)
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
                                         matrix(ss, nrow=n), matrix(sc, nrow=n),
-                                        split.size[1:m], pvalue.correction, pvalues = TRUE)
+                                        split.size[1:m], correction, pvalues = TRUE)
 
     net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
     net.coef <- apply(net.coef.all, 1, mean)

@@ -14,18 +14,17 @@ test_that("Basic output", {
 
 })
 
-test_that("Relative importance", {
-    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, interaction.pvalue = T, output="Relative Importance Analysis"))
-    expect_equal(round(z2$interaction$coefficients[2,1], 4), 0.0203)
-    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
-})
+all.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
+w1 <- rep(1, nrow(bank))
+f1 <- bank$ID < 200
+test_that("Weights", {
 
-
-all.types <- c("Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
-test_that("Other types", {
-
-    for (tt in all.types[-6])
+    for (tt in all.types[-7])
+    {
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt)), NA)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt, weights = w1)), NA)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt, weights = w1, subset = f1)), NA)
+    }
     expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = "Multinomial Logit")))
 })
 
@@ -49,6 +48,12 @@ test_that("Multiple imputation", {
     expect_equal(length(grep("R-squared", z4$footer)), 0)
 })
 
+test_that("Relative importance", {
+    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, interaction.pvalue = T, output="Relative Importance Analysis"))
+    expect_equal(round(z2$interaction$coefficients[2,1], 4), 0.0203)
+    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
+})
+
 f4 <- (1:nrow(bank)) %% 4
 test_that("Robust SE", {
     #expect_error(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, robust.se = T))
@@ -70,11 +75,6 @@ test_that("Coefficients", {
     z5 <- Regression(yy~x1+x2+x3, interaction=f3)
     expect_equal(sum(abs(z5$interaction$coef.sign[1,])), 0)
     expect_equal(sum(abs(z5$interaction$coef.sign[4,])), 6)
-
-    # No interaction effect - but there is heteroskacity
-    yh <- 3 * x1 + 5 * x2 + 1 * x3 +  f3 * ee
-    zh1 <- Regression(yh~x1+x2+x3, interaction=f3)
-    zh2 <- Regression(yh~x1+x2+x3, interaction=f3, robust.se=T)
 
 })
 

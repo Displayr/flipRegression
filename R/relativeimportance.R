@@ -3,7 +3,7 @@
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
 estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,
-                                       robust.se = FALSE, show.sign.warning = TRUE, ...)
+                                       robust.se = FALSE, show.sign.warning = TRUE, correction, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -79,10 +79,11 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     result$statistics <- unname(signs) * result$raw.importance / result$standard.errors
     is.t.statistic.used <- isTStatisticUsed(fit)
     result$statistic.name <- if (is.t.statistic.used) "t" else "z"
-    result$p.values <- if (is.t.statistic.used)
+    raw.p.values <- if (is.t.statistic.used)
         2 * pt(abs(result$statistics), fit$df.residual, lower.tail = FALSE)
     else
         2 * pnorm(abs(result$statistics), lower.tail = FALSE)
+    result$p.values <- pvalAdjust(raw.p.values, correction)
     result
 }
 

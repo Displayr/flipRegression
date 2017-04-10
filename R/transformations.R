@@ -72,3 +72,21 @@ PValueAdjustFDR <- function(p, alpha = 0.05)
     p.adj[nna] <- pmin(1, n/i * p)
     return(p.adj)
 }
+
+pvalAdjust <- function(p, correction)
+{
+    correction <- switch(correction,
+                                'None' = 'none',
+                                'False Discovery Rate' = 'fdr',
+                                'Benjamini & Yekutieli' = 'BY',
+                                'Bonferroni' = 'bonferroni',
+                                'Hochberg' = 'hochberg',
+                                'Holm' = 'holm',
+                                'Hommel' = 'hommel',
+                                 correction)
+    if (correction == "fdr")
+        return(PValueAdjustFDR(p))
+    return(p.adjust(p, correction))
+}
+
+
