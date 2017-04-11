@@ -78,9 +78,12 @@ test_that("Coefficients", {
 
 })
 
-
-
-
+test_that("Empty factors", {
+    data("cola", package="flipExampleData")
+    expect_error(suppressWarnings(Regression(Q3~Q6_A + Q6_B + Q6_C, data=cola, interaction=Q2)), NA)
+    expect_error(suppressWarnings(Regression(Q3~Q6_A + Q6_B + Q6_C, data=cola, interaction=Q28)),NA)
+    expect_error(suppressWarnings(Regression(Q3~Q6_A + Q6_B + Q6_C, data=cola, interaction=Q28, output="Relative Importance Analysis")),NA)
+})
 
 
 

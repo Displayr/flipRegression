@@ -24,6 +24,9 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
         warning(paste0("Negative signs in Relative Importance scores were applied from coefficient signs in ",
                       regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
 
+    if (is.na(variable.names))
+        variable.names <- names(fit$original$coefficients)[-1]        
+
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)
     X <- data[setdiff(formula.names, outcome.name)]

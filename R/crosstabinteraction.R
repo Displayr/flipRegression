@@ -1,3 +1,4 @@
+#' @importFrom flipTransformations RemoveMissingLevelsFromFactors
 computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
@@ -19,7 +20,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     original.r2 <- if (result$type == "Linear" & is.null(weights)) summary(result$original)$r.square
                    else 1 - deviance(result$original)/nullDeviance(result)
 
-    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)), 
+    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)),
                 pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL,
                 net.coef = net.coef, relative.importance = relative.importance)
 
@@ -57,19 +58,20 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     }
 
     if (relative.importance)
+    {
         num.var <- num.var - 1
+        var.names <- setdiff(var.names, "(Intercept)")
+    }
     coef.sign <- matrix(0, num.var, num.split)
-    bb <- matrix(NA, num.var, num.split)
-    bc <- matrix(NA, num.var, num.split)
-    ss <- matrix(NA, num.var, num.split)
-    sc <- matrix(NA, num.var, num.split)
+    bb <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
+    bc <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
+    ss <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
+    sc <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
 
     if (relative.importance)
     {
         var.labels <- if (result$type == "Ordered Logit") var.labels[1:(num.var-1)] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
-        #net.ri <- estimateRelativeImportance(result$formula, result$estimation.data, NULL, result$type, signs, NA, var.labels, result$robust.se)
-        #res$net.coef <- net.ri$raw.importance
         res$net.coef <- result$relative.importance$raw.importance
 
         for (j in 1:num.split)
@@ -78,16 +80,17 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             if (length(unique(result$estimation.data[is.split,1])) < 2 ||
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
+            tmp.ri <- try(estimateRelativeImportance(result$formula, RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]), weights[is.split], result$type, signs, NA, NA, result$robust.se, FALSE, correction))
+            tmpC.ri <- try(estimateRelativeImportance(result$formula, RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]), weights[-is.split], result$type, signs, NA, NA, result$robust.se, FALSE, correction))
 
-            tmp.ri <- estimateRelativeImportance(result$formula, result$estimation.data[is.split,], weights[is.split], result$type, signs, NA, var.labels, result$robust.se, !internal.loop, correction)
-            tmpC.ri <- estimateRelativeImportance(result$formula, result$estimation.data[-is.split,], weights[-is.split], result$type, signs, NA, var.labels, result$robust.se, !internal.loop, correction)
-
-            bb[,j] <- tmp.ri$raw.importance
-            ss[,j] <- tmp.ri$standard.errors
-            bc[,j] <- tmpC.ri$raw.importance
-            sc[,j] <- tmpC.ri$standard.errors
+            if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
+            { 
+                bb[names(tmp.ri$raw.importance),j] <- tmp.ri$raw.importance
+                ss[names(tmp.ri$raw.importance),j] <- tmp.ri$standard.errors
+                bc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$raw.importance
+                sc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$standard.errors
+            }
         }
-
     } else
     {
         for (j in 1:num.split)
@@ -101,12 +104,13 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.fit <- try(FitRegression(result$formula, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
-            if (nrow(tmp.coefs) == num.var)
+            
+            if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
-                bb[,j] <- tmp.coefs[,1]
-                ss[,j] <- tmp.coefs[,2]
-                bc[,j] <- tmpC.coefs[,1]
-                sc[,j] <- tmpC.coefs[,2]
+                bb[rownames(tmp.coefs) ,j] <- tmp.coefs[,1]
+                ss[rownames(tmp.coefs) ,j] <- tmp.coefs[,2]
+                bc[rownames(tmpC.coefs),j] <- tmpC.coefs[,1]
+                sc[rownames(tmpC.coefs),j] <- tmpC.coefs[,2]
             }
         }
     }
@@ -139,7 +143,7 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FA
         stop("Length of nn should match columns in bb\n")
     res <- matrix(0, nrow=nrow(bb), ncol=ncol(ss))
 
-    nc <- sum(nn) - nn
+    nc <- sum(nn, na.rm=T) - nn
     pp <- matrix(NA, nrow(bb), ncol(bb))
     tt <- matrix(NA, nrow(bb), ncol(bb))
     for (j in 1:ncol(bb))
@@ -152,7 +156,7 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FA
     }
     pp <- pvalAdjust(pp, correction)
     pp <- matrix(pp, nrow=nrow(bb))
-    
+
     if (pvalues)
         return(pp)
 
