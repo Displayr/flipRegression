@@ -15,6 +15,12 @@
 #' @export
 ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 {
+    if (class(obj) == "Stepwise")
+    {
+        obj <- obj$model
+        subset <- obj$subset
+        weights <- obj$weights
+    }
     observed <- Observed(obj)
     predicted <- predict(obj)
 
