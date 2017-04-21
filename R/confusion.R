@@ -44,7 +44,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
 #' @export
 ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$weights)
 {
-    confusion <- confusionMatrixHelper(obj[, 1], obj[, 2], subset, weights)
+    confusion <- confusionMatrixHelper(obj[, 1], obj[, 2], as.logical(subset), weights)
 
     attr(confusion, "outcome.label") <- colnames(obj)[2]
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
