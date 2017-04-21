@@ -2,6 +2,8 @@
 
 S3method(AIC,Regression)
 S3method(Anova,Regression)
+S3method(ConfusionMatrix,data.frame)
+S3method(ConfusionMatrix,default)
 S3method(GoodnessOfFit,Regression)
 S3method(GoodnessOfFit,default)
 S3method(Observed,FitRegression)

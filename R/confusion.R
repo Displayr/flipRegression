@@ -1,19 +1,25 @@
 #' \code{ConfusionMatrix}
 #'
-#' @param obj A model with an outcome variable.
-#' @param subset An optional vector specifying a subset of observations to be
-#' used in the fitting process or the name of a variable in \code{data}. It
-#' may not be an expression.
-#' @param weights An optional vector of sampling weights or the
-#' name of a variable in \code{data}. It may not be an expression.
-#' @details Produces a confusion matrix for a trained model showing the proportion
+#' @description Produces a confusion matrix for a trained model or data.frame showing the proportion
 #' of observed values that take the same values as the predicted values. Where the outcome variable
 #' in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
+#' @param obj A model with an outcome variable or a data.frame where the first column is the outcome and
+#' the second column is the prediction.
+#' @param subset An optional vector specifying a subset of observations to be used or the name of a
+#' column if \code{obj} is a data.frame.
+#' @param weights An optional vector of sampling weights or the name of a column if \code{obj} is a data.frame.
+#' @export
+ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
+{
+    UseMethod("ConfusionMatrix")
+}
+
+# Default method for fitted objects with predict method
 #' @importFrom stats predict
 #' @importFrom methods is
 #' @importFrom flipData Observed EstimationData
 #' @export
-ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights)
 {
     if (is(obj, "Stepwise"))
     {
@@ -23,7 +29,33 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
     }
     observed <- Observed(obj)
     predicted <- predict(obj)
+    confusion <- confusionMatrixHelper(observed, predicted, subset, weights)
 
+    attr(confusion, "outcome.label") <- obj$outcome.label
+    accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
+    description <- paste0("Fitted model : ", obj$sample.description, "  ", sum(confusion), " observed/predicted pairs with ",
+                          accuracy.pct, " accuracy;")
+    attr(confusion, "description") <- description
+    return(confusion)
+}
+
+# Alternative method taking a data.frame as input
+#' @importFrom methods is
+#' @export
+ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$weights)
+{
+    confusion <- confusionMatrixHelper(obj[, 1], obj[, 2], subset, weights)
+
+    attr(confusion, "outcome.label") <- colnames(obj)[2]
+    accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
+    description <- paste0(sum(confusion), " observed/predicted pairs with ", accuracy.pct, " accuracy;")
+    attr(confusion, "description") <- description
+    return(confusion)
+}
+
+
+confusionMatrixHelper <- function(observed, predicted, subset, weights)
+{
     if (is.factor(observed))
     {
         confusion <- ConfusionMatrixFromVariables(observed, predicted, subset, weights)
@@ -48,15 +80,9 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
         attr(confusion, "type") <- "numeric"
     }
 
-    attr(confusion, "outcome.label") <- obj$outcome.label
-    n.pairs <- sum(confusion)
-    accuracy <- sum(diag(confusion)) / n.pairs
-    attr(confusion, "accuracy") <- accuracy
-    accuracy.pct <- FormatAsPercent(sum(diag(confusion)) / n.pairs, 4)
-    description <- paste0("Fitted model : ", obj$sample.description, "  ", n.pairs, " observed/predicted pairs with ",
-                          accuracy.pct, " accuracy;")
-    attr(confusion, "description") <- description
     class(confusion) <- "ConfusionMatrix"
+    accuracy <- sum(diag(confusion)) / sum(confusion)
+    attr(confusion, "accuracy") <- accuracy
     return(confusion)
 }
 
@@ -95,7 +121,6 @@ ConfusionMatrixFromVariables <- function(observed, predicted, subset = NULL, wei
   }
   return(makeConfusionMatrixSymmetrical(cm))
 }
-
 
 #' \code{ConfusionMatrixFromVariablesNumeric}
 #'
