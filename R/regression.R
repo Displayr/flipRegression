@@ -492,7 +492,6 @@ relativeImportanceFooter <- function(x)
     if (!x$test.interaction)
         footer <- paste0(footer, " R-squared: ", FormatAsReal(x$r.squared, 4), ";")
     footer <- paste0(footer, " multiple comparisons correction: ", x$correction, ";")
-    footer <- paste0(footer, " importance scores have been normalized by column;")
     footer
 }
 

@@ -85,11 +85,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         {
             subtitle <- paste("Interaction with", x$interaction$label)
         }
+
+        if (!is.null(x$relative.importance))
+            caption <- paste(x$relative.importance.footer, " importance scores have been normalized by column;")
         dt <- CrosstabInteractionTable(x$interaction$coefficients,
                                        x$interaction$coef.sign,
                                        x$interaction$split.size,
                                        title = title,
-                                       footer = if(is.null(x$relative.importance)) caption else x$relative.importance.footer,
+                                       footer = caption,
                                        subtitle = subtitle)
         print(dt)
     }
