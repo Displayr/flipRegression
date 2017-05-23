@@ -25,7 +25,8 @@
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
 #' summary and model statistics. It is the default. \code{"ANOVA"} returns an
-#' ANOVA table. \code{"R"} returns a more traditional R output.
+#' ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+#' returns a table with Relative Importance scores.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #' method = "model.frame", which returns the model frame.
@@ -46,8 +47,14 @@
 #' \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 #' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #' See \code{\link{contrasts}} for more information.
-#' @param relative.importance Whether to compute relative importance.
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
+#' @param relative.importance Deprecated. To run Relative Importance Analysis, use the output variable.
+#' @param importance.absolute Whether the absolute value of the relative importance should be shown.
+#' @param correction Method to correct for multiple comparisons. Can be one of \code{"None"},
+#'    \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.
+#' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
+#' @param interaction.formula Used internally for multiple imputation.
+#' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
 #'   data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
@@ -69,6 +76,7 @@
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
+#' @importFrom utils tail
 #' @export
 Regression <- function(formula,
                        data = NULL,
@@ -88,7 +96,12 @@ Regression <- function(formula,
                        internal = FALSE,
                        contrasts = c("contr.treatment", "contr.treatment"),
                        relative.importance = FALSE,
+                       importance.absolute = FALSE,
                        interaction = NULL,
+                       correction = "None",
+                       interaction.pvalue = FALSE,     # only used for testing
+                       interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
+                       recursive.call = FALSE,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -100,6 +113,8 @@ Regression <- function(formula,
     cl <- match.call()
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
+
+    relative.importance <- output == "Relative Importance Analysis"
 
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
@@ -118,18 +133,46 @@ Regression <- function(formula,
 
     interaction.name <- deparse(substitute(interaction))
     interaction <- eval(substitute(interaction), data, parent.frame())
-    if (!is.null(interaction) && relative.importance)
-        stop("Relative importance is incompatible with Crosstab interaction.")
-    if (!is.null(interaction) && type == "Multinomial Logit")
-        stop("Crosstab interaction is incompatible with Multinomial logit regression.")
-
-    formula2 <- if (is.null(interaction)) input.formula
-                else update(input.formula, sprintf(".~.*%s",interaction.name))
-    data <- GetData(input.formula, data, auxiliary.data)
     if (!is.null(interaction))
     {
-        data <- cbind(data, Factor(interaction))
-        colnames(data)[ncol(data)] <- interaction.name
+        if (!is.null(attr(interaction, "name")))
+            interaction.name <- attr(interaction, "name")
+        interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+                                 else interaction.name
+    }
+
+    if (!is.null(interaction.formula))
+    {
+        # Inside internal loop, data is already set up properly
+        formula.with.interaction <- interaction.formula
+        data <- GetData(interaction.formula, data, auxiliary.data)
+        interaction.name <- tail(colnames(data), 1)
+    }
+    else
+    {
+        # Includes interaction in formula if there is one
+        formula.with.interaction <- if (is.null(interaction)) input.formula
+                else update(input.formula, sprintf(".~.*%s",interaction.name))
+        data <- GetData(input.formula, data, auxiliary.data)
+        if (!is.null(interaction))
+        {
+            interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+                                     else interaction.name
+            if (length(unique(interaction)) < 2)
+                stop("Crosstab interaction variable must contain more than one unique value.")
+            if (type == "Multinomial Logit")
+                stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+
+            if (interaction.name %in% colnames(data))
+                stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
+            data <- cbind(data, Factor(interaction))
+            colnames(data)[ncol(data)] <- interaction.name
+
+            # No imputation occurs on interaction variable
+            tmp.sub <- !is.na(interaction)
+            subset <- if (is.null(subset)) tmp.sub
+                      else subset & tmp.sub
+        }
     }
 
     if (method == "model.frame")
@@ -137,7 +180,7 @@ Regression <- function(formula,
     outcome.name <- OutcomeName(input.formula)
     outcome.variable <- data[[outcome.name]]
     if(sum(outcome.name == names(data)) > 1)
-        stop("The 'Outcome' variable has been selected a 'Predictor'. It must be one or the other, but may not be both.")
+        stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
@@ -181,25 +224,26 @@ Regression <- function(formula,
     }
     else
     {
-        processed.data <- EstimationData(formula2, data, subset, weights, missing, m = m, seed = seed)
+        processed.data <- EstimationData(formula.with.interaction, data, subset, weights, missing, m = m, seed = seed)
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
-                FUN = function(x)
-                {
-                    int.copy <- if (!is.null(interaction)) x[,interaction.name]
-                                else                       NULL
-                    Regression(formula,
-                    data = x,
+                FUN = function(x) Regression(formula,
+                    data = x,                               # contains interaction factor; filters already applied
                     missing = "Error if missing data",
                     weights = processed.data$weights,
                     type = type,
                     robust.se = FALSE,
                     detail = detail,
                     show.labels = show.labels,
-                    relative.importance = relative.importance,
-                    interaction = int.copy)
-                })
+                    interaction = interaction,
+                    interaction.formula = formula.with.interaction,
+                    output = output,
+                    correction = "None",
+                    recursive.call = TRUE
+                    ))
+
+            models[[1]]$correction <- correction
             final.model <- models[[1]]
             final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
             coefs <- MultipleImputationCoefficientTable(models)
@@ -216,13 +260,17 @@ Regression <- function(formula,
             final.model$coef <- final.model$original$coef <- coefs[, 1]
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
+            if (!is.null(interaction))
+            {
+                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance, interaction.pvalue)
+                final.model$interaction$label <- interaction.label
+            }
             final.model$footer <- regressionFooter(final.model)
-            if (relative.importance)
+            if (relative.importance && is.null(interaction))
             {
                 final.model$relative.importance <- multipleImputationRelativeImportance(models)
                 final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
             }
-            final.model$interaction.name <- interaction.name
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -258,7 +306,7 @@ Regression <- function(formula,
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
-    result$summary$call <- cl
+    result$correction <- correction
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
     result$model <- data
@@ -272,6 +320,7 @@ Regression <- function(formula,
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
+    result$summary$call <- cl
 
     # Replacing the variables with their labels
     result$outcome.label <- result$outcome.name <- outcome.name
@@ -299,77 +348,47 @@ Regression <- function(formula,
     if (type == "Multinomial Logit")
     {
         result$z.statistics <- result$summary$coefficients / result$summary$standard.errors
-        result$p.values <- 2 * (1 - pnorm(abs(result$z.statistics)))
+        raw.pvalues <- 2 * (1 - pnorm(abs(result$z.statistics)))
+        dnn <- dimnames(raw.pvalues)
+        adj.pvalues <- pvalAdjust(raw.pvalues, correction)
+        result$p.values <- matrix(adj.pvalues, ncol=length(dnn[[2]]), dimnames=dnn)
+    }
+    else
+    {
+        result$summary$coefficients[,4] <- pvalAdjust(result$summary$coefficients[,4], correction)
     }
 
     if (relative.importance)
     {
         labels <- rownames(result$summary$coefficients)
         labels <- if (type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
-        signs <- sign(extractVariableCoefficients(result$original, type))
+        signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,
-                                                                 labels, ...)
+                                                                 labels, robust.se, !recursive.call,
+                                                                 correction, ...)
     }
-
-    # Crosstab-interaction
-    result$interaction.name <- interaction.name
     if (result$test.interaction)
-    {
-        fit2 <- FitRegression(formula2, .estimation.data, subset, .weights, type, robust.se, ...)
-
-        atest <- if (type %in% c("Linear", "Quasi-Poisson")) "F"
-                 else                                        "Chisq"
-        atmp <- anova(fit$original, fit2$original, test=atest)
-        result$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
-        result$interaction.pvalue <- atmp$Pr[2]
-        result$interaction.model <- fit2$original
-
-        # Compute table of coefficients
-        tmp.coef <- summary(fit$original)$coef[,1]
-        num.var <- length(tmp.coef)
-        split.labels <- levels(.estimation.data[,interaction.name])
-        split.names <- paste0(interaction.name, split.labels)
-        num.split <- length(split.names)
-        split.size <- table(.estimation.data[,interaction.name])
-        var.names <- names(tmp.coef)
-        all.names <- sprintf("%s%s", var.names,
-                    rep(c("", paste0(":", split.names[-1])), each=length(var.names)))
-        all.names <- gsub("(Intercept):", "", all.names, fixed=T)
-
-        rsum2 <- summary(fit2$original)
-        if (result$robust.se && length(rsum2$coef[,1]) < num.split * num.var)
-        {
-            warning("Robust SE not used as some coefficients are undefined\n")
-            result$robust.se <- FALSE
-        }
-        rsum2 <- tidySummary(rsum2, fit2$original, result)
-        tmp.coef2 <- rsum2$coef[,1]
-        tmp.sd2 <- rsum2$coef[,2]^2
-
-        coef.tab <- matrix(tmp.coef2[all.names], ncol=num.split)
-        sd2.tab <- matrix(tmp.sd2[all.names], ncol=num.split)
-        diff.coef <- matrix(0, nrow(coef.tab), ncol(coef.tab))
-
-        # Only check differences between coefficients if we accept fit2
-        if (result$interaction.pvalue < 0.05)
-            diff.coef <- compareCoef(coef.tab, sd2.tab, split.size)
-
-        split.size <- c(split.size, NET=sum(split.size))
-        combined.coefs <- cbind(coef.tab, tmp.coef)
-        colnames(combined.coefs) <- c(split.labels, "NET")
-        rownames(combined.coefs) <- names(tmp.coef)
-        result$combined.coefs <- combined.coefs
-        result$coef.sign <- diff.coef
-        result$split.size <- split.size
-    }
+        result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
+                                                     formula.with.interaction, relative.importance,
+                                                     importance.absolute, interaction.pvalue,
+                                                     internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
     if (!partial)
     {
         result$sample.description <- processed.data$description
         if (output == "ANOVA")
-            result$anova <- Anova(result, robust.se)
+        {
+            anova.out <- Anova(result, robust.se)
+            if (!recursive.call)
+            {
+                p.name <- grep("Pr", names(anova.out), value=T)
+                anova.out[[p.name]] <- pvalAdjust(anova.out[[p.name]], result$correction)
+            #    anova.out[[4]] <- pvalAdjust(anova.out[[4]], result$correction)
+            }
+            result$anova <- anova.out
+        }
     }
     result$footer <- regressionFooter(result)
     if (!is.null(result$relative.importance))
@@ -436,32 +455,45 @@ regressionFooter <- function(x)
 
     if (x$test.interaction)
     {
-        if (x$type == "Linear")
-            footer <- paste0(footer, " R-squared of pooled model: ",
-                                       FormatAsReal(summary(x$original)$r.square, 4),
-                                    "; R-squared of interaction model: ",
-                                       FormatAsReal(summary(x$interaction.model)$r.square, 4))
-        else
-            footer <- paste0(footer, " McFadden's rho-squared of pooled model: ",
-                                       round(1 - deviance(x$original)/nullDeviance(x), 4),
-                                    "; McFaddens's rho-squared of interaction model: ",
-                                       round(1 - deviance(x$interaction.model)/nullDeviance(x), 4))
-        return(footer)
-    }
+        if (x$missing == "Multiple imputation" && !is.null(x$interaction$anova.test))
+            footer <- paste0(footer, " ", x$interaction$anova.test, " uses statistic averaged over multiple imputations;")
 
-    footer <- paste0(footer," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
-    if (!partial)
-        footer <- paste0(footer,
-               "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
-               if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5), "; "))
+        if (is.null(x$interaction$original.r2) || is.null(x$interaction$full.r2) ||
+            is.na(x$interaction$original.r2) || is.na(x$interaction$full.r2))
+        {
+            footer <- sprintf("%s multiple comparisons correction: %s", footer, x$correction)
+            return(footer)
+        }
+
+        r.desc <- ifelse(x$type == "Linear" & is.null(x$weights), "R-squared", "McFaddens's rho-squared")
+        footer <- sprintf("%s %s of pooled model: %.4f; %s of interaction model %.4f;",
+            footer, r.desc, x$interaction$original.r2, r.desc, x$interaction$full.r2)
+
+        if (x$missing == "Multiple imputation")
+            footer <- sprintf("%s %s averaged over multiple imputations;", footer, r.desc)
+    }
+    else
+    {
+        footer <- paste0(footer," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
+        if (!partial)
+            footer <- paste0(footer,
+                   "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
+                   if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
+               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5)), "; ")
+    }
+    footer <- sprintf("%s multiple comparisons correction: %s", footer, x$correction)
     footer
 
 }
 
 relativeImportanceFooter <- function(x)
 {
-    paste0(x$sample.description ," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
+    footer <- x$sample.description
+    if (!x$test.interaction)
+        footer <- paste0(footer, " R-squared: ", FormatAsReal(x$r.squared, 4), ";")
+    footer <- paste0(footer, " multiple comparisons correction: ", x$correction, ";")
+    footer <- paste0(footer, " importance scores have been normalized by column;")
+    footer
 }
 
 #' \code{FitRegression}
@@ -471,9 +503,7 @@ relativeImportanceFooter <- function(x)
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
 #' @param .estimation.data A \code{\link{data.frame}}.
-#' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression. \code{subset} may not
+#' @param subset Not used.
 #' @param .weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
 #' @param type See \link{Regression}.
@@ -580,34 +610,6 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
     result <- list(original = model, formula = .formula, design = .design, weights = .weights, robust.se = robust.se)
     class(result) <- "FitRegression"
     result
-}
-
-compareCoef <- function(bb, ss, nn, alpha = 0.05)
-{
-    if (any(dim(bb) != dim(ss)))
-        stop("Dimensions of bb and ss must be the same\n")
-    if (length(nn) != ncol(bb))
-        stop("Length of nn should match columns in bb\n")
-    res <- matrix(0, nrow=nrow(bb), ncol=ncol(ss))
-
-    for (i in 1:nrow(bb))
-    {
-    for (j in 1:ncol(bb))
-    {
-        n0 <- sum(nn[-j], na.rm=T)
-        b0 <- sum(nn[-j] * bb[i,-j], na.rm=T)/n0
-        s0 <- sum((nn[-j]-1) * ss[i,-j], na.rm=T)/sum(nn[-j]-1, na.rm=T)
-        v <- (ss[i,j] + s0)^2/(ss[i,j]^2/(nn[j]-1) + s0^2/(n0-1))
-
-        t.stat <- (bb[i,j] - b0)/sqrt(ss[i,j] + s0)
-        tc <- qt(1-alpha/2, v)
-        if (!is.na(t.stat) && t.stat < -tc)
-            res[i,j] <- -1
-        if (!is.na(t.stat) && t.stat > tc)
-            res[i,j] <- 1
-    }
-    }
-    return (res)
 }
 
 

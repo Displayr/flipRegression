@@ -28,8 +28,7 @@ Suggests:
     testthat,
     flipExampleData,
     Rcpp
-Remotes:
-    Displayr/flipU,
+Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,
     Displayr/flipStatistics,

@@ -10,7 +10,9 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
   auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
   contrasts = c("contr.treatment", "contr.treatment"),
-  relative.importance = FALSE, interaction = NULL, ...)
+  relative.importance = FALSE, importance.absolute = FALSE,
+  interaction = NULL, correction = "None", interaction.pvalue = FALSE,
+  interaction.formula = NULL, recursive.call = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -48,7 +50,8 @@ method = "model.frame", which returns the model frame.}
 
 \item{output}{\code{"Coefficients"} returns a table of coefficients and various
 summary and model statistics. It is the default. \code{"ANOVA"} returns an
-ANOVA table. \code{"R"} returns a more traditional R output.}
+ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+returns a table with Relative Importance scores.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}
 
@@ -76,9 +79,20 @@ This leads to creation of an object of class \code{FitRegression}.)}
 Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 See \code{\link{contrasts}} for more information.}
 
-\item{relative.importance}{Whether to compute relative importance.}
+\item{relative.importance}{Deprecated. To run Relative Importance Analysis, use the output variable.}
+
+\item{importance.absolute}{Whether the absolute value of the relative importance should be shown.}
 
 \item{interaction}{Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.}
+
+\item{correction}{Method to correct for multiple comparisons. Can be one of \code{"None"},
+\code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.}
+
+\item{interaction.pvalue}{Option to return p-values for interaction coefficients inside the Regression object.}
+
+\item{interaction.formula}{Used internally for multiple imputation.}
+
+\item{recursive.call}{Used internally to indicate if call is a result of recursion (e.g., multiple imputation).}
 
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}

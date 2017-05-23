@@ -163,36 +163,66 @@ w <- structure(c(1.02849002849003, 0.587708587708588, 0.587708587708588,
 dat <- cbind(y, X)
 
 test_that("Relative importance linear", {
-    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1), 0.0409055316886271)
+    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1),
+                                                       0.0409055316886271, variable.names = LETTERS[1:3], FALSE, TRUE, "None")
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
-    expect_equal(unname(ria$standard.errors[2]), 0.0064131971633685)
-    expect_equal(unname(ria$statistics[3]), 1.67438163150951)
-    expect_equal(unname(ria$p.values[1]), 0.602392540480551)
+    expect_equal(unname(ria$standard.errors[2]), 0.00639909659943047)
+    expect_equal(unname(ria$statistics[3]), 1.67707778306778)
+    expect_equal(unname(ria$p.values[1]), 0.601684127723725)
 })
 
 test_that("Relative importance linear weighted", {
-    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1), 0.0488985219292419)
+    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1),
+                                                       0.0488985219292419, variable.names = LETTERS[1:3], FALSE, TRUE, "None")
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
-    expect_equal(unname(ria$standard.errors[2]), 0.0107061227893571)
-    expect_equal(unname(ria$statistics[3]), 1.58251703919732)
-    expect_equal(unname(ria$p.values[1]), 0.639061445729629)
+    expect_equal(unname(ria$standard.errors[2]), 0.00922207572739253)
+    expect_equal(unname(ria$statistics[3]), 1.80433377885404)
+    expect_equal(unname(ria$p.values[1]), 0.639743624224031)
 })
 
+types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson", "NBD")
+output <- "Relative Importance Analysis"
+
 data(bank, package = "flipExampleData")
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Linear", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Binary Logit", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Ordered Logit", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Multinomial Logit", relative.importance = TRUE))),
-             "Type not handled:  Multinomial Logit")
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Poisson", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Quasi-Poisson", relative.importance = TRUE))), NA)
-expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "NBD", relative.importance = TRUE))), NA)
+
+for (t in types)
+    test_that(paste("Relative importance", t),
+              expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                                   data = bank, type = t, output = output))), NA))
+test_that("Relative importance Multinomial Logit",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                         data = bank, type = "Multinomial Logit", output = output))),
+                                        "Type not handled:  Multinomial Logit"))
+
+# Weights
+for (t in types)
+    test_that(paste("Relative importance weighted", t),
+              expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = t, output = output,
+                                               weights = bank$weight))), NA))
+test_that("Relative importance weighted Multinomial Logit",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                           data = bank, type = "Multinomial Logit", output = output,
+                                           weights = bank$weight))), "Type not handled:  Multinomial Logit"))
+
+# Filter
+test_that("Relative importance filtered",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = "Linear", output = output,
+                                               subset = bank$ID < 100))), NA))
+
+# Robust standard error
+test_that("Relative importance robust SE",
+          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                               data = bank, type = "Linear", output = output,
+                                               robust.se = F))), NA))
+
+# Negative sign warning
+test_that("Relative importance negative sign",
+          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, -1 ,1),
+                                                             0.0409055316886271, variable.names = LETTERS[1:3], correction = "None"),
+                         paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
+                                " in Linear Regression. To disable this feature, check the Absolute importance",
+                                " scores option.")))

@@ -7,20 +7,16 @@
 ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights)
 }
 \arguments{
-\item{obj}{A model with an outcome variable.}
+\item{obj}{A model with an outcome variable or a data.frame where the first column is the outcome and
+the second column is the prediction.}
 
-\item{subset}{An optional vector specifying a subset of observations to be
-used in the fitting process or the name of a variable in \code{data}. It
-may not be an expression.}
+\item{subset}{An optional vector specifying a subset of observations to be used or the name of a
+column if \code{obj} is a data.frame.}
 
-\item{weights}{An optional vector of sampling weights or the
-name of a variable in \code{data}. It may not be an expression.}
+\item{weights}{An optional vector of sampling weights or the name of a column if \code{obj} is a data.frame.}
 }
 \description{
-\code{ConfusionMatrix}
-}
-\details{
-Produces a confusion matrix for a trained model showing the proportion
+Produces a confusion matrix for a trained model or data.frame showing the proportion
 of observed values that take the same values as the predicted values. Where the outcome variable
 in the model is not a factor and not a count, observed and predicted values are assigned to buckets.
 }
