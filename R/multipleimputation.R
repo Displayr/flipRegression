@@ -111,7 +111,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, i
     ss <- multipleImputationStandardErrors(bb.all, ss.all)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
     res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
-                                 matrix(ss, nrow=n), matrix(sc, nrow=n), 
+                                 matrix(ss, nrow=n), matrix(sc, nrow=n),
                                  split.size[1:m], correction)
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
@@ -134,7 +134,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, i
         fstat <- mean(sapply(models, function(m){m$interaction$anova.fstat}))
         df1 <- models[[1]]$interaction$anova.df1
         df2 <- models[[1]]$interaction$anova.df2
-        res$anova.test <- "F test"
+        res$anova.test <- "F-test"
         res$pvalue <-  pf(fstat, df1, df2, lower.tail=F)
     } else
     {

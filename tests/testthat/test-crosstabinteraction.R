@@ -50,9 +50,20 @@ test_that("Multiple imputation", {
 
 test_that("Relative importance", {
     z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, interaction.pvalue = T, output="Relative Importance Analysis"))
-    expect_equal(round(z2$interaction$coefficients[2,1], 4), 0.0203)
-    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
-})
+    expect_equal(round(z2$interaction$coefficients[2,1], 2), 3.27)
+    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.0652)
+
+    data("cola", package="flipExampleData")
+    res2 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis"))
+    res3 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis", importance.absolute=T, interaction.pvalue=T))
+    res4 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis", importance.absolute=T, correction="False Discovery Rate", interaction.pvalue=T))
+
+    expect_equal(res2$interaction$coefficients[1,1], -9.5495906)
+    expect_equal(res3$interaction$coefficients[1,1],  9.5495906)
+    expect_equal(round(res3$interaction$coef.pvalues[1,1],7),  0.3670928)
+    expect_equal(res4$interaction$coef.pvalues[1,1],  1.0)
+
+    })
 
 f4 <- (1:nrow(bank)) %% 4
 test_that("Robust SE", {

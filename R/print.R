@@ -73,15 +73,23 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
         title <- if (x$interaction$relative.importance)  paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
                  else                                    paste0(regressionType(x$type), ": ", x$outcome.label)
-        if (is.na(x$interaction$pvalue) || !is.numeric(x$interaction$pvalue))
-            subtitle <- paste("Interaction with", x$interaction$label)
-        else
+        if (!is.na(x$interaction$pvalue) && is.numeric(x$interaction$pvalue))
+        {
             subtitle <- paste0(x$interaction$anova.test, " for interaction with ", x$interaction$label, ": P-value ", FormatAsPValue(x$interaction$pvalue))
+        } else if (!is.null(x$interaction$coef.pFDR))
+        {
+            p.min <- min(x$interaction$coef.pFDR, na.rm=T)
+            p.sig <- ifelse(p.min < 0.05, "significant", "non-significant")
+            subtitle <- sprintf("Interaction with %s %s - Smallest p-value (after applying False Discovery Rate): %s", x$interaction$label, p.sig, FormatAsPValue(p.min))
+        } else
+        {
+            subtitle <- paste("Interaction with", x$interaction$label)
+        }
         dt <- CrosstabInteractionTable(x$interaction$coefficients,
                                        x$interaction$coef.sign,
                                        x$interaction$split.size,
                                        title = title,
-                                       footer = caption,
+                                       footer = if(is.null(x$relative.importance)) caption else x$relative.importance.footer,
                                        subtitle = subtitle)
         print(dt)
     }

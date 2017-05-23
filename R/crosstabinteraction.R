@@ -44,7 +44,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         if (!internal.loop)
         {
             res$fit <- fit2$original
-            res$anova.test <- switch(atest, F="F test", Chisq="Chi-square test")
+            res$anova.test <- switch(atest, F="F-test", Chisq="Chi-square test")
             res$pvalue <- if(is.null(weights)) atmp$Pr[2]
                           else atmp$p
 
@@ -72,7 +72,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     {
         var.labels <- if (result$type == "Ordered Logit") var.labels[1:(num.var-1)] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
-        res$net.coef <- result$relative.importance$raw.importance
+        res$net.coef <- result$relative.importance$importance
 
         for (j in 1:num.split)
         {
@@ -84,11 +84,13 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmpC.ri <- try(estimateRelativeImportance(result$formula, RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]), weights[-is.split], result$type, signs, NA, NA, result$robust.se, FALSE, correction))
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
-            { 
-                bb[names(tmp.ri$raw.importance),j] <- tmp.ri$raw.importance
-                ss[names(tmp.ri$raw.importance),j] <- tmp.ri$standard.errors
-                bc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$raw.importance
-                sc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$standard.errors
+            {
+                ss.scale <- 100/sum(tmp.ri$raw.importance)
+                sc.scale <- 100/sum(tmpC.ri$raw.importance)
+                bb[names(tmp.ri$importance),j] <- tmp.ri$importance
+                ss[names(tmp.ri$importance),j] <- tmp.ri$standard.errors * ss.scale
+                bc[names(tmpC.ri$importance),j] <- tmpC.ri$importance
+                sc[names(tmpC.ri$importance),j] <- tmpC.ri$standard.errors * sc.scale
             }
         }
     } else
@@ -104,7 +106,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.fit <- try(FitRegression(result$formula, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
-            
+
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
                 bb[rownames(tmp.coefs) ,j] <- tmp.coefs[,1]
@@ -124,6 +126,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     }
 
     res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction)
+    if (relative.importance)
+        res$coef.pFDR <- compareCoef(bb, bc, ss^2, sc^2, split.size, "fdr", pvalues=TRUE)
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, pvalues=TRUE)
 
