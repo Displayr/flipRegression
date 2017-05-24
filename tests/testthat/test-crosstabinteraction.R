@@ -51,17 +51,22 @@ test_that("Multiple imputation", {
 test_that("Relative importance", {
     z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, interaction.pvalue = T, output="Relative Importance Analysis"))
     expect_equal(round(z2$interaction$coefficients[2,1], 2), 3.27)
-    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.0652)
+    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
 
     data("cola", package="flipExampleData")
-    res2 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis"))
+    res2 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis", interaction.pvalue=T))
     res3 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis", importance.absolute=T, interaction.pvalue=T))
-    res4 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis", importance.absolute=T, correction="False Discovery Rate", interaction.pvalue=T))
+    res4 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis", interaction.pvalue=T, correction="False Discovery Rate"))
 
-    expect_equal(res2$interaction$coefficients[1,1], -9.5495906)
+    # coefficients with signs match Q output
+    expect_equal(unname(round(res2$interaction$coefficients[,1],3)), c(-9.550,34.350,2.209,0.426,27.504,-1.173,-8.698,9.594,-6.497))
+    expect_equal(round(res2$interaction$coef.pvalues[,1],4), c(0.0402,0.1360,0.8537,0.9939,0.8152,0.6605,0.9571,0.7539,0.2133))
+    expect_equal(round(res2$interaction$coef.pFDR[,1],4), c(0.7238,1,1,1,1,1,1,1,1))
+    expect_equal(res4$interaction$coef.pvalues, res2$interaction$coef.pFDR)
+
+    # Q does not allow signs to be ignored - just checking values are different
     expect_equal(res3$interaction$coefficients[1,1],  9.5495906)
-    expect_equal(round(res3$interaction$coef.pvalues[1,1],7),  0.3670928)
-    expect_equal(res4$interaction$coef.pvalues[1,1],  1.0)
+    expect_equal(round(res3$interaction$coef.pvalues[1,1],7),  0.4392116)
 
     })
 
@@ -94,6 +99,22 @@ test_that("Empty factors", {
     expect_error(suppressWarnings(Regression(Q3~Q6_A + Q6_B + Q6_C, data=cola, interaction=Q2)), NA)
     expect_error(suppressWarnings(Regression(Q3~Q6_A + Q6_B + Q6_C, data=cola, interaction=Q28)),NA)
     expect_error(suppressWarnings(Regression(Q3~Q6_A + Q6_B + Q6_C, data=cola, interaction=Q28, output="Relative Importance Analysis")),NA)
+})
+
+test_that("P-value correction", {
+    data("bank", package="flipExampleData")
+    zLU <- suppressWarnings(Regression(Overall~Fees+Interest, interaction=ATM, data=bank, interaction.pvalue = T))
+    zLC <- suppressWarnings(Regression(Overall~Fees+Interest, interaction=ATM, data=bank, interaction.pvalue = T, correction="False Discovery Rate"))
+
+    expect_equal(unname(round(zLU$interaction$coefficients[2,-6],3)), c(0.335,0.462,0.295,0.426,0.379,0.390))
+    expect_equal(round(zLU$interaction$coef.pvalues[2,-6],2), c(0.70,0.28,0.06,0.51,0.94))
+    expect_equal(zLC$interaction$coef.pvalues[2,1:5], p.corR[seq(2,15,3)])
+
+    # Excluding first row will give corrected p-values that match Q output
+    # Because the correction in Q output does not include the intercept p-values
+    p.corQ <- PValueAdjustFDR(zLU$interaction$coef.pvalues[-1,])
+    expect_equal(round(p.corQ[1:10],4), c(1,1,1,1,0.5994,1,1,1,1,1))
+    p.corR <- PValueAdjustFDR(zLU$interaction$coef.pvalues)
 })
 
 

@@ -121,6 +121,11 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, i
     net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
     net.coef <- apply(net.coef.all, 1, mean)
     bb <- matrix(bb, nrow=n)
+
+    # Report normalised relative importance scores but use raw scores for p-values
+    if (relative.importance)
+        bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
+ 
     combined.coefs <- cbind(bb, net.coef)
     colnames(combined.coefs) <- names(split.size)
     res$coefficients <- combined.coefs

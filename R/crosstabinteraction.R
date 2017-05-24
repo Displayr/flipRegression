@@ -85,12 +85,14 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
-                ss.scale <- 100/sum(tmp.ri$raw.importance)
-                sc.scale <- 100/sum(tmpC.ri$raw.importance)
-                bb[names(tmp.ri$importance),j] <- tmp.ri$importance
-                ss[names(tmp.ri$importance),j] <- tmp.ri$standard.errors * ss.scale
-                bc[names(tmpC.ri$importance),j] <- tmpC.ri$importance
-                sc[names(tmpC.ri$importance),j] <- tmpC.ri$standard.errors * sc.scale
+                #ss.scale <- 100/sum(tmp.ri$raw.importance)
+                #sc.scale <- 100/sum(tmpC.ri$raw.importance)
+                tmp.sign <- sign(tmp.ri$importance)
+                tmpC.sign <- sign(tmpC.ri$importance)
+                bb[names(tmp.ri$importance),j] <- tmp.ri$raw.importance * tmp.sign
+                ss[names(tmp.ri$importance),j] <- tmp.ri$standard.errors
+                bc[names(tmpC.ri$importance),j] <- tmpC.ri$raw.importance * tmpC.sign
+                sc[names(tmpC.ri$importance),j] <- tmpC.ri$standard.errors
             }
         }
     } else
@@ -131,6 +133,10 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     if (interaction.pvalue)
         res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, pvalues=TRUE)
 
+    # Report normalised relative importance scores but use raw scores for p-values
+    if (relative.importance)
+        bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
+    
     combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
     rownames(combined.coefs) <- var.labels

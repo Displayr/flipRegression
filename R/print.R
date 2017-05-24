@@ -87,7 +87,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
 
         if (!is.null(x$relative.importance))
-            caption <- paste(x$relative.importance.footer, " importance scores have been normalized by column;")
+            caption <- paste(x$relative.importance.footer, " importance scores have been normalized by column; p-values are based on raw importance scores")
         dt <- CrosstabInteractionTable(x$interaction$coefficients,
                                        x$interaction$coef.sign,
                                        x$interaction$split.size,
