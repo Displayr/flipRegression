@@ -108,13 +108,13 @@ test_that("P-value correction", {
 
     expect_equal(unname(round(zLU$interaction$coefficients[2,-6],3)), c(0.335,0.462,0.295,0.426,0.379,0.390))
     expect_equal(round(zLU$interaction$coef.pvalues[2,-6],2), c(0.70,0.28,0.06,0.51,0.94))
-    expect_equal(zLC$interaction$coef.pvalues[2,1:5], p.corR[seq(2,15,3)])
 
     # Excluding first row will give corrected p-values that match Q output
     # Because the correction in Q output does not include the intercept p-values
     p.corQ <- PValueAdjustFDR(zLU$interaction$coef.pvalues[-1,])
     expect_equal(round(p.corQ[1:10],4), c(1,1,1,1,0.5994,1,1,1,1,1))
     p.corR <- PValueAdjustFDR(zLU$interaction$coef.pvalues)
+    expect_equal(zLC$interaction$coef.pvalues[2,1:5], p.corR[seq(2,15,3)])
 })
 
 
