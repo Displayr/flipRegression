@@ -1,4 +1,5 @@
 #' @importFrom flipTransformations RemoveMissingLevelsFromFactors
+#' @importFrom flipData DataFormula
 computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
@@ -98,6 +99,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
     } else
     {
+        formula2 <- DataFormula(result$formula)
         for (j in 1:num.split)
         {
             is.split <- which(result$estimation.data[,interaction.name] == split.labels[j])
@@ -105,7 +107,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
 
-            tmp.fit <- try(FitRegression(result$formula, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
+            tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
             cat("crosstabinteraction.R: line 106: formula:")
             print(result$formula)
             print(str(result$estimation.data))
