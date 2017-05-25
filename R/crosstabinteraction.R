@@ -86,9 +86,6 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
-                cat("crosstabinteration: line 88: var.names:", var.names, "\n")
-                cat("names(tmp.ri$importance):", names(tmp.ri$importance), "\n")
-                cat("names(tmpC.ri$importance):", names(tmpC.ri$importance), "\n")
                 tmp.sign <- sign(tmp.ri$importance)
                 tmpC.sign <- sign(tmpC.ri$importance)
                 bb[names(tmp.ri$raw.importance),j] <- tmp.ri$raw.importance * tmp.sign
@@ -108,15 +105,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 next
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
-            cat("crosstabinteraction.R: line 106: formula:")
-            print(result$formula)
-            print(str(result$estimation.data))
-            print(str(tmp.fit))
-            cat("\tcoefficients:\n")
-            print((tmp.fit$original$coef))
-            print(summary(tmp.fit$original))
             tmp.coefs <- summary(tmp.fit$original)$coef
-            print(tmp.coefs)
             #tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
             tmpC.coefs <- summary(tmpC.fit$original)$coef
@@ -124,10 +113,6 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
-                cat("crosstabinteraction.R: line 118: rownames(tmp.coefs):", rownames(tmp.coefs), "\n")
-                cat("crosstabinteraction.R: line 118: rownames(tmpC.coefs):", rownames(tmpC.coefs), "\n")
-                cat("var.names:", var.names, "\n")
-                #print(bb)
                 bb[rownames(tmp.coefs),j] <- tmp.coefs[,1]
                 ss[rownames(tmp.coefs),j] <- tmp.coefs[,2]
                 bc[rownames(tmpC.coefs),j] <- tmpC.coefs[,1]
