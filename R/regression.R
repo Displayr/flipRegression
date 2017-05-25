@@ -285,7 +285,7 @@ Regression <- function(formula,
         subset <-  processed.data$subset
         .formula <- DataFormula(input.formula)
         cat("regression.R: line 287: estimation.data\n")
-        print(head(.estimation.data))
+        print(str(.estimation.data))
         fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
         if (internal)
         {
