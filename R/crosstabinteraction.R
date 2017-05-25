@@ -118,7 +118,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmp.coefs <- summary(tmp.fit$original)$coef
             print(tmp.coefs)
             #tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
-            tmpC.fit <- try(FitRegression(result$formula, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
+            tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
             tmpC.coefs <- summary(tmpC.fit$original)$coef
             #tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
 
