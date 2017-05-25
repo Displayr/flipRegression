@@ -161,7 +161,9 @@ Regression <- function(formula,
             if (length(unique(interaction)) < 2)
                 stop("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
-                stop("Crosstab interaction is incompatible with Multinomial logit regression.")
+                stop("Crosstab interaction is incompatible with Multinomial Logit regression.")
+            if (type == "Ordered Logit" && relative.importance)
+                stop("Crosstab interaction with Relative Importance Analysis is incompatible with Ordered Logit regression.")
 
             if (interaction.name %in% colnames(data))
                 stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
@@ -282,6 +284,8 @@ Regression <- function(formula,
         .weights <- processed.data$weights
         subset <-  processed.data$subset
         .formula <- DataFormula(input.formula)
+        cat("regression.R: line 287: estimation.data\n")
+        print(head(.estimation.data))
         fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
         if (internal)
         {
@@ -320,6 +324,8 @@ Regression <- function(formula,
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
+    cat("regression.R: line 327: tidySummary\n")
+    print(result$summary)
     result$summary$call <- cl
 
     # Replacing the variables with their labels
@@ -361,7 +367,7 @@ Regression <- function(formula,
     if (relative.importance)
     {
         labels <- rownames(result$summary$coefficients)
-        labels <- if (type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
+        labels <- labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,

@@ -10,7 +10,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     num.split <- length(split.labels)
     split.names <- paste0(interaction.name, split.labels)
     split.size <- table(result$estimation.data[,interaction.name])
-    var.names <- names(net.coef)
+    var.names <- CleanBackticks(names(net.coef))
     var.labels <- if (result$show.labels) Labels(result$model, var.names)
                   else                    var.names
     names(net.coef) <- var.labels
@@ -85,14 +85,15 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
-                #ss.scale <- 100/sum(tmp.ri$raw.importance)
-                #sc.scale <- 100/sum(tmpC.ri$raw.importance)
+                cat("crosstabinteration: line 88: var.names:", var.names, "\n")
+                cat("names(tmp.ri$importance):", names(tmp.ri$importance), "\n")
+                cat("names(tmpC.ri$importance):", names(tmpC.ri$importance), "\n")
                 tmp.sign <- sign(tmp.ri$importance)
                 tmpC.sign <- sign(tmpC.ri$importance)
-                bb[names(tmp.ri$importance),j] <- tmp.ri$raw.importance * tmp.sign
-                ss[names(tmp.ri$importance),j] <- tmp.ri$standard.errors
-                bc[names(tmpC.ri$importance),j] <- tmpC.ri$raw.importance * tmpC.sign
-                sc[names(tmpC.ri$importance),j] <- tmpC.ri$standard.errors
+                bb[names(tmp.ri$raw.importance),j] <- tmp.ri$raw.importance * tmp.sign
+                ss[names(tmp.ri$raw.importance),j] <- tmp.ri$standard.errors
+                bc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$raw.importance * tmpC.sign
+                sc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$standard.errors
             }
         }
     } else
@@ -105,14 +106,24 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 next
 
             tmp.fit <- try(FitRegression(result$formula, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
+            cat("crosstabinteraction.R: line 106: formula:")
+            print(result$formula)
+            print(head(result$estimation.data))
+            cat("\tcoefficients:\n")
+            print((tmp.fit$original$coef))
+            print(summary(tmp.fit$original))
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.fit <- try(FitRegression(result$formula, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
 
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
-                bb[rownames(tmp.coefs) ,j] <- tmp.coefs[,1]
-                ss[rownames(tmp.coefs) ,j] <- tmp.coefs[,2]
+                cat("crosstabinteraction.R: line 118: rownames(tmp.coefs):", rownames(tmp.coefs), "\n")
+                cat("crosstabinteraction.R: line 118: rownames(tmpC.coefs):", rownames(tmpC.coefs), "\n")
+                cat("var.names:", var.names, "\n")
+                #print(bb)
+                bb[rownames(tmp.coefs),j] <- tmp.coefs[,1]
+                ss[rownames(tmp.coefs),j] <- tmp.coefs[,2]
                 bc[rownames(tmpC.coefs),j] <- tmpC.coefs[,1]
                 sc[rownames(tmpC.coefs),j] <- tmpC.coefs[,2]
             }

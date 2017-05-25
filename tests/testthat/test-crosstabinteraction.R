@@ -12,6 +12,7 @@ test_that("Basic output", {
     expect_equal(round(zz$interaction$coefficients[2,1],4), 0.3345)
     expect_equal(round(zz$interaction$coef.pvalue[2,1],5), 0.70458)
 
+    expect_error(suppressWarnings(Regression(bank$Overall~bank$Fees+bank$Interest, interaction=bank$ATM)), NA)
 })
 
 all.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
@@ -24,6 +25,9 @@ test_that("Weights", {
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt)), NA)
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt, weights = w1)), NA)
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt, weights = w1, subset = f1)), NA)
+        if (tt != "Ordered Logit")
+            expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt,
+                                                     weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
     }
     expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = "Multinomial Logit")))
 })
