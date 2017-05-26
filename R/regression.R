@@ -158,7 +158,7 @@ Regression <- function(formula,
         {
             interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
                                      else interaction.name
-            if (length(unique(interaction)) < 2)
+            if (length(unique(Factor(interaction))) < 2)
                 stop("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
                 stop("Crosstab interaction is incompatible with Multinomial Logit regression.")
