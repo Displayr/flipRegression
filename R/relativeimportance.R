@@ -31,6 +31,13 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)
     X <- data[setdiff(formula.names, outcome.name)]
+    
+    # A hack to handle ordered-categorical
+    for (j in 1:ncol(X))
+    {
+        if (is.factor(X[,j]))
+            class(X[,j]) <- "factor"
+    }
 
     num.X <- AsNumeric(X, remove.first = TRUE)
 
