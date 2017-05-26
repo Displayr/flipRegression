@@ -178,6 +178,7 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FA
         return(pp)
 
     pp[is.na(pp)] <- 1
+    pp[is.na(bb)] <- NA
     res <- sign(tt) * (pp < alpha)
     return (res)
 }
