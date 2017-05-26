@@ -25,7 +25,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
                       regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
 
     if (all(is.na(variable.names)))
-        variable.names <- CleanBackticks(names(fit$original$coefficients)[-1])     
+        variable.names <- CleanBackticks(names(fit$original$coefficients)[-1])
 
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)

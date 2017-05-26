@@ -363,7 +363,7 @@ Regression <- function(formula,
     if (relative.importance)
     {
         labels <- rownames(result$summary$coefficients)
-        labels <- labels[-1]
+        labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,

@@ -179,7 +179,7 @@ test_that("Tests of non-constant variance (Breush-Pagen test)",
     expect_equal(z$p, z1$p, tolerance = 1.0e-8)
 
     # Correct error for ncvTest
-    ncvTest(suppressWarnings(Regression(zformula, data = bank, type = "Ordered Logit")))
+    expect_error(ncvTest(suppressWarnings(Regression(zformula, data = bank, type = "Ordered Logit"))))
 
 
     # Filitered

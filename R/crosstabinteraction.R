@@ -105,11 +105,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 next
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
-            tmp.coefs <- summary(tmp.fit$original)$coef
-            #tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
+            tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
-            tmpC.coefs <- summary(tmpC.fit$original)$coef
-            #tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
+            tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
 
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
@@ -138,7 +136,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     # Report normalised relative importance scores but use raw scores for p-values
     if (relative.importance)
         bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
-    
+
     combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
     rownames(combined.coefs) <- var.labels

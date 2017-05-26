@@ -11,8 +11,7 @@ test_that("Basic output", {
     expect_equal(round(zz$interaction$pvalue,4), 0.0029)
     expect_equal(round(zz$interaction$coefficients[2,1],4), 0.3345)
     expect_equal(round(zz$interaction$coef.pvalue[2,1],5), 0.70458)
-
-    #expect_error(suppressWarnings(Regression(bank$Overall~bank$Fees+bank$Interest, interaction=bank$ATM)), NA)
+    expect_error(suppressWarnings(Regression(bank$Overall~bank$Fees+bank$Interest, interaction=bank$ATM)), NA)
 })
 
 all.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
