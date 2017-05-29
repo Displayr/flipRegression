@@ -158,11 +158,11 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FA
         stop("Dimensions of bb and ss must be the same\n")
     if (length(nn) != ncol(bb))
         stop("Length of nn should match columns in bb\n")
-    res <- matrix(0, nrow=nrow(bb), ncol=ncol(ss))
+    res <- matrix(0, nrow=nrow(bb), ncol=ncol(bb))
 
     nc <- sum(nn, na.rm=T) - nn
-    pp <- matrix(NA, nrow(bb), ncol(bb))
-    tt <- matrix(NA, nrow(bb), ncol(bb))
+    pp <- matrix(NA, nrow=nrow(bb), ncol=ncol(bb))
+    tt <- matrix(NA, nrow=nrow(bb), ncol=ncol(bb))
     for (j in 1:ncol(bb))
     {
         vv <- (ss[,j] + sc[,j])^2/(ss[,j]^2/(nn[j]-1) + sc[,j]^2/(nc[j]-1))
@@ -171,15 +171,15 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FA
         for (i in 1:nrow(bb))
             pp[i,j] <- 2 * pt(abs(tt[i,j]), vv[i], lower.tail=F)
     }
-    pp <- pvalAdjust(pp, correction)
-    pp <- matrix(pp, nrow=nrow(bb))
+    na.ind <- which(is.na(bb))
 
+    pp <- pvalAdjust(pp, correction)
+    pp <- matrix(pp, nrow=nrow(bb), ncol=ncol(bb))
     if (pvalues)
         return(pp)
 
-    pp[is.na(pp)] <- 1
-    pp[is.na(bb)] <- NA
     res <- sign(tt) * (pp < alpha)
+    res[na.ind] <- NA
     return (res)
 }
 
