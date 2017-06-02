@@ -31,13 +31,12 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)
     X <- data[setdiff(formula.names, outcome.name)]
-    
-    # A hack to handle ordered-categorical
+
+    # We remove the "ordered" class so that ordered-categorical variables are treated in the same way
+    # as they are in regression, i.e., dummy variables are created from the categories.
     for (j in 1:ncol(X))
-    {
-        if (is.factor(X[,j]))
-            class(X[,j]) <- "factor"
-    }
+        if (all(c("factor", "ordered") %in% class(X[, j])))
+            class(X[, j]) <- "factor"
 
     num.X <- AsNumeric(X, remove.first = TRUE)
 
