@@ -142,7 +142,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     # Report normalised relative importance scores but use raw scores for p-values
     if (relative.importance)
-        bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
+        bb <- apply(bb, 2, function(x){x/sum(abs(x), na.rm=T)*100})
 
     combined.coefs <- cbind(bb, res$net.coef)
     colnames(combined.coefs) <- c(split.labels, "NET")
