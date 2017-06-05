@@ -11,8 +11,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
   contrasts = c("contr.treatment", "contr.treatment"),
   relative.importance = FALSE, importance.absolute = FALSE,
-  interaction = NULL, correction = "None", interaction.pvalue = FALSE,
-  interaction.formula = NULL, recursive.call = FALSE, ...)
+  interaction = NULL, correction = "None", interaction.formula = NULL,
+  recursive.call = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -87,8 +87,6 @@ See \code{\link{contrasts}} for more information.}
 
 \item{correction}{Method to correct for multiple comparisons. Can be one of \code{"None"},
 \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.}
-
-\item{interaction.pvalue}{Option to return p-values for interaction coefficients inside the Regression object.}
 
 \item{interaction.formula}{Used internally for multiple imputation.}
 

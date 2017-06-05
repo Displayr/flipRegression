@@ -1,6 +1,6 @@
 #' @importFrom flipTransformations RemoveMissingLevelsFromFactors
 #' @importFrom flipData DataFormula
-computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, interaction.pvalue, internal.loop, ...)
+computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
     correction <- result$correction
@@ -133,12 +133,12 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         res$sc <- sc
         return(res)
     }
-
-    res$coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction)
+    
+    coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, relative.importance)
+    res$coef.pvalues <- coef.sign$pvalues
+    res$coef.tstat <- coef.sign$tstat
     if (relative.importance)
-        res$coef.pFDR <- compareCoef(bb, bc, ss^2, sc^2, split.size, "fdr", pvalues=TRUE)
-    if (interaction.pvalue)
-        res$coef.pvalues <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, pvalues=TRUE)
+        res$coef.pFDR <- coef.sign$pFDR
 
     # Report normalised relative importance scores but use raw scores for p-values
     if (relative.importance)
@@ -152,13 +152,12 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 }
 
 #' @importFrom stats pt p.adjust
-compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FALSE)
+compareCoef <- function(bb, bc, ss, sc, nn, correction, relative.importance)
 {
     if (any(dim(bb) != dim(ss)))
         stop("Dimensions of bb and ss must be the same\n")
     if (length(nn) != ncol(bb))
         stop("Length of nn should match columns in bb\n")
-    res <- matrix(0, nrow=nrow(bb), ncol=ncol(bb))
 
     nc <- sum(nn, na.rm=T) - nn
     pp <- matrix(NA, nrow=nrow(bb), ncol=ncol(bb))
@@ -171,15 +170,11 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, alpha = 0.05, pvalues=FA
         for (i in 1:nrow(bb))
             pp[i,j] <- 2 * pt(abs(tt[i,j]), vv[i], lower.tail=F)
     }
-    na.ind <- which(is.na(bb))
 
-    pp <- pvalAdjust(pp, correction)
-    pp <- matrix(pp, nrow=nrow(bb), ncol=ncol(bb))
-    if (pvalues)
-        return(pp)
-
-    res <- sign(tt) * (pp < alpha)
-    res[na.ind] <- NA
+    res <- list(tstat = tt)
+    if (relative.importance)
+        res$pFDR <- matrix(pvalAdjust(pp, "fdr"), nrow=nrow(bb), ncol=ncol(bb))
+    res$pvalues <- matrix(pvalAdjust(pp, correction), nrow=nrow(bb), ncol=ncol(bb))
     return (res)
 }
 

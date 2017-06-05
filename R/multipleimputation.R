@@ -90,7 +90,7 @@ multipleImputationRelativeImportance <- function(models)
 }
 
 #' @importFrom stats pchisq
-multipleImputationCrosstabInteraction <- function(models, relative.importance, interaction.pvalue)
+multipleImputationCrosstabInteraction <- function(models, relative.importance)
 {
     n <- nrow(models[[1]]$interaction$bb)
     m <- ncol(models[[1]]$interaction$bb)
@@ -110,13 +110,13 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance, i
     bc <- apply(bc.all, 1, mean, na.rm=T)
     ss <- multipleImputationStandardErrors(bb.all, ss.all)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
-    res$coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
+    coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
                                  matrix(ss, nrow=n), matrix(sc, nrow=n),
-                                 split.size[1:m], correction)
-    if (interaction.pvalue)
-        res$coef.pvalues <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
-                                        matrix(ss, nrow=n), matrix(sc, nrow=n),
-                                        split.size[1:m], correction, pvalues = TRUE)
+                                 split.size[1:m], correction, relative.importance)
+    res$coef.pvalues <- coef.sign$pvalues
+    res$coef.tstat <- coef.sign$tstat
+    if (relative.importance)
+        res$coef.pFDR <- coef.sign$pFDR
 
     net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
     net.coef <- apply(net.coef.all, 1, mean)

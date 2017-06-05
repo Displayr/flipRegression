@@ -52,7 +52,6 @@
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param correction Method to correct for multiple comparisons. Can be one of \code{"None"},
 #'    \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.
-#' @param interaction.pvalue Option to return p-values for interaction coefficients inside the Regression object.
 #' @param interaction.formula Used internally for multiple imputation.
 #' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
@@ -99,7 +98,6 @@ Regression <- function(formula,
                        importance.absolute = FALSE,
                        interaction = NULL,
                        correction = "None",
-                       interaction.pvalue = FALSE,     # only used for testing
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        recursive.call = FALSE,
                        ...)
@@ -264,7 +262,7 @@ Regression <- function(formula,
             final.model$sample.description <- processed.data$description
             if (!is.null(interaction))
             {
-                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance, interaction.pvalue)
+                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance)
                 final.model$interaction$label <- interaction.label
             }
             final.model$footer <- regressionFooter(final.model)
@@ -373,7 +371,7 @@ Regression <- function(formula,
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                      formula.with.interaction, relative.importance,
-                                                     importance.absolute, interaction.pvalue,
+                                                     importance.absolute, 
                                                      internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
