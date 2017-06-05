@@ -226,3 +226,15 @@ test_that("Relative importance negative sign",
                          paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
                                 " in Linear Regression. To disable this feature, check the Absolute importance",
                                 " scores option.")))
+
+X.factor <- X
+X.factor[[1]] <- as.factor(X.factor[[1]])
+X.factor[[2]] <- as.factor(X.factor[[2]])
+X.factor[[3]] <- as.factor(X.factor[[3]])
+dat.factor <- cbind(y, X.factor)
+
+# Factor warning
+test_that("Relative importance ordered factor",
+          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat.factor, NULL, "Linear", c(1, -1 ,1),
+                                                                     0.0409055316886271, variable.names = LETTERS[1:3], correction = "None"),
+                         "The following variables have been treated as categorical: v1,v2,v3. This may over-inflate their effects."))
