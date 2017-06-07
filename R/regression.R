@@ -135,7 +135,7 @@ Regression <- function(formula,
     {
         if (!is.null(attr(interaction, "name")))
             interaction.name <- attr(interaction, "name")
-        interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+        interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
                                  else interaction.name
     }
 
@@ -154,14 +154,14 @@ Regression <- function(formula,
         data <- GetData(input.formula, data, auxiliary.data)
         if (!is.null(interaction))
         {
-            interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+            interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
                                      else interaction.name
             if (length(unique(Factor(interaction))) < 2)
                 stop("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
                 stop("Crosstab interaction is incompatible with Multinomial Logit regression.")
-            if (type == "Ordered Logit" && relative.importance)
-                stop("Crosstab interaction with Relative Importance Analysis is incompatible with Ordered Logit regression.")
+            #if (type == "Ordered Logit" && relative.importance)
+            #    stop("Crosstab interaction with Relative Importance Analysis is incompatible with Ordered Logit regression.")
 
             if (interaction.name %in% colnames(data))
                 stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
@@ -301,7 +301,7 @@ Regression <- function(formula,
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
         result$sample.description <- processed.data$description
-        result$n.predictors <- ncol(.estimation.data) - 1
+        result$n.predictors <- length(attr(terms(input.formula), "term.labels"))
         result$n.observations <- n
         result$estimation.data <- .estimation.data
     }

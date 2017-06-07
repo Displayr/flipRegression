@@ -60,8 +60,10 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (relative.importance)
     {
-        num.var <- num.var - 1
-        var.names <- setdiff(var.names, "(Intercept)")
+        ria <- result$relative.importance$importance
+        var.names <- if (result$type == "Ordered Logit") var.names[1:length(ria)] else var.names[-1]
+        res$net.coef <- ria
+        num.var <- length(ria)
     }
     coef.sign <- matrix(0, num.var, num.split)
     bb <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
@@ -71,9 +73,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (relative.importance)
     {
-        var.labels <- if (result$type == "Ordered Logit") var.labels[1:(num.var-1)] else var.labels[-1]
+        var.labels <- if (result$type == "Ordered Logit") var.labels[1:num.var] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
-        res$net.coef <- result$relative.importance$importance
 
         for (j in 1:num.split)
         {

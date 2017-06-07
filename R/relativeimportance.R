@@ -19,14 +19,19 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
             signs <- sign(extractVariableCoefficients(fit$original, type))
         if (is.null(r.square) || is.na(r.square))
             r.square <- GoodnessOfFit(fit$original)$value
+
+        if (all(is.na(variable.names)))
+        {
+            tmp.names <- CleanBackticks(names(fit$original$coefficients))
+            nvar <- length(attr(terms(formula), "term.labels"))
+            variable.names <- if (type == "Ordered Logit") tmp.names[1:nvar] else tmp.names[-1]
+        }
     }
 
     if (show.sign.warning && any(signs < 0))
         warning(paste0("Negative signs in Relative Importance scores were applied from coefficient signs in ",
                       regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
 
-    if (all(is.na(variable.names)))
-        variable.names <- CleanBackticks(names(fit$original$coefficients)[-1])
 
     formula.names <- AllVariablesNames(formula)
     outcome.name <- OutcomeName(formula)
