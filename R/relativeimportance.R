@@ -23,8 +23,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
         if (all(is.na(variable.names)))
         {
             tmp.names <- CleanBackticks(names(fit$original$coefficients))
-            nvar <- length(attr(terms(formula), "term.labels"))
-            variable.names <- if (type == "Ordered Logit") tmp.names[1:nvar] else tmp.names[-1]
+            variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
         }
     }
 
