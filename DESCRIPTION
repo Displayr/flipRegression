@@ -12,6 +12,7 @@ Imports:
     effects,
     flipFormat,
     flipData,
+    flipStandardCharts,
     flipStatistics,
     flipTransformations,
     flipU,
@@ -31,6 +32,7 @@ Suggests:
 Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,
+    Displayr/flipStandardCharts,
     Displayr/flipStatistics,
     Displayr/flipTransformations,
     Displayr/rhtmlHeatmap

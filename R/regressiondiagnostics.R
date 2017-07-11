@@ -419,4 +419,45 @@ Accuracy <- function(obj, subset = NULL, weights = NULL)
 }
 
 
+#' \code{GoodnessOfFitPlot}
+#' @description A generic function used to produce plots illustrating the goodness-of-fit of
+#' the model object.  The function invokes particular \code{\link{methods}}
+#' which depend on the \code{\link{class}} of the first argument.
+#'
+#' Reports the goodness-of-fit of an object.
+#' @param object An object for which a summary is desired.
+#' @param ... Additional arguments affecting the goodness-of-fit displayed.
+#' @param max.points The maximum numner of points to plot.
+#' @export
+GoodnessOfFitPlot <- function(object, max.points = 1000, ...) {
+
+    UseMethod("GoodnessOfFitPlot")
+}
+
+
+#' @describeIn GoodnessOfFitPlot  Goodness-of-fit plot for a Regression object
+#' @importFrom flipData Observed
+#' @importFrom stats complete.cases predict
+#' @importFrom flipStandardCharts Chart
+#' @export
+GoodnessOfFitPlot.Regression = function(object, max.points = 1000, ...) {
+
+    y <- cbind(Observed(object), predict(object))
+    y <- y[object$subset & complete.cases(y), ]
+
+    correlation <- cor(y, method = "spearman")
+
+    # Sample randomly if too many rows
+    set.seed(1066)
+    if (nrow(y) > max.points)
+        y <- y[sample(nrow(y), max.points), ]
+
+    title <- paste0(object$type, " Regression - Shepard Diagram - Rank correlation: ", sprintf("%1.2f%%", 100 * correlation[2, 1]))
+    chart <- Chart(y = y,
+                   type = "Scatterplot",
+                   title = title,
+                   x.title = "Observed",
+                   y.title = "Fitted")
+}
+
 
