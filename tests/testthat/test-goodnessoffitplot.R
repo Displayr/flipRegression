@@ -16,11 +16,11 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
         test_that(paste("GoodnessOfFitPlot:", missing, type),
                   {
                       z = suppressWarnings(z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, type = type))
-                      expect_error(GoodnessOfFitPlot(z), NA)
+                      expect_warning(GoodnessOfFitPlot(z))
                       z = suppressWarnings(z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  type = type))
-                      expect_error(GoodnessOfFitPlot(z), NA)
+                      expect_warning(GoodnessOfFitPlot(z))
                       z = suppressWarnings(z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, weights = wgt, missing = missing, data = bank, type = type))
-                      expect_error(GoodnessOfFitPlot(z), NA)
+                      expect_warning(GoodnessOfFitPlot(z))
                       z = suppressWarnings(z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, weights = wgt, missing = missing, data = bank, subset = sb,  type = type))
-                      expect_error(GoodnessOfFitPlot(z), NA)
+                      expect_warning(GoodnessOfFitPlot(z))
                   })
