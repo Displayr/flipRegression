@@ -33,3 +33,14 @@ test_that("Poisson ANOVA p-values are very different to Regression + ignore robu
 })
 
 
+#
+# test_that("DS-1174: object VR_set_net not found")
+#     type = "Multinomial Logit"
+#     z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank,type = type))
+#     expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, type = type)), NA)
+#           expect_error(capture.output(suppressWarnings(print(z))),NA)
+#       })
+#
+# })
+
+
