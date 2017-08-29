@@ -5,7 +5,7 @@ r:
 dist: trusty  # ubuntu 14.04 has additional libraries available
 sudo: required
 
-cache: false
+cache: packages
 # before_cache:
 #   - sudo rm -rf $HOME/R/Library/flip*
 #   - sudo rm -rf $HOME/R/Library/rhtml*
