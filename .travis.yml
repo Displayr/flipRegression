@@ -45,4 +45,4 @@ notifications:
 # committing a new change to .travis.yml in each repository
 after_success: 
   - Rscript -e "travisCI::NotifyWarnings(); travisCI::TriggerDownstreamBuilds()"
-  - Rscript -e "covr::coveralls(type = 'all')"
+  - Rscript -e "covr::coveralls()"
