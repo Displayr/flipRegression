@@ -17,6 +17,7 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 # Default method for fitted objects with predict method
 #' @importFrom stats predict
 #' @importFrom methods is
+#' @importFrom utils methods
 #' @importFrom flipData Observed EstimationData
 #' @export
 ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights)
@@ -27,6 +28,8 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
         subset <- obj$subset
         weights <- obj$weights
     }
+    if (is.null(obj$model) || !"predict" %in% methods(class = class(obj)))
+        stop("A regression or machine learning model is required to calculate a Confusion Matrix.")
     observed <- Observed(obj)
     predicted <- predict(obj)
     confusion <- confusionMatrixHelper(observed, predicted, subset, weights)
