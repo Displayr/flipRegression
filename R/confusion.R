@@ -28,7 +28,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
         subset <- obj$subset
         weights <- obj$weights
     }
-    if (!"predict" %in% methods(class = class(obj)))
+    if (!"predict" %in% attr(methods(class = class(obj)), "info")$generic)
         stop("A regression or machine learning model is required to calculate a Confusion Matrix.")
     observed <- Observed(obj)
     predicted <- predict(obj)
