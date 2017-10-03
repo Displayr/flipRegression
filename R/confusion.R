@@ -179,6 +179,7 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @importFrom utils read.table
 #' @importFrom flipData GetTidyTwoDimensionalArray
 #' @export
+#' @method print ConfusionMatrix
 print.ConfusionMatrix <- function(x, ...) {
 
     mat <- GetTidyTwoDimensionalArray(x)
