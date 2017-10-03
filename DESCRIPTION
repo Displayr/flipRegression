@@ -12,6 +12,7 @@ Imports:
     effects,
     flipFormat,
     flipData,
+    flipTables,
     flipStandardCharts,
     flipStatistics,
     flipTransformations,
@@ -35,5 +36,6 @@ Remotes: Displayr/flipU,
     Displayr/flipStandardCharts,
     Displayr/flipStatistics,
     Displayr/flipTransformations,
+    Displayr/flipTables,    
     Displayr/rhtmlHeatmap
 RoxygenNote: 6.0.1

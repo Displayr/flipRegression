@@ -177,12 +177,12 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @details Displays a confusion matrix as a heatmap.
 #' @importFrom flipU IsCount
 #' @importFrom utils read.table
-#' @importFrom flipData GetTidyTwoDimensionalArray
+#' @importFrom flipTables BasicTable
 #' @export
 #' @method print ConfusionMatrix
 print.ConfusionMatrix <- function(x, ...) {
 
-    mat <- GetTidyTwoDimensionalArray(x)
+    mat <- BasicTable(x)
     color <- "Reds"
     n.row <- nrow(mat)
     show.cellnote.in.cell <- (n.row <= 10)
