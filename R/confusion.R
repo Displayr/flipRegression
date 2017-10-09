@@ -28,10 +28,12 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
         subset <- obj$subset
         weights <- obj$weights
     }
-    if (!"predict" %in% attr(methods(class = class(obj)), "info")$generic)
+
+    predicted <- try(predict(obj))
+    if (inherits(predicted, "try-error"))
         stop("A regression or machine learning model is required to calculate a Confusion Matrix.")
     observed <- Observed(obj)
-    predicted <- predict(obj)
+
     confusion <- confusionMatrixHelper(observed, predicted, subset, weights)
 
     attr(confusion, "outcome.label") <- obj$outcome.label
