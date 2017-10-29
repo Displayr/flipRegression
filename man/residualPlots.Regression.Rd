@@ -4,7 +4,7 @@
 \alias{residualPlots.Regression}
 \title{residualPlots.Regression}
 \usage{
-\method{residualPlots}{Regression}(model, ...)
+residualPlots.Regression(model, ...)
 }
 \arguments{
 \item{model}{A \code{\link{Regression}} model.}

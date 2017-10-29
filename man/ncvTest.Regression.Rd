@@ -7,7 +7,7 @@
 setMethod("Anova", "missing", function "<No Object>")
 ncvTest.Regression}
 \usage{
-\method{ncvTest}{Regression}(model, ...)
+ncvTest.Regression(model, ...)
 }
 \arguments{
 \item{model}{A \code{\link{Regression}} model.}
