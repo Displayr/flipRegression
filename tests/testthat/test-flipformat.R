@@ -111,8 +111,8 @@ test_that("Labels",
 
     # Some variables have labels and others do not.
     z <- data.frame(a = 1:10, b = 1:10, c = 1:10)
-    Labels(z) <- c("A", "B")
-    expect_equal(as.character(Labels(z)), c("A","B", "c"))
+    flipFormat::Labels(z) <- c("A", "B")
+    expect_equal(as.character(flipFormat::Labels(z)), c("A","B", "c"))
 })
 
 

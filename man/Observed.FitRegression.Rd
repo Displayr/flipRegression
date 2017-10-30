@@ -4,7 +4,7 @@
 \alias{Observed.FitRegression}
 \title{\code{Observed.FitRegression}}
 \usage{
-Observed.FitRegression(x)
+\method{Observed}{FitRegression}(x)
 }
 \arguments{
 \item{x}{A 'FitRegression' model.}
