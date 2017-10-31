@@ -2,7 +2,8 @@
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
-estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,
+#' @noRd
+estimateRelativeImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                        robust.se = FALSE, show.sign.warning = TRUE, correction, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
@@ -13,7 +14,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
 
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
-        formula2 <- DataFormula(formula)
+        formula2 <- DataFormula(formula, data)
         fit <- FitRegression(formula2, data, NULL, NULL, type, robust.se, ...)
         if (is.null(signs) || any(is.na(signs)))
             signs <- sign(extractVariableCoefficients(fit$original, type))
@@ -32,8 +33,8 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
                       regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
 
 
-    formula.names <- AllVariablesNames(formula)
-    outcome.name <- OutcomeName(formula)
+    formula.names <- AllVariablesNames(formula, data)
+    outcome.name <- OutcomeName(formula, data)
     X <- data[setdiff(formula.names, outcome.name)]
 
     # We remove the "ordered" class so that ordered-categorical variables are treated in the same way

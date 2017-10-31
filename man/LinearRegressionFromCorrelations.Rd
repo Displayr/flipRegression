@@ -4,7 +4,7 @@
 \alias{LinearRegressionFromCorrelations}
 \title{\code{LinearRegressionFromCorrelations} Linear regression via a sweep operation n the correlation matrix.}
 \usage{
-LinearRegressionFromCorrelations(formula, data, subset = NULL,
+LinearRegressionFromCorrelations(formula, data = NULL, subset = NULL,
   weights = NULL, ...)
 }
 \arguments{

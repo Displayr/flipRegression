@@ -122,7 +122,9 @@ Observed.Regression <- function(x)
 #' @export
 Observed.FitRegression <- function(x)
 {
-    x$original$model[, OutcomeName(x$formula)]
+    ## use stats::terms() output because it expands
+    ## dot in formulae, so don't need to supply data
+    x$original$model[, OutcomeName(x$original$terms)]
 }
 
 #' \code{probabilities}

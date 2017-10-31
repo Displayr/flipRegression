@@ -70,10 +70,12 @@
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom stats pnorm anova update terms
-#' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData CleanBackticks
+#' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
+#' EstimationData CleanBackticks
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
-#' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary Factor Ordered
+#' @importFrom flipTransformations AsNumeric
+#' CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
 #' @importFrom utils tail
 #' @export
@@ -150,7 +152,7 @@ Regression <- function(formula,
     {
         # Includes interaction in formula if there is one
         formula.with.interaction <- if (is.null(interaction)) input.formula
-                else update(input.formula, sprintf(".~.*%s",interaction.name))
+                                    else update(input.formula, sprintf(".~.*%s",interaction.name))
         data <- GetData(input.formula, data, auxiliary.data)
         if (!is.null(interaction))
         {
@@ -177,7 +179,7 @@ Regression <- function(formula,
 
     if (method == "model.frame")
         return(data)
-    outcome.name <- OutcomeName(input.formula)
+    outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
     if(sum(outcome.name == names(data)) > 1)
         stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
@@ -281,7 +283,7 @@ Regression <- function(formula,
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         subset <-  processed.data$subset
-        .formula <- DataFormula(input.formula)
+        .formula <- DataFormula(input.formula, data)
         fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
         if (internal)
         {
@@ -301,7 +303,8 @@ Regression <- function(formula,
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
         result$sample.description <- processed.data$description
-        result$n.predictors <- length(attr(terms(input.formula), "term.labels"))
+        result$n.predictors <- length(attr(terms(input.formula, data = data),
+                                                                 "term.labels"))
         result$n.observations <- n
         result$estimation.data <- .estimation.data
     }

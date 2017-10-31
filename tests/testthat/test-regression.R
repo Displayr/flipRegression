@@ -38,8 +38,10 @@ test_that(paste("Alternative ways of passing data in"),
       detach(zbank)
       expect_true(all.equal(z$coefficients, z1$coefficients))
       # data frame referenced in formula.
-      z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, weights = wgt, type = type))
-      z1 = suppressWarnings(Regression(bank$Overall ~ bank$Fees + bank$Interest + bank$Phone + bank$Branch + bank$Online + bank$ATM, subset = sb, weights = wgt, type = type))
+      z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                      data = bank, subset = sb, weights = wgt, type = type))
+      z1 = suppressWarnings(Regression(bank$Overall ~ bank$Fees + bank$Interest + bank$Phone + bank$Branch + bank$Online + bank$ATM,
+                                       subset = sb, weights = wgt, type = type))
       expect_true(all.equal(z$coefficients, z1$coefficients))
 })
 

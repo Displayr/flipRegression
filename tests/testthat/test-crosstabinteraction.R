@@ -11,7 +11,8 @@ test_that("Basic output", {
     expect_equal(round(zz$interaction$pvalue,4), 0.0029)
     expect_equal(round(zz$interaction$coefficients[2,1],4), 0.3345)
     expect_equal(round(zz$interaction$coef.pvalue[2,1],5), 0.70458)
-    expect_error(suppressWarnings(Regression(bank$Overall~bank$Fees+bank$Interest, interaction=bank$ATM)), NA)
+    expect_error(suppressWarnings(Regression(bank$Overall~bank$Fees+bank$Interest,
+                                             interaction=bank$ATM)), NA)
 })
 
 all.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
@@ -21,18 +22,25 @@ test_that("Weights", {
 
     for (tt in all.types[-7])
     {
-        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt)), NA)
-        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt, weights = w1)), NA)
-        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt, weights = w1, subset = f1)), NA)
-        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt,
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt)), NA)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt, weights = w1)), NA)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt, weights = w1, subset = f1)), NA)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt,
                                                      weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
     }
-    expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = "Multinomial Logit")))
+    expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                             interaction = ATM, data = bank, type = "Multinomial Logit")))
 })
 
 test_that("Multiple imputation", {
-    z1 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank))
-    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, missing = "Multiple imputation", seed=123))
+    z1 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM,
+                                      data = bank))
+    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM,
+                                      data = bank, missing = "Multiple imputation", seed=123))
     expect_equal(round(z2$interaction$pvalue, 4), 0.0019)
     c1 <- as.vector(z1$interaction$coefficients)
     c2 <- as.vector(z2$interaction$coefficients)
@@ -41,17 +49,19 @@ test_that("Multiple imputation", {
     expect_equal(cor(c1, c2, use="pairwise.complete.obs") > 0.99, TRUE)
     expect_equal(cor(p1, p2, use="pairwise.complete.obs") > 0.74, TRUE)
 
-    z3 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank,
-                                      output="Relative Importance Analysis", missing = "Multiple imputation", seed=123))
-    z4 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank,
-                                      output="Relative Importance Analysis"))
+    z3 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM,
+                                      data = bank, output="Relative Importance Analysis",
+                                      missing = "Multiple imputation", seed=123))
+    z4 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM,
+                                      data = bank, output="Relative Importance Analysis"))
     expect_equal(length(grep("R-squared", z2$footer)), 1)
     expect_equal(length(grep("R-squared", z3$footer)), 0)
     expect_equal(length(grep("R-squared", z4$footer)), 0)
 })
 
 test_that("Relative importance", {
-    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch, data = bank, output="Relative Importance Analysis"))
+    z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch,
+                                      data = bank, output="Relative Importance Analysis"))
     expect_equal(round(z2$interaction$coefficients[2,1], 2), 3.27)
     expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
 

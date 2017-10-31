@@ -2,7 +2,7 @@
 #' @importFrom flipU AllIntegers OutcomeName AnyNegative
 stopIfNotCount = function(formula, data)
 {
-    dependent.name <- OutcomeName(formula)
+    dependent.name <- OutcomeName(formula, data)
     dependent.variable <- data[[dependent.name]]
     if (!AllIntegers(dependent.variable))
         stop(paste("This analysis assumes that the Outcome variable contains only integers (i.e., whole numbers).

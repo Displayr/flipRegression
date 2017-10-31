@@ -3,8 +3,8 @@ data(bank, package = "flipExampleData")
 wgt <- bank$ID
 attr(wgt, "label") <- "ID"
 bank$FeesAndInterest <- bank$Fees * bank$Interest
-linear.model <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
-                data = bank, type = "Linear")
+linear.model <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
+                data = bank, type = "Linear"))
 
 for (type in c("Linear", "Poisson", "Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Stepwise: ", type), {
@@ -39,9 +39,23 @@ test_that("Stepwise: forward", {
 })
 
 test_that("Stepwise: always include fees and interest", {
-    expect_error(suppressWarnings(Stepwise(linear.model, direction = "Forward", always.include = c("Fees", "Interest"))), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model, direction = "Forward",
+                                           always.include = c("Fees", "Interest"))), NA)
 })
 
 test_that("Stepwise: 2 steps", {
-    expect_error(suppressWarnings(Stepwise(linear.model, direction = "Forward", steps = 2)), NA)
+    expect_error(suppressWarnings(Stepwise(linear.model,
+                                           direction = "Forward", steps = 2)), NA)
+})
+
+test_that("Regression + Stepwise with . in formula",
+{
+    n <- 200
+    dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n))
+    dat$y <- 3*dat[["x1"]] - 2*dat[["x2"]] + .5*rnorm(n)
+    fit <- Regression(y~., data = dat)
+    expect_true(all(names(fit$model) %in% names(dat)))
+
+    out <- suppressWarnings(Stepwise(fit))
+    expect_false("x3" %in% names(out$model$model))
 })

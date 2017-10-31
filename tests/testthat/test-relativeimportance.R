@@ -226,3 +226,12 @@ test_that("Relative importance negative sign",
                          paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
                                 " in Linear Regression. To disable this feature, check the Absolute importance",
                                 " scores option.")))
+
+test_that("Relative importance robust SE, dot in formula",
+{
+    bank$ID <- bank$weight <- NULL
+    out <- suppressWarnings(Regression(Overall ~ .,
+                                               data = bank, type = "Linear", output = output,
+                                       robust.se = F))
+    expect_equal(attr(out$terms, "term.labels"), names(bank)[-1L])
+})

@@ -15,18 +15,20 @@
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @importFrom flipStatistics CovarianceAndCorrelationMatrix  StandardDeviation Mean
 #' @importFrom psych setCor
-#' @importFrom flipData CheckForPositiveVariance CheckCorrelationMatrix CheckForLinearDependence CalibrateWeight
+#' @importFrom flipData CheckForPositiveVariance CheckCorrelationMatrix
+#' CheckForLinearDependence CalibrateWeight
 #' @importFrom stats complete.cases
 #' @importFrom flipFormat Labels BaseDescription
 #' @export
-LinearRegressionFromCorrelations <- function(formula, data, subset = NULL, weights = NULL, ...)
+LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL,
+                                                                               weights = NULL, ...)
 {
     result <- NULL
     variable.names <- names(data)
     full.variable.names <- Labels(data, show.name = TRUE)
-    formula.names <- AllVariablesNames(formula)
+    formula.names <- AllVariablesNames(formula, data)
     indices <- match(formula.names, variable.names)
-    outcome.name <- OutcomeName(formula)
+    outcome.name <- OutcomeName(formula, data)
     outcome.index <- match(outcome.name, variable.names)
     predictors.index <- indices[-match(outcome.name, formula.names)]
     indices <- c(outcome.index, predictors.index)

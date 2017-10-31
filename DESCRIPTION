@@ -1,7 +1,7 @@
 Package: flipRegression
 Type: Package
 Title: Estimates standard regression models
-Version: 1.0.0
+Version: 1.1.0
 Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
 Description: Regression models according to the flip Project conventions.
@@ -16,7 +16,7 @@ Imports:
     flipStandardCharts,
     flipStatistics,
     flipTransformations,
-    flipU,
+    flipU (>= 1.0.3),
     lmtest,
     MASS,
     methods,

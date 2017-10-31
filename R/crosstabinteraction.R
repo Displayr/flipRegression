@@ -1,6 +1,8 @@
 #' @importFrom flipTransformations RemoveMissingLevelsFromFactors
 #' @importFrom flipData DataFormula
-computeInteractionCrosstab <- function(result, interaction.name, interaction.label, formula.with.interaction, relative.importance, importance.absolute, internal.loop, ...)
+computeInteractionCrosstab <- function(result, interaction.name, interaction.label,
+                                       formula.with.interaction, relative.importance,
+                                       importance.absolute, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
     correction <- result$correction
@@ -97,7 +99,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
     } else
     {
-        formula2 <- DataFormula(result$formula)
+        formula2 <- DataFormula(result$formula, eval(result$call$data))
         for (j in 1:num.split)
         {
             is.split <- which(result$estimation.data[,interaction.name] == split.labels[j])
@@ -134,7 +136,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         res$sc <- sc
         return(res)
     }
-    
+
     coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, relative.importance)
     res$coef.pvalues <- coef.sign$pvalues
     res$coef.tstat <- coef.sign$tstat
