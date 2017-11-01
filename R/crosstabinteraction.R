@@ -109,7 +109,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
             if (inherits(tmp.fit, "try-error"))
-                stop("Cannot preform regression split by interaction term:",
+                stop("Cannot perform regression split by interaction term:",
                      attr(tmp.fit, "condition")$message, "\n")
 
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
