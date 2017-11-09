@@ -10,7 +10,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     # of Predictor Variables in Multiple Regression"
 
     if (type == "Multinomial Logit")
-        stop(paste("Relative importance analysis is not available for", type))
+        stop("Relative importance analysis is not available for ", type)
 
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
@@ -29,16 +29,18 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     }
 
     if (show.sign.warning && any(signs < 0))
-        warning(paste0("Negative signs in Relative Importance scores were applied from coefficient signs in ",
-                      regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
+        warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
+                regressionType(type),
+                ". To disable this feature, check the Absolute importance scores option.")
 
 
     formula.names <- AllVariablesNames(formula, data)
     outcome.name <- OutcomeName(formula, data)
     X <- data[setdiff(formula.names, outcome.name)]
 
-    # We remove the "ordered" class so that ordered-categorical variables are treated in the same way
-    # as they are in regression, i.e., dummy variables are created from the categories.
+    ## We remove the "ordered" class so that ordered-categorical variables are
+    ## treated in the same way as they are in regression, i.e., dummy variables
+    ## are created from the categories.
     for (j in 1:ncol(X))
         if (all(c("factor", "ordered") %in% class(X[, j])))
             class(X[, j]) <- "factor"

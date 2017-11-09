@@ -150,9 +150,13 @@ Regression <- function(formula,
     }
     else
     {
-        # Includes interaction in formula if there is one
+        ## Includes interaction in formula if there is one
+        ## stats::update.formula, does not accept a data arg,
+        ## so update fails if dot on RHS of formula.
+        ## Calling stats::terms first expands the dot so update works
         formula.with.interaction <- if (is.null(interaction)) input.formula
-                                    else update(input.formula, sprintf(".~.*%s",interaction.name))
+                                    else update(terms(input.formula, data = data),
+                                                sprintf(".~.*%s",interaction.name))
         data <- GetData(input.formula, data, auxiliary.data)
         if (!is.null(interaction))
         {
@@ -226,7 +230,8 @@ Regression <- function(formula,
     }
     else
     {
-        processed.data <- EstimationData(formula.with.interaction, data, subset, weights, missing, m = m, seed = seed)
+        processed.data <- EstimationData(formula.with.interaction, data, subset,
+                                         weights, missing, m = m, seed = seed)
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
@@ -570,7 +575,9 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 aic <- try(extractAIC(model), silent = TRUE)
                 if (any("try-error" %in% class(aic)))
                 {
-                    warning("Error occurred when computing AIC. The most likely explanation for this is this is a small sample size in some aspect of the analysis. ")
+                    warning("Error occurred when computing AIC. The most likely ",
+                            "explanation for this is this is a small sample size in ",
+                            "some aspect of the analysis. ")
                     aic <- rep(NA, 2)
                 }
                 remove(".design", envir=.GlobalEnv)
@@ -587,7 +594,8 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+            model <- multinom(.formula, .estimation.data, weights = weights,
+                              Hess = TRUE, trace = FALSE, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")

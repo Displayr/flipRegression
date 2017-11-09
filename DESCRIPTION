@@ -16,7 +16,7 @@ Imports:
     flipStandardCharts,
     flipStatistics,
     flipTransformations,
-    flipU (>= 1.0.3),
+    flipU (>= 1.0.4),
     lmtest,
     MASS,
     methods,

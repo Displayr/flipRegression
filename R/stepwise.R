@@ -26,7 +26,7 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
     if (object$missing == "Imputation (replace missing values with estimates)" || object$missing == "Multiple imputation")
         stop("Stepwise regression is incompatible with regression models which use imputation. Please modify the 'Missing data' setting in the original model.")
 
-    var.names <- AllVariablesNames(object$formula, eval(object$call$data))
+    var.names <- AllVariablesNames(object$formula, object$original$model)
     outcome.name <- var.names[1]
 
     vars.outside.model <- setdiff(always.include, var.names)

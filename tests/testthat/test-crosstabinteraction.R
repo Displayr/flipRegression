@@ -131,3 +131,19 @@ test_that("P-value correction", {
 
 
 
+test_that("Crosstab with dot in formula",
+{
+
+    set.seed(1232)
+    n <- 500
+    dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n))
+    f3 <- round(runif(n, 5, 10))
+    ee <- 0.1 * rnorm(n)
+    dat$yy <- 1 * dat$x1 + 1 * dat$x2 + 1 * dat$x3 * f3 + ee
+
+    # Only interactions to the x3 coefficient should be significant
+    z5 <- Regression(yy~., interaction=f3, data = dat)
+    expect_equal(sum((z5$interaction$coef.pvalues[1,] < 0.05)), 0)
+    expect_equal(sum((z5$interaction$coef.pvalues[4,] < 0.05)), 6)
+
+})

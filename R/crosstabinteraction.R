@@ -84,8 +84,14 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             if (length(unique(result$estimation.data[is.split,1])) < 2 ||
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
-            tmp.ri <- try(estimateRelativeImportance(result$formula, RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]), weights[is.split], result$type, signs, NA, NA, result$robust.se, FALSE, correction))
-            tmpC.ri <- try(estimateRelativeImportance(result$formula, RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]), weights[-is.split], result$type, signs, NA, NA, result$robust.se, FALSE, correction))
+            tmp.ri <- try(estimateRelativeImportance(result$formula,
+                                     RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
+                                     weights[is.split], result$type, signs, NA, NA,
+                                     result$robust.se, FALSE, correction))
+            tmpC.ri <- try(estimateRelativeImportance(result$formula,
+                                      RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
+                                      weights[-is.split], result$type, signs, NA, NA,
+                                      result$robust.se, FALSE, correction))
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
@@ -99,7 +105,10 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
     } else
     {
-        formula2 <- DataFormula(result$formula, eval(result$call$data))
+        formula2 <- DataFormula(result$terms, result$original$model)
+        ## in case original formula has ., need to remove interaction
+        ## term from formula
+        formula2 <- update.formula(formula2, paste0("~.-", interaction.name))
         for (j in 1:num.split)
         {
             is.split <- which(result$estimation.data[,interaction.name] == split.labels[j])
@@ -107,12 +116,14 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
 
-            tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,], NULL, weights[is.split], result$type, result$robust.se))
+            tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,],
+                                         NULL, weights[is.split], result$type, result$robust.se))
             if (inherits(tmp.fit, "try-error"))
                 stop("Cannot perform regression split by interaction term:",
                      attr(tmp.fit, "condition")$message, "\n")
 
-            tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,], NULL, weights[-is.split], result$type, result$robust.se))
+            tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
+                                          NULL, weights[-is.split], result$type, result$robust.se))
             if (inherits(tmpC.fit, "try-error"))
                 stop("Cannot preform regression split by interaction term:",
                      attr(tmpC.fit, "condition")$message, "\n")
