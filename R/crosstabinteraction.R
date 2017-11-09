@@ -1,5 +1,6 @@
 #' @importFrom flipTransformations RemoveMissingLevelsFromFactors
 #' @importFrom flipData DataFormula
+#' @importFrom stats update.formula
 computeInteractionCrosstab <- function(result, interaction.name, interaction.label,
                                        formula.with.interaction, relative.importance,
                                        importance.absolute, internal.loop, ...)
