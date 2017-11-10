@@ -1,4 +1,4 @@
-context("contrasts")
+context("Contrasts")
 
 test_that("contrasts",
     {

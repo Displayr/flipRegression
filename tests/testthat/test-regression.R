@@ -8,6 +8,58 @@ wgt <- bank$ID
 attr(wgt, "label") <- "ID"
 bank$dep <- (unclass(bank$Overall) - 1) / 6
 
+missing <- "Exclude cases with missing data"
+test_that(missing,
+          {
+              z <- as.numeric(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing))$coef[3])
+              expect_equal(round(z,4), round(0.27732,4))
+              z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, subset = sb,  missing = missing))$coef[3])
+              expect_equal(round(z,4), round(0.25451,4))
+              z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, missing = missing))$coef[3])
+              expect_equal(round(z,4), round(0.2611546, 4))
+              z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, subset = sb, missing = missing))$coef[3])
+              expect_equal(round(z,4),round(0.2539403,4))
+          })
+
+
+missing <- "Imputation (replace missing values with estimates)"
+test_that(missing,
+          {
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.297)
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.307)
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.308)
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.312)
+          })
+
+missing <- "Multiple imputation"
+test_that(missing,
+          {
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.302)
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.307)
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.304)
+              z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
+              expect_equal(round(z, 3), 0.315)
+          })
+
+
+#### REDUCE DATA SIZE FOR TESTS WITHOUT NUMERICAL EQUALITY ###
+
+data(bank, package = "flipExampleData")
+bank <- bank[sample(nrow(bank), 200), ] # random sample of 200 rows to improve perfomance
+zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
+sb <- bank$ID > 100
+attr(sb, "label") <- "ID greater than 100"
+wgt <- bank$ID
+attr(wgt, "label") <- "ID"
+bank$dep <- (unclass(bank$Overall) - 1) / 6
+
 test_that(paste("Alternative ways of passing data in"),
 {
       type = "Linear"
@@ -111,47 +163,6 @@ test_that("Error due to missing data",
     expect_error(Regression(zFormula, data = bank, missing = missing), tolerance = 1.0e-8)
 })
 
-missing <- "Exclude cases with missing data"
-test_that(missing,
-{
-    z <- as.numeric(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing))$coef[3])
-    expect_equal(round(z,4), round(0.27732,4))
-    z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, subset = sb,  missing = missing))$coef[3])
-    expect_equal(round(z,4), round(0.25451,4))
-    z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, missing = missing))$coef[3])
-    expect_equal(round(z,4), round(0.2611546, 4))
-    z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, subset = sb, missing = missing))$coef[3])
-    expect_equal(round(z,4),round(0.2539403,4))
-})
-
-z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)
-
-missing <- "Imputation (replace missing values with estimates)"
-test_that(missing,
-{
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.297)
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.307)
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.308)
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.312)
-})
-
-missing <- "Multiple imputation"
-test_that(missing,
-{
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.302)
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.307)
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.304)
-    z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-    expect_equal(round(z, 3), 0.315)
-})
-
 
 for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
@@ -176,7 +187,7 @@ for(missing in c("Imputation (replace missing values with estimates)", "Exclude 
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste(type, " save variables"),{
             z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb))
-            expect_equal(length(predict(z)), 896)
+            expect_equal(length(predict(z)), 200)
           })
 
 

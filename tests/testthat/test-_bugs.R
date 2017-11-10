@@ -1,12 +1,12 @@
-context("bugs")
+context("Bugs")
 data(bank, package = "flipExampleData")
+bank <- bank[sample(nrow(bank), 200), ] # random sample of 200 rows to improve perfomance
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
 sb <- bank$ID > 100
 attr(sb, "label") <- "ID greater than 100"
 wgt <- bank$ID
 attr(wgt, "label") <- "ID"
 bank$o2 <- factor(unclass(bank$Overall) > 3)
-
 
 
 type = "Multinomial Logit"

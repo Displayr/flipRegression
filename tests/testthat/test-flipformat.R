@@ -1,7 +1,7 @@
 context("flipFormat tests")
 
-context("labels")
 data(bank, package = "flipExampleData")
+
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
 sb <- bank$ID > 100
 attr(sb, "label") <- "ID greater than 100"
@@ -15,6 +15,41 @@ bank$fBranch <- factor(bank$Branch)
 attr(bank$fBranch, "label") <- "Branch as a factor"
 attr(bank$Overall, "label") <- "Overall satisfaction"
 library(flipRegression)
+
+# Below tests fail (optimization errors when run inside testthat run on the subset of 200 rows.
+# Hence are run on the full data set. They do not fail when run outside testthat.
+test_that("Regression: Variable names to labels",
+          {
+              # Variable labels
+              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Ordered Logit",
+                                               subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
+              expect_equal(rownames(z$summary$coefficients)[1], "Fees paid")
+              expect_equal(rownames(z$summary$coefficients)[4], "Branch as a factor: 2")
+
+              # Multiple imputation
+              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE, missing = "Multiple imputation"))
+              expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
+              expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
+          })
+
+
+#### REDUCE DATA SIZE FOR TESTS WITHOUT NUMERICAL EQUALITY ###
+
+bank <- bank[sample(nrow(bank), 200), ] # random sample of 200 rows to improve perfomance
+
+zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
+sb <- bank$ID > 100
+attr(sb, "label") <- "ID greater than 100"
+wgt <- bank$ID
+attr(wgt, "label") <- "ID"
+bank$dep <- (unclass(bank$Overall) - 1) / 6
+attr(bank$dep, "label") <- "Overall satisfaction"
+attr(bank$Fees, "label") <- "Fees paid"
+attr(bank$Online, "label") <- "Online banking"
+bank$fBranch <- factor(bank$Branch)
+attr(bank$fBranch, "label") <- "Branch as a factor"
+attr(bank$Overall, "label") <- "Overall satisfaction"
+
 
 test_that("DS-1467 and 1468",
     {
@@ -179,9 +214,11 @@ test_that("Regression: Variable names to labels",
     z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Multinomial Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(colnames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(colnames(z$summary$coefficients)[5], "Branch as a factor: 2")
-    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Ordered Logit", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
-    expect_equal(rownames(z$summary$coefficients)[1], "Fees paid")
-    expect_equal(rownames(z$summary$coefficients)[4], "Branch as a factor: 2")
+    # This test is run above on the full data set
+    #z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Ordered Logit",
+    #                                 subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE)
+    #expect_equal(rownames(z$summary$coefficients)[1], "Fees paid")
+    #expect_equal(rownames(z$summary$coefficients)[4], "Branch as a factor: 2")
     z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Poisson", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE))
     expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
     expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
@@ -194,9 +231,10 @@ test_that("Regression: Variable names to labels",
     expect_equal(rownames(z$summary$coefficients)[2], "Gender: Female")
 
     # Multiple imputation
-    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE, missing = "Multiple imputation"))
-    expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
-    expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
+    # This test is run above on the full data set
+    #z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt, detail = FALSE, show.labels = TRUE, missing = "Multiple imputation"))
+    #expect_equal(rownames(z$summary$coefficients)[2], "Fees paid")
+    #expect_equal(rownames(z$summary$coefficients)[5], "Branch as a factor: 2")
 })
 
 
