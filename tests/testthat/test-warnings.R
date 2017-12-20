@@ -59,16 +59,18 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Mul
               set.seed(213)
               y  <- 1:100
               x <- rnorm(100, y, y)
+              out <- Regression(y ~ x, type = type)
               if (type == "Linear")
-                  ExpectWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectWarning(print(out), "appears to contain categories")
               else
-                  ExpectNoWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectNoWarning(print(out), "appears to contain categories")
               set.seed(213)
               y  <- 101:200
               x <- rnorm(100, y, y)
+              out <- Regression(y ~ x, type = type)
               if (type == "Linear")
-                  ExpectWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectWarning(print(out), "appears to contain categories")
               else
-                  ExpectNoWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectNoWarning(print(out), "appears to contain categories")
           })
 
