@@ -88,6 +88,12 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
         if (!is.null(x$relative.importance))
             caption <- paste(x$relative.importance.footer, " importance scores have been normalized by column; p-values are based on raw importance scores")
+        res <- ExtractCommonPrefix(rownames(x$interaction$coefficients))
+        if (!is.na(res$common.prefix))
+        {
+            rownames(x$interaction$coefficients) <- res$shortened.labels
+            title <- paste0(title, " by ", res$common.prefix)
+        }
         dt <- CrosstabInteractionTable(x$interaction$coefficients,
                                        x$interaction$coef.tstat,
                                        x$interaction$coef.pvalues,
