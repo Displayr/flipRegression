@@ -84,7 +84,7 @@ Regression(y ~ x, data = data.frame(y = y, x = x), missing = "Multiple imputatio
 x <- X
 x[X < runif(n)] <- NA
 z <- runif(n)
-Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z))
+suppressWarnings(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z)))
 Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Multiple imputation")
 Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Use partial data (pairwise correlations)")
 
