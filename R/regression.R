@@ -308,8 +308,7 @@ Regression <- function(formula,
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
         result$sample.description <- processed.data$description
-        result$n.predictors <- length(attr(terms(input.formula, data = data),
-                                                                 "term.labels"))
+        result$n.predictors <- length(result$original$coefficients)
         result$n.observations <- n
         result$estimation.data <- .estimation.data
     }
@@ -369,7 +368,7 @@ Regression <- function(formula,
     if (relative.importance)
     {
         labels <- rownames(result$summary$coefficients)
-        labels <- if (result$type == "Ordered Logit") labels[1:length(result$original$coefficients)] else labels[-1]
+        labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
                                                                  type, signs, result$r.squared,
@@ -543,7 +542,9 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                                                                      "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- polr(.formula, .estimation.data, Hess = TRUE, ...)
+            model <- tryCatch(polr(.formula, .estimation.data, Hess = TRUE, ...),
+                              error = function(e) stop("An error occurred during model fitting. ",
+                                                       "Please check your input data for unusual values."))
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
