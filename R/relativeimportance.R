@@ -66,6 +66,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         data[[outcome.name]]
 
     corr.x <- cov.wt(num.X, wt = weights, cor = TRUE)$cor
+    diag(corr.x) <- 1    # may not be exactly 1 from cov.wt
     eigen.corr.x <- eigen(corr.x)
     delta <- diag(sqrt(eigen.corr.x$values))
     delta_inverse <- diag(1 / sqrt(eigen.corr.x$values))
