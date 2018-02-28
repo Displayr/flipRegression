@@ -308,7 +308,7 @@ Regression <- function(formula,
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
         result$sample.description <- processed.data$description
-        result$n.predictors <- length(result$original$coefficients)
+        result$n.predictors <- sum(!(names(result$original$coefficients) %in% "(Intercept)"))
         result$n.observations <- n
         result$estimation.data <- .estimation.data
     }
