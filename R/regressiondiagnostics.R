@@ -191,8 +191,8 @@ HatValues <- function(model)
 OutlierTest <- function(model)
 {
   cat("Studentized residuals:\n")
-  st <- outlierTest(model, cutoff = Inf, n.max = Inf)
-  if (length(st$rstudent) > 0) # length will be 0 when the fit is perfect
+  st <- suppressWarnings(outlierTest(model, cutoff = Inf, n.max = Inf))
+  if (length(st$rstudent) > 0 && !all(is.na(st$rstudent))) # length will be 0 when the fit is perfect
   {
       qs <- quantile(st$rstudent)
       print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
