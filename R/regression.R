@@ -123,8 +123,8 @@ Regression <- function(formula,
     {
         if (is.null(subset.description) | (class(subset.description) == "try-error") | !is.null(attr(subset, "name")))
             subset.description <- Labels(subset)
-        if (is.null(attr(subset, "name")))
-            attr(subset, "name") <- subset.description
+        if (is.null(attr(subset, "label")))
+            attr(subset, "label") <- subset.description
     }
     if (!is.null(list(...)$weights))
         weights <- list(...)$weights
@@ -177,14 +177,14 @@ Regression <- function(formula,
             # No imputation occurs on interaction variable
             subset.description <- Labels(subset)
             tmp.sub <- !is.na(interaction)
-            if (is.null(subset))
+            if (is.null(subset) || length(subset) <= 1)
             {
                 subset <- tmp.sub
-                attr(subset, "name") <- ""
+                attr(subset, "label") <- ""
             } else
             {
                 subset <- subset & tmp.sub
-                attr(subset, "name") <- subset.description
+                attr(subset, "label") <- subset.description
             }
         }
     }
