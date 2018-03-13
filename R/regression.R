@@ -177,9 +177,15 @@ Regression <- function(formula,
             # No imputation occurs on interaction variable
             subset.description <- Labels(subset)
             tmp.sub <- !is.na(interaction)
-            subset <- if (is.null(subset)) tmp.sub
-                      else                 subset & tmp.sub
-            attr(subset, "name") <- subset.description
+            if (is.null(subset))
+            {
+                subset <- tmp.sub
+                attr(subset, "name") <- ""
+            } else
+            {
+                subset <- subset & tmp.sub
+                attr(subset, "name") <- subset.description
+            }
         }
     }
 
