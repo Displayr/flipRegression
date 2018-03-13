@@ -22,7 +22,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         if (!is.null(vifs))
         {
             max.vif <- max(vifs)
-            if (max.vif >= 4)
+            if (!is.nan(max.vif) && max.vif >= 4)
             {
                 pref <- if(x$type == "Linear") "" else "Generalized "
                 nms <- rownames(x$summary$coefficients)[-1]
