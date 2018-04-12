@@ -71,7 +71,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
-#' EstimationData CleanBackticks
+#' EstimationData CleanBackticks RemoveBackticks
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
@@ -260,7 +260,7 @@ Regression <- function(formula,
 
             models[[1]]$correction <- correction
             final.model <- models[[1]]
-            final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
+            final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else RemoveBackticks(outcome.name)
             coefs <- MultipleImputationCoefficientTable(models)
             if (show.labels && type == "Multinomial Logit")
             {
@@ -338,7 +338,8 @@ Regression <- function(formula,
     result$summary$call <- cl
 
     # Replacing the variables with their labels
-    result$outcome.label <- result$outcome.name <- outcome.name
+    result$outcome.name <- outcome.name
+    result$outcome.label <- RemoveBackticks(outcome.name)
     if (show.labels)
     {
         if (type == "Multinomial Logit")

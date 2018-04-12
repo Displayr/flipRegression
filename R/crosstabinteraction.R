@@ -106,10 +106,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
     } else
     {
-        formula2 <- DataFormula(result$terms, result$original$model)
         ## in case original formula has ., need to remove interaction
         ## term from formula
-        formula2 <- update.formula(formula2, paste0("~.-", interaction.name))
+        formula2 <- update.formula(result$terms, paste0("~.-", interaction.name))
         for (j in 1:num.split)
         {
             is.split <- which(result$estimation.data[,interaction.name] == split.labels[j])
