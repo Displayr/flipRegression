@@ -43,7 +43,7 @@ test_that("Multiple imputation", {
                                       data = bank, missing = "Multiple imputation", seed=123))
     z3 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, subset = bank$Branch==4,
                                       data = bank, missing = "Multiple imputation", seed=123))
-    expect_equal(round(z2$interaction$pvalue, 4), 0.0019)
+    expect_equal(round(z2$interaction$pvalue, 3), 0.002)
     expect_true(grepl("n = 648 cases used in estimation of a total sample size of 849;", z1$footer))
     expect_true(grepl("n = 107 cases used in estimation of a total sample size of 129 (bank$Branch == 4);", z3$footer, fixed = TRUE))
     c1 <- as.vector(z1$interaction$coefficients)
