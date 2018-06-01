@@ -48,13 +48,14 @@ multipleImputationDegreesOfFreedom <- function(coefs, vars, df.complete, large.s
     m <- ncol(coefs)
     B <- apply(coefs, 1, var)
     W <- apply(vars, 1, FUN = mean, na.rm = FALSE)
-    r <- (1 + m ^ -1) * B / W
+    r <- (1 + 1 / m) * B / W
     df.large <- (m - 1) * (1 + 1 / r) ^ 2
     if (large.sample.df)
         return(df.large)
     if (missing(df.complete))
         stop("'df.complete': Degrees of freedom of the complete model.")
-    lambda <- (1 + 1 / m) * B / T
+    T.denom <- W + (1 + 1 / m) * B
+    lambda <- (1 + 1 / m) * B / T.denom
     df.obs <- df.complete * (df.complete + 1) * ( 1 - lambda) / (df.complete + 3)
     df.small <- (1 / df.large + 1 / df.obs) ^ -1
     df.small
@@ -72,7 +73,7 @@ multipleImputationRelativeImportance <- function(models)
 {
     coefs <- sapply(models, function(object) object$coef)
     tmp.coefs <- unname(apply(coefs, 1, mean, na.rm = FALSE))
-    signs <- if (models[[1]]$type == "Ordered Logit") sign(tmp.coefs[1:(models[[1]]$n.predictors)]) 
+    signs <- if (models[[1]]$type == "Ordered Logit") sign(tmp.coefs[1:(models[[1]]$n.predictors)])
              else sign(tmp.coefs[-1])
 
     result <- list()
@@ -127,7 +128,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance)
     # Report normalised relative importance scores but use raw scores for p-values
     if (relative.importance)
         bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
- 
+
     combined.coefs <- cbind(bb, net.coef)
     colnames(combined.coefs) <- names(split.size)
     res$coefficients <- combined.coefs
