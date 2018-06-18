@@ -8,8 +8,9 @@
 #' @param subset An optional vector specifying a subset of observations to be used or the name of a
 #' column if \code{obj} is a data.frame.
 #' @param weights An optional vector of sampling weights or the name of a column if \code{obj} is a data.frame.
+#' @param decimals The number of decimal places for the values.
 #' @export
-ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
     UseMethod("ConfusionMatrix")
 }
@@ -20,7 +21,7 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights)
 #' @importFrom utils methods
 #' @importFrom flipData Observed EstimationData
 #' @export
-ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
     if (is(obj, "Stepwise"))
     {
@@ -41,13 +42,14 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
     description <- paste0("Fitted model : ", obj$sample.description, "  ", sum(confusion), " observed/predicted pairs with ",
                           accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
+    attr(confusion, "decimals") <- decimals
     return(confusion)
 }
 
 # Alternative method taking a data.frame as input
 #' @importFrom methods is
 #' @export
-ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
     confusion <- confusionMatrixHelper(obj[, 1], obj[, 2], as.logical(subset), weights)
 
@@ -55,6 +57,7 @@ ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$w
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
     description <- paste0(sum(confusion), " observed/predicted pairs with ", accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
+    attr(confusion, "decimals") <- decimals
     return(confusion)
 }
 
@@ -180,6 +183,7 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @importFrom flipU IsCount
 #' @importFrom utils read.table
 #' @importFrom flipTables TidyTabularData
+#' @importFrom flipFormat FormatAsReal
 #' @export
 #' @method print ConfusionMatrix
 print.ConfusionMatrix <- function(x, ...) {
@@ -217,11 +221,16 @@ print.ConfusionMatrix <- function(x, ...) {
                       nrow = n.row, ncol = n.row)
     row.pct[mat == 0] <- "-"
 
+    if (!is.null(attr(x, "decimals")))
+        cellnote <- apply(mat, c(1, 2), FormatAsReal, decimals = attr(x, "decimals"))
+    else
+        cellnote <- mat
+
     heatmap <- rhtmlHeatmap::Heatmap(mat, Rowv = FALSE, Colv = FALSE,
                                      scale = "none", dendrogram = "none",
                                      xaxis_location = "top", yaxis_location = "left",
                                      colors = color, color_range = NULL, cexRow = 0.79,
-                                     cellnote = mat, show_cellnote_in_cell = show.cellnote.in.cell,
+                                     cellnote = cellnote, show_cellnote_in_cell = show.cellnote.in.cell,
                                      xaxis_title = "Predicted", yaxis_title = "Observed",
                                      title = paste0("Prediction-Accuracy Table: ", attr(x, "outcome.label")),
                                      footer = attr(x, "description"),

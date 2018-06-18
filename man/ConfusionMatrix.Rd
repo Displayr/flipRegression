@@ -4,7 +4,8 @@
 \alias{ConfusionMatrix}
 \title{\code{ConfusionMatrix}}
 \usage{
-ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights)
+ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights,
+  decimals = NULL)
 }
 \arguments{
 \item{obj}{A model with an outcome variable or a data.frame where the first column is the outcome and
@@ -14,6 +15,8 @@ the second column is the prediction.}
 column if \code{obj} is a data.frame.}
 
 \item{weights}{An optional vector of sampling weights or the name of a column if \code{obj} is a data.frame.}
+
+\item{decimals}{The number of decimal places for the values.}
 }
 \description{
 Produces a confusion matrix for a trained model or data.frame showing the proportion
