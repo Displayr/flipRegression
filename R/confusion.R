@@ -69,7 +69,7 @@ confusionMatrixHelper <- function(observed, predicted, subset, weights)
         confusion <- ConfusionMatrixFromVariables(observed, predicted, subset, weights)
         attr(confusion, "type") <- "factor"
     }
-    else if (IsCount(observed))
+    else if (IsCount(observed) && length(unique(observed)) < 100)
     {
         confusion <- ConfusionMatrixFromVariablesNumeric(observed, predicted, subset, weights)
         attr(confusion, "type") <- "count"
