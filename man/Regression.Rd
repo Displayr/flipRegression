@@ -50,7 +50,7 @@ method = "model.frame", which returns the model frame.}
 
 \item{output}{\code{"Coefficients"} returns a table of coefficients and various
 summary and model statistics. It is the default. \code{"ANOVA"} returns an
-ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
 returns a table with Relative Importance scores.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}

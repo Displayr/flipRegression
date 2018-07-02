@@ -25,7 +25,7 @@
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
 #' summary and model statistics. It is the default. \code{"ANOVA"} returns an
-#' ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+#' ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
 #' returns a table with Relative Importance scores.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
@@ -106,7 +106,7 @@ Regression <- function(formula,
 {
     old.contrasts <- options("contrasts")
     options(contrasts = contrasts)
-    if (detail)
+    if (detail || output <- "Detail")
         output <- "R"
     if (robust.se == "No")
         robust.se <- FALSE
