@@ -106,7 +106,7 @@ Regression <- function(formula,
 {
     old.contrasts <- options("contrasts")
     options(contrasts = contrasts)
-    if (detail || output <- "Detail")
+    if (detail || output == "Detail")
         output <- "R"
     if (robust.se == "No")
         robust.se <- FALSE
