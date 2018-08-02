@@ -1,4 +1,4 @@
-#' \code{LinearRegressionFromCorrelations} Linear regression via a sweep operation n the correlation matrix.
+#' Linear regression via a sweep operation on the correlation matrix.
 #'
 #' @param formula An object of class \code{\link{formula}} (or one that can be
 #'   coerced to that class): a symbolic description of the model to be fitted.

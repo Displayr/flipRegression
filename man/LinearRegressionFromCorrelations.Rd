@@ -2,7 +2,7 @@
 % Please edit documentation in R/regressionsweep.R
 \name{LinearRegressionFromCorrelations}
 \alias{LinearRegressionFromCorrelations}
-\title{\code{LinearRegressionFromCorrelations} Linear regression via a sweep operation n the correlation matrix.}
+\title{Linear regression via a sweep operation on the correlation matrix.}
 \usage{
 LinearRegressionFromCorrelations(formula, data = NULL, subset = NULL,
   weights = NULL, ...)
@@ -24,7 +24,7 @@ name of a variable in \code{data}. It may not be an expression.}
 \item{...}{Additional argments to be past to  \code{\link[psych]{setCor}}.}
 }
 \description{
-\code{LinearRegressionFromCorrelations} Linear regression via a sweep operation n the correlation matrix.
+Linear regression via a sweep operation on the correlation matrix.
 }
 \details{
 Estimates regression using sweep operations on the correlation matrix.
