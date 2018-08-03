@@ -40,9 +40,9 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
 
     attr(confusion, "outcome.label") <- obj$outcome.label
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
-    pairs <-
+
     description <- paste0("Fitted model : ", obj$sample.description, "  ",
-                          FormatAsReal(sum(confusion), decimals = 2), " observed/predicted pairs with ",
+                          FormatAsReal(sum(confusion), decimals = decimals), " observed/predicted pairs with ",
                           accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
     attr(confusion, "decimals") <- decimals
