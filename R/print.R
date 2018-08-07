@@ -133,6 +133,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         else
         {
+            x$summary$call <- x$formula
             print(x$summary, ...)
             # if (!is.null(x$original$original))
             #     cat(paste0("Partial-data R-squared ", flipU::FormatAsReal(x$original$original$R2, 4), " (the R-squared and F above are based only on complete cases).\n"))
