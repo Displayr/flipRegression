@@ -31,7 +31,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
         weights <- obj$weights
     }
 
-    decimals <- if (!is.null(decimals) && (is.null(weights) || IsCount(weights)))
+    decimals <- if (is.null(decimals) && (is.null(weights) || IsCount(weights)))
         0 else 2
 
     predicted <- try(predict(obj))
@@ -57,7 +57,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
 #' @export
 ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
-    decimals <- if (!is.null(decimals) && (is.null(weights) || IsCount(weights)))
+    decimals <- if (is.null(decimals) && (is.null(weights) || IsCount(weights)))
         0 else 2
 
     confusion <- confusionMatrixHelper(obj[, 1], obj[, 2], as.logical(subset), weights)
