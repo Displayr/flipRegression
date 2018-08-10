@@ -562,7 +562,17 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
-            model <- glm.nb(.formula, .estimation.data)
+        {
+            result <- suppressWarnings(tryCatch(glm.nb(.formula, .estimation.data),
+                              warning = function(w) list(glm.nb(.formula, .estimation.data), w)))
+            model <- result[[1]]
+            if (!is.null(result[[2]]))
+                if (result[[2]]$message == "iteration limit reached")
+                    warning("Model may not have conveged. If the dispersion parameter from the Detail",
+                            " output is large, a Poisson model may be appropriate.")
+                else
+                    warning(w)
+        }
         else
             stop("Unknown regression 'type'.")
     }

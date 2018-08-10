@@ -11,8 +11,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
   contrasts = c("contr.treatment", "contr.treatment"),
   relative.importance = FALSE, importance.absolute = FALSE,
-  interaction = NULL, correction = "None", interaction.formula = NULL,
-  recursive.call = FALSE, ...)
+  interaction = NULL, correction = "None",
+  interaction.formula = NULL, recursive.call = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be

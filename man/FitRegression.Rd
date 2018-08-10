@@ -4,8 +4,8 @@
 \alias{FitRegression}
 \title{\code{FitRegression}}
 \usage{
-FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se,
-  ...)
+FitRegression(.formula, .estimation.data, subset, .weights, type,
+  robust.se, ...)
 }
 \arguments{
 \item{.formula}{An object of class \code{\link{formula}} (or one that can be
