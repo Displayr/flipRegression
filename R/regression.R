@@ -563,15 +563,24 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         }
         else if (type == "NBD")
         {
-            result <- suppressWarnings(tryCatch(glm.nb(.formula, .estimation.data),
-                              warning = function(w) list(glm.nb(.formula, .estimation.data), w)))
-            model <- result[[1]]
-            if (!is.null(result[[2]]))
-                if (result[[2]]$message == "iteration limit reached")
-                    warning("Model may not have conveged. If the dispersion parameter from the Detail",
+            withWarnings <- function(expr) {
+                myWarnings <- NULL
+                wHandler <- function(w) {
+                    myWarnings <<- c(myWarnings, list(w))
+                    invokeRestart("muffleWarning")
+                }
+                val <- withCallingHandlers(expr, warning = wHandler)
+                list(value = val, warnings = myWarnings)
+            }
+
+            result <- withWarnings(glm.nb(.formula, .estimation.data))
+            model <- result$value
+            if (!is.null(result$warnings))
+                if (result$warnings[[1]]$message == "iteration limit reached")
+                    warning("Model may not have converged. If the dispersion parameter from the Detail",
                             " output is large, a Poisson model may be appropriate.")
                 else
-                    warning(w)
+                    warning(result$warnings)
         }
         else
             stop("Unknown regression 'type'.")

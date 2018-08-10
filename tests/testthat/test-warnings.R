@@ -55,7 +55,7 @@ test_that("Missing",
           })
 
 
-for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
+for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Categories", type),
           {
               set.seed(213)
