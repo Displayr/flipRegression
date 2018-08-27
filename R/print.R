@@ -18,7 +18,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     # Testing to see if there is multicollinearity.
     if (length(x$original$coefficients) > 2 & ncol(x$model) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
     {
-        vifs <- vif(x)
+        vifs <- tryCatch(vif(x),
+                         error = function(e) stop("Predictor variables are colinear, i.e., linearly dependent on each other.",
+                                                  " Try removing variables with high correlations."))
         if (!is.null(vifs))
         {
             max.vif <- max(vifs)
