@@ -14,11 +14,12 @@ ExtractChartData.ConfusionMatrix <- function(x)
         colnames(mat) <- breakpoints
     }
     attr(mat, "title") <- paste0("Prediction-Accuracy Table: ", attr(x, "outcome.label"))
+    attr(mat, "footer") <- attr(mat, "description")
     return(mat)
 }
 
 #' @export
 ExtractChartData.Regression <- function(x)
 {
-    ExtractChartData(ConfusionMatrix(x))
+    ExtractChartData.ConfusionMatrix(ConfusionMatrix(x))
 }
