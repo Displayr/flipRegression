@@ -196,3 +196,11 @@ for (type in c("Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logi
             z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb, detail = FALSE))
             expect_error(suppressWarnings(print(z)), NA)
           })
+
+test_that("Error if too many dummy predictors",
+          {
+              df <- data.frame(outcome = runif(10), pred1 = as.factor(letters[1:10]), pred2 = as.factor(LETTERS[1:10]))
+              expect_error(Regression(outcome ~ ., data = df),
+                           "There are fewer observations.")
+          })
+

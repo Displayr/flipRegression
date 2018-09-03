@@ -240,6 +240,20 @@ Regression <- function(formula,
     {
         processed.data <- EstimationData(formula.with.interaction, data, subset,
                                          weights, missing, m = m, seed = seed)
+
+        data.for.levels <- if (missing == "Multiple imputation") processed.data$estimation.data[[1]] else processed.data$estimation.data
+        data.for.levels <- data.for.levels[, !(names(data.for.levels) == outcome.name), drop = FALSE]
+        if (ncol(data.for.levels) > 1)
+        {
+            variable.count <- sum(sapply(data.for.levels, function(x) abs(length(levels(x)) - 1)))
+            n.data <- sum(processed.data$post.missing.data.estimation.sample)
+            if (n.data < variable.count)
+                stop(gettextf("There are fewer observations (%d)%s(%d)", n.data,
+                            " than there are variables after converting categorical to dummy variables ", variable.count),
+                    ". Either merge levels, remove variables, or convert categorical variables to numeric.")
+        }
+
+
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
