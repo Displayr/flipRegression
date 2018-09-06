@@ -31,12 +31,19 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
         weights <- obj$weights
     }
 
+    if (is.null(weights) && !is.null(obj$weights))
+        warning("Model was fitted with weights but no weights have been specified.")
+    else if (!is.null(weights) && is.null(obj$weights))
+        warning("Weights have been specified but model was not fitted with weights.")
+    else if (!is.null(weights) && !is.null(obj$weights) && !all(weights == obj$weights))
+        warning("Weights are different from those used for fitting the model.")
+
     decimals <- if (is.null(decimals) && (is.null(weights) || IsCount(weights)))
         0 else 2
 
     predicted <- try(predict(obj))
     if (inherits(predicted, "try-error"))
-        stop("A regression or machine learning model is required to calculate a Confusion Matrix.")
+        stop("A regression or machine learning model is required to calculate a Prediction-Accuracy Table.")
     observed <- Observed(obj)
 
     confusion <- confusionMatrixHelper(observed, predicted, subset, weights)
