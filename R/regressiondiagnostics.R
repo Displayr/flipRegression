@@ -401,16 +401,13 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 #' \code{Accuracy}
 #'
 #' @param obj A model with an outcome variable.
-#' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression. \code{subset} may not
-#' @param weights An optional vector of sampling weights, or, the name or, the
-#'   name of a variable in \code{data}. It may not be an expression.
+#' @param subset An optional vector specifying a subset of observations.
+#' @param weights An optional vector of sampling weights.
 #' @details The proportion of observed values that take the same values as the predicted values.
 #' Where the outcome variable in the model is not a factor and not a count, predicted values are
 #' assigned to buckets as per \code{\link{ConfusionMatrix}}.
 #' @export
-Accuracy <- function(obj, subset = NULL, weights = NULL)
+Accuracy <- function(obj, subset = NULL, weights = obj$weights)
 {
   cm <- ConfusionMatrix(obj, subset, weights)
   n <- sum(cm)
