@@ -30,5 +30,5 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Mul
 test_that(paste("Confusion matrix different weights"),
           {
               z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt))
-              expect_warning(ConfusionMatrix(z, weights = NULL), "Model was fitted with weights but no weights have been specified.")
+              expect_warning(ConfusionMatrix(z, weights = NULL), "Weights are different from those used for fitting the model.")
 })
