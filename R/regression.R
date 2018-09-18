@@ -71,7 +71,7 @@
 #'   model. The American Statistician, 54(3): 217-224.
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
-#' EstimationData CleanBackticks RemoveBackticks
+#' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
@@ -242,6 +242,7 @@ Regression <- function(formula,
                                          weights, missing, m = m, seed = seed)
 
         data.for.levels <- if (missing == "Multiple imputation") processed.data$estimation.data[[1]] else processed.data$estimation.data
+        ErrorIfInfinity(data.for.levels)
         data.for.levels <- data.for.levels[, !(names(data.for.levels) == outcome.name), drop = FALSE]
         if (ncol(data.for.levels) > 1)
         {
@@ -252,7 +253,6 @@ Regression <- function(formula,
                             " than there are variables after converting categorical to dummy variables ", variable.count),
                     ". Either merge levels, remove variables, or convert categorical variables to numeric.")
         }
-
 
         if (missing == "Multiple imputation")
         {
