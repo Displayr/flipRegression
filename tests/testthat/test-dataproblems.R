@@ -36,10 +36,10 @@ adult.2000$age[runif(2000) > 0.9] <- -Inf
 adult.2000$hrs_per_week[runif(2000) > 0.9] <- Inf
 
 test_that("Infinity in data", {
-    expect_error(Regression(hrs_per_week ~ sex + race + age,
+    expect_error(suppressWarnings(Regression(hrs_per_week ~ sex + race + age,
                   type = "Linear",
                   data = adult.2000,
-                  missing = "Exclude cases with missing data"),
+                  missing = "Exclude cases with missing data")),
                  "Variable(s) hrs_per_week, age contain infinite values. Either recode the infinities to finite values or set them as missing data.",
                  fixed = TRUE)
 

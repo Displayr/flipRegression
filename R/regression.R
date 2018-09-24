@@ -274,7 +274,13 @@ Regression <- function(formula,
 
             models[[1]]$correction <- correction
             final.model <- models[[1]]
-            final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else RemoveBackticks(outcome.name)
+            final.model$outcome.label <- RemoveBackticks(outcome.name)
+            if (show.labels)
+            {
+                label <- Labels(outcome.variable)
+                if(is.null(label))
+                    final.model$outcome.label <- label
+            }
             coefs <- MultipleImputationCoefficientTable(models)
             if (show.labels && type == "Multinomial Logit")
             {
@@ -366,7 +372,9 @@ Regression <- function(formula,
             nms <- rownames(result$summary$coefficients)
             rownames(result$summary$coefficients) <- Labels(data, nms)
         }
-        result$outcome.label <- Labels(outcome.variable)
+        label <- Labels(outcome.variable)
+        if (!is.null(label))
+            result$outcome.label <- label
     }
 
     result$terms <- result$original$terms
