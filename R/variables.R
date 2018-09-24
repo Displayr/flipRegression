@@ -139,15 +139,21 @@ probabilities <- function(object)
 }
 
 
+#' @importFrom flipData Probabilities
+#' @export
+flipData::Probabilities
+
+
 #' \code{Probabilities.Regression}
 #'
 #' @param object A model of some kind.
+#' @param ... Additional arguments (not used).
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Probabilities
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a regression model.
 #' @export
-Probabilities.Regression <- function(object)
+Probabilities.Regression <- function(object, ...)
 {
     notValidForPartial(object, "probabilities")
     notValidForCrosstabInteraction(object, "probabilities")

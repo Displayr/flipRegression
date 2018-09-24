@@ -4,10 +4,12 @@
 \alias{Probabilities.Regression}
 \title{\code{Probabilities.Regression}}
 \usage{
-\method{Probabilities}{Regression}(object)
+\method{Probabilities}{Regression}(object, ...)
 }
 \arguments{
 \item{object}{A model of some kind.}
+
+\item{...}{Additional arguments (not used).}
 }
 \description{
 \code{Probabilities.Regression}
