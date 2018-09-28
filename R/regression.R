@@ -278,7 +278,7 @@ Regression <- function(formula,
             if (show.labels)
             {
                 label <- Labels(outcome.variable)
-                if(is.null(label))
+                if(!is.null(label))
                     final.model$outcome.label <- label
             }
             coefs <- MultipleImputationCoefficientTable(models)
