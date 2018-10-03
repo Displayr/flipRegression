@@ -191,8 +191,8 @@ HatValues <- function(model)
 OutlierTest <- function(model)
 {
   cat("Studentized residuals:\n")
-  st <- outlierTest(model, cutoff = Inf, n.max = Inf)
-  if (length(st$rstudent) > 0) # length will be 0 when the fit is perfect
+  st <- suppressWarnings(outlierTest(model, cutoff = Inf, n.max = Inf))
+  if (length(st$rstudent) > 0 && !all(is.na(st$rstudent))) # length will be 0 when the fit is perfect
   {
       qs <- quantile(st$rstudent)
       print(structure(zapsmall(qs, 3), names = c("Min", "1Q", "Median", "3Q", "Max")), digits = 3)
@@ -401,16 +401,13 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 #' \code{Accuracy}
 #'
 #' @param obj A model with an outcome variable.
-#' @param subset An optional vector specifying a subset of observations to be
-#'   used in the fitting process, or, the name of a variable in \code{data}. It
-#'   may not be an expression. \code{subset} may not
-#' @param weights An optional vector of sampling weights, or, the name or, the
-#'   name of a variable in \code{data}. It may not be an expression.
+#' @param subset An optional vector specifying a subset of observations.
+#' @param weights An optional vector of sampling weights.
 #' @details The proportion of observed values that take the same values as the predicted values.
 #' Where the outcome variable in the model is not a factor and not a count, predicted values are
 #' assigned to buckets as per \code{\link{ConfusionMatrix}}.
 #' @export
-Accuracy <- function(obj, subset = NULL, weights = NULL)
+Accuracy <- function(obj, subset = NULL, weights = obj$weights)
 {
   cm <- ConfusionMatrix(obj, subset, weights)
   n <- sum(cm)
@@ -418,5 +415,46 @@ Accuracy <- function(obj, subset = NULL, weights = NULL)
   correct / n
 }
 
+
+#' \code{GoodnessOfFitPlot}
+#' @description A generic function used to produce plots illustrating the goodness-of-fit of
+#' the model object.  The function invokes particular \code{\link{methods}}
+#' which depend on the \code{\link{class}} of the first argument.
+#'
+#' Reports the goodness-of-fit of an object.
+#' @param object An object for which a summary is desired.
+#' @param ... Additional arguments affecting the goodness-of-fit displayed.
+#' @param max.points The maximum numner of points to plot.
+#' @export
+GoodnessOfFitPlot <- function(object, max.points = 1000, ...) {
+
+    UseMethod("GoodnessOfFitPlot")
+}
+
+
+#' @describeIn GoodnessOfFitPlot  Goodness-of-fit plot for a Regression object
+#' @importFrom flipData Observed
+#' @importFrom stats complete.cases predict
+#' @importFrom flipStandardCharts Chart
+#' @export
+GoodnessOfFitPlot.Regression = function(object, max.points = 1000, ...) {
+
+    y <- cbind(Observed(object), predict(object))
+    y <- y[object$subset & complete.cases(y), ]
+
+    correlation <- cor(y, method = "spearman")
+
+    # Sample randomly if too many rows
+    set.seed(1066)
+    if (nrow(y) > max.points)
+        y <- y[sample(nrow(y), max.points), ]
+
+    title <- paste0(object$type, " Regression - Shepard Diagram - Rank correlation: ", sprintf("%1.2f%%", 100 * correlation[2, 1]))
+    chart <- Chart(y = y,
+                   type = "Scatterplot",
+                   title = title,
+                   x.title = "Observed",
+                   y.title = "Fitted")
+}
 
 

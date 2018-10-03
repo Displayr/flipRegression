@@ -15,9 +15,9 @@ test_that("Heteroskedasticity",
           {
               y  <- 1:100 + .001
               x <- rnorm(100, y, y)
-              ExpectWarning(Regression(y ~ x, robust.se = FALSE), "Breusch")
+              out <- Regression(y ~ x, robust.se = FALSE)
+              ExpectWarning(out, "Breusch")
               ExpectNoWarning(Regression(y ~ x, robust.se = TRUE), "Breusch")
-
           })
 
 test_that("Outliers",
@@ -25,9 +25,11 @@ test_that("Outliers",
               set.seed(133452)
               y  <- 1:10 + rnorm(10, .1)
               x <- 1:10
-              ExpectNoWarning(Regression(y ~ x), "Unusual observations")
+              out <- Regression(y ~ x)
+              ExpectNoWarning(out, "Unusual observations")
               x <- c(10, 1:9)
-              ExpectWarning(Regression(y ~ x), "Unusual observations")
+              out <- Regression(y ~ x)
+              ExpectWarning(out, "Unusual observations")
           })
 
 
@@ -53,22 +55,26 @@ test_that("Missing",
           })
 
 
-for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
+for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Categories", type),
           {
               set.seed(213)
               y  <- 1:100
               x <- rnorm(100, y, y)
+              warn <- switch(type, "Ordered Logit" = "NaNs produced",
+                             "Binary Logit" = "y has been dichotimized", NA)
+              expect_warning(out <- Regression(y ~ x, type = type), warn)
               if (type == "Linear")
-                  ExpectWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectWarning(out, "appears to contain categories")
               else
-                  ExpectNoWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectNoWarning(out, "appears to contain categories")
               set.seed(213)
               y  <- 101:200
               x <- rnorm(100, y, y)
+              expect_warning(out <- Regression(y ~ x, type = type), warn)
               if (type == "Linear")
-                  ExpectWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectWarning(out, "appears to contain categories")
               else
-                  ExpectNoWarning(Regression(y ~ x, type = type), "appears to contain categories")
+                  ExpectNoWarning(out, "appears to contain categories")
           })
 

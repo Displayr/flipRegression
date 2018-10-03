@@ -18,16 +18,21 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     # Testing to see if there is multicollinearity.
     if (length(x$original$coefficients) > 2 & ncol(x$model) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
     {
-        vifs <- vif(x)
+        vifs <- tryCatch(vif(x),
+                         error = function(e) stop("Predictor variables are colinear, i.e., linearly dependent on each other.",
+                                                  " Try removing variables with high correlations."))
         if (!is.null(vifs))
         {
             max.vif <- max(vifs)
-            if (max.vif >= 4)
+            if (!is.nan(max.vif) && max.vif >= 4)
             {
                 pref <- if(x$type == "Linear") "" else "Generalized "
                 nms <- rownames(x$summary$coefficients)[-1]
                 VIFs <- paste0(nms,": ", FormatAsReal(vifs, 2), c(rep("; ", length(nms) - 1), ""), collapse = "")
-                warning(paste0("The ",pref, "Variance Inflation Factor of the coefficients are: ", VIFs,". A value of 4 or more indicates the confidence interval for the coefficient is twice as wide as they would be for uncorrelated predictors. A value of 10 or more indicates high multicollinearity."))
+                warning(paste0("The ",pref, "Variance Inflation Factor of the coefficients are: ", VIFs,
+                               ". A value of 4 or more indicates the confidence interval for the coefficient is
+                               twice as wide as they would be for uncorrelated predictors. A value of 10 or more
+                               indicates high multicollinearity."))
             }
         }
     }
@@ -40,7 +45,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         {
             suggest <- if(is.null(x$partial.coefs)) " Or, consider using Robust Standard Errors." else ""
             warning(paste0("A Breusch Pagan Test for non-constant variance has been failed (p = ",
-                           FormatAsPValue(bp.test$p), "). A plot of the residuals versus the fitted values of the outcome variable may be useful (Insert > Advanced > Regression > Plots > Residuals vs Fitted). A transformation of the outcome or predictor variables may solve this problem.",
+                           FormatAsPValue(bp.test$p), "). A plot of the residuals versus the fitted values of the
+                           outcome variable may be useful (Regression > Diagnostic > Plot > Residuals vs Fitted).
+                           A transformation of the outcome or predictor variables may solve this problem.",
                            suggest, "\n"))
             outcome.variable <- outcomeVariableFromModel(x)
         }
@@ -88,6 +95,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 
         if (!is.null(x$relative.importance))
             caption <- paste(x$relative.importance.footer, " importance scores have been normalized by column; p-values are based on raw importance scores")
+        ind <- if (!is.null(x$relative.importance)) 1:nrow(x$interaction$coefficients)
+               else                                 2:nrow(x$interaction$coefficients)
+        res <- ExtractCommonPrefix(rownames(x$interaction$coefficients[ind,]))
+        if (!is.na(res$common.prefix))
+        {
+            rownames(x$interaction$coefficients)[ind] <- res$shortened.labels
+            title <- paste0(title, " by ", res$common.prefix)
+        }
         dt <- CrosstabInteractionTable(x$interaction$coefficients,
                                        x$interaction$coef.tstat,
                                        x$interaction$coef.pvalues,
@@ -120,6 +135,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         else
         {
+            x$summary$call <- x$formula
             print(x$summary, ...)
             # if (!is.null(x$original$original))
             #     cat(paste0("Partial-data R-squared ", flipU::FormatAsReal(x$original$original$R2, 4), " (the R-squared and F above are based only on complete cases).\n"))

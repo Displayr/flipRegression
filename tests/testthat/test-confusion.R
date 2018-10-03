@@ -14,7 +14,7 @@ bank$overalldiv3 = bank$Overall / 3
 
 test_that(paste("Confusion matrix for linear with non-integer dependent variables"),
 {
-    z = suppressWarnings(Regression(overalldiv3 ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
+    z <- suppressWarnings(Regression(overalldiv3 ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
     expect_error(ConfusionMatrix(z), NA)
 
 })
@@ -23,6 +23,12 @@ test_that(paste("Confusion matrix for linear with non-integer dependent variable
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
    test_that(paste("Confusion matrix :", type),
     {
-        z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
+        z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
         expect_error(ConfusionMatrix(z), NA)
+})
+
+test_that(paste("Confusion matrix different weights"),
+          {
+              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = "Linear", subset = sb, weights = wgt))
+              expect_warning(ConfusionMatrix(z, weights = NULL), "Weights are different from those used for fitting the model.")
 })

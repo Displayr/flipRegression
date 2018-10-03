@@ -4,17 +4,14 @@
 \alias{Accuracy}
 \title{\code{Accuracy}}
 \usage{
-Accuracy(obj, subset = NULL, weights = NULL)
+Accuracy(obj, subset = NULL, weights = obj$weights)
 }
 \arguments{
 \item{obj}{A model with an outcome variable.}
 
-\item{subset}{An optional vector specifying a subset of observations to be
-used in the fitting process, or, the name of a variable in \code{data}. It
-may not be an expression. \code{subset} may not}
+\item{subset}{An optional vector specifying a subset of observations.}
 
-\item{weights}{An optional vector of sampling weights, or, the name or, the
-name of a variable in \code{data}. It may not be an expression.}
+\item{weights}{An optional vector of sampling weights.}
 }
 \description{
 \code{Accuracy}

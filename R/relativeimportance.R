@@ -2,38 +2,45 @@
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
-estimateRelativeImportance <- function(formula, data, weights, type, signs, r.square, variable.names,
+#' @noRd
+estimateRelativeImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                        robust.se = FALSE, show.sign.warning = TRUE, correction, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
 
     if (type == "Multinomial Logit")
-        stop(paste("Relative importance analysis is not available for", type))
+        stop("Relative importance analysis is not available for ", type)
 
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
-        formula2 <- DataFormula(formula)
+        formula2 <- DataFormula(formula, data)
         fit <- FitRegression(formula2, data, NULL, NULL, type, robust.se, ...)
         if (is.null(signs) || any(is.na(signs)))
             signs <- sign(extractVariableCoefficients(fit$original, type))
         if (is.null(r.square) || is.na(r.square))
             r.square <- GoodnessOfFit(fit$original)$value
+
+        if (all(is.na(variable.names)))
+        {
+            tmp.names <- CleanBackticks(names(fit$original$coefficients))
+            variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
+        }
     }
 
     if (show.sign.warning && any(signs < 0))
-        warning(paste0("Negative signs in Relative Importance scores were applied from coefficient signs in ",
-                      regressionType(type), ". To disable this feature, check the Absolute importance scores option."))
+        warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
+                regressionType(type),
+                ". To disable this feature, check the Absolute importance scores option.")
 
-    if (all(is.na(variable.names)))
-        variable.names <- CleanBackticks(names(fit$original$coefficients)[-1])
 
-    formula.names <- AllVariablesNames(formula)
-    outcome.name <- OutcomeName(formula)
+    formula.names <- AllVariablesNames(formula, data)
+    outcome.name <- OutcomeName(formula, data)
     X <- data[setdiff(formula.names, outcome.name)]
 
-    # We remove the "ordered" class so that ordered-categorical variables are treated in the same way
-    # as they are in regression, i.e., dummy variables are created from the categories.
+    ## We remove the "ordered" class so that ordered-categorical variables are
+    ## treated in the same way as they are in regression, i.e., dummy variables
+    ## are created from the categories.
     for (j in 1:ncol(X))
         if (all(c("factor", "ordered") %in% class(X[, j])))
             class(X[, j]) <- "factor"
@@ -59,6 +66,7 @@ estimateRelativeImportance <- function(formula, data, weights, type, signs, r.sq
         data[[outcome.name]]
 
     corr.x <- cov.wt(num.X, wt = weights, cor = TRUE)$cor
+    diag(corr.x) <- 1    # may not be exactly 1 from cov.wt
     eigen.corr.x <- eigen(corr.x)
     delta <- diag(sqrt(eigen.corr.x$values))
     delta_inverse <- diag(1 / sqrt(eigen.corr.x$values))

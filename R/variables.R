@@ -122,14 +122,16 @@ Observed.Regression <- function(x)
 #' @export
 Observed.FitRegression <- function(x)
 {
-    x$original$model[, OutcomeName(x$formula)]
+    ## use stats::terms() output because it expands
+    ## dot in formulae, so don't need to supply data
+    x$original$model[, OutcomeName(x$original$terms)]
 }
 
 #' \code{probabilities}
 #'
 #' @param object A model of some kind.
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
-#' of class membership from a refression model. This is included for backwards compatibilty.
+#' of class membership from a regression model. This is included for backwards compatibilty.
 #' @export
 probabilities <- function(object)
 {
@@ -137,15 +139,21 @@ probabilities <- function(object)
 }
 
 
+#' @importFrom flipData Probabilities
+#' @export
+flipData::Probabilities
+
+
 #' \code{Probabilities.Regression}
 #'
 #' @param object A model of some kind.
+#' @param ... Additional arguments (not used).
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Probabilities
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a regression model.
 #' @export
-Probabilities.Regression <- function(object)
+Probabilities.Regression <- function(object, ...)
 {
     notValidForPartial(object, "probabilities")
     notValidForCrosstabInteraction(object, "probabilities")

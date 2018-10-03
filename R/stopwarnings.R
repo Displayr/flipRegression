@@ -2,7 +2,7 @@
 #' @importFrom flipU AllIntegers OutcomeName AnyNegative
 stopIfNotCount = function(formula, data)
 {
-    dependent.name <- OutcomeName(formula)
+    dependent.name <- OutcomeName(formula, data)
     dependent.variable <- data[[dependent.name]]
     if (!AllIntegers(dependent.variable))
         stop(paste("This analysis assumes that the Outcome variable contains only integers (i.e., whole numbers).
@@ -20,11 +20,10 @@ warningRobustInappropriate <- function() {"Robust standard errors has been selec
     as due to the use of weights, a survey-weighted model has been estimated, and this method contains a similar
     type of adjustment already."}
 
-stopNotCount <- function() {stop("This analysis assumes that your Outcome variable is a count variable (e.g., number of products purchased per week). A count variable cannot contain either decimals or negative variables. Your data is not consistent with this assumption.")}
+stopNotCount <- function() {stop("This analysis assumes that your Outcome variable is a count variable (e.g., number of products purchased per week).",
+                                 " A count variable cannot contain either decimals or negative variables. Your data is not consistent with this assumption.")}
 
-WarningFactorToNumeric <- function() {warning("Outcome variable is a factor; it has been made numeric.
-                                              Consider using another type of regression (e.g., Ordered Logit or Binary Logit).")}
+WarningFactorToNumeric <- function() {warning("Outcome variable is a factor; it has been made numeric.",
+                                              " Consider using another type of regression (e.g., Ordered Logit or Binary Logit).")}
 
-
-
-warningNotOrdered <- function() {warning("Outcome variable is a not an Ordered Factor; it has been converted into an Ordered Factor.")}
+warningNotOrdered <- function() {warning("Outcome variable is not an Ordered Factor; it has been converted into an Ordered Factor.")}

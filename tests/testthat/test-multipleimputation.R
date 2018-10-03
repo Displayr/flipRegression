@@ -44,12 +44,12 @@ test_that("Multiple imputation run using Regression", {
     est <- flipData::EstimationData(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, zbank, missing = "Multiple imputation", m = 10)
     models <- lapply(est$estimation.data, FUN = function(x) Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = x))
     coefs <- MultipleImputationCoefficientTable(models)
-    expect_equal(coefs[12,5], 0.224, 0.001)
+    expect_equal(coefs[12,5], 0.132, 0.001)
 })
 
 test_that("Multiple imputation ", {
     z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = zbank, missing = "Multiple imputation")
-    expect_equal(z$coefficient.table[12,5], 0.348, 0.001)
+    expect_equal(z$coefficient.table[12,5], 0.187, 0.001)
 })
 
 # Using examples from https://www.ssc.wisc.edu/sscc/pubs/mi/missmech.do
@@ -84,7 +84,7 @@ Regression(y ~ x, data = data.frame(y = y, x = x), missing = "Multiple imputatio
 x <- X
 x[X < runif(n)] <- NA
 z <- runif(n)
-Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z))
+suppressWarnings(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z)))
 Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Multiple imputation")
 Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Use partial data (pairwise correlations)")
 

@@ -25,7 +25,7 @@
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
 #' summary and model statistics. It is the default. \code{"ANOVA"} returns an
-#' ANOVA table. \code{"R"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+#' ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
 #' returns a table with Relative Importance scores.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
@@ -69,11 +69,13 @@
 #'   Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
 #'   heteroscedasticity consistent standard errors in the linear regression
 #'   model. The American Statistician, 54(3): 217-224.
-#' @importFrom stats pnorm anova update
-#' @importFrom flipData GetData CleanSubset CleanWeights DataFormula EstimationData CleanBackticks
+#' @importFrom stats pnorm anova update terms
+#' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
+#' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
-#' @importFrom flipTransformations AsNumeric CreatingBinaryDependentVariableIfNecessary Factor Ordered
+#' @importFrom flipTransformations AsNumeric
+#' CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
 #' @importFrom utils tail
 #' @export
@@ -104,7 +106,7 @@ Regression <- function(formula,
 {
     old.contrasts <- options("contrasts")
     options(contrasts = contrasts)
-    if (detail)
+    if (detail || output == "Detail")
         output <- "R"
     if (robust.se == "No")
         robust.se <- FALSE
@@ -121,8 +123,8 @@ Regression <- function(formula,
     {
         if (is.null(subset.description) | (class(subset.description) == "try-error") | !is.null(attr(subset, "name")))
             subset.description <- Labels(subset)
-        if (is.null(attr(subset, "name")))
-            attr(subset, "name") <- subset.description
+        if (is.null(attr(subset, "label")))
+            attr(subset, "label") <- subset.description
     }
     if (!is.null(list(...)$weights))
         weights <- list(...)$weights
@@ -135,7 +137,7 @@ Regression <- function(formula,
     {
         if (!is.null(attr(interaction, "name")))
             interaction.name <- attr(interaction, "name")
-        interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+        interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
                                  else interaction.name
     }
 
@@ -148,20 +150,24 @@ Regression <- function(formula,
     }
     else
     {
-        # Includes interaction in formula if there is one
+        ## Includes interaction in formula if there is one
+        ## stats::update.formula, does not accept a data arg,
+        ## so update fails if dot on RHS of formula.
+        ## Calling stats::terms first expands the dot so update works
         formula.with.interaction <- if (is.null(interaction)) input.formula
-                else update(input.formula, sprintf(".~.*%s",interaction.name))
+                                    else update(terms(input.formula, data = data),
+                                                sprintf(".~.*%s",interaction.name))
         data <- GetData(input.formula, data, auxiliary.data)
         if (!is.null(interaction))
         {
-            interaction.label <- if (show.labels && !is.null(Labels(interaction))) Labels(interaction)
+            interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
                                      else interaction.name
             if (length(unique(Factor(interaction))) < 2)
                 stop("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
                 stop("Crosstab interaction is incompatible with Multinomial Logit regression.")
-            if (type == "Ordered Logit" && relative.importance)
-                stop("Crosstab interaction with Relative Importance Analysis is incompatible with Ordered Logit regression.")
+            #if (type == "Ordered Logit" && relative.importance)
+            #    stop("Crosstab interaction with Relative Importance Analysis is incompatible with Ordered Logit regression.")
 
             if (interaction.name %in% colnames(data))
                 stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
@@ -169,15 +175,23 @@ Regression <- function(formula,
             colnames(data)[ncol(data)] <- interaction.name
 
             # No imputation occurs on interaction variable
+            subset.description <- Labels(subset)
             tmp.sub <- !is.na(interaction)
-            subset <- if (is.null(subset)) tmp.sub
-                      else subset & tmp.sub
+            if (is.null(subset) || length(subset) <= 1)
+            {
+                subset <- tmp.sub
+                attr(subset, "label") <- ""
+            } else
+            {
+                subset <- subset & tmp.sub
+                attr(subset, "label") <- subset.description
+            }
         }
     }
 
     if (method == "model.frame")
         return(data)
-    outcome.name <- OutcomeName(input.formula)
+    outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
     if(sum(outcome.name == names(data)) > 1)
         stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
@@ -224,7 +238,22 @@ Regression <- function(formula,
     }
     else
     {
-        processed.data <- EstimationData(formula.with.interaction, data, subset, weights, missing, m = m, seed = seed)
+        processed.data <- EstimationData(formula.with.interaction, data, subset,
+                                         weights, missing, m = m, seed = seed)
+
+        data.for.levels <- if (missing == "Multiple imputation") processed.data$estimation.data[[1]] else processed.data$estimation.data
+        ErrorIfInfinity(data.for.levels)
+        data.for.levels <- data.for.levels[, !(names(data.for.levels) == outcome.name), drop = FALSE]
+        if (ncol(data.for.levels) > 1)
+        {
+            variable.count <- sum(sapply(data.for.levels, function(x) abs(length(levels(x)) - 1)))
+            n.data <- sum(processed.data$post.missing.data.estimation.sample)
+            if (n.data < variable.count)
+                stop(gettextf("There are fewer observations (%d)%s(%d)", n.data,
+                            " than there are variables after converting categorical to dummy variables ", variable.count),
+                    ". Either merge levels, remove variables, or convert categorical variables to numeric.")
+        }
+
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
@@ -245,7 +274,13 @@ Regression <- function(formula,
 
             models[[1]]$correction <- correction
             final.model <- models[[1]]
-            final.model$outcome.label <- if(show.labels) Labels(outcome.variable) else outcome.name
+            final.model$outcome.label <- RemoveBackticks(outcome.name)
+            if (show.labels)
+            {
+                label <- Labels(outcome.variable)
+                if(!is.null(label))
+                    final.model$outcome.label <- label
+            }
             coefs <- MultipleImputationCoefficientTable(models)
             if (show.labels && type == "Multinomial Logit")
             {
@@ -281,7 +316,7 @@ Regression <- function(formula,
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         subset <-  processed.data$subset
-        .formula <- DataFormula(input.formula)
+        .formula <- DataFormula(input.formula, data)
         fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
         if (internal)
         {
@@ -301,7 +336,7 @@ Regression <- function(formula,
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
         result$sample.description <- processed.data$description
-        result$n.predictors <- ncol(.estimation.data) - 1
+        result$n.predictors <- sum(!(names(result$original$coefficients) %in% "(Intercept)"))
         result$n.observations <- n
         result$estimation.data <- .estimation.data
     }
@@ -323,7 +358,8 @@ Regression <- function(formula,
     result$summary$call <- cl
 
     # Replacing the variables with their labels
-    result$outcome.label <- result$outcome.name <- outcome.name
+    result$outcome.name <- outcome.name
+    result$outcome.label <- RemoveBackticks(outcome.name)
     if (show.labels)
     {
         if (type == "Multinomial Logit")
@@ -336,7 +372,9 @@ Regression <- function(formula,
             nms <- rownames(result$summary$coefficients)
             rownames(result$summary$coefficients) <- Labels(data, nms)
         }
-        result$outcome.label <- Labels(outcome.variable)
+        label <- Labels(outcome.variable)
+        if (!is.null(label))
+            result$outcome.label <- label
     }
 
     result$terms <- result$original$terms
@@ -371,7 +409,7 @@ Regression <- function(formula,
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                      formula.with.interaction, relative.importance,
-                                                     importance.absolute, 
+                                                     importance.absolute,
                                                      internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
@@ -535,7 +573,9 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                                                                      "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- polr(.formula, .estimation.data, Hess = TRUE, ...)
+            model <- tryCatch(polr(.formula, .estimation.data, Hess = TRUE, ...),
+                              error = function(e) stop("An error occurred during model fitting. ",
+                                                       "Please check your input data for unusual values."))
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
@@ -544,7 +584,26 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
-            model <- glm.nb(.formula, .estimation.data)
+        {
+            withWarnings <- function(expr) {
+                myWarnings <- NULL
+                wHandler <- function(w) {
+                    myWarnings <<- c(myWarnings, list(w))
+                    invokeRestart("muffleWarning")
+                }
+                val <- withCallingHandlers(expr, warning = wHandler)
+                list(value = val, warnings = myWarnings)
+            }
+
+            result <- withWarnings(glm.nb(.formula, .estimation.data))
+            model <- result$value
+            if (!is.null(result$warnings))
+                if (result$warnings[[1]]$message == "iteration limit reached")
+                    warning("Model may not have converged. If the dispersion parameter from the Detail",
+                            " output is large, a Poisson model may be appropriate.")
+                else
+                    warning(result$warnings)
+        }
         else
             stop("Unknown regression 'type'.")
     }
@@ -567,7 +626,9 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 aic <- try(extractAIC(model), silent = TRUE)
                 if (any("try-error" %in% class(aic)))
                 {
-                    warning("Error occurred when computing AIC. The most likely explanation for this is this is a small sample size in some aspect of the analysis. ")
+                    warning("Error occurred when computing AIC. The most likely ",
+                            "explanation for this is this is a small sample size in ",
+                            "some aspect of the analysis. ")
                     aic <- rep(NA, 2)
                 }
                 remove(".design", envir=.GlobalEnv)
@@ -584,7 +645,8 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- multinom(.formula, .estimation.data, weights = weights, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+            model <- multinom(.formula, .estimation.data, weights = weights,
+                              Hess = TRUE, trace = FALSE, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")

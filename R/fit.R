@@ -33,8 +33,20 @@ GoodnessOfFit <- function(object, digits = max(3L, getOption("digits") - 3L), ..
 #' @importFrom stats cor
 #' @export
 GoodnessOfFit.default = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
-    obs.fit = FittedAndObserved(object)
-    r2 = cor(obs.fit$fitted, obs.fit$observed, use = "complete.obs")^2
+
+    # special case for Ordered Logit
+    if (class(object) == "polr")
+    {
+        fitted <- UnclassIfNecessary(predict(object), FALSE)
+        observed <- UnclassIfNecessary(Observed(object), FALSE)
+
+    } else
+    {
+        obs.fit <- FittedAndObserved(object)
+        fitted <- obs.fit$fitted
+        observed <- obs.fit$observed
+    }
+    r2 = cor(fitted, observed, use = "complete.obs")^2
     names(r2) <- "R-squared"
     description <- list("Variance explained: ",
                         formatC(100 * r2, digits = digits),

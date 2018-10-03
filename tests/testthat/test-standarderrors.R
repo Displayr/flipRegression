@@ -7,7 +7,7 @@ z <- unclass(colas$q4a)
 flipFormat::Labels(z) <- "Like Coca-Cola"
 colas$like.coke <- z - 3
 colas$balanced <- c(rep(1:3, rep(100,3)), rep(NA, 27))
-colas$agenumeric <- car::recode(colas$d1, as.factor.result = FALSE, recodes = "'18 to 24' = 21; '25 to 29' = 27; '30 to 34' = 32; '35 to 39' = 37; '40 to 44' = 42; '45 to 49' = 47; '50 to 54' = 52; '55 to 64' = 60; '65 or more' = 77")
+colas$agenumeric <- car::recode(colas$d1, as.factor = FALSE, recodes = "'18 to 24' = 21; '25 to 29' = 27; '30 to 34' = 32; '35 to 39' = 37; '40 to 44' = 42; '45 to 49' = 47; '50 to 54' = 52; '55 to 64' = 60; '65 or more' = 77")
 
 test_that("Stata Linearized Standard Errors with weights", {
     z = Regression(like.coke~d1, weights = colas$agenumeric, data = colas, robust.se = FALSE)
