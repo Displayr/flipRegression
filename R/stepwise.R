@@ -103,5 +103,14 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
                                                 direction = tolower(direction), steps = steps))
         result$steps.output <- paste(captured, collapse = "\n")
     }
+
+    # Variables excluded
+    if (direction == "Backward")
+        result$excluded <- sapply(as.character(selected.model$anova$Step[-1]),
+                                  function(x) substr(x, 3, nchar(x)))
+    else if (direction == "Forward")
+        result$excluded <- setdiff(var.names[-1],
+                                   names(selected.model$coef)[-1])
+
     result
 }

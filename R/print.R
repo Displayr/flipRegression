@@ -268,11 +268,9 @@ print.Stepwise <- function(x, ...)
     if (x$output == "Final")
     {
         x$model$output <- "Coefficients"
-        if (x$direction == "Backward")
-        {
-            var.names <- sapply(as.character(x$model$anova$Step[-1]), function(x) substr(x, 3, nchar(x)))
-            x$model$subtitle <- paste("Variables excluded:", paste0(var.names, collapse = ", "))
-        }
+        if (length(x$excluded) > 0)
+            x$model$subtitle <- paste("Variables excluded:",
+                                      paste0(x$excluded, collapse = ", "))
         print(x$model)
     }
     else
