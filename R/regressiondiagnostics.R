@@ -416,23 +416,15 @@ Accuracy <- function(obj, subset = NULL, weights = obj$weights)
 }
 
 
-#' \code{GoodnessOfFitPlot}
-#' @description A generic function used to produce plots illustrating the goodness-of-fit of
-#' the model object.  The function invokes particular \code{\link{methods}}
-#' which depend on the \code{\link{class}} of the first argument.
-#'
-#' Reports the goodness-of-fit of an object.
-#' @param object An object for which a summary is desired.
-#' @param ... Additional arguments affecting the goodness-of-fit displayed.
-#' @param max.points The maximum numner of points to plot.
+#' @importFrom flipStatistics GoodnessOfFitPlot
 #' @export
-GoodnessOfFitPlot <- function(object, max.points = 1000, ...) {
-
-    UseMethod("GoodnessOfFitPlot")
-}
+flipStatistics::GoodnessOfFitPlot
 
 
-#' @describeIn GoodnessOfFitPlot  Goodness-of-fit plot for a Regression object
+#' Goodness-of-fit plot for a Regression object
+#' @param object An object for which a summary is desired.
+#' @param max.points The maximum numner of points to plot.
+#' @param ... Additional arguments affecting the goodness-of-fit displayed.
 #' @importFrom flipData Observed
 #' @importFrom stats complete.cases predict
 #' @importFrom flipStandardCharts Chart
