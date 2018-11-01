@@ -147,7 +147,7 @@ test_that("Labels",
     # Some variables have labels and others do not.
     z <- data.frame(a = 1:10, b = 1:10, c = 1:10)
     flipFormat::Labels(z) <- c("A", "B")
-    expect_equal(as.character(flipFormat::Labels(z)), c("A","B", "c"))
+    expect_equal(as.character(flipFormat::Labels(z)), c("A", "B", "c"))
 })
 
 
@@ -182,7 +182,7 @@ test_that("Numeric dependent ~ numeric, factor, numeric factor",
               expect_equal( rownames(z$summary$coefficients)[11], "Gender: Female")
           })
 
-test_that("Regression: labels are extracted from variables containinging $",
+test_that("Regression: labels are extracted from variables containing $",
           {
               library(flipRegression)
               attach(bank)

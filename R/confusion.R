@@ -38,8 +38,8 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
         0 else 2
 
     predicted <- try(predict(obj))
-    if (inherits(predicted, "try-error"))
-        stop("A regression or machine learning model is required to calculate a Prediction-Accuracy Table.")
+    if (inherits(predicted, "try-error") || is.null(predicted))
+        stop("A regression or machine learning model or ensemble is required to calculate a Prediction-Accuracy Table.")
     observed <- Observed(obj)
 
     confusion <- confusionMatrixHelper(observed, predicted, subset, weights)
