@@ -580,7 +580,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         }
         else if (type == "Multinomial Logit")
         {
-            model <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+            model <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, MaxNWts = 10e9, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
