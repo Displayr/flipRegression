@@ -78,3 +78,13 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Mul
                   ExpectNoWarning(out, "appears to contain categories")
           })
 
+
+test_that("Removed aliased predictors",
+          {
+              x  <- 1:100
+              y <- z <- rnorm(100)
+
+              expect_warning(Regression(x ~ y + z),
+                             "The following variable(s) are colinear with other variables and no coefficients have been estimated: z",
+                             fixed = TRUE)
+          })
