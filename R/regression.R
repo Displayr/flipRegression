@@ -138,7 +138,7 @@ Regression <- function(formula,
         if (!is.null(attr(interaction, "name")))
             interaction.name <- attr(interaction, "name")
         interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
-                                 else interaction.name
+        else interaction.name
     }
 
     if (!is.null(interaction.formula))
@@ -155,13 +155,13 @@ Regression <- function(formula,
         ## so update fails if dot on RHS of formula.
         ## Calling stats::terms first expands the dot so update works
         formula.with.interaction <- if (is.null(interaction)) input.formula
-                                    else update(terms(input.formula, data = data),
-                                                sprintf(".~.*%s",interaction.name))
+        else update(terms(input.formula, data = data),
+                    sprintf(".~.*%s",interaction.name))
         data <- GetData(input.formula, data, auxiliary.data)
         if (!is.null(interaction))
         {
             interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
-                                     else interaction.name
+            else interaction.name
             if (length(unique(Factor(interaction))) < 2)
                 stop("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
@@ -232,8 +232,8 @@ Regression <- function(formula,
         if (type != "Linear")
             stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
         result <- list(original = LinearRegressionFromCorrelations(input.formula, data, subset,
-                                                               weights, outcome.name, ...),
-                   call = cl)
+                                                                   weights, outcome.name, ...),
+                       call = cl)
         result$sample.description <- result$original$sample.description
     }
     else
@@ -250,27 +250,27 @@ Regression <- function(formula,
             n.data <- sum(processed.data$post.missing.data.estimation.sample)
             if (n.data < variable.count)
                 stop(gettextf("There are fewer observations (%d)%s(%d)", n.data,
-                            " than there are variables after converting categorical to dummy variables ", variable.count),
-                    ". Either merge levels, remove variables, or convert categorical variables to numeric.")
+                              " than there are variables after converting categorical to dummy variables ", variable.count),
+                     ". Either merge levels, remove variables, or convert categorical variables to numeric.")
         }
 
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
-                FUN = function(x) Regression(formula,
-                    data = x,                               # contains interaction factor; filters already applied
-                    missing = "Error if missing data",
-                    weights = processed.data$weights,
-                    type = type,
-                    robust.se = FALSE,
-                    detail = detail,
-                    show.labels = show.labels,
-                    interaction = interaction,
-                    interaction.formula = formula.with.interaction,
-                    output = output,
-                    correction = "None",
-                    recursive.call = TRUE
-                    ))
+                             FUN = function(x) Regression(formula,
+                                                          data = x,                               # contains interaction factor; filters already applied
+                                                          missing = "Error if missing data",
+                                                          weights = processed.data$weights,
+                                                          type = type,
+                                                          robust.se = FALSE,
+                                                          detail = detail,
+                                                          show.labels = show.labels,
+                                                          interaction = interaction,
+                                                          interaction.formula = formula.with.interaction,
+                                                          output = output,
+                                                          correction = "None",
+                                                          recursive.call = TRUE
+                             ))
 
             models[[1]]$correction <- correction
             final.model <- models[[1]]
@@ -290,6 +290,9 @@ Regression <- function(formula,
                 kr <- length(alt.labels)
                 rownames(coefs) <- paste(alt.labels, coef.labels[rep(1:kc, rep(kr, kc))])
             }
+            aliasedPredictorWarning(final.model$summary$aliased,
+                                    if (show.labels) Labels(data, names(final.model$summary$aliased)) else NULL)
+
             final.model$coefficient.table <- coefs
             final.model$summary$coefficients  <- coefs[, -4]
             final.model$coef <- final.model$original$coef <- coefs[, 1]
@@ -308,6 +311,7 @@ Regression <- function(formula,
             }
             return(final.model)
         }
+
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
         n <- nrow(.estimation.data)
@@ -376,6 +380,9 @@ Regression <- function(formula,
         if (!is.null(label))
             result$outcome.label <- label
     }
+    if (!recursive.call)
+        aliasedPredictorWarning(result$summary$aliased,
+                                if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
 
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
@@ -408,9 +415,9 @@ Regression <- function(formula,
     }
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
-                                                     formula.with.interaction, relative.importance,
-                                                     importance.absolute,
-                                                     internal.loop = !is.null(interaction.formula), ...)
+                                                         formula.with.interaction, relative.importance,
+                                                         importance.absolute,
+                                                         internal.loop = !is.null(interaction.formula), ...)
 
     # Creating the subtitle/footer
     if (!partial)
@@ -423,7 +430,7 @@ Regression <- function(formula,
             {
                 p.name <- grep("Pr", names(anova.out), value=T)
                 anova.out[[p.name]] <- pvalAdjust(anova.out[[p.name]], result$correction)
-            #    anova.out[[4]] <- pvalAdjust(anova.out[[4]], result$correction)
+                #    anova.out[[4]] <- pvalAdjust(anova.out[[4]], result$correction)
             }
             result$anova <- anova.out
         }
@@ -505,7 +512,7 @@ regressionFooter <- function(x)
 
         r.desc <- ifelse(x$type == "Linear" & is.null(x$weights), "R-squared", "McFaddens's rho-squared")
         footer <- sprintf("%s %s of pooled model: %.4f; %s of interaction model %.4f;",
-            footer, r.desc, x$interaction$original.r2, r.desc, x$interaction$full.r2)
+                          footer, r.desc, x$interaction$original.r2, r.desc, x$interaction$full.r2)
 
         if (x$missing == "Multiple imputation")
             footer <- sprintf("%s %s averaged over multiple imputations;", footer, r.desc)
@@ -515,9 +522,9 @@ regressionFooter <- function(x)
         footer <- paste0(footer," R-squared: ", FormatAsReal(x$r.squared, 4), "; ")
         if (!partial)
             footer <- paste0(footer,
-                   "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
-                   if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
-               if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5)), "; ")
+                             "Correct predictions: ", FormatAsPercent(Accuracy(x, x$subset, x$weights), 4),
+                             if (is.null(rho.2) | is.na(rho.2)) "" else paste0("; McFadden's rho-squared: ", round(rho.2, 4)),
+                             if (is.na(aic)) "" else paste0("; AIC: ", FormatAsReal(aic, 5)), "; ")
     }
     footer <- sprintf("%s multiple comparisons correction: %s", footer, x$correction)
     footer
@@ -601,8 +608,8 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 if (result$warnings[[1]]$message == "iteration limit reached")
                     warning("Model may not have converged. If the dispersion parameter from the Detail",
                             " output is large, a Poisson model may be appropriate.")
-                else
-                    warning(result$warnings)
+            else
+                warning(result$warnings)
         }
         else
             stop("Unknown regression 'type'.")
@@ -616,7 +623,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         }
         if (type == "Linear")
         {
-           .design <- WeightedSurveyDesign(.estimation.data, .weights)
+            .design <- WeightedSurveyDesign(.estimation.data, .weights)
             model <- svyglm(.formula, .design)
             if (all(model$residuals == 0)) # perfect fit
                 model$df <- NA
@@ -806,7 +813,7 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
     if (tryError(v))
         stop(wng)
     else
-       warning(wng)
+        warning(wng)
     v
 }
 
@@ -817,3 +824,12 @@ tryError <- function(x)
     FALSE
 }
 
+# Warn for colinear variables, which have NA coeffient and are removed from summary table
+aliasedPredictorWarning <- function(aliased, aliased.labels) {
+    if (any(aliased))
+    {
+        alias.vars <- if (!is.null(aliased.labels)) aliased.labels[aliased] else names(aliased)[aliased]
+        warning("The following variable(s) are colinear with other variables and no",
+                " coefficients have been estimated: ", paste(alias.vars, collapse = ", "))
+    }
+}
