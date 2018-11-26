@@ -16,7 +16,6 @@ test_that(paste("Confusion matrix for linear with non-integer dependent variable
 {
     z <- suppressWarnings(Regression(overalldiv3 ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
     expect_error(ConfusionMatrix(z), NA)
-
 })
 
 

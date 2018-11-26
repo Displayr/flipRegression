@@ -52,6 +52,11 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
                           accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
     attr(confusion, "decimals") <- decimals
+
+    obj.name <- deparse(substitute(obj))
+    obj.class <- setdiff(class(obj), c("list", "MachineLearning"))[1]
+    attr(confusion, "subtitle") <- paste0(obj.name, " (", obj.class, ")")
+
     return(confusion)
 }
 
@@ -245,6 +250,7 @@ print.ConfusionMatrix <- function(x, ...) {
                                      cellnote = cellnote, show_cellnote_in_cell = show.cellnote.in.cell,
                                      xaxis_title = "Predicted", yaxis_title = "Observed",
                                      title = paste0("Prediction-Accuracy Table: ", attr(x, "outcome.label")),
+                                     subtitle = attr(x, "subtitle"),
                                      footer = attr(x, "description"),
                                      extra_tooltip_info = list("% cases" = cell.pct,
                                                                "% Predicted" = column.pct,
