@@ -149,7 +149,7 @@ flipData::Probabilities
 #' @param object A model of some kind.
 #' @param ... Additional arguments (not used).
 #' @importFrom stats na.pass dpois
-#' @importFrom flipData Probabilities
+#' @importFrom flipData Probabilities Observed
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a regression model.
 #' @export
@@ -162,7 +162,12 @@ Probabilities.Regression <- function(object, ...)
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
         return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "probs")))
     if (object$type == "Binary Logit")
-        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "response")))[, 2]
+    {
+        probs <- suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "response"))
+        probs <- cbind(1 - probs, probs)
+        colnames(probs) <- levels(Observed(object))
+        return(probs)
+    }
     xs <- 0:max(Observed(object), na.rm = TRUE)
     if (object$type == "Poisson")
     {
