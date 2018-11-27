@@ -11,7 +11,7 @@ test_that("Probabilities",{
 
 
 test_that("Probabilities",{
-    expect_equal(sum(Probabilities(z)), as.numeric(table(y)[2]))
+    expect_equal(sum(Probabilities(z)[, 1]), as.numeric(table(y)[2]))
 })
 
 test_that("Observed with .",{
