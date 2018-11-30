@@ -47,15 +47,12 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
     attr(confusion, "outcome.label") <- obj$outcome.label
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
 
-    description <- paste0("Fitted model : ", obj$sample.description, "  ",
+    description <- paste0("Fitted model (", deparse(substitute(obj)), "): ", obj$sample.description, "  ",
                           FormatAsReal(sum(confusion), decimals = decimals), " observed/predicted pairs with ",
                           accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
     attr(confusion, "decimals") <- decimals
-
-    obj.name <- deparse(substitute(obj))
-    obj.class <- setdiff(class(obj), c("list", "MachineLearning"))[1]
-    attr(confusion, "subtitle") <- paste0(obj.name, " (", obj.class, ")")
+    attr(confusion, "subtitle") <- setdiff(class(obj), c("list", "MachineLearning"))[1]
 
     return(confusion)
 }
