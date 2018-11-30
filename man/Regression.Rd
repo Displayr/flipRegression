@@ -12,7 +12,8 @@ Regression(formula, data = NULL, subset = NULL, weights = NULL,
   contrasts = c("contr.treatment", "contr.treatment"),
   relative.importance = FALSE, importance.absolute = FALSE,
   interaction = NULL, correction = "None",
-  interaction.formula = NULL, recursive.call = FALSE, ...)
+  interaction.formula = NULL, recursive.call = FALSE,
+  effects.format = list(max.label = 10), ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
@@ -51,7 +52,8 @@ method = "model.frame", which returns the model frame.}
 \item{output}{\code{"Coefficients"} returns a table of coefficients and various
 summary and model statistics. It is the default. \code{"ANOVA"} returns an
 ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
-returns a table with Relative Importance scores.}
+returns a table with Relative Importance scores. \code{"Effects Plot"} returns the effects plot per
+predictor.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}
 
@@ -92,6 +94,9 @@ See \code{\link{contrasts}} for more information.}
 
 \item{recursive.call}{Used internally to indicate if call is a result of recursion (e.g., multiple imputation).}
 
+\item{effects.format}{A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
+and \code{y.title} (the title of the y-axis, defaults to outcome label).}
+
 \item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}
 }
@@ -100,11 +105,11 @@ Generalized Regression.
 }
 \details{
 "Imputation (replace missing values with estimates)". All selected
-  outcome and predictor variables are included in the imputation, along with
-  all \code{auxiliary.data}, excluding cases that are excluded via subset or
-   have invalid weights, but including cases with missing values of the outcome variable.
-  Then, cases with missing values in the outcome variable are excluded from
-  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
+ outcome and predictor variables are included in the imputation, along with
+ all \code{auxiliary.data}, excluding cases that are excluded via subset or
+ have invalid weights, but including cases with missing values of the outcome variable.
+ Then, cases with missing values in the outcome variable are excluded from
+ the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 }
 \references{
 von Hippel, Paul T. 2007. "Regression With Missing Y's: An

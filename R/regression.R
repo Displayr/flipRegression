@@ -24,44 +24,47 @@
 #'   employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
-#' summary and model statistics. It is the default. \code{"ANOVA"} returns an
-#' ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
-#' returns a table with Relative Importance scores.
+#'   summary and model statistics. It is the default. \code{"ANOVA"} returns an
+#'   ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
+#'   returns a table with Relative Importance scores. \code{"Effects Plot"} returns the effects plot per
+#'   predictor.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
-#' method = "model.frame", which returns the model frame.
+#'   method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
 #' @param seed The random number seed used in imputation.
 #' @param statistical.assumptions A Statistical Assumptions object.
 #' @param auxiliary.data A \code{\link{data.frame}} containing additional variables
-#'  to be used in imputation (if required). While adding more variables will improve
-#'  the quality of the imputation, it will dramatically slow down the time to estimate.
-#'  Factors and Character variables with a large number of categories should not be included,
-#'  as they will both slow down the data and are unlikely to be useful
+#'   to be used in imputation (if required). While adding more variables will improve
+#'   the quality of the imputation, it will dramatically slow down the time to estimate.
+#'   Factors and Character variables with a large number of categories should not be included,
+#'   as they will both slow down the data and are unlikely to be useful
 #' @param show.labels Shows the variable labels, as opposed to the names, in the outputs, where a
-#' variables label is an attribute (e.g., attr(foo, "label")).
+#'   variables label is an attribute (e.g., attr(foo, "label")).
 #' @param internal If \code{TRUE}, skips most of the tidying at the end. Only for use when it is
-#' desired to call a relatively light version of Regression for other purposes (e.g., in ANOVA).
-#' This leads to creation of an object of class \code{FitRegression}.)
+#'   desired to call a relatively light version of Regression for other purposes (e.g., in ANOVA).
+#'   This leads to creation of an object of class \code{FitRegression}.)
 #' @param contrasts A vector of the contrasts to be used for \code{\link{factor}} and
-#' \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
-#' Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
-#' See \code{\link{contrasts}} for more information.
+#'   \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
+#'   Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
+#'   See \code{\link{contrasts}} for more information.
 #' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
 #' @param relative.importance Deprecated. To run Relative Importance Analysis, use the output variable.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param correction Method to correct for multiple comparisons. Can be one of \code{"None"},
-#'    \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.
+#'   \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.
 #' @param interaction.formula Used internally for multiple imputation.
 #' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
+#' @param effects.format A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
+#'   and \code{y.title} (the title of the y-axis, defaults to outcome label).
 #' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
-#'   data is weighted,  \code{\link[survey]{svyglm}}.
+#'  data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
-#'   outcome and predictor variables are included in the imputation, along with
-#'   all \code{auxiliary.data}, excluding cases that are excluded via subset or
-#'    have invalid weights, but including cases with missing values of the outcome variable.
-#'   Then, cases with missing values in the outcome variable are excluded from
-#'   the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
+#'  outcome and predictor variables are included in the imputation, along with
+#'  all \code{auxiliary.data}, excluding cases that are excluded via subset or
+#'  have invalid weights, but including cases with missing values of the outcome variable.
+#'  Then, cases with missing values in the outcome variable are excluded from
+#'  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 #' @references von Hippel, Paul T. 2007. "Regression With Missing Y's: An
 #'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
 #'   Methodology 37:83-117. White, H. (1980), A heteroskedastic-consistent
@@ -102,6 +105,7 @@ Regression <- function(formula,
                        correction = "None",
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        recursive.call = FALSE,
+                       effects.format = list(max.label = 10),
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -356,6 +360,7 @@ Regression <- function(formula,
     result$show.labels <- show.labels
     result$missing <- missing
     result$test.interaction <- !is.null(interaction)
+    result$effects.format <- effects.format
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)

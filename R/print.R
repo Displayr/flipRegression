@@ -152,6 +152,12 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         attr(x$anova, "footer") <- x$footer
         print(x$anova)
     }
+    else if (x$output == "Effects Plot")
+    {
+        EffectsPlot(x,
+                    max.factor.label.length = x$effects.format$max.label,
+                    y.axis.title = x$effects.format$y.axis)
+    }
     else
     {    # Pretty table.
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")

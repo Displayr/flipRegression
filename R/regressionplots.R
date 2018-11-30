@@ -61,3 +61,60 @@ PredictionPlot <- function(Regression.object, predictor.number = NULL)
     }
     plt
 }
+
+#' Produce an effects plot of a regression model
+#'
+#' @param model A model of class \code{Regression}
+#' @param max.factor.label.length The maximum length of any factor label, as plotted on the
+#'   x-axis for categorical variables. Longer labels are truncated, possibly with an integer
+#'   suffix to ensure uniquueness.
+#' @param y.axis.title The title of the y-axis for each plot. Defaults to the outcome label.
+#' @export
+EffectsPlot <- function(model,
+                        max.factor.label.length = NULL,
+                        y.axis.title = NULL)
+{
+    effects <- allEffects(model)
+
+    fixEffectsLabels <- function(ef, max.len){
+
+        if (ef$variables[[1]]$is.factor)
+        {
+            old.levs <- ef$variables[[1]]$levels
+            new.levs <- sapply(old.levs, function(x) substr(x, 1, min(max.len, nchar(x))))
+            new.levs <- make.unique(new.levs, sep = "")
+
+            indices <- match(levels(ef$x[[1]]), old.levs)
+            levels(ef$x[[1]]) <- new.levs[indices]
+            ef$variables[[1]]$levels <- new.levs
+            return(ef)
+
+        }
+        else
+            return(ef)
+    }
+
+    ylab <- y.axis.title
+    if (is.null(ylab) || nchar(ylab) == 0)
+    {
+        ylab <- model$outcome.label
+        if (model$type == "Binary Logit")
+            ylab <- paste0("probability(", ylab, ")")
+
+    }
+
+    if (!is.null(max.factor.label.length))
+    {
+        effects <- lapply(effects, fixEffectsLabels, max.factor.label.length)
+        class(effects) <- "efflist"
+    }
+
+    type <- if (model$type %in% c("Ordered Logit", "Multinomial Logit"))
+        "probability"
+    else
+        "response"
+
+    plot(effects,
+         ylab = ylab,
+         type = type)
+}
