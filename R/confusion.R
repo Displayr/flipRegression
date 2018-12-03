@@ -24,11 +24,13 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, dec
 #' @export
 ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
+    obj.name <- deparse(substitute(obj))
     if (is(obj, "Stepwise"))
     {
         obj <- obj$model
         subset <- obj$subset
         weights <- obj$weights
+        obj.name <- "stepwise"
     }
 
     if (!identical(weights, obj$weights))
@@ -47,7 +49,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
     attr(confusion, "outcome.label") <- obj$outcome.label
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
 
-    description <- paste0("Fitted model (", deparse(substitute(obj)), "): ", obj$sample.description, "  ",
+    description <- paste0("Fitted model (", obj.name, "): ", obj$sample.description, "  ",
                           FormatAsReal(sum(confusion), decimals = decimals), " observed/predicted pairs with ",
                           accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
