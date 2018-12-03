@@ -658,7 +658,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
             model <- multinom(.formula, .estimation.data, weights = weights,
-                              Hess = TRUE, trace = FALSE, maxit = 10000, ...)
+                              Hess = TRUE, trace = FALSE, maxit = 10000, MaxNWts = 1e9, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
