@@ -2,7 +2,7 @@ context("Effects plots")
 
 data(adult.2000, package = "flipExampleData")
 
-test_that("Stata Linearized Standard Errors with weights", {
+test_that("Effects plot", {
 
     for (type in c("Linear", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Binary Logit", "Multinomial Logit"))
     {

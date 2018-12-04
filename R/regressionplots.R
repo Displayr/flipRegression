@@ -116,5 +116,6 @@ EffectsPlot <- function(model,
 
     plot(effects,
          ylab = ylab,
-         type = type)
+         type = type,
+         axes = list(x = list(rug = FALSE)))
 }
