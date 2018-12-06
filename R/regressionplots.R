@@ -119,7 +119,7 @@ EffectsPlot <- function(model,
         "response"
 
     # Top 4 most important, ordered by increasing p-value from anova
-    p.values <- rgr$anova[, ncol(rgr$anova)]
+    p.values <- model$anova[, ncol(model$anova)]
     p.values <- p.values[!is.na(p.values)]
     effects <- effects[order(p.values)]
     effects <- effects[1:min(4, length(effects))]
