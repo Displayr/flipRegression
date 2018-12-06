@@ -103,6 +103,10 @@ EffectsPlot <- function(model,
 
     }
 
+    y.axis <- list(lab = ylab)
+    if (model$type == "Binary Logit")
+        y.axis$lim <- c(0, 1)
+
     if (!is.null(max.factor.label.length))
     {
         effects <- lapply(effects, fixEffectsLabels, max.factor.label.length)
@@ -115,7 +119,7 @@ EffectsPlot <- function(model,
         "response"
 
     plot(effects,
-         ylab = ylab,
          type = type,
-         axes = list(x = list(rug = FALSE)))
+         axes = list(x = list(rug = FALSE),
+                     y = y.axis))
 }
