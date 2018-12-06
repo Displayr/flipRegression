@@ -76,7 +76,7 @@ EffectsPlot <- function(model,
 {
     effects <- allEffects(model)
 
-    fixEffectsLabels <- function(ef, max.len){
+    limitEffectsLabels <- function(ef, max.len){
 
         if (ef$variables[[1]]$is.factor)
         {
@@ -109,7 +109,7 @@ EffectsPlot <- function(model,
 
     if (!is.null(max.factor.label.length))
     {
-        effects <- lapply(effects, fixEffectsLabels, max.factor.label.length)
+        effects <- lapply(effects, limitEffectsLabels, max.factor.label.length)
         class(effects) <- "efflist"
     }
 
@@ -117,6 +117,12 @@ EffectsPlot <- function(model,
         "probability"
     else
         "response"
+
+    # Top 4 most important, ordered by increasing p-value from anova
+    p.values <- rgr$anova[, ncol(rgr$anova)]
+    p.values <- p.values[!is.na(p.values)]
+    effects <- effects[order(p.values)]
+    effects <- effects[1:min(4, length(effects))]
 
     plot(effects,
          type = type,

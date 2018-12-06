@@ -428,12 +428,12 @@ Regression <- function(formula,
     if (!partial)
     {
         result$sample.description <- processed.data$description
-        if (output == "ANOVA")
+        if (output == "ANOVA" || output == "Effects Plot")
         {
             anova.out <- Anova(result, robust.se)
             if (!recursive.call)
             {
-                p.name <- grep("Pr", names(anova.out), value=T)
+                p.name <- grep("Pr", names(anova.out), value = TRUE)
                 anova.out[[p.name]] <- pvalAdjust(anova.out[[p.name]], result$correction)
                 #    anova.out[[4]] <- pvalAdjust(anova.out[[4]], result$correction)
             }
