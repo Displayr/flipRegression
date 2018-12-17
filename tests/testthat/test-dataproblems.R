@@ -15,7 +15,7 @@ test_that("Removing unused factors prior to regression", {
     z[z == "100"] <- NA
     phone$q3 <- z
 
-    expect_error(suppressWarnings(flipRegression::Regression(q3 ~ q2, data = phone, missing = "Multiple imputation")))
+    expect_error(suppressWarnings(flipRegression::Regression(q3 ~ q2, data = phone, missing = "Multiple imputation")), NA)
     expect_error(suppressWarnings(flipRegression::Regression(q2 ~ q3, data = phone, missing = "Multiple imputation")), NA)
 
 })
