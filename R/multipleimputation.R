@@ -24,6 +24,9 @@ MultipleImputationCoefficientTable <- function(models, large.sample.df = FALSE)
     correct <- models[[1]]$correction
     pvals <-  pvalAdjust(2 * pt(abs(tvals), dfs, lower.tail = FALSE), correct)
     results <- cbind(coef.mean, ses, tvals, dfs, pvals)
+    row.rm <- which(apply(results, 1, function(x){all(is.na(x))}))
+    if (length(row.rm) > 0)
+        results <- results[-row.rm,]
     coef.names <- rownames(models[[1]]$summary$coef)
     if(models[[1]]$type == "Multinomial Logit")
     {
