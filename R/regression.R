@@ -195,6 +195,13 @@ Regression <- function(formula,
 
     if (method == "model.frame")
         return(data)
+    if (output == "Effects Plot") # allEffects fails if names have backticks and are not syntactic
+    {
+        colnames(data) <- make.names(colnames(data))
+        clean.formula <- make.names(input.formula)
+        clean.formula <- paste(clean.formula[2], "~", gsub("...", "+", clean.formula[3], fixed = TRUE))
+        formula.with.interaction <- input.formula <- as.formula(clean.formula)
+    }
     outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
     if(sum(outcome.name == names(data)) > 1)

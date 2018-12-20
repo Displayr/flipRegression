@@ -74,6 +74,7 @@ EffectsPlot <- function(model,
                         max.factor.label.length = NULL,
                         y.axis.title = NULL)
 {
+
     effects <- allEffects(model)
 
     limitEffectsLabels <- function(ef, max.len){
