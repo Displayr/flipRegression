@@ -452,6 +452,20 @@ Regression <- function(formula,
         result$relative.importance.footer <- relativeImportanceFooter(result)
     options(contrasts = old.contrasts[[1]])
 
+    attr(result,  "ChartData") <- if (output == "ANOVA")
+        data.frame(result$anova)
+    else if (output == "Relative Importance Analysis")
+    {
+        ri <- result$relative.importance
+        df <- data.frame(ri$importance, ri$raw.importance, ri$standard.errors,
+                   ri$statistics, ri$p.values)
+        colnames(df) <- c("Relative Importance", "Raw score", "Standard Error",
+                          "t statistic", "p-value")
+        df
+    }
+    else
+        result$summary$coefficients
+
     return(result)
 }
 
