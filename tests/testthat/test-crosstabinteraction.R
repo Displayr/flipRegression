@@ -151,3 +151,9 @@ test_that("Crosstab with dot in formula",
     expect_equal(sum((z5$interaction$coef.pvalues[4,] < 0.05)), 6)
 
 })
+
+test_that("Exported data", {
+    zz <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank))
+    cd <- attr(zz, "ChartData")
+    expect_equal(zz$interaction$coefficients, cd[-nrow(cd), ])
+})

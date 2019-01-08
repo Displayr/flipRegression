@@ -454,11 +454,17 @@ Regression <- function(formula,
 
     attr(result,  "ChartData") <- if (output == "ANOVA")
         data.frame(result$anova)
+    else if (result$test.interaction)
+    {
+        dt <- rbind(result$interaction$coefficients, result$interaction$split.size)
+        rownames(dt)[nrow(dt)] <- "n"
+        dt
+    }
     else if (output == "Relative Importance Analysis")
     {
         ri <- result$relative.importance
         df <- data.frame(ri$importance, ri$raw.importance, ri$standard.errors,
-                   ri$statistics, ri$p.values)
+                         ri$statistics, ri$p.values)
         colnames(df) <- c("Relative Importance", "Raw score", "Standard Error",
                           "t statistic", "p-value")
         df
