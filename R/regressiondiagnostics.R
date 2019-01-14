@@ -266,6 +266,7 @@ vif.Regression <- function (mod, ...)
 
 #' @importFrom car Anova
 #' @importFrom flipFormat ExtractCommonPrefix
+#' @importFrom flipData RemoveBackticks
 #' @export
 Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 {
@@ -273,7 +274,7 @@ Anova.Regression <- function (mod, white.adjust = FALSE, ...)
     # Updating labels
     if (mod$show.labels)
     {
-        row.names <- attr(anova, "row.names")
+        row.names <- RemoveBackticks(attr(anova, "row.names"))
         labels <- Labels(mod$model)
         not.residuals <- row.names != "Residuals"
         extracted <- ExtractCommonPrefix(labels[match(row.names[not.residuals], names(labels))])
