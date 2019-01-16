@@ -123,7 +123,7 @@ EffectsPlot <- function(model,
     p.values <- model$anova[, ncol(model$anova)]
     p.values <- p.values[!is.na(p.values)]
     effects <- effects[order(p.values)]
-    effects <- effects[1:min(4, length(effects))]
+    ## effects <- effects[1:min(4, length(effects))]
 
     plot(effects,
          type = type,
