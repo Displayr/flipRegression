@@ -39,7 +39,10 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
     decimals <- if (is.null(decimals) && (is.null(weights) || IsCount(weights)))
         0 else 2
 
-    predicted <- try(predict(obj))
+    InterceptExceptions(predicted <- try(predict(obj)), warning.handler = function(w) {
+        if (w$message != "prediction from a rank-deficient fit may be misleading")
+            warning(w$message)
+    })
     if (inherits(predicted, "try-error") || is.null(predicted))
         stop("A regression or machine learning model or ensemble is required to calculate a Prediction-Accuracy Table.")
     observed <- Observed(obj)
@@ -196,7 +199,7 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @param x An object of class \code{\link{ConfusionMatrix}}.
 #' @param ... Further arguments, currently unusued.
 #' @details Displays a confusion matrix as a heatmap.
-#' @importFrom flipU IsCount
+#' @importFrom flipU IsCount InterceptExceptions
 #' @importFrom utils read.table
 #' @importFrom flipTables TidyTabularData
 #' @importFrom flipFormat FormatAsReal
