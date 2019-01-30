@@ -92,7 +92,14 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
     names(raw.importance) <- variable.names
-    scaling.factor <- r.square / sum(raw.importance)
+    if (r.square == 0)
+    {
+        scaling.factor <- 1
+        warning("The R-squared is 0. As a result, the raw scores have not ",
+                "been scaled to sum to the R-squared.")
+    }
+    else
+        scaling.factor <- r.square / sum(raw.importance)
     result$raw.importance <- raw.importance * scaling.factor
     se  <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
     names(se) <- variable.names
