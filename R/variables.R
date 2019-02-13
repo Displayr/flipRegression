@@ -60,18 +60,7 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
     predicted <- if (any(class(object$original) == "glm"))
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
     else
-    {
-        # Make ordered logit work when variables have been removed due to
-        # colinearity
-        original.coef <- object$original$coefficients
-        new.coef <- numeric(ncol(newdata))
-        names(new.coef) <- colnames(newdata)
-        new.coef[names(original.coef)] <- original.coef
-        reg.model <- object$original
-        reg.model$coefficients <- new.coef
-
-        predict(reg.model, newdata = newdata, na.action = na.action)
-    }
+        predict(object$original, newdata = newdata, na.action = na.action)
     # if (flipU::IsCount(object$type))
     #      return(floor(predicted))
     if (object$type == "Binary Logit" || object$type == "Multinomial Logit")
