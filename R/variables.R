@@ -59,8 +59,23 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
     notValidForCrosstabInteraction(object, "predict")
     predicted <- if (any(class(object$original) == "glm"))
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
+    else if ("polr" %in% class(object$original))
+    {
+        # Make ordered logit work when variables have been removed due to
+        # colinearity
+        original.coef <- object$original$coefficients
+        coef.names <- coefNamesBeforeOmitting(object)
+        new.coef <- numeric(length(coef.names))
+        names(new.coef) <- coef.names
+        new.coef[names(original.coef)] <- original.coef
+        reg.model <- object$original
+        reg.model$coefficients <- new.coef
+
+        predict(reg.model, newdata = newdata, na.action = na.action)
+    }
     else
         predict(object$original, newdata = newdata, na.action = na.action)
+
     # if (flipU::IsCount(object$type))
     #      return(floor(predicted))
     if (object$type == "Binary Logit" || object$type == "Multinomial Logit")
@@ -75,6 +90,18 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
     predicted
 }
 
+coefNamesBeforeOmitting <- function(object)
+{
+    coef.names <- as.list(attr(object$original$terms, "term.labels"))
+    for (i in 1:length(coef.names))
+    {
+        nm <- coef.names[[i]]
+        element <- object$original$contrasts[[nm]]
+        if (!is.null(element) && element == "contr.treatment")
+            coef.names[[i]] <- paste0(nm, levels(object$original$model[[nm]])[-1])
+    }
+    unlist(coef.names)
+}
 
 #' @importFrom stats fitted
 #' @export

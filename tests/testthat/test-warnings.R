@@ -88,3 +88,15 @@ test_that("Removed aliased predictors",
                              "The following variable(s) are colinear with other variables and no coefficients have been estimated: z",
                              fixed = TRUE)
           })
+
+test_that("Removed aliased predictors (ordered logit)",
+          {
+              x  <- 1:100
+              y <- z <- rnorm(100)
+
+              expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
+                             paste0("Some variable(s) are colinear with other ",
+                                    "variables and they have been removed from ",
+                                    "the estimation."),
+                             fixed = TRUE)
+          })
