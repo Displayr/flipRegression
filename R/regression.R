@@ -589,6 +589,7 @@ relativeImportanceFooter <- function(x)
 #'   if weights are applied (as weights already employ a sandwich estimator).
 #' @param ... Arguments to the wrapped functions.
 #' @importFrom flipData CalibrateWeight WeightedSurveyDesign
+#' @importFrom flipU InterceptExceptions
 #' @importFrom MASS polr glm.nb
 #' @importFrom nnet multinom
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
@@ -612,9 +613,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                                                                      "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- tryCatch(polr(.formula, .estimation.data, Hess = TRUE, ...),
-                              error = function(e) stop("An error occurred during model fitting. ",
-                                                       "Please check your input data for unusual values."))
+            model <- fitOrderedLogit(.formula, .estimation.data, NULL, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
@@ -678,7 +677,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         else if (type == "Ordered Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
@@ -864,4 +863,24 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
         warning("The following variable(s) are colinear with other variables and no",
                 " coefficients have been estimated: ", paste(alias.vars, collapse = ", "))
     }
+}
+
+fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
+{
+    model <- InterceptExceptions(
+        if (is.null(weights))
+            polr(.formula, .estimation.data, Hess = TRUE, ...)
+        else
+            polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...),
+        warning.handler = function(w) {
+        if (w$message == "design appears to be rank-deficient, so dropping some coefs")
+            warning("Some variable(s) are colinear with other variables ",
+                    "and they have been removed from the estimation.")
+            else
+                warning(w$message)
+        },
+        error.handler = function(e) {
+            stop("An error occurred during model fitting. ",
+                 "Please check your input data for unusual values.")
+        })
 }
