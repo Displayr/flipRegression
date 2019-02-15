@@ -42,7 +42,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         if (bp.test$p <= 0.05)
         {
             suggest <- if(is.null(x$partial.coefs)) " Or, consider using Robust Standard Errors." else ""
-            warning(paste0("A Breusch Pagan Test for non-constant variance has been failed (p = ",
+            warning(paste0("A Breusch Pagan Test for non-constant variance has failed (p = ",
                            FormatAsPValue(bp.test$p), "). A plot of the residuals versus the fitted values of the
                            outcome variable may be useful (Regression > Diagnostic > Plot > Residuals vs Fitted).
                            A transformation of the outcome or predictor variables may solve this problem.",
