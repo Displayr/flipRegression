@@ -21,5 +21,10 @@ ExtractChartData.ConfusionMatrix <- function(x)
 #' @export
 ExtractChartData.Regression <- function(x)
 {
-    ExtractChartData.ConfusionMatrix(ConfusionMatrix(x))
+    if (x$test.interaction)
+        return(x$interaction$coefficients)
+    else if (!is.null(x$relative.importance))
+        return(x$relative.importance$importance)
+    else
+        return(x$coef)
 }
