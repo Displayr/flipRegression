@@ -26,5 +26,5 @@ ExtractChartData.Regression <- function(x)
     else if (!is.null(x$relative.importance))
         return(x$relative.importance$importance)
     else
-        return(x$coef)
+        return(x$summary$coefficients)
 }
