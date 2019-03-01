@@ -74,6 +74,12 @@ EffectsPlot <- function(model,
                         max.factor.label.length = NULL,
                         y.axis.title = NULL)
 {
+    if (any(aliased.var <- model$summary$aliased))
+    {
+        upd.frml <- paste0("~.-", paste(names(aliased.var)[aliased.var], collapse = "-"))
+        frml <- update(formula(model), upd.frml)
+        model <- update(model, frml)
+    }
 
     effects <- allEffects(model)
 
@@ -121,7 +127,7 @@ EffectsPlot <- function(model,
 
     # Top 4 most important, ordered by increasing p-value from anova
     p.values <- model$anova[, ncol(model$anova)]
-    p.values <- p.values[!is.na(p.values)]
+    p.values <- p.values[!rownames(model$anova) == "Residuals"]
     effects <- effects[order(p.values)]
     ## effects <- effects[1:min(4, length(effects))]
 

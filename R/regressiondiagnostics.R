@@ -387,11 +387,21 @@ infIndexPlot.Regression <- function(model, ...)
 
 
 #' @import car
+#' @importFrom stats update formula
 diagnosticTestFromCar<- function(x, diagnostic, ...)
 {
-  model <- x$original
-  assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
-  assign(".formula", formula(model), envir=.GlobalEnv)
+    model <- x$original
+
+    assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
+    ## drop aliased/colinear variables
+    if (any(aliased.var <- x$summary$aliased))
+    {
+        upd.frml <- paste0("~.-", paste(names(aliased.var)[aliased.var], collapse = "-"))
+        frml <- update(formula(model), upd.frml)
+        model <- update(model, frml)
+    }else
+        frml <- formula(model)
+  assign(".formula", frml, envir=.GlobalEnv)
   txt <- paste0(diagnostic, "(model, ...)")
   t <- eval(parse(text = txt))
   remove(".formula", envir=.GlobalEnv)
