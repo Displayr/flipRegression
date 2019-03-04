@@ -384,8 +384,6 @@ infIndexPlot.Regression <- function(model, ...)
   infIndexPlot(model, ...)
 }
 
-
-
 #' @import car
 #' @importFrom stats update formula
 diagnosticTestFromCar<- function(x, diagnostic, ...)
@@ -394,19 +392,19 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 
     assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
     ## drop aliased/colinear variables
-    if (any(aliased.var <- x$summary$aliased))
-    {
-        upd.frml <- paste0("~.-", paste(names(aliased.var)[aliased.var], collapse = "-"))
-        frml <- update(formula(model), upd.frml)
-        model <- update(model, frml)
-    }else
-        frml <- formula(model)
-  assign(".formula", frml, envir=.GlobalEnv)
-  txt <- paste0(diagnostic, "(model, ...)")
-  t <- eval(parse(text = txt))
-  remove(".formula", envir=.GlobalEnv)
-  remove(".estimation.data", envir=.GlobalEnv)
-  t
+    if (any(x$summary$aliased))
+        model <- updateAliasedModel(x)
+    frml <- formula(model)
+
+    assign(".formula", frml, envir=.GlobalEnv)
+    txt <- paste0(diagnostic, "(model, ...)")
+    t <- eval(parse(text = txt))
+
+    if (exists(".formula", envir = .GlobalEnv))
+        remove(".formula", envir=.GlobalEnv)
+    if (exists(".estimation.data", envir = .GlobalEnv))
+        remove(".estimation.data", envir=.GlobalEnv)
+    t
 }
 
 #' \code{Accuracy}
@@ -460,4 +458,19 @@ GoodnessOfFitPlot.Regression = function(object, max.points = 1000, ...) {
                    y.title = "Fitted")
 }
 
-
+#' for categorical vars, need to take care to get formula term from the
+#' regr. coef. names
+#' @importFrom stats update formula
+#' @noRd
+updateAliasedModel <- function(x)
+{
+    aliased.var <- x$summary$aliased
+    fterms <- attr(x$terms, "term.labels")
+    patt <- paste0("^", fterms, " ")
+    aliased.names <- names(aliased.var)[aliased.var]
+    matches <- vapply(patt, grepl, logical(length(aliased.names)), x = aliased.names)
+    aterms <- fterms[apply(matches, 2, any)]
+    upd.frml <- paste0("~.-`", paste(aterms, collapse = "`-`"), "`")
+    frml <- update(formula(x), upd.frml)
+    return(suppressMessages(suppressWarnings(update(x, frml))))
+}

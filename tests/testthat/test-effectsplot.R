@@ -15,3 +15,12 @@ test_that("Effects plot", {
     }
 })
 
+test_that("Effects plot with colinear variables; DS-2304",
+{
+    adult.2000$race2 <- adult.2000$race
+    rgr <- suppressWarnings(Regression(education_num ~ marital + sex + race + race2,
+                          data = adult.2000, type = "Linear",
+                          output = "Effects Plot",
+                          effects.format = list(max.label = 5, y.axis = "HELLO")))
+    expect_error(suppressWarnings(print(rgr)), NA)
+})

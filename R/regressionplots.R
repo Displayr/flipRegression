@@ -75,11 +75,7 @@ EffectsPlot <- function(model,
                         y.axis.title = NULL)
 {
     if (any(aliased.var <- model$summary$aliased))
-    {
-        upd.frml <- paste0("~.-", paste(names(aliased.var)[aliased.var], collapse = "-"))
-        frml <- update(formula(model), upd.frml)
-        model <- update(model, frml)
-    }
+        model <- updateAliasedModel(model)
 
     effects <- allEffects(model)
 
