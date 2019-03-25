@@ -466,10 +466,15 @@ updateAliasedModel <- function(x)
 {
     aliased.var <- x$summary$aliased
     fterms <- attr(x$terms, "term.labels")
-    patt <- paste0("^", fterms, " ")
+    ## continuous variable name will match exactly, categorical variable has names
+    ## "varname levelname1", "varname levelname2", ...
+    patt <- paste0("^", fterms, "$|^", fterms, " ")
     aliased.names <- names(aliased.var)[aliased.var]
     matches <- vapply(patt, grepl, logical(length(aliased.names)), x = aliased.names)
-    aterms <- fterms[apply(matches, 2, any)]
+    if (is.matrix(matches))
+        matches <- apply(matches, 2, any)
+
+    aterms <- fterms[matches]
     upd.frml <- paste0("~.-`", paste(aterms, collapse = "`-`"), "`")
     frml <- update(formula(x), upd.frml)
     return(suppressMessages(suppressWarnings(update(x, frml))))

@@ -15,7 +15,17 @@ test_that("Effects plot", {
     }
 })
 
-test_that("Effects plot with colinear variables; DS-2304",
+test_that("Effects plot with colinear continuous variables; DS-2304",
+{
+    data(bank, package = "flipExampleData")
+    bank$Fees2 <- bank$Fees
+    model <- suppressWarnings(Regression(data = bank,
+                 formula = Overall ~ Fees + Interest + Phone + Branch + Online + ATM + Fees2,
+                 output = "Effects Plot", type = "Linear"))
+    expect_error(suppressWarnings(print(model)), NA)
+})
+
+test_that("Effects plot with colinear categorical variables; DS-2304",
 {
     adult.2000$race2 <- adult.2000$race
     rgr <- suppressWarnings(Regression(education_num ~ marital + sex + race + race2,
