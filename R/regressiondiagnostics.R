@@ -336,16 +336,36 @@ issvyglm <- function(model)
 #' @export
 allEffects.Regression <- function(model, ...)
 {
+    has.aliased <- any(aliased.var <- model$summary$aliased)
+
     .estimation.data <-  model$estimation.data
     assign(".estimation.data",.estimation.data, envir=.GlobalEnv)
-    assign(".formula", model$formula, envir=.GlobalEnv)
+
+    if (has.aliased){
+        frml <- formula(model)
+
+        assign(".formula", frml, envir = .GlobalEnv)
+        model$original <- updateAliasedModel(model)
+        model$summary$aliased <- model$summary$aliased
+    }else
+        frml <- model$formula
+
+    assign(".formula", frml, envir=.GlobalEnv)
     assign(".design", model$design, envir=.GlobalEnv)
     attach(.estimation.data)
-    effects <- allEffects(model$original, ...)#BreuschPagan(x$original)
+    effects <- allEffects(model$original, ...)  # BreuschPagan(x$original)
     detach(.estimation.data)
-    remove(".design", envir=.GlobalEnv)
-    remove(".formula", envir=.GlobalEnv)
-    remove(".estimation.data", envir=.GlobalEnv)
+    ## remove(".design", envir=.GlobalEnv)
+    ## remove(".formula", envir=.GlobalEnv)
+    ## remove(".estimation.data", envir=.GlobalEnv)
+    on.exit({
+        if (exists(".formula", envir = .GlobalEnv))
+            remove(".formula", envir=.GlobalEnv)
+        if (exists(".estimation.data", envir = .GlobalEnv))
+            remove(".estimation.data", envir=.GlobalEnv)
+        if (exists("design", envir = .GlobalEnv))
+            remove(".design", envir=.GlobalEnv)
+    })
     effects
 }
 
@@ -392,8 +412,8 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 
     assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
     ## drop aliased/colinear variables
-    if (any(x$summary$aliased))
-        model <- updateAliasedModel(x)
+    ## if (any(x$summary$aliased))
+    ##     model <- updateAliasedModel(x)
     frml <- formula(model)
 
     assign(".formula", frml, envir=.GlobalEnv)
