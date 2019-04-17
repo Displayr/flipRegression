@@ -74,8 +74,11 @@ EffectsPlot <- function(model,
                         max.factor.label.length = NULL,
                         y.axis.title = NULL)
 {
+
     if (any(aliased.var <- model$summary$aliased))
         model <- updateAliasedModel(model)
+        ## model$formula <- formula(model$original)
+        ## model$summary$aliased <- model$summary$aliased[!model$summary$aliased]
 
     effects <- allEffects(model)
 

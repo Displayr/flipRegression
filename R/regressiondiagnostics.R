@@ -339,26 +339,23 @@ allEffects.Regression <- function(model, ...)
     has.aliased <- any(aliased.var <- model$summary$aliased)
 
     .estimation.data <-  model$estimation.data
-    assign(".estimation.data",.estimation.data, envir=.GlobalEnv)
+    assign(".estimation.data", .estimation.data, envir=.GlobalEnv)
 
-    if (has.aliased){
-        frml <- formula(model)
-
-        assign(".formula", frml, envir = .GlobalEnv)
-        model$original <- updateAliasedModel(model)
-        model$summary$aliased <- model$summary$aliased
-    }else
-        frml <- model$formula
+    if (has.aliased)
+        model <- updateAliasedModel(model)
+    frml <- model$formula
 
     assign(".formula", frml, envir=.GlobalEnv)
     assign(".design", model$design, envir=.GlobalEnv)
-    attach(.estimation.data)
+    attach(.estimation.data, warn.conflicts = FALSE)
     effects <- allEffects(model$original, ...)  # BreuschPagan(x$original)
-    detach(.estimation.data)
+
     ## remove(".design", envir=.GlobalEnv)
     ## remove(".formula", envir=.GlobalEnv)
     ## remove(".estimation.data", envir=.GlobalEnv)
     on.exit({
+        if (".estimation.data" %in% search())
+            detach(".estimation.data")
         if (exists(".formula", envir = .GlobalEnv))
             remove(".formula", envir=.GlobalEnv)
         if (exists(".estimation.data", envir = .GlobalEnv))
@@ -497,5 +494,13 @@ updateAliasedModel <- function(x)
     aterms <- fterms[matches]
     upd.frml <- paste0("~.-`", paste(aterms, collapse = "`-`"), "`")
     frml <- update(formula(x), upd.frml)
-    return(suppressMessages(suppressWarnings(update(x, frml))))
+    .estimation.data <- x$estimation.data
+    attach(.estimation.data, warn.conflicts = FALSE)
+    on.exit(detach(.estimation.data))
+    x$anova <- x$anova[c(fterms[!matches], "Residuals"), ]
+    x$formula <- frml
+    x$summary$aliased <- aliased.var[!aliased.var]
+    x$original <- suppressMessages(suppressWarnings(update(x$original, frml)))
+
+    return(x)
 }
