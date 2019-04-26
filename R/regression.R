@@ -320,6 +320,7 @@ Regression <- function(formula,
                 final.model$relative.importance <- multipleImputationRelativeImportance(models)
                 final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
             }
+            final.model <- setChartData(final.model, output)
             return(final.model)
         }
 
@@ -452,25 +453,7 @@ Regression <- function(formula,
         result$relative.importance.footer <- relativeImportanceFooter(result)
     options(contrasts = old.contrasts[[1]])
 
-    attr(result,  "ChartData") <- if (output == "ANOVA")
-        data.frame(result$anova)
-    else if (result$test.interaction)
-    {
-        dt <- rbind(result$interaction$coefficients, result$interaction$split.size)
-        rownames(dt)[nrow(dt)] <- "n"
-        dt
-    }
-    else if (output == "Relative Importance Analysis")
-    {
-        ri <- result$relative.importance
-        df <- data.frame(ri$importance, ri$raw.importance, ri$standard.errors,
-                         ri$statistics, ri$p.values)
-        colnames(df) <- c("Relative Importance", "Raw score", "Standard Error",
-                          "t statistic", "p-value")
-        df
-    }
-    else
-        result$summary$coefficients
+    result <- setChartData(result, output)
 
     return(result)
 }
@@ -883,4 +866,31 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
             stop("An error occurred during model fitting. ",
                  "Please check your input data for unusual values.")
         })
+}
+
+setChartData <- function(result, output)
+{
+    chart.data <- if (output == "ANOVA")
+                      data.frame(result$anova)
+                  else if (result$test.interaction)
+                  {
+                      dt <- rbind(result$interaction$coefficients,
+                                  result$interaction$split.size)
+                      rownames(dt)[nrow(dt)] <- "n"
+                      dt
+                  }
+                  else if (output == "Relative Importance Analysis")
+                  {
+                      ri <- result$relative.importance
+                      df <- data.frame(ri$importance, ri$raw.importance, ri$standard.errors,
+                                       ri$statistics, ri$p.values)
+                      colnames(df) <- c("Relative Importance", "Raw score", "Standard Error",
+                                        "t statistic", "p-value")
+                      df
+                  }
+                  else
+                      result$summary$coefficients
+
+    attr(result, "ChartData") <- chart.data
+    return(result)
 }
