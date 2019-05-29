@@ -317,7 +317,7 @@ Regression <- function(formula,
             final.model$footer <- regressionFooter(final.model)
             if (relative.importance && is.null(interaction))
             {
-                final.model$relative.importance <- multipleImputationRelativeImportance(models)
+                final.model$relative.importance <- multipleImputationRelativeImportance(models, importance.absolute)
                 final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
             }
             final.model <- setChartData(final.model, output)

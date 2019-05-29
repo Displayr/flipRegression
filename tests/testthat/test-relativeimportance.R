@@ -221,11 +221,16 @@ test_that("Relative importance robust SE",
 
 # Negative sign warning
 test_that("Relative importance negative sign",
+{
           expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, -1 ,1),
                                                              0.0409055316886271, variable.names = LETTERS[1:3], correction = "None"),
                          paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
                                 " in Linear Regression. To disable this feature, check the Absolute importance",
-                                " scores option.")))
+                                " scores option."))
+
+    res <- Regression(y~v1+v2+v3, dat, output = "Relative Importance Analysis", missing = "Multiple imputation", importance.absolute = TRUE)
+    expect_true(all(res$relative.importance$importance > 0))
+})
 
 X.factor <- X
 X.factor[[1]] <- as.factor(X.factor[[1]])

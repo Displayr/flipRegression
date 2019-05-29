@@ -72,12 +72,14 @@ multipleImputationStandardErrors <- function(coefs, vars)
     sqrt(T)
 }
 
-multipleImputationRelativeImportance <- function(models)
+multipleImputationRelativeImportance <- function(models, importance.absolute)
 {
     coefs <- sapply(models, function(object) object$coef)
     tmp.coefs <- unname(apply(coefs, 1, mean, na.rm = FALSE))
     signs <- if (models[[1]]$type == "Ordered Logit") sign(tmp.coefs[1:(models[[1]]$n.predictors)])
              else sign(tmp.coefs[-1])
+    if (importance.absolute)
+        signs <- 1
 
     result <- list()
     correct <- models[[1]]$correction
