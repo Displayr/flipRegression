@@ -1,5 +1,5 @@
 context("Bugs")
-RNGversion("3.5.3")
+suppressWarnings(RNGversion("3.5.3"))
 data(bank, package = "flipExampleData")
 bank <- bank[sample(nrow(bank), 200), ] # random sample of 200 rows to improve perfomance
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
@@ -46,7 +46,7 @@ test_that("Poisson ANOVA p-values are very different to Regression + ignore robu
 
 test_that("Duplicated labels",
 {
-    dup.small <- structure(list(Q4_2 = structure(c(-100, 0, 100, -100, 100, 100,
+    df.small <- structure(list(Q4_2 = structure(c(-100, 0, 100, -100, 100, 100,
         100, 100, 100, 100, 100, 0, 100, 100, 100, 100, 100, 100, 100,
         100), questiontype = "Number", name = "Q4_2", label = "How likely are you to recommend this campsight to friends and family?", question = "How likely are you to recommend this campsight to friends and family? - NPS"),
             Q5a_2 = structure(c(4, 5, 4, 5, 4, 5, 5, 4, 5, 3, 4, 2, 4,
