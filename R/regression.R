@@ -192,6 +192,14 @@ Regression <- function(formula,
             }
         }
     }
+    if (show.labels)
+    {
+        labels <- Labels(data)
+        dup.labels <- unique(labels[duplicated(labels)])
+        ind.dup <- which(labels %in% dup.labels)
+        for (i in ind.dup)
+            attr(data[[i]], "label") <- paste0(labels[i], " (", names(data)[i], ")")
+    }
 
     if (method == "model.frame")
         return(data)
