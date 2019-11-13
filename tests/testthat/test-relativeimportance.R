@@ -252,3 +252,12 @@ test_that("Relative importance robust SE, dot in formula",
                                        robust.se = F))
     expect_equal(attr(out$terms, "term.labels"), names(bank)[-1L])
 })
+
+test_that("Shapley",
+{
+    bank.no.missing <- bank[!is.na(rowSums(bank)), ]
+    computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                             data = bank.no.missing, weights = rep(1, nrow(bank.no.missing)),
+                             signs = FALSE, variable.names = c("Fees", "Interest", "Phone",
+                                                               "Branch", "Online", "ATM"))
+})
