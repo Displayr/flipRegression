@@ -7,16 +7,16 @@
 using namespace Rcpp;
 
 // shapleyImportance
-NumericVector shapleyImportance(Eigen::MatrixXd& corr_regressors, Eigen::VectorXd& corr_xy, List combinations, NumericVector repeats_factor);
-RcppExport SEXP _flipRegression_shapleyImportance(SEXP corr_regressorsSEXP, SEXP corr_xySEXP, SEXP combinationsSEXP, SEXP repeats_factorSEXP) {
+NumericVector shapleyImportance(Eigen::MatrixXd& corr_regressors, Eigen::VectorXd& corr_xy, List combinations_list, NumericVector repeats_factor);
+RcppExport SEXP _flipRegression_shapleyImportance(SEXP corr_regressorsSEXP, SEXP corr_xySEXP, SEXP combinations_listSEXP, SEXP repeats_factorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Eigen::MatrixXd& >::type corr_regressors(corr_regressorsSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXd& >::type corr_xy(corr_xySEXP);
-    Rcpp::traits::input_parameter< List >::type combinations(combinationsSEXP);
+    Rcpp::traits::input_parameter< List >::type combinations_list(combinations_listSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type repeats_factor(repeats_factorSEXP);
-    rcpp_result_gen = Rcpp::wrap(shapleyImportance(corr_regressors, corr_xy, combinations, repeats_factor));
+    rcpp_result_gen = Rcpp::wrap(shapleyImportance(corr_regressors, corr_xy, combinations_list, repeats_factor));
     return rcpp_result_gen;
 END_RCPP
 }
