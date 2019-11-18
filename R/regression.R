@@ -915,6 +915,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
                 warning(w$message)
         },
         error.handler = function(e) {
+            message(e)
+            dput(.formula, dput(.estimation.data))
             stop("An error occurred during model fitting. ",
                  "Please check your input data for unusual values: ", e$message)
         })
