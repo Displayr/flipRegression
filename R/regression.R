@@ -81,6 +81,7 @@
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
 #' @importFrom utils tail
+#' @importFrom stats drop.terms terms.formula
 #' @export
 Regression <- function(formula,
                        data = NULL,
