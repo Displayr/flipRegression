@@ -62,6 +62,18 @@ test_that("DS-2645 - Entirely Missing predictor", {
     bank$Nothing <- NULL
 })
 
+test_that("DS-2645 - Missing predictors and/or interaction", {
+    bank$Bogus <- rep(NA, nrow(bank))
+    expect_warning(Regression(Overall ~ Fees + Interest + ATM + Bogus, interaction = Branch, data = bank, missing = missing),
+                   "^Data has variable\\(s\\) that are entirely missing values \\(all observed values of the variable are missing\\). These variable\\(s\\) have been removed from the analysis \\(Bogus\\).", perl = TRUE)
+    bank$Bogus = NULL
+    bank$Branch2 = rep(NA, nrow(bank))
+    expect_error(Regression(Overall ~ Fees + Interest + ATM, interaction = Branch2, data = bank, missing = missing),
+                 "Crosstab interaction variable must contain more than one unique value.")
+    expect_error(Regression(Overall ~ Fees + Interest + ATM, interaction = Branch, data = bank, missing = missing),
+                 NA)
+    bank$Branch2= NULL
+})
 
 #### REDUCE DATA SIZE FOR TESTS WITHOUT NUMERICAL EQUALITY ###
 

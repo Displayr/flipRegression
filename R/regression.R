@@ -230,7 +230,13 @@ Regression <- function(formula,
             formula.terms <- terms.formula(input.formula, data = data)
             terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep, x = attr(formula.terms, "term.labels"))))
             input.formula <- update(input.formula, drop.terms(formula.terms, terms.to.drop, keep.response = TRUE))
-            formula.with.interaction <- formula <- input.formula
+            interaction.formula.terms <- terms.formula(formula.with.interaction, data = data)
+            interaction.terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep,
+                                                              x = attr(interaction.formula.terms, "term.labels"))))
+            formula.with.interaction <- update(formula.with.interaction, drop.terms(interaction.formula.terms,
+                                                                                    interaction.terms.to.drop,
+                                                                                    keep.response = TRUE))
+            formula <- input.formula
             data <- data[, !missing.variables]
             missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
             warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
