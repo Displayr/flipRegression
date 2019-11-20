@@ -25,20 +25,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs, varia
     raw.importance <- shapleyImportance(corr.regressors, corr.xy, combinations,
                                         repeats.factor)
 
-    # for (i in seq_len(n.independent))
-    # {
-    #     conditional.var.ind <- seq_len(n.independent)[-i]
-    #     summed.rsquares <- 0
-    #
-    #     for (j in seq_len(n.independent))
-    #     {
-    #         conditional.combs <- combn(conditional.var.ind, j - 1)
-    #         n.repeats <- factorial(j - 1) * factorial(n.independent - j - 2)
-    #         # summed.rsquares <- summed.rsquares + rSquareIncrement(conditional.combs)
-    #     }
-    #
-    #     raw.importance[i] <- summed.rsquares / factorial(n.independent)
-    # }
-
-    raw.importance
+    result <- list()
+    result$raw.importance <- raw.importance
+    result
 }

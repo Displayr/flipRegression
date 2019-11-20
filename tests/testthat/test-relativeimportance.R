@@ -256,8 +256,13 @@ test_that("Relative importance robust SE, dot in formula",
 test_that("Shapley",
 {
     bank.no.missing <- bank[!is.na(rowSums(bank)), ]
-    computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                             data = bank.no.missing, weights = rep(1, nrow(bank.no.missing)),
-                             signs = FALSE, variable.names = c("Fees", "Interest", "Phone",
-                                                               "Branch", "Online", "ATM"))
+    result <- computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                      data = bank.no.missing,
+                                      weights = rep(1, nrow(bank.no.missing)),
+                                      signs = FALSE,
+                                      variable.names = c("Fees", "Interest", "Phone",
+                                                         "Branch", "Online", "ATM"))
+
+    expect_equal(result$raw.importance[1], 0.115570678292)
+    expect_equal(sum(result$raw.importance), 0.4988654351715)
 })
