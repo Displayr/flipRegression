@@ -84,65 +84,68 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
     int key;
     NumericVector importance(n_indep);
 
-    // NumericVector rsquared_cache = initializeCache(n_indep);
+    NumericVector rsquared_cache = initializeCache(n_indep);
 
     for (int i = 0; i < n_indep; i++) // i is index of regressor of interest
     {
         NumericVector conditional_var_indices = createConditionalVarIndices(n_indep, i);
         double summed_rsquares = 0;
 
-        // NumericVector combination_i = NumericVector::create(i);
-        // key = combinationKey(combination_i);
-        // double rsquared_i;
-        // if (NumericVector::is_na(rsquared_cache[key]))
-        // {
-        //     rsquared_i = regressorSubsetRsquared(combination_i,
-        //                                          corr_regressors,
-        //                                          corr_xy);
-        //     rsquared_cache[key] = rsquared_i;
-        // }
-        // else
-        //     rsquared_i = rsquared_cache[key];
-        //
-        // summed_rsquares += repeats_factor[0] * rsquared_i;
+        NumericVector combination_i = NumericVector::create(i);
+        key = combinationKey(combination_i);
+        double rsquared_i;
+        if (NumericVector::is_na(rsquared_cache[key]))
+        {
+            // rsquared_i = regressorSubsetRsquared(combination_i,
+            //                                      corr_regressors,
+            //                                      corr_xy);
+            rsquared_i = 0; //////////
+            rsquared_cache[key] = rsquared_i;
+        }
+        else
+            rsquared_i = rsquared_cache[key];
 
-        // for (int j = 1; j < n_indep; j++) // j is the combination size
-        // {
-        //     NumericMatrix combinations = as<NumericMatrix>(combinations_list[j - 1]);
-        //     int n_combinations = combinations.ncol();
-        //     for (int k = 0; k < n_combinations; k++)
-        //     {
-        //         NumericVector combination_indices = combinationIndices(combinations, k,
-        //                                                                conditional_var_indices);
-        //         NumericVector combination_indices_and_i = appendToCombination(combination_indices, i);
-        //
-        //         key = combinationKey(combination_indices);
-        //         double rsquared_conditionals;
-        //         if (NumericVector::is_na(rsquared_cache[key]))
-        //         {
-        //             rsquared_conditionals = regressorSubsetRsquared(combination_indices,
-        //                                                             corr_regressors,
-        //                                                             corr_xy);
-        //             rsquared_cache[key] = rsquared_conditionals;
-        //         }
-        //         else
-        //             rsquared_conditionals = rsquared_cache[key];
-        //
-        //         key = combinationKey(combination_indices_and_i);
-        //         double rsquared_conditionals_and_i;
-        //         if (NumericVector::is_na(rsquared_cache[key]))
-        //         {
-        //             rsquared_conditionals_and_i = regressorSubsetRsquared(combination_indices_and_i,
-        //                                                                   corr_regressors,
-        //                                                                   corr_xy);
-        //             rsquared_cache[key] = rsquared_conditionals_and_i;
-        //         }
-        //         else
-        //             rsquared_conditionals_and_i = rsquared_cache[key];
-        //
-        //         summed_rsquares += repeats_factor[j] * (rsquared_conditionals_and_i - rsquared_conditionals);
-        //     }
-        // }
+        summed_rsquares += repeats_factor[0] * rsquared_i;
+
+        for (int j = 1; j < n_indep; j++) // j is the combination size
+        {
+            NumericMatrix combinations = as<NumericMatrix>(combinations_list[j - 1]);
+            int n_combinations = combinations.ncol();
+            for (int k = 0; k < n_combinations; k++)
+            {
+                NumericVector combination_indices = combinationIndices(combinations, k,
+                                                                       conditional_var_indices);
+                NumericVector combination_indices_and_i = appendToCombination(combination_indices, i);
+
+                key = combinationKey(combination_indices);
+                double rsquared_conditionals;
+                if (NumericVector::is_na(rsquared_cache[key]))
+                {
+                    // rsquared_conditionals = regressorSubsetRsquared(combination_indices,
+                    //                                                 corr_regressors,
+                    //                                                 corr_xy);
+                    rsquared_conditionals = 0; //////////
+                    rsquared_cache[key] = rsquared_conditionals;
+                }
+                else
+                    rsquared_conditionals = rsquared_cache[key];
+
+                key = combinationKey(combination_indices_and_i);
+                double rsquared_conditionals_and_i;
+                if (NumericVector::is_na(rsquared_cache[key]))
+                {
+                    // rsquared_conditionals_and_i = regressorSubsetRsquared(combination_indices_and_i,
+                    //                                                       corr_regressors,
+                    //                                                       corr_xy);
+                    rsquared_conditionals_and_i = 0; //////////////
+                    rsquared_cache[key] = rsquared_conditionals_and_i;
+                }
+                else
+                    rsquared_conditionals_and_i = rsquared_cache[key];
+
+                summed_rsquares += repeats_factor[j] * (rsquared_conditionals_and_i - rsquared_conditionals);
+            }
+        }
 
         // importance[i] = summed_rsquares;
         importance[i] = 1;
