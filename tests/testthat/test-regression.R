@@ -48,6 +48,32 @@ test_that(missing,
               expect_equal(round(z, 3), 0.314)
           })
 
+missing <- "Multiple imputation"
+test_that("DS-2645 - Entirely Missing predictor", {
+    bank$Bogus <- rep(NA, nrow(bank))
+    expect_warning(Regression(Overall ~ ., data = bank, missing = missing),
+                   "Data has variable(s) that are entirely missing values (all observed values of the variable are missing). These variable(s) have been removed from the analysis (Bogus).", fixed = TRUE)
+    bank$Nothing <- bank$Bogus
+    expect_warning(Regression(Overall ~ ., data = bank, missing = missing),
+                   "Data has variable(s) that are entirely missing values (all observed values of the variable are missing). These variable(s) have been removed from the analysis (Bogus, Nothing).", fixed = TRUE)
+    bank$Bogus <- NULL
+    expect_error(Regression(Nothing ~ ., data = bank),
+                 "Response variable is entirely missing (all observed values of the variable are missing).", fixed = TRUE)
+    bank$Nothing <- NULL
+})
+
+test_that("DS-2645 - Missing predictors and/or interaction", {
+    bank$Bogus <- rep(NA, nrow(bank))
+    expect_warning(Regression(Overall ~ Fees + Interest + ATM + Bogus, interaction = Branch, data = bank, missing = missing),
+                   "^Data has variable\\(s\\) that are entirely missing values \\(all observed values of the variable are missing\\). These variable\\(s\\) have been removed from the analysis \\(Bogus\\).", perl = TRUE)
+    bank$Bogus = NULL
+    bank$Branch2 = rep(NA, nrow(bank))
+    expect_error(Regression(Overall ~ Fees + Interest + ATM, interaction = Branch2, data = bank, missing = missing),
+                 "Crosstab interaction variable must contain more than one unique value.")
+    expect_error(Regression(Overall ~ Fees + Interest + ATM, interaction = Branch, data = bank, missing = missing),
+                 NA)
+    bank$Branch2= NULL
+})
 
 #### REDUCE DATA SIZE FOR TESTS WITHOUT NUMERICAL EQUALITY ###
 
