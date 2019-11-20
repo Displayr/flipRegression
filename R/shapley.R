@@ -1,3 +1,4 @@
+#' @importFrom utils combn
 computeShapleyImportance <- function(formula, data = NULL, weights, signs, variable.names)
 {
     formula.names <- AllVariablesNames(formula, data)
@@ -7,6 +8,9 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs, varia
     num.y <- AsNumeric(data[[outcome.name]], binary = FALSE)
 
     n.indep <- ncol(num.X)
+    if (n.indep > 27)
+        stop("Shapley can run with a maximum of 27 predictors. Set the ",
+             "output to Relative Importance Analysis instead.")
 
     raw.importance <- rep(NA, n.indep)
 
@@ -14,7 +18,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs, varia
     corr.regressors <- corr.mat[1:n.indep, 1:n.indep]
     corr.xy <- corr.mat[1:n.indep, n.indep + 1]
 
-    combinations <- sapply(seq_len(n.indep - 1), function(x) {
+    combinations <- lapply(seq_len(n.indep - 1), function(x) {
         combn(seq_len(n.indep - 1), x)
     })
 

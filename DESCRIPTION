@@ -30,7 +30,6 @@ Imports:
 Suggests:
     testthat,
     flipExampleData,
-    Rcpp
 Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,

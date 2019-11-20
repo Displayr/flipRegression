@@ -62,17 +62,12 @@ double regressorSubsetRsquared(NumericVector combination_indices,
     for (int i = 0; i < combination_size; i++)
         corr_xy_subvector[i] = corr_xy[combination_indices[i]];
 
-    // if (combination_indices.size() == 1)
-    // {
-    //     Rcout << corr_regressors_submatrix << std::endl;
-    //     Rcout << corr_xy_subvector << std::endl;
-    // }
-
     return corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
 }
 
-NumericVector initializeCache(int cache_size)
+NumericVector initializeCache(int n_indep)
 {
+    int cache_size = pow(2, n_indep);
     NumericVector cache(cache_size);
     for (int i = 0; i < cache_size; i++)
         cache[i] = NA_REAL;
@@ -89,12 +84,12 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
     int key;
     NumericVector importance(n_indep);
 
+    NumericVector rsquared_cache = initializeCache(n_indep);
+
     for (int i = 0; i < n_indep; i++) // i is index of regressor of interest
     {
         NumericVector conditional_var_indices = createConditionalVarIndices(n_indep, i);
         double summed_rsquares = 0;
-        int cache_size = pow(2, n_indep);
-        NumericVector rsquared_cache = initializeCache(cache_size);
 
         NumericVector combination_i = NumericVector::create(i);
         key = combinationKey(combination_i);
@@ -144,8 +139,6 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
                 }
                 else
                     rsquared_conditionals_and_i = rsquared_cache[key];
-
-                // Rcout << i << "," << j << "," << rsquared_conditionals << "," << rsquared_conditionals_and_i << std::endl;
 
                 summed_rsquares += repeats_factor[j] * (rsquared_conditionals_and_i - rsquared_conditionals);
             }
