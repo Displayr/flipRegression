@@ -84,7 +84,7 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
     int key;
     NumericVector importance(n_indep);
 
-    NumericVector rsquared_cache = initializeCache(n_indep);
+    // NumericVector rsquared_cache = initializeCache(n_indep);
 
     for (int i = 0; i < n_indep; i++) // i is index of regressor of interest
     {
