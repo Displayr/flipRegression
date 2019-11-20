@@ -83,6 +83,7 @@
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
 #' @importFrom utils tail
+#' @importFrom stats drop.terms terms.formula
 #' @export
 Regression <- function(formula,
                        data = NULL,
@@ -229,6 +230,30 @@ Regression <- function(formula,
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
         stop("'subset' and 'data' are required to have the same number of observations. They do not.")
+    missing.variables <- apply(data, 2, function(x) all(is.na(x)))
+    if(any(missing.variables))
+    {
+        missing.variable.names <- colnames(data)[missing.variables]
+        if (outcome.name %in% missing.variable.names)
+            stop("Response variable is entirely missing (all observed values of the variable are missing).")
+        else {
+            # Update data and formula
+            formula.terms <- terms.formula(input.formula, data = data)
+            terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep, x = attr(formula.terms, "term.labels"))))
+            input.formula <- update(input.formula, drop.terms(formula.terms, terms.to.drop, keep.response = TRUE))
+            interaction.formula.terms <- terms.formula(formula.with.interaction, data = data)
+            interaction.terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep,
+                                                              x = attr(interaction.formula.terms, "term.labels"))))
+            formula.with.interaction <- update(formula.with.interaction, drop.terms(interaction.formula.terms,
+                                                                                    interaction.terms.to.drop,
+                                                                                    keep.response = TRUE))
+            formula <- input.formula
+            data <- data[, !missing.variables]
+            missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
+            warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
+                    "These variable(s) have been removed from the analysis (", missing.variable.names, ").")
+        }
+    }
     if (type == "Binary Logit")
     {
         data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
@@ -887,6 +912,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
                 warning(w$message)
         },
         error.handler = function(e) {
+            message(e)
+            dput(.formula, dput(.estimation.data))
             stop("An error occurred during model fitting. ",
                  "Please check your input data for unusual values.")
         })
