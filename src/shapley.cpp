@@ -62,7 +62,8 @@ double regressorSubsetRsquared(NumericVector combination_indices,
     for (int i = 0; i < combination_size; i++)
         corr_xy_subvector[i] = corr_xy[combination_indices[i]];
 
-    return corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
+    return 0;
+    // return corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
 }
 
 NumericVector initializeCache(int n_indep)
@@ -96,10 +97,9 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
         double rsquared_i;
         if (NumericVector::is_na(rsquared_cache[key]))
         {
-            // rsquared_i = regressorSubsetRsquared(combination_i,
-            //                                      corr_regressors,
-            //                                      corr_xy);
-            rsquared_i = 0; //////////
+            rsquared_i = regressorSubsetRsquared(combination_i,
+                                                 corr_regressors,
+                                                 corr_xy);
             rsquared_cache[key] = rsquared_i;
         }
         else
@@ -121,10 +121,9 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
                 double rsquared_conditionals;
                 if (NumericVector::is_na(rsquared_cache[key]))
                 {
-                    // rsquared_conditionals = regressorSubsetRsquared(combination_indices,
-                    //                                                 corr_regressors,
-                    //                                                 corr_xy);
-                    rsquared_conditionals = 0; //////////
+                    rsquared_conditionals = regressorSubsetRsquared(combination_indices,
+                                                                    corr_regressors,
+                                                                    corr_xy);
                     rsquared_cache[key] = rsquared_conditionals;
                 }
                 else
@@ -134,10 +133,9 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
                 double rsquared_conditionals_and_i;
                 if (NumericVector::is_na(rsquared_cache[key]))
                 {
-                    // rsquared_conditionals_and_i = regressorSubsetRsquared(combination_indices_and_i,
-                    //                                                       corr_regressors,
-                    //                                                       corr_xy);
-                    rsquared_conditionals_and_i = 0; //////////////
+                    rsquared_conditionals_and_i = regressorSubsetRsquared(combination_indices_and_i,
+                                                                          corr_regressors,
+                                                                          corr_xy);
                     rsquared_cache[key] = rsquared_conditionals_and_i;
                 }
                 else
