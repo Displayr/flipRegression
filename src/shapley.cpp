@@ -62,9 +62,7 @@ double regressorSubsetRsquared(NumericVector combination_indices,
     for (int i = 0; i < combination_size; i++)
         corr_xy_subvector[i] = corr_xy[combination_indices[i]];
 
-    double temp = (double)corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
-    return 0;
-    // return corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
+    return (double)corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
 }
 
 NumericVector initializeCache(int n_indep)
@@ -146,8 +144,7 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
             }
         }
 
-        // importance[i] = summed_rsquares;
-        importance[i] = 1;
+        importance[i] = summed_rsquares;
     }
 
     return importance;
