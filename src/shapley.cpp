@@ -18,12 +18,13 @@ NumericVector createConditionalVarIndices(int n_indep, int omitted_ind)
     return conditional_var_indices;
 }
 
-NumericVector combinationIndices(NumericMatrix combinations, int k, NumericVector items)
+// Get the
+NumericVector combinationIndices(NumericMatrix combinations, int k, NumericVector item_indices)
 {
     int combination_size = combinations.nrow();
     NumericVector combination_indices(combination_size);
     for (int i = 0; i < combination_size; i++)
-        combination_indices[i] = items[combinations(i, k) - 1];
+        combination_indices[i] = item_indices[combinations(i, k) - 1];
     return combination_indices;
 }
 
@@ -39,7 +40,7 @@ NumericVector appendToCombination(NumericVector combination_indices, int index)
 
 int combinationKey(NumericVector combination_indices)
 {
-    int key;
+    int key = 0;
     int combination_size = combination_indices.size();
     for (int i = 0; i < combination_size; i++)
         key += pow(2, combination_indices[i]);
@@ -62,7 +63,7 @@ double regressorSubsetRsquared(NumericVector combination_indices,
     for (int i = 0; i < combination_size; i++)
         corr_xy_subvector[i] = corr_xy[combination_indices[i]];
 
-    return (double)corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
+    return (double)(corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector));
 }
 
 NumericVector initializeCache(int n_indep)
@@ -74,6 +75,7 @@ NumericVector initializeCache(int n_indep)
     return cache;
 }
 
+//
 // [[Rcpp::export]]
 NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
                                 Eigen::VectorXd & corr_xy,
@@ -91,6 +93,7 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
         NumericVector conditional_var_indices = createConditionalVarIndices(n_indep, i);
         double summed_rsquares = 0;
 
+        // Deal with j = 0 case here separately (see for loop over j below)
         NumericVector combination_i = NumericVector::create(i);
         key = combinationKey(combination_i);
         double rsquared_i;
@@ -103,7 +106,6 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
         }
         else
             rsquared_i = rsquared_cache[key];
-
         summed_rsquares += repeats_factor[0] * rsquared_i;
 
         for (int j = 1; j < n_indep; j++) // j is the combination size

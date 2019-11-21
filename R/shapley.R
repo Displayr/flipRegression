@@ -1,3 +1,5 @@
+# Calculates Shapley importance for each independent variable in the regression.
+# Shapley, L.S. (1953). "A value for n-person games"
 #' @importFrom utils combn
 computeShapleyImportance <- function(formula, data = NULL, weights, signs, variable.names)
 {
