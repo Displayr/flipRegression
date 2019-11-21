@@ -62,7 +62,7 @@ double regressorSubsetRsquared(NumericVector combination_indices,
     for (int i = 0; i < combination_size; i++)
         corr_xy_subvector[i] = corr_xy[combination_indices[i]];
 
-    Eigen::VectorXd temp = corr_regressors_submatrix.llt().solve(corr_xy_subvector);
+    double temp = (double)corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
     return 0;
     // return corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector);
 }
