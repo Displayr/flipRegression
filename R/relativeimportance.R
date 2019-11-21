@@ -28,11 +28,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         }
     }
 
-    if (show.warnings && any(signs < 0))
-        warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
-                regressionType(type),
-                ". To disable this feature, check the Absolute importance scores option.")
-
+    signsWarning(signs, show.warnings, type)
 
     formula.names <- AllVariablesNames(formula, data)
     outcome.name <- OutcomeName(formula, data)
@@ -84,13 +80,14 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     data.formula <- as.formula(paste0("y ~ ", paste(paste0("V", 1:ncol(z)), collapse = "+")))
 
     fit <- if (type == "Linear")
-        lm.z <- lm(y ~ 0 + z, weights = weights)
+        lm(y ~ 0 + z, weights = weights)
     else
         FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)$original
     beta <- extractVariableCoefficients(fit, type, FALSE)
     beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
+
     names(raw.importance) <- variable.names
     if (r.square == 0)
     {
@@ -99,22 +96,22 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
                 "been scaled to sum to the R-squared.")
     }
     else
+        # R-squared is not always the sum of raw.importance, e.g. with binary logit
         scaling.factor <- r.square / sum(raw.importance)
-    result$raw.importance <- raw.importance * scaling.factor
+    raw.importance <- raw.importance * scaling.factor
+
     se  <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
     names(se) <- variable.names
-    result$standard.errors <- se
-    result$importance <- unname(signs) * 100 * prop.table(raw.importance)
 
-    result$statistics <- unname(signs) * result$raw.importance / result$standard.errors
-    is.t.statistic.used <- isTStatisticUsed(fit)
-    result$statistic.name <- if (is.t.statistic.used) "t" else "z"
-    raw.p.values <- if (is.t.statistic.used)
-        2 * pt(abs(result$statistics), fit$df.residual, lower.tail = FALSE)
-    else
-        2 * pnorm(abs(result$statistics), lower.tail = FALSE)
-    result$p.values <- pvalAdjust(raw.p.values, correction)
-    result
+    appendStatistics(result, raw.importance, se, signs, fit, correction)
+}
+
+signsWarning(signs, show.warnings, type)
+{
+    if (show.warnings && any(signs < 0))
+        warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
+                regressionType(type),
+                ". To disable this feature, check the Absolute importance scores option.")
 }
 
 #' @importFrom stats weighted.mean
@@ -170,4 +167,20 @@ extractVariableCoefficientNames <- function(obj)
 isTStatisticUsed <- function(model)
 {
     grepl("^t", colnames(summary(model)$coefficients)[3])
+}
+
+appendStatistics <- function(obj, raw.importance, standard.errors, signs, fit, correction)
+{
+    result <- obj
+    obj$standard.errors <- standard.errors
+    obj$importance <- unname(signs) * 100 * prop.table(raw.importance)
+    result$statistics <- unname(signs) * raw.importance / standard.errors
+    is.t.statistic.used <- isTStatisticUsed(fit)
+    result$statistic.name <- if (is.t.statistic.used) "t" else "z"
+    raw.p.values <- if (is.t.statistic.used)
+        2 * pt(abs(result$statistics), fit$df.residual, lower.tail = FALSE)
+    else
+        2 * pnorm(abs(result$statistics), lower.tail = FALSE)
+    result$p.values <- pvalAdjust(raw.p.values, correction)
+    result
 }
