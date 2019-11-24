@@ -7,10 +7,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
 {
     signsWarning(signs, show.warnings, "Linear")
 
-    formula.names <- AllVariablesNames(formula, data)
-    outcome.name <- OutcomeName(formula, data)
-    num.X <- AsNumeric(data[setdiff(formula.names, outcome.name)],
-                       remove.first = TRUE)
+    num.X <- extractNumericX(formula, data, show.warnings)
     num.y <- AsNumeric(data[[outcome.name]], binary = FALSE)
 
     n.predictors <- ncol(num.X)
@@ -34,7 +31,13 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
     fit <- lm(num.y ~ num.X, weights = weights)
 
     # obtain standard errors
+    standard.errors <-  estimateRelativeImportance(formula, data, weights,
+                                                   "Linear", signs,
+                                                   sum(raw.importance),
+                                                   variable.names, FALSE,
+                                                   show.warnings,
+                                                   correction)$standard.errors
 
     result <- list()
-    appendStatistics(result, raw.importance, se, signs, fit, correction)
+    appendStatistics(result, raw.importance, standard.errors, signs, fit, correction)
 }

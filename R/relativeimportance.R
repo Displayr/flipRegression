@@ -30,23 +30,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
 
     signsWarning(signs, show.warnings, type)
 
-    formula.names <- AllVariablesNames(formula, data)
-    outcome.name <- OutcomeName(formula, data)
-    X <- data[setdiff(formula.names, outcome.name)]
-
-    ## We remove the "ordered" class so that ordered-categorical variables are
-    ## treated in the same way as they are in regression, i.e., dummy variables
-    ## are created from the categories.
-    for (j in 1:ncol(X))
-        if (all(c("factor", "ordered") %in% class(X[, j])))
-            class(X[, j]) <- "factor"
-
-    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
-        warning(paste0("The following variables have been treated as categorical: ",
-                       paste0(names(X), collapse = ","),
-                       ". This may over-inflate their effects."))
-
-    num.X <- AsNumeric(X, remove.first = TRUE)
+    num.X <- extractNumericX(formula, data, show.warnings)
 
     input.weights <- weights
     if (is.null(weights))
@@ -58,6 +42,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
 
     x.zscore <- sapply(num.X, function(x) weightedZScores(x, weights))
 
+    outcome.name <- OutcomeName(formula, data)
     y <- if (type == "Linear")
     {
         num.y <- AsNumeric(data[[outcome.name]], binary = FALSE)
@@ -104,6 +89,27 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     names(se) <- variable.names
 
     appendStatistics(result, raw.importance, se, signs, fit, correction)
+}
+
+extractNumericX <- function(formula, data, show.warnings)
+{
+    formula.names <- AllVariablesNames(formula, data)
+    outcome.name <- OutcomeName(formula, data)
+    X <- data[setdiff(formula.names, outcome.name)]
+
+    ## We remove the "ordered" class so that ordered-categorical variables are
+    ## treated in the same way as they are in regression, i.e., dummy variables
+    ## are created from the categories.
+    for (j in 1:ncol(X))
+        if (all(c("factor", "ordered") %in% class(X[, j])))
+            class(X[, j]) <- "factor"
+
+    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
+        warning(paste0("The following variables have been treated as categorical: ",
+                       paste0(names(X), collapse = ","),
+                       ". This may over-inflate their effects."))
+
+    AsNumeric(X, remove.first = TRUE)
 }
 
 signsWarning(signs, show.warnings, type)
