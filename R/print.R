@@ -1,7 +1,7 @@
 
 #' @importFrom flipU IsCount
 #' @importFrom utils capture.output
-#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix RelativeImportanceTable CrosstabInteractionTable
+#' @importFrom flipFormat FormatAsPValue FormatAsReal FormatAsPercent RegressionTable MultinomialLogitTable ExtractCommonPrefix ImportanceTable CrosstabInteractionTable
 #' @importFrom stats printCoefmat
 #' @method print Regression
 #' @export
@@ -76,8 +76,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             warning(sprintf("Output '%s' is not available with Crosstab Interaction", x$output))
 
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
-        title <- if (x$interaction$relative.importance)  paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
-                 else                                    paste0(regressionType(x$type), ": ", x$outcome.label)
+        title <- if (!is.null(x$interaction$importance))
+        {
+            paste0(x$importance.type, " (", regressionType(x$type), "): ", x$outcome.label)
+        }
+        else
+            paste0(regressionType(x$type), ": ", x$outcome.label)
+
         if (!is.na(x$interaction$pvalue) && is.numeric(x$interaction$pvalue))
         {
             subtitle <- paste0(x$interaction$anova.test, " for interaction with ", x$interaction$label, ": P-value ", FormatAsPValue(x$interaction$pvalue))
@@ -91,10 +96,12 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             subtitle <- paste("Interaction with", x$interaction$label)
         }
 
-        if (!is.null(x$relative.importance))
-            caption <- paste(x$relative.importance.footer, " importance scores have been normalized by column; p-values are based on raw importance scores")
-        ind <- if (!is.null(x$relative.importance)) 1:nrow(x$interaction$coefficients)
-               else                                 2:nrow(x$interaction$coefficients)
+        if (!is.null(x$importance))
+            caption <- paste(x$importance.footer, " importance scores have been normalized by column; p-values are based on raw importance scores")
+        ind <- if (!is.null(x$importance))
+            1:nrow(x$interaction$coefficients)
+        else
+            2:nrow(x$interaction$coefficients)
         res <- ExtractCommonPrefix(rownames(x$interaction$coefficients[ind,]))
         if (!is.na(res$common.prefix))
         {
@@ -110,17 +117,17 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                                        subtitle = subtitle)
         print(dt)
     }
-    else if (!is.null(x$relative.importance))
+    else if (!is.null(x$importance))
     {
         lbls <- extractVariableCoefficientNames(x)
-        title <- paste0("Relative Importance Analysis (", regressionType(x$type), "): ", x$outcome.label)
+        title <- paste0(x$importance.type ," (", regressionType(x$type), "): ", x$outcome.label)
         extracted <- ExtractCommonPrefix(lbls)
         if (!is.na(extracted$common.prefix))
         {
             lbls <- extracted$shortened.labels
             title <- paste0(title, " by ", extracted$common.prefix)
         }
-        dt <- RelativeImportanceTable(x$relative.importance, lbls, title, footer = x$relative.importance.footer)
+        dt <- ImportanceTable(x$importance, lbls, title, footer = x$importance.footer)
         print(dt)
     }
     else if (x$output == "R")

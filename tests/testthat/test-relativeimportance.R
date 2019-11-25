@@ -229,7 +229,7 @@ test_that("Relative importance negative sign",
                                 " scores option."))
 
     res <- Regression(y~v1+v2+v3, dat, output = "Relative Importance Analysis", missing = "Multiple imputation", importance.absolute = TRUE)
-    expect_true(all(res$relative.importance$importance > 0))
+    expect_true(all(res$importance$importance > 0))
 })
 
 X.factor <- X
@@ -256,13 +256,59 @@ test_that("Relative importance robust SE, dot in formula",
 test_that("Shapley",
 {
     bank.no.missing <- bank[!is.na(rowSums(bank)), ]
-    result <- computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+    bank.no.missing$Interest <- -bank.no.missing$Interest # reverse sign to test signs
+
+    warning.msg <- paste0("Negative signs in Relative Importance scores were applied ",
+                          "from coefficient signs in Linear Regression. ",
+                          "To disable this feature, check the Absolute importance ",
+                          "scores option.")
+
+    expect_warning(result <- computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                       data = bank.no.missing,
                                       weights = rep(1, nrow(bank.no.missing)),
-                                      signs = FALSE,
                                       variable.names = c("Fees", "Interest", "Phone",
-                                                         "Branch", "Online", "ATM"))
+                                                         "Branch", "Online", "ATM"),
+                                      signs = NULL,
+                                      correction = "None"), warning.msg)
 
-    expect_equal(result$raw.importance[1], 0.115570678292)
+    expect_equal(result$raw.importance[1], c(Fees = 0.115570678291964))
     expect_equal(sum(result$raw.importance), 0.4988654351715)
+    expect_equal(result$importance[1], c(Fees = 23.1667039133))
+    expect_equal(result$standard.errors[1], c(Fees = 0.03113091404327))
+    expect_equal(result$statistics[1], c(Fees = 3.712408769345))
+    expect_equal(result$p.values[1], c(Fees = 0.0002559481304636))
+    expect_equal(result$importance[2], c(Interest = -15.1397373957463))
+
+    expect_warning(result <- computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                                      data = bank.no.missing,
+                                                      weights = bank.no.missing$weight,
+                                                      variable.names = c("Fees", "Interest", "Phone",
+                                                                         "Branch", "Online", "ATM"),
+                                                      signs = NULL,
+                                                      correction = "None"), warning.msg)
+    expect_equal(result$raw.importance[1], c(Fees = 0.1090244509126))
+    expect_equal(sum(result$raw.importance), 0.4936505179077)
+    expect_equal(result$importance[1], c(Fees = 22.08535126726))
+    expect_equal(result$standard.errors[1], c(Fees = 0.0302990327033463))
+    expect_equal(result$statistics[1], c(Fees = 3.59828156826045))
+    expect_equal(result$p.values[1], c(Fees = 0.000389921200592241))
+
+    suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                     data = bank, type = "Linear", output = "Shapley regression")))
+
+    expect_error(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                            data = bank, type = "Binary Logit", output = "Shapley regression"),
+                 "Shapley requires Type to be Linear. Set the output to Relative Importance Analysis instead.")
+
+    many.variables <- matrix(rnorm(3000), ncol = 30)
+    colnames(many.variables) <- paste0("v", 1:30)
+    many.variables <- data.frame(many.variables)
+    frml <- formula(paste("v1", "~", paste0("v", 2:30, collapse = " + ")))
+    expect_error(result <- computeShapleyImportance(frml,
+                                                   data = many.variables,
+                                                   weights = NULL,
+                                                   variable.names = paste0("v", 2:30),
+                                                   signs = NULL,
+                                                   correction = "None"),
+        "Shapley can run with a maximum of 27 predictors. Set the output to Relative Importance Analysis instead.")
 })

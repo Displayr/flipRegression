@@ -11,7 +11,7 @@ Depends: Rcpp (>= 0.12.15)
 Imports:
     car,
     effects,
-    flipFormat (>= 1.0.0),
+    flipFormat (>= 1.5.2),
     flipData (>= 1.1.3),
     flipTables (>= 2.0.0),
     flipStandardCharts,

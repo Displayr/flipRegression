@@ -1,3 +1,16 @@
+estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
+                               robust.se = FALSE, show.warnings = TRUE, correction, importance, ...)
+{
+    if (importance == "Relative Importance Analysis")
+        estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
+                                   robust.se, show.warnings, correction, ...)
+    else if (importance == "Shapley regression")
+        computeShapleyImportance(formula, data, weights, signs, variable.names, show.warnings,
+                                 correction)
+    else
+        stop("Importance type not handled: ", importance)
+}
+
 #' @importFrom stats cov.wt as.formula
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
@@ -12,21 +25,11 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     if (type == "Multinomial Logit")
         stop("Relative importance analysis is not available for ", type)
 
-    if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
-    {
-        formula2 <- DataFormula(formula, data)
-        fit <- FitRegression(formula2, data, NULL, NULL, type, robust.se, ...)
-        if (is.null(signs) || any(is.na(signs)))
-            signs <- sign(extractVariableCoefficients(fit$original, type))
-        if (is.null(r.square) || is.na(r.square))
-            r.square <- GoodnessOfFit(fit$original)$value
-
-        if (all(is.na(variable.names)))
-        {
-            tmp.names <- CleanBackticks(names(fit$original$coefficients))
-            variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
-        }
-    }
+    info <- extractRegressionInfo(formula, data, weights, type, signs,
+                                  r.square, variable.names, robust.se, ...)
+    signs <- info$signs
+    r.square <- info$r.square
+    variable.names <- info$variable.names
 
     signsWarning(signs, show.warnings, type)
 
@@ -112,7 +115,7 @@ extractNumericX <- function(formula, data, show.warnings)
     AsNumeric(X, remove.first = TRUE)
 }
 
-signsWarning(signs, show.warnings, type)
+signsWarning <- function(signs, show.warnings, type)
 {
     if (show.warnings && any(signs < 0))
         warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
@@ -178,8 +181,9 @@ isTStatisticUsed <- function(model)
 appendStatistics <- function(obj, raw.importance, standard.errors, signs, fit, correction)
 {
     result <- obj
-    obj$standard.errors <- standard.errors
-    obj$importance <- unname(signs) * 100 * prop.table(raw.importance)
+    result$raw.importance <- raw.importance
+    result$standard.errors <- standard.errors
+    result$importance <- unname(signs) * 100 * prop.table(raw.importance)
     result$statistics <- unname(signs) * raw.importance / standard.errors
     is.t.statistic.used <- isTStatisticUsed(fit)
     result$statistic.name <- if (is.t.statistic.used) "t" else "z"
@@ -189,4 +193,26 @@ appendStatistics <- function(obj, raw.importance, standard.errors, signs, fit, c
         2 * pnorm(abs(result$statistics), lower.tail = FALSE)
     result$p.values <- pvalAdjust(raw.p.values, correction)
     result
+}
+
+extractRegressionInfo <- function(formula, data, weights, type, signs,
+                                  r.square, variable.names, robust.se = FALSE,
+                                  ...)
+{
+    if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
+    {
+        formula2 <- DataFormula(formula, data)
+        fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, ...)
+        if (is.null(signs) || any(is.na(signs)))
+            signs <- sign(extractVariableCoefficients(fit$original, type))
+        if (is.null(r.square) || is.na(r.square))
+            r.square <- GoodnessOfFit(fit$original)$value
+
+        if (all(is.na(variable.names)))
+        {
+            tmp.names <- CleanBackticks(names(fit$original$coefficients))
+            variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
+        }
+    }
+    list(signs = signs, r.square = r.square, variable.names = variable.names)
 }

@@ -35,7 +35,7 @@ GoodnessOfFit <- function(object, digits = max(3L, getOption("digits") - 3L), ..
 GoodnessOfFit.default = function(object, digits = max(3L, getOption("digits") - 3L), ...) {
 
     # special case for Ordered Logit
-    if (class(object) == "polr")
+    if (is(object,"polr"))
     {
         fitted <- UnclassIfNecessary(predict(object), FALSE)
         observed <- UnclassIfNecessary(Observed(object), FALSE)

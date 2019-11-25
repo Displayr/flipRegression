@@ -24,10 +24,12 @@
 #'   employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
 #'   thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param output \code{"Coefficients"} returns a table of coefficients and various
-#'   summary and model statistics. It is the default. \code{"ANOVA"} returns an
-#'   ANOVA table. \code{"Detail"} returns a more traditional R output. \code{"Relative Importance Analysis"}
-#'   returns a table with Relative Importance scores. \code{"Effects Plot"} returns the effects plot per
-#'   predictor.
+#'   summary and model statistics. It is the default.
+#'   \code{"ANOVA"} returns an ANOVA table.
+#'   \code{"Detail"} returns a more traditional R output.
+#'   \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
+#'   \code{"Shapley regression"} returns a table with Shapley Importance scores.
+#'   \code{"Effects Plot"} returns the effects plot per predictor.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #'   method = "model.frame", which returns the model frame.
@@ -118,7 +120,18 @@ Regression <- function(formula,
     if(!missing(statistical.assumptions))
         stop("'statistical.assumptions' objects are not yet supported.")
 
-    relative.importance <- output == "Relative Importance Analysis"
+    importance <- if (output == "Relative Importance Analysis" || relative.importance)
+        "Relative Importance Analysis"
+    else if (output == "Shapley regression")
+    {
+        if (type == "Linear")
+            "Shapley regression"
+        else
+            stop("Shapley requires Type to be Linear. Set the output to ",
+                 "Relative Importance Analysis instead.")
+    }
+    else
+        NULL
 
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
@@ -170,8 +183,6 @@ Regression <- function(formula,
                 stop("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
                 stop("Crosstab interaction is incompatible with Multinomial Logit regression.")
-            #if (type == "Ordered Logit" && relative.importance)
-            #    stop("Crosstab interaction with Relative Importance Analysis is incompatible with Ordered Logit regression.")
 
             if (interaction.name %in% colnames(data))
                 stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
@@ -244,8 +255,9 @@ Regression <- function(formula,
     {
         if (internal)
             stop("'internal' may not be selected with regressions based on correlation matrices.")
-        if (relative.importance)
-            stop("Relative importance analysis is not available when using pairwise correlations on missing data.")
+        if (!is.null(importance))
+            stop("Relative importance analysis and Shapley regression are not ",
+                 "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
         if (type != "Linear")
@@ -319,14 +331,15 @@ Regression <- function(formula,
             final.model$sample.description <- processed.data$description
             if (!is.null(interaction))
             {
-                final.model$interaction <- multipleImputationCrosstabInteraction(models, relative.importance)
+                final.model$interaction <- multipleImputationCrosstabInteraction(models, importance)
                 final.model$interaction$label <- interaction.label
             }
             final.model$footer <- regressionFooter(final.model)
-            if (relative.importance && is.null(interaction))
+            if (!is.null(importance) && is.null(interaction))
             {
-                final.model$relative.importance <- multipleImputationRelativeImportance(models, importance.absolute)
-                final.model$relative.importance.footer <- relativeImportanceFooter(final.model)
+                final.model$importance <- multipleImputationImportance(models,
+                                                                       importance.absolute)
+                final.model$importance.footer <- importanceFooter(final.model)
             }
             final.model <- setChartData(final.model, output)
             return(final.model)
@@ -424,19 +437,22 @@ Regression <- function(formula,
         result$summary$coefficients[,4] <- pvalAdjust(result$summary$coefficients[,4], correction)
     }
 
-    if (relative.importance)
+    if (!is.null(importance))
     {
         labels <- rownames(result$summary$coefficients)
         labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
-        result$relative.importance <- estimateRelativeImportance(input.formula, .estimation.data, .weights,
-                                                                 type, signs, result$r.squared,
-                                                                 labels, robust.se, !recursive.call,
-                                                                 correction, ...)
+        result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
+                                                type, signs, result$r.squared,
+                                                labels, robust.se, !recursive.call,
+                                                correction, importance, ...)
+        result$importance.type <- importance
+        if (importance == "Relative Importance Analysis")
+            result$relative.importance <- result$importance
     }
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
-                                                         formula.with.interaction, relative.importance,
+                                                         formula.with.interaction, importance,
                                                          importance.absolute,
                                                          internal.loop = !is.null(interaction.formula), ...)
 
@@ -457,8 +473,8 @@ Regression <- function(formula,
         }
     }
     result$footer <- regressionFooter(result)
-    if (!is.null(result$relative.importance))
-        result$relative.importance.footer <- relativeImportanceFooter(result)
+    if (!is.null(result$importance))
+        result$importance.footer <- importanceFooter(result)
     options(contrasts = old.contrasts[[1]])
 
     result <- setChartData(result, output)
@@ -554,7 +570,7 @@ regressionFooter <- function(x)
 
 }
 
-relativeImportanceFooter <- function(x)
+importanceFooter <- function(x)
 {
     footer <- x$sample.description
     if (!x$test.interaction)
@@ -887,12 +903,16 @@ setChartData <- function(result, output)
                       rownames(dt)[nrow(dt)] <- "n"
                       dt
                   }
-                  else if (output == "Relative Importance Analysis")
+                  else if (output %in% c("Relative Importance Analysis",
+                                         "Shapley regression"))
                   {
-                      ri <- result$relative.importance
-                      df <- data.frame(ri$importance, ri$raw.importance, ri$standard.errors,
-                                       ri$statistics, ri$p.values)
-                      colnames(df) <- c("Relative Importance", "Raw score", "Standard Error",
+                      importance <- result$importance
+                      df <- data.frame(importance$importance,
+                                       importance$raw.importance,
+                                       importance$standard.errors,
+                                       importance$statistics,
+                                       importance$p.values)
+                      colnames(df) <- c("Importance", "Raw score", "Standard Error",
                                         "t statistic", "p-value")
                       df
                   }
