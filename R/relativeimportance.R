@@ -204,7 +204,10 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
         formula2 <- DataFormula(formula, data)
         fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, ...)
         if (is.null(signs) || any(is.na(signs)))
+        {
             signs <- sign(round(extractVariableCoefficients(fit$original, type), 13))
+            signs[signs == 0] <- 1 # set sign 0 to 1
+        }
         if (is.null(r.square) || is.na(r.square))
             r.square <- GoodnessOfFit(fit$original)$value
 
