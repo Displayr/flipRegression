@@ -72,7 +72,7 @@ multipleImputationStandardErrors <- function(coefs, vars)
     sqrt(T)
 }
 
-multipleImputationRelativeImportance <- function(models, importance.absolute)
+multipleImputationImportance <- function(models, importance.absolute)
 {
     coefs <- sapply(models, function(object) object$coef)
     tmp.coefs <- unname(apply(coefs, 1, mean, na.rm = FALSE))
@@ -83,10 +83,10 @@ multipleImputationRelativeImportance <- function(models, importance.absolute)
 
     result <- list()
     correct <- models[[1]]$correction
-    models.raw.importance <- sapply(models, function(m) m$relative.importance$raw.importance)
+    models.raw.importance <- sapply(models, function(m) m$importance$raw.importance)
     result$raw.importance <- apply(models.raw.importance, 1, mean, na.rm = FALSE)
     result$importance <- signs * 100 * prop.table(result$raw.importance)
-    vars <- sapply(models, function(m) m$relative.importance$standard.errors ^ 2)
+    vars <- sapply(models, function(m) m$importance$standard.errors ^ 2)
     result$standard.errors <- multipleImputationStandardErrors(models.raw.importance, vars)
     df.c <- df.residual(models[[1]])
     result$df <- multipleImputationDegreesOfFreedom(models.raw.importance, vars, df.c, FALSE)
@@ -98,7 +98,7 @@ multipleImputationRelativeImportance <- function(models, importance.absolute)
 }
 
 #' @importFrom stats pchisq
-multipleImputationCrosstabInteraction <- function(models, relative.importance)
+multipleImputationCrosstabInteraction <- function(models, importance)
 {
     n <- nrow(models[[1]]$interaction$bb)
     m <- ncol(models[[1]]$interaction$bb)
@@ -106,7 +106,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance)
     correction <- models[[1]]$correction
     res <- list(label = models[[1]]$interaction$label,
                 split.size = split.size, pvalue = NA,
-                relative.importance = relative.importance,
+                importance = importance,
                 original.r2 = mean(sapply(models, function(m){m$interaction$original.r2})),
                 full.r2 = mean(sapply(models, function(m){m$interaction$full.r2})))
 
@@ -120,18 +120,18 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance)
     sc <- multipleImputationStandardErrors(bc.all, sc.all)
     coef.sign <- compareCoef(matrix(bb, nrow=n), matrix(bc, nrow=n),
                                  matrix(ss, nrow=n), matrix(sc, nrow=n),
-                                 split.size[1:m], correction, relative.importance)
+                                 split.size[1:m], correction, importance)
     res$coef.pvalues <- coef.sign$pvalues
     res$coef.tstat <- coef.sign$tstat
-    if (relative.importance)
+    if (!is.null(importance))
         res$coef.pFDR <- coef.sign$pFDR
 
     net.coef.all <- sapply(models, function(m){m$interaction$net.coef})
     net.coef <- apply(net.coef.all, 1, mean)
     bb <- matrix(bb, nrow=n)
 
-    # Report normalised relative importance scores but use raw scores for p-values
-    if (relative.importance)
+    # Report normalised relative importance/Shapley scores but use raw scores for p-values
+    if (!is.null(importance))
         bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
 
     combined.coefs <- cbind(bb, net.coef)
@@ -139,7 +139,7 @@ multipleImputationCrosstabInteraction <- function(models, relative.importance)
     res$coefficients <- combined.coefs
 
 
-    if (relative.importance)
+    if (!is.null(importance))
         return(res)
 
     if (models[[1]]$type %in% c("Linear", "Quasi-Poisson"))

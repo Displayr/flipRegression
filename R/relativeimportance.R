@@ -1,3 +1,16 @@
+estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
+                               robust.se = FALSE, show.warnings = TRUE, correction, importance, ...)
+{
+    if (importance == "Relative Importance Analysis")
+        estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
+                                   robust.se, show.warnings, correction, ...)
+    else if (importance == "Shapley regression")
+        computeShapleyImportance(formula, data, weights, signs, variable.names, show.warnings,
+                                 correction)
+    else
+        stop("Importance type not handled: ", importance)
+}
+
 #' @importFrom stats cov.wt as.formula
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
@@ -12,45 +25,15 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     if (type == "Multinomial Logit")
         stop("Relative importance analysis is not available for ", type)
 
-    if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
-    {
-        formula2 <- DataFormula(formula, data)
-        fit <- FitRegression(formula2, data, NULL, NULL, type, robust.se, ...)
-        if (is.null(signs) || any(is.na(signs)))
-            signs <- sign(extractVariableCoefficients(fit$original, type))
-        if (is.null(r.square) || is.na(r.square))
-            r.square <- GoodnessOfFit(fit$original)$value
+    info <- extractRegressionInfo(formula, data, weights, type, signs,
+                                  r.square, variable.names, robust.se, ...)
+    signs <- info$signs
+    r.square <- info$r.square
+    variable.names <- info$variable.names
 
-        if (all(is.na(variable.names)))
-        {
-            tmp.names <- CleanBackticks(names(fit$original$coefficients))
-            variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
-        }
-    }
+    signsWarning(signs, show.warnings, type)
 
-    if (show.warnings && any(signs < 0))
-        warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
-                regressionType(type),
-                ". To disable this feature, check the Absolute importance scores option.")
-
-
-    formula.names <- AllVariablesNames(formula, data)
-    outcome.name <- OutcomeName(formula, data)
-    X <- data[setdiff(formula.names, outcome.name)]
-
-    ## We remove the "ordered" class so that ordered-categorical variables are
-    ## treated in the same way as they are in regression, i.e., dummy variables
-    ## are created from the categories.
-    for (j in 1:ncol(X))
-        if (all(c("factor", "ordered") %in% class(X[, j])))
-            class(X[, j]) <- "factor"
-
-    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
-        warning(paste0("The following variables have been treated as categorical: ",
-                       paste0(names(X), collapse = ","),
-                       ". This may over-inflate their effects."))
-
-    num.X <- AsNumeric(X, remove.first = TRUE)
+    num.X <- extractNumericX(formula, data, show.warnings)
 
     input.weights <- weights
     if (is.null(weights))
@@ -62,6 +45,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
 
     x.zscore <- sapply(num.X, function(x) weightedZScores(x, weights))
 
+    outcome.name <- OutcomeName(formula, data)
     y <- if (type == "Linear")
     {
         num.y <- AsNumeric(data[[outcome.name]], binary = FALSE)
@@ -84,13 +68,14 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     data.formula <- as.formula(paste0("y ~ ", paste(paste0("V", 1:ncol(z)), collapse = "+")))
 
     fit <- if (type == "Linear")
-        lm.z <- lm(y ~ 0 + z, weights = weights)
+        lm(y ~ 0 + z, weights = weights)
     else
         FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)$original
     beta <- extractVariableCoefficients(fit, type, FALSE)
     beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
 
     raw.importance <- as.vector(lambda ^ 2 %*% beta ^ 2)
+
     names(raw.importance) <- variable.names
     if (r.square == 0)
     {
@@ -99,22 +84,43 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
                 "been scaled to sum to the R-squared.")
     }
     else
+        # R-squared is not always the sum of raw.importance, e.g. with binary logit
         scaling.factor <- r.square / sum(raw.importance)
-    result$raw.importance <- raw.importance * scaling.factor
+    raw.importance <- raw.importance * scaling.factor
+
     se  <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
     names(se) <- variable.names
-    result$standard.errors <- se
-    result$importance <- unname(signs) * 100 * prop.table(raw.importance)
 
-    result$statistics <- unname(signs) * result$raw.importance / result$standard.errors
-    is.t.statistic.used <- isTStatisticUsed(fit)
-    result$statistic.name <- if (is.t.statistic.used) "t" else "z"
-    raw.p.values <- if (is.t.statistic.used)
-        2 * pt(abs(result$statistics), fit$df.residual, lower.tail = FALSE)
-    else
-        2 * pnorm(abs(result$statistics), lower.tail = FALSE)
-    result$p.values <- pvalAdjust(raw.p.values, correction)
-    result
+    appendStatistics(result, raw.importance, se, signs, fit, correction)
+}
+
+extractNumericX <- function(formula, data, show.warnings)
+{
+    formula.names <- AllVariablesNames(formula, data)
+    outcome.name <- OutcomeName(formula, data)
+    X <- data[setdiff(formula.names, outcome.name)]
+
+    ## We remove the "ordered" class so that ordered-categorical variables are
+    ## treated in the same way as they are in regression, i.e., dummy variables
+    ## are created from the categories.
+    for (j in 1:ncol(X))
+        if (all(c("factor", "ordered") %in% class(X[, j])))
+            class(X[, j]) <- "factor"
+
+    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
+        warning(paste0("The following variables have been treated as categorical: ",
+                       paste0(names(X), collapse = ","),
+                       ". This may over-inflate their effects."))
+
+    AsNumeric(X, remove.first = TRUE)
+}
+
+signsWarning <- function(signs, show.warnings, type)
+{
+    if (show.warnings && any(signs < 0))
+        warning("Negative signs in Relative Importance scores were applied from coefficient signs in ",
+                regressionType(type),
+                ". To disable this feature, check the Absolute importance scores option.")
 }
 
 #' @importFrom stats weighted.mean
@@ -170,4 +176,43 @@ extractVariableCoefficientNames <- function(obj)
 isTStatisticUsed <- function(model)
 {
     grepl("^t", colnames(summary(model)$coefficients)[3])
+}
+
+appendStatistics <- function(obj, raw.importance, standard.errors, signs, fit, correction)
+{
+    result <- obj
+    result$raw.importance <- raw.importance
+    result$standard.errors <- standard.errors
+    result$importance <- unname(signs) * 100 * prop.table(raw.importance)
+    result$statistics <- unname(signs) * raw.importance / standard.errors
+    is.t.statistic.used <- isTStatisticUsed(fit)
+    result$statistic.name <- if (is.t.statistic.used) "t" else "z"
+    raw.p.values <- if (is.t.statistic.used)
+        2 * pt(abs(result$statistics), fit$df.residual, lower.tail = FALSE)
+    else
+        2 * pnorm(abs(result$statistics), lower.tail = FALSE)
+    result$p.values <- pvalAdjust(raw.p.values, correction)
+    result
+}
+
+extractRegressionInfo <- function(formula, data, weights, type, signs,
+                                  r.square, variable.names, robust.se = FALSE,
+                                  ...)
+{
+    if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
+    {
+        formula2 <- DataFormula(formula, data)
+        fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, ...)
+        if (is.null(signs) || any(is.na(signs)))
+            signs <- sign(extractVariableCoefficients(fit$original, type))
+        if (is.null(r.square) || is.na(r.square))
+            r.square <- GoodnessOfFit(fit$original)$value
+
+        if (all(is.na(variable.names)))
+        {
+            tmp.names <- CleanBackticks(names(fit$original$coefficients))
+            variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
+        }
+    }
+    list(signs = signs, r.square = r.square, variable.names = variable.names)
 }

@@ -23,8 +23,8 @@ ExtractChartData.Regression <- function(x)
 {
     if (x$test.interaction)
         return(x$interaction$coefficients)
-    else if (!is.null(x$relative.importance))
-        return(x$relative.importance$importance)
+    else if (!is.null(x$importance))
+        return(x$importance$importance)
     else if (x$type == "Multinomial Logit")
         return(t(x$summary$coefficients))
     else

@@ -7,10 +7,11 @@ Maintainer: Displayr <opensource@displayr.com>
 Description: Regression models according to the flip Project conventions.
 License: GPL-3
 LazyData: TRUE
+Depends: Rcpp (>= 0.12.15)
 Imports:
     car,
     effects,
-    flipFormat (>= 1.0.0),
+    flipFormat (>= 1.5.2),
     flipData (>= 1.1.3),
     flipTables (>= 2.0.0),
     flipStandardCharts,
@@ -29,7 +30,6 @@ Imports:
 Suggests:
     testthat,
     flipExampleData,
-    Rcpp
 Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,
@@ -38,5 +38,7 @@ Remotes: Displayr/flipU,
     Displayr/flipTransformations,
     Displayr/flipTables,    
     Displayr/rhtmlHeatmap
+LinkingTo: Rcpp (>= 0.12.15),
+           RcppEigen (>= 0.3.3.4.0)
 RoxygenNote: 6.1.1
 Encoding: UTF-8
