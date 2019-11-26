@@ -214,5 +214,6 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
             variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
         }
     }
+    print(extractVariableCoefficients(fit$original, type))
     list(signs = signs, r.square = r.square, variable.names = variable.names)
 }
