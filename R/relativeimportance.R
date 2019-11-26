@@ -204,7 +204,7 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
         formula2 <- DataFormula(formula, data)
         fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, ...)
         if (is.null(signs) || any(is.na(signs)))
-            signs <- sign(extractVariableCoefficients(fit$original, type))
+            signs <- sign(round(extractVariableCoefficients(fit$original, type), 13))
         if (is.null(r.square) || is.na(r.square))
             r.square <- GoodnessOfFit(fit$original)$value
 
@@ -214,6 +214,5 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
             variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
         }
     }
-    print(extractVariableCoefficients(fit$original, type))
     list(signs = signs, r.square = r.square, variable.names = variable.names)
 }
