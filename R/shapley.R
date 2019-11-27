@@ -27,8 +27,8 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
     raw.importance <- rep(NA, n.predictors)
 
     corr.mat <- cov.wt(cbind(num.X, num.y), wt = weights, cor = TRUE)$cor
-    corr.regressors <- corr.mat[1:n.predictors, 1:n.predictors]
-    corr.xy <- corr.mat[1:n.predictors, n.predictors + 1]
+    corr.regressors <- corr.mat[1:n.predictors, 1:n.predictors, drop = FALSE]
+    corr.xy <- corr.mat[1:n.predictors, n.predictors + 1, drop = FALSE]
 
     combinations <- lapply(seq_len(n.predictors - 1), function(x) {
         combn(seq_len(n.predictors - 1), x)
