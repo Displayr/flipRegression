@@ -134,6 +134,9 @@ Regression <- function(formula,
     else
         NULL
 
+    if (!is.null(importance) && is.null(importance.absolute))
+        importance.absolute <- FALSE
+
     input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
     subset <- eval(substitute(subset), data, parent.frame())
