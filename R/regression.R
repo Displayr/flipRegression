@@ -233,29 +233,16 @@ Regression <- function(formula,
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
         stop("'subset' and 'data' are required to have the same number of observations. They do not.")
+    # Check if there are any entirely missing variables in the data and adjust accordingly.
     missing.variables <- apply(data, 2, function(x) all(is.na(x)))
     if(any(missing.variables))
     {
-        missing.variable.names <- colnames(data)[missing.variables]
-        if (outcome.name %in% missing.variable.names)
-            stop("Response variable is entirely missing (all observed values of the variable are missing).")
-        else {
-            # Update data and formula
-            formula.terms <- terms.formula(input.formula, data = data)
-            terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep, x = attr(formula.terms, "term.labels"))))
-            input.formula <- update(input.formula, drop.terms(formula.terms, terms.to.drop, keep.response = TRUE))
-            interaction.formula.terms <- terms.formula(formula.with.interaction, data = data)
-            interaction.terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep,
-                                                              x = attr(interaction.formula.terms, "term.labels"))))
-            formula.with.interaction <- update(formula.with.interaction, drop.terms(interaction.formula.terms,
-                                                                                    interaction.terms.to.drop,
-                                                                                    keep.response = TRUE))
-            formula <- input.formula
-            data <- data[, !missing.variables]
-            missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
-            warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
-                    "These variable(s) have been removed from the analysis (", missing.variable.names, ").")
-        }
+        missing.variable.adjustment <- removeMissingVariables(data, formula, formula.with.interaction,
+                                                              missing.variables, outcome.name, input.formula)
+        data <- missing.variable.adjustment$data
+        formula <- missing.variable.adjustment$formula
+        formula.with.interaction <- missing.variable.adjustment$formula.with.interaction
+        input.formula <- missing.variable.adjustment$input.formula
     }
     if (type == "Binary Logit")
     {
@@ -951,4 +938,30 @@ setChartData <- function(result, output)
 
     attr(result, "ChartData") <- chart.data
     return(result)
+}
+
+removeMissingVariables <- function(data, formula, formula.with.interaction,
+                                   missing.variables, outcome.name, input.formula)
+{
+    missing.variable.names <- colnames(data)[missing.variables]
+    if (outcome.name %in% missing.variable.names)
+        stop("Response variable is entirely missing (all observed values of the variable are missing).")
+    else {
+        # Update data and formula
+        formula.terms <- terms.formula(input.formula, data = data)
+        terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep, x = attr(formula.terms, "term.labels"))))
+        input.formula <- update(input.formula, drop.terms(formula.terms, terms.to.drop, keep.response = TRUE))
+        interaction.formula.terms <- terms.formula(formula.with.interaction, data = data)
+        interaction.terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep,
+                                                          x = attr(interaction.formula.terms, "term.labels"))))
+        formula.with.interaction <- update(formula.with.interaction, drop.terms(interaction.formula.terms,
+                                                                                interaction.terms.to.drop,
+                                                                                keep.response = TRUE))
+        formula <- input.formula
+        data <- data[, !missing.variables]
+        missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
+        warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
+                "These variable(s) have been removed from the analysis: ", missing.variable.names, ".")
+    }
+    return(list(data = data, formula = formula, formula.with.interaction = formula.with.interaction))
 }

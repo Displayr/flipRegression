@@ -4,8 +4,13 @@
 \alias{Stepwise}
 \title{\code{Stepwise}}
 \usage{
-Stepwise(object, output = "Final", direction = "Backward",
-  always.include = NULL, steps = 1000)
+Stepwise(
+  object,
+  output = "Final",
+  direction = "Backward",
+  always.include = NULL,
+  steps = 1000
+)
 }
 \arguments{
 \item{object}{a \code{Regression} object.}

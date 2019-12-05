@@ -4,16 +4,33 @@
 \alias{Regression}
 \title{\code{Regression}}
 \usage{
-Regression(formula, data = NULL, subset = NULL, weights = NULL,
-  missing = "Exclude cases with missing data", type = "Linear",
-  robust.se = FALSE, method = "default", output = "Coefficients",
-  detail = FALSE, m = 10, seed = 12321, statistical.assumptions,
-  auxiliary.data = NULL, show.labels = FALSE, internal = FALSE,
+Regression(
+  formula,
+  data = NULL,
+  subset = NULL,
+  weights = NULL,
+  missing = "Exclude cases with missing data",
+  type = "Linear",
+  robust.se = FALSE,
+  method = "default",
+  output = "Coefficients",
+  detail = FALSE,
+  m = 10,
+  seed = 12321,
+  statistical.assumptions,
+  auxiliary.data = NULL,
+  show.labels = FALSE,
+  internal = FALSE,
   contrasts = c("contr.treatment", "contr.treatment"),
-  relative.importance = FALSE, importance.absolute = FALSE,
-  interaction = NULL, correction = "None",
-  interaction.formula = NULL, recursive.call = FALSE,
-  effects.format = list(max.label = 10), ...)
+  relative.importance = FALSE,
+  importance.absolute = FALSE,
+  interaction = NULL,
+  correction = "None",
+  interaction.formula = NULL,
+  recursive.call = FALSE,
+  effects.format = list(max.label = 10),
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be

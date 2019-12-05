@@ -4,8 +4,12 @@
 \alias{ConfusionMatrix}
 \title{\code{ConfusionMatrix}}
 \usage{
-ConfusionMatrix(obj, subset = obj$subset, weights = obj$weights,
-  decimals = NULL)
+ConfusionMatrix(
+  obj,
+  subset = obj$subset,
+  weights = obj$weights,
+  decimals = NULL
+)
 }
 \arguments{
 \item{obj}{A model with an outcome variable or a data.frame where the first column is the outcome and

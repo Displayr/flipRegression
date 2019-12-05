@@ -8,11 +8,9 @@
 \usage{
 GoodnessOfFit(object, digits = max(3L, getOption("digits") - 3L), ...)
 
-\method{GoodnessOfFit}{default}(object, digits = max(3L,
-  getOption("digits") - 3L), ...)
+\method{GoodnessOfFit}{default}(object, digits = max(3L, getOption("digits") - 3L), ...)
 
-\method{GoodnessOfFit}{Regression}(object, digits = max(3L,
-  getOption("digits") - 3L), ...)
+\method{GoodnessOfFit}{Regression}(object, digits = max(3L, getOption("digits") - 3L), ...)
 }
 \arguments{
 \item{object}{An object for which a summary is desired..}
