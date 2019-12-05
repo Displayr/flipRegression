@@ -298,7 +298,7 @@ test_that("Shapley",
 
     expect_error(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                             data = bank, type = "Binary Logit", output = "Shapley regression"),
-                 "Shapley requires Type to be Linear. Set the output to Relative Importance Analysis instead.")
+                 "Shapley requires Regression type to be Linear. Set the output to Relative Importance Analysis instead.")
 
     many.variables <- matrix(rnorm(3000), ncol = 30)
     colnames(many.variables) <- paste0("v", 1:30)

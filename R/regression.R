@@ -128,7 +128,7 @@ Regression <- function(formula,
         if (type == "Linear")
             "Shapley regression"
         else
-            stop("Shapley requires Type to be Linear. Set the output to ",
+            stop("Shapley requires Regression type to be Linear. Set the output to ",
                  "Relative Importance Analysis instead.")
     }
     else
