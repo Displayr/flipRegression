@@ -1,12 +1,15 @@
 estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                robust.se = FALSE, show.warnings = TRUE, correction, importance, ...)
 {
+    if (!is.null(weights))
+        robust.se <- FALSE
+
     if (importance == "Relative Importance Analysis")
         estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
                                    robust.se, show.warnings, correction, ...)
     else if (importance == "Shapley regression")
-        computeShapleyImportance(formula, data, weights, signs, variable.names, show.warnings,
-                                 correction)
+        computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se,
+                                 show.warnings, correction, ...)
     else
         stop("Importance type not handled: ", importance)
 }
@@ -38,8 +41,6 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     input.weights <- weights
     if (is.null(weights))
         weights <- rep(1, nrow(data))
-    else
-        robust.se <- FALSE
 
     result <- list()
 
