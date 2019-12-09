@@ -4,8 +4,7 @@
 \alias{predict.Regression}
 \title{\code{predict.Regression}}
 \usage{
-\method{predict}{Regression}(object, newdata = object$model,
-  na.action = na.pass, ...)
+\method{predict}{Regression}(object, newdata = object$model, na.action = na.pass, ...)
 }
 \arguments{
 \item{object}{A \code{Regression} object.}

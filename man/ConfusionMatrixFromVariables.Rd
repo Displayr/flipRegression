@@ -4,8 +4,12 @@
 \alias{ConfusionMatrixFromVariables}
 \title{\code{ConfusionMatrixFromVariables}}
 \usage{
-ConfusionMatrixFromVariables(observed, predicted, subset = NULL,
-  weights = NULL)
+ConfusionMatrixFromVariables(
+  observed,
+  predicted,
+  subset = NULL,
+  weights = NULL
+)
 }
 \arguments{
 \item{observed}{A \code{factor}.}

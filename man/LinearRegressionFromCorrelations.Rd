@@ -4,8 +4,13 @@
 \alias{LinearRegressionFromCorrelations}
 \title{Linear regression via a sweep operation on the correlation matrix.}
 \usage{
-LinearRegressionFromCorrelations(formula, data = NULL, subset = NULL,
-  weights = NULL, ...)
+LinearRegressionFromCorrelations(
+  formula,
+  data = NULL,
+  subset = NULL,
+  weights = NULL,
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \code{\link{formula}} (or one that can be
