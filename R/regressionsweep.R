@@ -69,7 +69,7 @@ LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL
     # Doing the computation.
     original <- setCor(1, 2:ncol(cors), data = cors, n.obs = min.pairwise.n, plot = FALSE, z = NULL, ...)
     result$original <- original
-    scaled.beta <- as.matrix(original$beta)
+    scaled.beta <- as.matrix(if (is.null(original$beta)) original$coefficients else  original$beta)
     sds <- StandardDeviation(y.and.x, weights)
     sds.independent <- sds[-1]
     result$original$sd.dependent <- sd.dependent <- sds[1]
