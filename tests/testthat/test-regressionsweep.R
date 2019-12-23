@@ -30,8 +30,8 @@ test_that("Use partial data (pairwise correlations)",
           {
               z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                               data = bank,  missing = missing)
-              expect_equal(0.482560, z$original$original$R2[1, 1], tolerance=1e-5)
-              expect_equal(51.914326, z$original$original$F[1, 1], tolerance=1e-5)
+              expect_equal(0.482560, unname(z$original$original$R2), tolerance=1e-5)
+              expect_equal(51.914326, unname(z$original$original$F), tolerance=1e-5)
               expect_equal(0.370859, as.numeric(z$original$coef[2]), tolerance=1e-5)
               expect_equal(334.000000, z$original$original$df[2], tolerance=1e-5)
               expect_equal(0.042810, summary(z$original)$coef[2,2], tolerance=1e-5)
@@ -42,8 +42,8 @@ test_that("Use partial data (pairwise correlations) - filtered",
               z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                               data = bank, missing = missing, subset = bank$weight > 1,
                               detail = FALSE)
-              expect_equal(0.429566, z$original$original$R2[1, 1], tolerance=1e-5)
-              expect_equal(13.304, z$original$original$F[1,1], tolerance=1e-5)
+              expect_equal(0.429566, unname(z$original$original$R2), tolerance=1e-5)
+              expect_equal(13.304, unname(z$original$original$F), tolerance=1e-5)
               expect_equal(0.298166, as.numeric(z$original$coef[2]), tolerance=1e-5)
               expect_equal(106, z$original$original$df[2], tolerance=1e-5)
               expect_equal(0.077491, summary(z$original)$coef[2,2], tolerance=1e-5)
@@ -54,8 +54,8 @@ test_that("Use partial data (pairwise correlations) - weighted",
           {
               z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                               data = bank, missing = missing, weights = bank$weight)
-              expect_equal(0.458160, z$original$original$R2[1, 1], tolerance=1e-5)
-              expect_equal(41.17282, z$original$original$F[1,1], tolerance=1e-5)
+              expect_equal(0.458160, unname(z$original$original$R2), tolerance=1e-5)
+              expect_equal(41.17282, unname(z$original$original$F), tolerance=1e-5)
               expect_equal(0.3603956, as.numeric(z$original$coef[2]), tolerance=1e-5)
               expect_equal(292.1565, z$original$original$df[2], tolerance=1e-5)
               expect_equal(0.04625331, summary(z$original)$coef[2,2], tolerance=1e-5)
@@ -70,8 +70,8 @@ test_that("Use partial data (pairwise correlations) - popoulation weighted and f
     z <- Regression(Overall ~ .,
                     data = bank, missing = missing, weights = wght,
                     subset = sub)
-    expect_equal(0.414488, z$original$original$R2[1, 1], tolerance=1e-5)
-    expect_equal(8.858319, z$original$original$F[1, 1], tolerance=1e-5)
+    expect_equal(0.414488, unname(z$original$original$R2), tolerance=1e-5)
+    expect_equal(8.858319, unname(z$original$original$F), tolerance=1e-5)
     expect_equal(0.3024816, as.numeric(z$original$coef[2]), tolerance=1e-5)
     expect_equal(75.08045, z$original$original$df[2], tolerance=1e-5)
     expect_equal(0.09039705, summary(z$original)$coef[2, 2], tolerance=1e-5)
