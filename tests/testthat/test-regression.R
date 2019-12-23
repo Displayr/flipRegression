@@ -26,26 +26,26 @@ missing <- "Imputation (replace missing values with estimates)"
 test_that(missing,
           {
               z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-              expect_equal(round(z, 3), 0.285)
+              expect_equal(round(z, 3), 0.316)
               z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-              expect_equal(round(z, 3), 0.302)
+              expect_equal(round(z, 3), 0.286)
               z <- suppressWarnings(as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3]))
-              expect_equal(round(z, 3), 0.304)
+              expect_equal(round(z, 3), 0.291)
               z <- suppressWarnings(as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3]))
-              expect_equal(round(z, 3), 0.301)
+              expect_equal(round(z, 3), 0.293)
           })
 
 missing <- "Multiple imputation"
 test_that(missing,
           {
               z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-              expect_equal(round(z, 3), 0.299)
+              expect_equal(round(z, 3), 0.296)
               z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-              expect_equal(round(z, 3), 0.305)
+              expect_equal(round(z, 3), 0.302)
               z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-              expect_equal(round(z, 3), 0.307)
+              expect_equal(round(z, 3), 0.309)
               z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-              expect_equal(round(z, 3), 0.314)
+              expect_equal(round(z, 3), 0.309)
           })
 
 missing <- "Multiple imputation"
