@@ -59,7 +59,7 @@
 #' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param effects.format A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 #'   and \code{y.title} (the title of the y-axis, defaults to outcome label).
-#' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
+#' @param ... Additional argments to be passed to  \code{\link{lm}} or, if the
 #'  data is weighted,  \code{\link[survey]{svyglm}}.
 #' @details "Imputation (replace missing values with estimates)". All selected
 #'  outcome and predictor variables are included in the imputation, along with
@@ -620,7 +620,7 @@ importanceFooter <- function(x)
 #' @importFrom MASS polr glm.nb
 #' @importFrom nnet multinom
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
-#' @importFrom survey svyglm
+#' @importFrom survey svyglm svyolr
 #' @export
 FitRegression <- function(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
 {
@@ -703,9 +703,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         }
         else if (type == "Ordered Logit")
         {
-            .estimation.data$weights <- CalibrateWeight(.weights)
             model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
-            model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
         {
@@ -898,7 +896,10 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
         if (is.null(weights))
             polr(.formula, .estimation.data, Hess = TRUE, ...)
         else
-            polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...),
+        {
+            .design <- WeightedSurveyDesign(.estimation.data, weights)
+            svyolr(.formula, .design)
+        },
         warning.handler = function(w) {
             if (w$message == "design appears to be rank-deficient, so dropping some coefs")
                 warning("Some variable(s) are colinear with other variables ",

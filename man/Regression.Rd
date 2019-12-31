@@ -116,7 +116,7 @@ See \code{\link{contrasts}} for more information.}
 \item{effects.format}{A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 and \code{y.title} (the title of the y-axis, defaults to outcome label).}
 
-\item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
+\item{...}{Additional argments to be passed to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}}.}
 }
 \description{
