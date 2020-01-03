@@ -704,6 +704,9 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         else if (type == "Ordered Logit")
         {
             model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
+            model$df <- model$edf
+            model$aic <- model$deviance + 2 * model$df
+            class(model) <- "polr"
         }
         else if (type == "Multinomial Logit")
         {
