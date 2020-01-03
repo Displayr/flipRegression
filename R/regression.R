@@ -901,7 +901,10 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, weights)
-            svyolr(.formula, .design)
+            out <- svyolr(.formula, .design)
+            # Need this model element to handle the code in the predict.Regression method
+            out$model <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            out
         },
         warning.handler = function(w) {
             if (w$message == "design appears to be rank-deficient, so dropping some coefs")
