@@ -131,11 +131,22 @@ Generalized Regression.
  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 }
 \references{
-von Hippel, Paul T. 2007. "Regression With Missing Y's: An
+von Hippel, Paul T. (2007). "Regression With Missing Y's: An
   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
-  Methodology 37:83-117. White, H. (1980), A heteroskedastic-consistent
-  covariance matrix estimator and a direct test of heteroskedasticity.
-  Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
+  Methodology 37:83-117.
+
+  White, H. (1980), "A heteroskedastic-consistent
+  covariance matrix estimator and a direct test of heteroskedasticity".
+  Econometrica, 48, 817-838.
+
+  Long, J. S. and Ervin, L. H. (2000). "Using
   heteroscedasticity consistent standard errors in the linear regression
-  model. The American Statistician, 54(3): 217-224.
+  model". The American Statistician, 54(3): 217-224.
+
+  Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight",
+  Multivariate Behavioral Research, 35:1-19.
+
+  Gromping, U. (2007). "Estimators of Relative Importance in Linear
+  Regression Based on Variance Decomposition", The American Statistician,
+  61, 139-147.
 }
