@@ -258,8 +258,8 @@ test_that("Error if too many dummy predictors",
 
 
 test_that("Outcome labels", {
-    attr(bank$Overall, "label") <- "lbl"
     bank$Overall <- as.factor(bank$Overall)
+    attr(bank$Overall, "label") <- "lbl"
     result <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                           data = bank, show.labels = TRUE))
     expect_equal(result$outcome.label, "lbl")
