@@ -702,11 +702,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             }
         }
         else if (type == "Ordered Logit")
-        {
             model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
-            model$df <- model$edf
-            model$aic <- model$deviance + 2 * model$df
-        }
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
@@ -901,6 +897,11 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
         {
             .design <- WeightedSurveyDesign(.estimation.data, weights)
             out <- svyolr(.formula, .design)
+            out$df <- out$edf
+            # Compute the dAIC
+            wt <- weights(.design)
+            out$deltabar <- mean(diag(out$Hessian %*% out$var))/mean(wt)
+            out$aic <- out$deviance + 2 * out$deltabar * out$df
             # Need this model element to handle the code in the predict.Regression method
             out$model <- model.frame(.formula, model.frame(.design), na.action = na.pass)
             # Give it the polr class to use the predict.polr method while using summary.svyolr method
