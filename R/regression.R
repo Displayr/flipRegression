@@ -888,6 +888,7 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     }
 }
 
+#' @importFrom stats model.frame model.response
 fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
 {
     model <- InterceptExceptions(
@@ -920,7 +921,9 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
             y <- model.response(m)
             unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
             if (unobserved.levels != "")
-                stop("Response level(s): ", unobserved.levels, " are not observed in the data")
+                stop("Outcome variable has level(s): ", unobserved.levels, " that are not observed in the data. ",
+                     "If possible, this issue could be solved by merging the categories of the outcome variable ",
+                     "such that all categories appear in all sub-groups.")
             else
                 stop("An error occurred during model fitting. ",
                      "Please check your input data for unusual values: ", e$message)

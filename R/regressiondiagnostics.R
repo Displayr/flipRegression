@@ -270,6 +270,9 @@ vif.Regression <- function (mod, ...)
 #' @export
 Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 {
+    if(inherits(mod$original, "svyolr"))
+        stop("'Anova' can not be computed for a 'Ordered Logit' model with weights. To compute the Anova, remove the ",
+             "weights or select a different regression type such as 'Linear'")
     anova <- diagnosticTestFromCar(mod, "Anova", white.adjust = white.adjust, ...)
     # Updating labels
     if (mod$show.labels)

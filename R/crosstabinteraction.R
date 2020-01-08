@@ -109,6 +109,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
     } else
     {
+        base.error.msg <- paste0("Cannot perform regression split by interaction term. Settings require fitting ",
+                                 "the model for all sub-groups determined by the interaction variable ",
+                                 interaction.name, ".")
         ## in case original formula has ., need to remove interaction
         ## term from formula
         formula2 <- update.formula(result$terms, paste0("~.-", interaction.name))
@@ -123,15 +126,15 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                                          NULL, weights[is.split], result$type, result$robust.se),
                            silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
-                stop("Cannot perform regression split by interaction term: ",
-                     attr(tmp.fit, "condition")$message, "\n")
+                stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
+                     " takes the value ", split.labels[j], ". ", attr(tmp.fit, "condition")$message, "\n")
 
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
                                           NULL, weights[-is.split], result$type, result$robust.se),
                             silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))
-                stop("Cannot preform regression split by interaction term: ",
-                     attr(tmpC.fit, "condition")$message, "\n")
+                stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
+                     " doesn't take the value ", split.labels[j], ". ", attr(tmpC.fit, "condition")$message, "\n")
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
 
