@@ -442,7 +442,7 @@ Regression <- function(formula,
     result$coef <- coef(result$original)
     if (!result$test.interaction)
         result$r.squared <- GoodnessOfFit(result)$value
-    if (type == "Ordered Logit")
+    if (type == "Ordered Logit" & !inherits(result$original, "svyolr"))
         result$coef <- c(result$coef, result$original$zeta)
     if (type == "Multinomial Logit")
     {
@@ -706,7 +706,6 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
             model$df <- model$edf
             model$aic <- model$deviance + 2 * model$df
-            class(model) <- "polr"
         }
         else if (type == "Multinomial Logit")
         {
@@ -904,6 +903,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
             out <- svyolr(.formula, .design)
             # Need this model element to handle the code in the predict.Regression method
             out$model <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            # Give it the polr class to use the predict.polr method while using summary.svyolr method
+            class(out) <- c("svyolr", "polr")
             out
         },
         warning.handler = function(w) {
@@ -914,10 +915,14 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
                 warning(w$message)
         },
         error.handler = function(e) {
-            message(e)
-            dput(.formula, dput(.estimation.data))
-            stop("An error occurred during model fitting. ",
-                 "Please check your input data for unusual values: ", e$message)
+            m <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            y <- model.response(m)
+            unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
+            if (unobserved.levels != "")
+                stop("Response level(s): ", unobserved.levels, " are not observed in the data")
+            else
+                stop("An error occurred during model fitting. ",
+                     "Please check your input data for unusual values: ", e$message)
         })
 }
 

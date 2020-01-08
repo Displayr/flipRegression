@@ -120,15 +120,17 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 next
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,],
-                                         NULL, weights[is.split], result$type, result$robust.se))
+                                         NULL, weights[is.split], result$type, result$robust.se),
+                           silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
-                stop("Cannot perform regression split by interaction term:",
+                stop("Cannot perform regression split by interaction term: ",
                      attr(tmp.fit, "condition")$message, "\n")
 
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
-                                          NULL, weights[-is.split], result$type, result$robust.se))
+                                          NULL, weights[-is.split], result$type, result$robust.se),
+                            silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))
-                stop("Cannot preform regression split by interaction term:",
+                stop("Cannot preform regression split by interaction term: ",
                      attr(tmpC.fit, "condition")$message, "\n")
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
@@ -194,4 +196,3 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, importance)
     res$pvalues <- matrix(pvalAdjust(pp, correction), nrow=nrow(bb), ncol=ncol(bb))
     return (res)
 }
-
