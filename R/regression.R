@@ -433,6 +433,7 @@ Regression <- function(formula,
         aliasedPredictorWarning(result$summary$aliased,
                                 if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
 
+    attr(result$original$terms, ".Environment") <- NULL # remove environment attribute to reduce size
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
     if (!result$test.interaction)
