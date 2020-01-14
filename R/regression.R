@@ -28,7 +28,7 @@
 #'   \code{"ANOVA"} returns an ANOVA table.
 #'   \code{"Detail"} returns a more traditional R output.
 #'   \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
-#'   \code{"Shapley regression"} returns a table with Shapley Importance scores.
+#'   \code{"Shapley Regression"} returns a table with Shapley Importance scores.
 #'   \code{"Effects Plot"} returns the effects plot per predictor.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
@@ -123,10 +123,11 @@ Regression <- function(formula,
 
     importance <- if (output == "Relative Importance Analysis" || relative.importance)
         "Relative Importance Analysis"
-    else if (output == "Shapley regression")
+    else if (output == "Shapley regression" || output == "Shapley Regression")
     {
+        output <- "Shapley Regression"
         if (type == "Linear")
-            "Shapley regression"
+            "Shapley Regression"
         else
             stop("Shapley requires Regression type to be Linear. Set the output to ",
                  "Relative Importance Analysis instead.")
@@ -271,7 +272,7 @@ Regression <- function(formula,
         if (internal)
             stop("'internal' may not be selected with regressions based on correlation matrices.")
         if (!is.null(importance))
-            stop("Relative importance analysis and Shapley regression are not ",
+            stop("Relative importance analysis and Shapley Regression are not ",
                  "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
@@ -921,7 +922,7 @@ setChartData <- function(result, output)
                       dt
                   }
                   else if (output %in% c("Relative Importance Analysis",
-                                         "Shapley regression"))
+                                         "Shapley Regression"))
                   {
                       importance <- result$importance
                       df <- data.frame(importance$importance,

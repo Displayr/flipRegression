@@ -7,7 +7,7 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
     if (importance == "Relative Importance Analysis")
         estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
                                    robust.se, show.warnings, correction, ...)
-    else if (importance == "Shapley regression")
+    else if (importance == "Shapley Regression")
         computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se,
                                  show.warnings, correction, ...)
     else

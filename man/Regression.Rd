@@ -71,7 +71,7 @@ summary and model statistics. It is the default.
 \code{"ANOVA"} returns an ANOVA table.
 \code{"Detail"} returns a more traditional R output.
 \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
-\code{"Shapley regression"} returns a table with Shapley Importance scores.
+\code{"Shapley Regression"} returns a table with Shapley Importance scores.
 \code{"Effects Plot"} returns the effects plot per predictor.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}

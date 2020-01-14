@@ -294,10 +294,10 @@ test_that("Shapley",
     expect_equal(result$p.values[1], c(Fees = 0.000389921200592241))
 
     suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                     data = bank, type = "Linear", output = "Shapley regression")))
+                     data = bank, type = "Linear", output = "Shapley Regression")))
 
     expect_error(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                            data = bank, type = "Binary Logit", output = "Shapley regression"),
+                            data = bank, type = "Binary Logit", output = "Shapley Regression"),
                  "Shapley requires Regression type to be Linear. Set the output to Relative Importance Analysis instead.")
 
     many.variables <- matrix(rnorm(3000), ncol = 30)
