@@ -1,5 +1,8 @@
 #' \code{Regression}
-#' @description Generalized Regression.
+#' @description Generalized Regression. Computes output for seven different regression types.
+#' Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
+#' multinomial. Output includes general coefficient estimates and importance analysis estimates
+#' with possibilities for handling missing data and interaction terms.
 #' @param formula An object of class \code{\link{formula}} (or one that can be
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
@@ -15,7 +18,7 @@
 #'   \code{"Use partial data (pairwise correlations)"},
 #'   \code{"Imputation (replace missing values with estimates)"}, and
 #'   \code{"Multiple imputation"}.
-#' @param type Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
+#' @param type Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust to violations of
@@ -60,8 +63,12 @@
 #' @param effects.format A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 #'   and \code{y.title} (the title of the y-axis, defaults to outcome label).
 #' @param ... Additional argments to be passed to  \code{\link{lm}} or, if the
-#'  data is weighted,  \code{\link[survey]{svyglm}}.
-#' @details "Imputation (replace missing values with estimates)". All selected
+#'  data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.
+#' @details In the case of Ordered Logistic regression, this function computes a proporional odds model using
+#'  the cumulative link (logistic). In the case of no weights, the \code{\link[MASS]{polr}} function is used.
+#'  In the case of a weighted regresion, the \code{\link[survey]{svyolr}} function is used.
+#'
+#'  "Imputation (replace missing values with estimates)". All selected
 #'  outcome and predictor variables are included in the imputation, along with
 #'  all \code{auxiliary.data}, excluding cases that are excluded via subset or
 #'  have invalid weights, but including cases with missing values of the outcome variable.
@@ -69,11 +76,16 @@
 #'  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
 #' @references von Hippel, Paul T. 2007. "Regression With Missing Y's: An
 #'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
-#'   Methodology 37:83-117. White, H. (1980), A heteroskedastic-consistent
-#'   covariance matrix estimator and a direct test of heteroskedasticity.
-#'   Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
-#'   heteroscedasticity consistent standard errors in the linear regression
-#'   model. The American Statistician, 54(3): 217-224.
+#'   Methodology 37:83-117.
+#'
+#'   White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
+#'   and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
+#'
+#'   Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
+#'   standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
+#'
+#'   Lumley, T. (2004) Analysis of complex survey samples. Journal of Statistical Software 9(1): 1-19
+#'
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
@@ -897,7 +909,7 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, weights)
-            out <- svyolr(.formula, .design)
+            out <- svyolr(.formula, .design, ...)
             out$df <- out$edf
             # Compute the dAIC
             wt <- weights(.design)

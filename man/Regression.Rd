@@ -53,7 +53,7 @@ name of a variable in \code{data}. It may not be an expression.}
 \code{"Imputation (replace missing values with estimates)"}, and
 \code{"Multiple imputation"}.}
 
-\item{type}{Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
+\item{type}{Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
 
@@ -117,13 +117,20 @@ See \code{\link{contrasts}} for more information.}
 and \code{y.title} (the title of the y-axis, defaults to outcome label).}
 
 \item{...}{Additional argments to be passed to  \code{\link{lm}} or, if the
-data is weighted,  \code{\link[survey]{svyglm}}.}
+data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.}
 }
 \description{
-Generalized Regression.
+Generalized Regression. Computes output for seven different regression types.
+Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
+multinomial. Output includes general coefficient estimates and importance analysis estimates
+with possibilities for handling missing data and interaction terms.
 }
 \details{
-"Imputation (replace missing values with estimates)". All selected
+In the case of Ordered Logistic regression, this function computes a proporional odds model using
+ the cumulative link (logistic). In the case of no weights, the \code{\link[MASS]{polr}} function is used.
+ In the case of a weighted regresion, the \code{\link[survey]{svyolr}} function is used.
+
+ "Imputation (replace missing values with estimates)". All selected
  outcome and predictor variables are included in the imputation, along with
  all \code{auxiliary.data}, excluding cases that are excluded via subset or
  have invalid weights, but including cases with missing values of the outcome variable.
@@ -133,9 +140,13 @@ Generalized Regression.
 \references{
 von Hippel, Paul T. 2007. "Regression With Missing Y's: An
   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
-  Methodology 37:83-117. White, H. (1980), A heteroskedastic-consistent
-  covariance matrix estimator and a direct test of heteroskedasticity.
-  Econometrica, 48, 817-838. Long, J. S. and Ervin, L. H. (2000). Using
-  heteroscedasticity consistent standard errors in the linear regression
-  model. The American Statistician, 54(3): 217-224.
+  Methodology 37:83-117.
+
+  White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
+  and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
+
+  Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
+  standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
+
+  Lumley, T. (2004) Analysis of complex survey samples. Journal of Statistical Software 9(1): 1-19
 }
