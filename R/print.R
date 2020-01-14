@@ -47,7 +47,6 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                            outcome variable may be useful (Regression > Diagnostic > Plot > Residuals vs Fitted).
                            A transformation of the outcome or predictor variables may solve this problem.",
                            suggest, "\n"))
-            outcome.variable <- outcomeVariableFromModel(x)
         }
     }
     outcome.variable <- outcomeVariableFromModel(x)

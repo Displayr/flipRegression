@@ -395,8 +395,6 @@ Regression <- function(formula,
     class(result) <- "Regression"
     result$correction <- correction
     result$formula <- input.formula
-    # Inserting the coefficients from the partial data.
-    result$model <- data
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
