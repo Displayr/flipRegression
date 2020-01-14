@@ -406,6 +406,7 @@ Regression <- function(formula,
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
 
+    attr(result$original$terms, ".Environment") <- NULL # remove environment attribute to reduce size
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
     result$summary$call <- cl
@@ -433,7 +434,6 @@ Regression <- function(formula,
         aliasedPredictorWarning(result$summary$aliased,
                                 if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
 
-    attr(result$original$terms, ".Environment") <- NULL # remove environment attribute to reduce size
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
     if (!result$test.interaction)
