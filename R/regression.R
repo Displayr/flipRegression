@@ -379,9 +379,6 @@ Regression <- function(formula,
         original <- fit$original
         .design <- fit$design
 
-        # Remove data from original$model to reduce output size (DS-2518)
-        original$model <- original$model[integer(0),]
-
         result <- list(original = original, call = cl)
 
         if (!is.null(.design))

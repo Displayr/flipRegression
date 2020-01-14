@@ -141,6 +141,19 @@ Observed.Regression <- function(x)
 }
 
 
+#' #' \code{Observed.FitRegression}
+#' #'
+#' #' Observed values used in fitting a model with an outcome variable.
+#' #' @param x A 'FitRegression' model.
+#' #' @importFrom flipData Observed
+#' #' @export
+#' Observed.FitRegression <- function(x)
+#' {
+#'     ## use stats::terms() output because it expands
+#'     ## dot in formulae, so don't need to supply data
+#'     x$original$model[, OutcomeName(x$original$terms)]
+#' }
+
 #' \code{probabilities}
 #'
 #' @param object A model of some kind.
