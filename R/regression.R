@@ -407,6 +407,10 @@ Regression <- function(formula,
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
 
+    # remove environment attribute to reduce size
+    attr(result$original$terms, ".Environment") <- NULL
+    attr(attr(result$original$model, "terms"), ".Environment") <- NULL
+
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
     result$summary$call <- cl
