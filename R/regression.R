@@ -494,8 +494,7 @@ Regression <- function(formula,
     if (!is.null(result$importance))
         result$importance.footer <- importanceFooter(result)
 
-    if (!recursive.call)
-        result$model <- NULL # remove model property to reduce size (DS-2518)
+    result$model <- NULL # remove model property to reduce size (DS-2518)
 
     options(contrasts = old.contrasts[[1]])
 
