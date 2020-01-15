@@ -2,13 +2,13 @@
 # Shapley, L.S. (1953). "A value for n-person games"
 #' @importFrom utils combn
 computeShapleyImportance <- function(formula, data = NULL, weights, signs,
-                                     variable.names, robust.se = FALSE,
+                                     variable.names, robust.se = FALSE, outlier.proportion = NULL,
                                      show.warnings = TRUE, correction, ...)
 {
     signsWarning(signs, show.warnings, "Linear")
 
     info <- extractRegressionInfo(formula, data, weights, "Linear", signs, NA,
-                                  variable.names, robust.se, ...)
+                                  variable.names, robust.se, outlier.proportion, ...)
 
     signs <- info$signs
     variable.names <- info$variable.names
@@ -44,6 +44,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
                                                       "Linear", signs,
                                                       sum(raw.importance),
                                                       variable.names, robust.se,
+                                                      outlier.proportion,
                                                       show.warnings,
                                                       correction, ...)
     standard.errors <- raw.importance * relative.importance$standard.errors /

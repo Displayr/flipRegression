@@ -163,8 +163,11 @@ w <- structure(c(1.02849002849003, 0.587708587708588, 0.587708587708588,
 dat <- cbind(y, X)
 
 test_that("Relative importance linear", {
-    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, 1 ,1),
-                                                       0.0409055316886271, variable.names = LETTERS[1:3], FALSE, TRUE, "None")
+    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, data = dat, weights = NULL,
+                                                       type = "Linear", signs = c(1, 1 ,1),
+                                                       r.square = 0.0409055316886271,
+                                                       variable.names = LETTERS[1:3], robust.se = FALSE,
+                                                       show.warnings = TRUE, correction = "None")
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
     expect_equal(unname(ria$standard.errors[2]), 0.00639909659943047)
@@ -173,8 +176,11 @@ test_that("Relative importance linear", {
 })
 
 test_that("Relative importance linear weighted", {
-    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, w, "Linear", c(1, 1, 1),
-                                                       0.0488985219292419, variable.names = LETTERS[1:3], FALSE, TRUE, "None")
+    ria <- flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, data= dat, weights = w,
+                                                       type = "Linear", signs = c(1, 1, 1),
+                                                       r.square = 0.0488985219292419, variable.names = LETTERS[1:3],
+                                                       robust.se = FALSE, outlier.proportion = 0,
+                                                       show.warnings = TRUE, correction = "None")
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
     expect_equal(unname(ria$standard.errors[2]), 0.00922207572739253)
@@ -240,8 +246,12 @@ dat.factor <- cbind(y, X.factor)
 
 # Factor warning
 test_that("Relative importance ordered factor",
-          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat.factor, NULL, "Linear", c(1, -1 ,1),
-                                                                     0.0409055316886271, variable.names = LETTERS[1:3], correction = "None"),
+          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, data = dat.factor,
+                                                                     weights = NULL, type = "Linear",
+                                                                     signs = c(1, -1 ,1),
+                                                                     r.square = 0.0409055316886271,
+                                                                     variable.names = LETTERS[1:3],
+                                                                     correction = "None"),
                          "The following variables have been treated as categorical: v1,v2,v3. This may over-inflate their effects."))
 
 test_that("Relative importance robust SE, dot in formula",

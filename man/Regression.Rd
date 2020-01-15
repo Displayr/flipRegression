@@ -2,7 +2,7 @@
 % Please edit documentation in R/regression.R
 \name{Regression}
 \alias{Regression}
-\title{\code{Regression}}
+\title{Generalized Regression Outputs}
 \usage{
 Regression(
   formula,
@@ -29,6 +29,7 @@ Regression(
   interaction.formula = NULL,
   recursive.call = FALSE,
   effects.format = list(max.label = 10),
+  outlier.proportion = NULL,
   ...
 )
 }
@@ -116,11 +117,16 @@ See \code{\link{contrasts}} for more information.}
 \item{effects.format}{A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 and \code{y.title} (the title of the y-axis, defaults to outcome label).}
 
+\item{outlier.proportion}{A single numeric value that determines the percentage of data points to remove from the
+analysis. The data points removed correspond to those in the proportion with the largest residuals.
+A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+denote that a percentage between none and 50\% of the data points are removed.}
+
 \item{...}{Additional argments to be passed to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.}
 }
 \description{
-Generalized Regression. Computes output for seven different regression types.
+Computes output for seven different regression types.
 Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
 multinomial. Output includes general coefficient estimates and importance analysis estimates
 with possibilities for handling missing data and interaction terms.

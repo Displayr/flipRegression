@@ -28,8 +28,9 @@ Imports:
     survey,
     xml2
 Suggests:
-    testthat,
     flipExampleData,
+    testthat,
+    robustbase
 Remotes: Displayr/flipU,
     Displayr/flipFormat,
     Displayr/flipData,

@@ -1,14 +1,15 @@
 estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
-                               robust.se = FALSE, show.warnings = TRUE, correction, importance, ...)
+                               robust.se = FALSE, outlier.proportion, show.warnings = TRUE, correction,
+                               importance, ...)
 {
     if (!is.null(weights))
         robust.se <- FALSE
 
     if (importance == "Relative Importance Analysis")
         estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
-                                   robust.se, show.warnings, correction, ...)
+                                   robust.se, outlier.proportion, show.warnings, correction, ...)
     else if (importance == "Shapley Regression")
-        computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se,
+        computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se, outlier.proportion,
                                  show.warnings, correction, ...)
     else
         stop("Importance type not handled: ", importance)
@@ -20,7 +21,8 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @noRd
 estimateRelativeImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
-                                       robust.se = FALSE, show.warnings = TRUE, correction, ...)
+                                       robust.se = FALSE, outlier.proportion = NULL, show.warnings = TRUE,
+                                       correction, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -29,7 +31,8 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         stop("Relative importance analysis is not available for ", type)
 
     info <- extractRegressionInfo(formula, data, weights, type, signs,
-                                  r.square, variable.names, robust.se, ...)
+                                  r.square, variable.names, robust.se,
+                                  outlier.proportion, ...)
     signs <- info$signs
     r.square <- info$r.square
     variable.names <- info$variable.names
@@ -73,7 +76,8 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     fit <- if (type == "Linear")
         lm(y ~ 0 + z, weights = weights)
     else
-        FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)$original
+        FitRegression(data.formula, reg.data, NULL, input.weights,
+                      type, FALSE, outlier.proportion,...)$original
     beta <- extractVariableCoefficients(fit, type, FALSE)
     beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
 
@@ -200,12 +204,12 @@ appendStatistics <- function(obj, raw.importance, standard.errors, signs, fit, c
 
 extractRegressionInfo <- function(formula, data, weights, type, signs,
                                   r.square, variable.names, robust.se = FALSE,
-                                  ...)
+                                  outlier.proportion, ...)
 {
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
         formula2 <- DataFormula(formula, data)
-        fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, ...)
+        fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, outlier.proportion, ...)
         if (is.null(signs) || any(is.na(signs)))
         {
             signs <- sign(round(extractVariableCoefficients(fit$original, type), 13))
