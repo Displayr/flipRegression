@@ -3,5 +3,8 @@
 outcomeVariableFromModel <- function(Regression.object)
 {
     form <- formula(Regression.object)
-    Regression.object$original$model[, OutcomeName(form)]
+    if (!is.null(Regression.object$model)) # multiple imputation
+        Regression.object$model[, OutcomeName(form)]
+    else
+        Regression.object$original$model[, OutcomeName(form)]
 }
