@@ -395,7 +395,6 @@ Regression <- function(formula,
     class(result) <- "Regression"
     result$correction <- correction
     result$formula <- input.formula
-    result$model <- data
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
@@ -405,7 +404,7 @@ Regression <- function(formula,
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
 
-    # remove environment attribute to reduce size (DS-2518)
+    # remove environment attribute to reduce size
     attr(result$original$terms, ".Environment") <- NULL
     attr(attr(result$original$model, "terms"), ".Environment") <- NULL
 
@@ -493,9 +492,6 @@ Regression <- function(formula,
     result$footer <- regressionFooter(result)
     if (!is.null(result$importance))
         result$importance.footer <- importanceFooter(result)
-
-    result$model <- NULL # remove model property to reduce size (DS-2518)
-
     options(contrasts = old.contrasts[[1]])
 
     result <- setChartData(result, output)
