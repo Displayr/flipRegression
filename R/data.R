@@ -3,5 +3,5 @@
 outcomeVariableFromModel <- function(Regression.object)
 {
     form <- formula(Regression.object)
-    Regression.object$original$model[, OutcomeName(form)]
+    Regression.object$model[, OutcomeName(form)]
 }
