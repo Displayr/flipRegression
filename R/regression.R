@@ -387,9 +387,10 @@ Regression <- function(formula,
             stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
-        subset <-  processed.data$subset
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, outlier.proportion, ...)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, ...)
+        .estimation.data <- fit$.estimation.data
+        .formula <- fit$formula
         if (internal)
         {
             fit$subset <- row.names %in% rownames(.estimation.data)
@@ -484,7 +485,7 @@ Regression <- function(formula,
         labels <- rownames(result$summary$coefficients)
         labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
-        result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
+        result$importance <- estimateImportance(.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.proportion,
                                                 !recursive.call, correction, importance, ...)
@@ -630,7 +631,6 @@ importanceFooter <- function(x)
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
 #' @param .estimation.data A \code{\link{data.frame}}.
-#' @param subset Not used.
 #' @param .weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
 #' @param type See \link{Regression}.
@@ -651,40 +651,75 @@ importanceFooter <- function(x)
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, subset, .weights, type, robust.se, outlier.proportion, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, ...)
+{
+    .design <- NULL
+    # Initially fit model on all the data and then refit with outlier removal if necessary
+    fitted.model <- fitModel(.formula, .estimation.data, .weights, type,
+                             robust.se, subset = NULL, ...)
+    model <- fitted.model$model
+    .design <- fitted.model$design
+    .estimation.data <- fitted.model$estimation.data
+    .formula <- fitted.model$formula
+    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.proportion)
+    if (remove.outliers)
+    {
+        refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
+                                                         type, robust.se, outlier.proportion, ...)
+        model <- refitted.model.data$model
+        .estimation.data <- refitted.model.data$.estimation.data
+        .design <- refitted.model.data$.design
+        non.outlier.data <- refitted.model.data$non.outlier.data
+    } else
+        non.outlier.data <- rep(TRUE, nrow(.estimation.data))
+
+    result <- list(original = model, formula = .formula, .estimation.data = .estimation.data,
+                   design = .design, weights = .weights, robust.se = robust.se,
+                   non.outlier.data = non.outlier.data)
+    class(result) <- "FitRegression"
+    result
+}
+
+# Fits the models. Now in a separate function to FitRegression for repeated use
+# to prevent code duplication with the automated outlier removal refitting.
+fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
     .design <- NULL
-    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.proportion)
+    if (is.null(subset))
+    {
+        non.outlier.data <- rep(TRUE, nrow(.estimation.data))
+        .estimation.data$non.outlier.data <- non.outlier.data
+    }
+    # Proteect against . operator used in RHS of formula
+    # If so, it will include non.outlier.data as a predictor now.
+    formula.terms <- terms.formula(.formula, data = .estimation.data)
+    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data"))
+        .formula <- update.formula(.formula, drop.terms(formula.terms,
+                                                        which(non.outlier.in.data.frame),
+                                                        keep.response = TRUE))
     if (is.null(.weights))
     {
         if (type == "Linear")
         {
-            model <- lm(.formula, .estimation.data, model = TRUE)
-            if (remove.outliers)
-            {
-                non.outlier.data <- findNonOutlierObservations(.estimation.data,
-                                                               outlier.proportion,
-                                                               model,
-                                                               type)
-                .estimation.data$non.outlier.data <- non.outlier.data
-                model <- lm(.formula, data = .estimation.data, subset = non.outlier.data, model = TRUE)
-            }
+            model <- lm(.formula, .estimation.data, subset = non.outlier.data, model = TRUE)
             model$aic <- AIC(model)
         }
         else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-            model <- glm(.formula, .estimation.data, family = switch(type,
-                                                                     "Poisson" = poisson,
-                                                                     "Quasi-Poisson" = quasipoisson,
-                                                                     "Binary Logit" = binomial(link = "logit")))
+            model <- glm(.formula, .estimation.data, subset = non.outlier.data,
+                         family = switch(type,
+                                         "Poisson" = poisson,
+                                         "Quasi-Poisson" = quasipoisson,
+                                         "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- fitOrderedLogit(.formula, .estimation.data, NULL, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, NULL, non.outlier.data = non.outlier.data, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
         {
-            model <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
+            model <- multinom(.formula, .estimation.data, subset = non.outlier.data,
+                              Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
@@ -699,7 +734,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 list(value = val, warnings = myWarnings)
             }
 
-            result <- withWarnings(glm.nb(.formula, .estimation.data))
+            result <- withWarnings(glm.nb(.formula, .estimation.data, subset = non.outlier.data))
             model <- result$value
             if (!is.null(result$warnings))
                 if (result$warnings[[1]]$message == "iteration limit reached")
@@ -721,7 +756,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         if (type == "Linear")
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
-            model <- svyglm(.formula, .design)
+            model <- svyglm(.formula, .design, subset = non.outlier.data, ...)
             if (all(model$residuals == 0)) # perfect fit
                 model$df <- NA
             else
@@ -745,22 +780,25 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- multinom(.formula, .estimation.data, weights = weights,
+            model <- multinom(.formula, .estimation.data, weights = weights, subset = non.outlier.data,
                               Hess = TRUE, trace = FALSE, maxit = 10000, MaxNWts = 1e9, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- glm.nb(.formula, .estimation.data, weights = weights, ...)
+            model <- glm.nb(.formula, .estimation.data, weights = weights, subset = non.outlier.data, ...)
         }
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
             model <- switch(type,
-                            "Binary Logit" = svyglm(.formula, .design, family = quasibinomial()),
-                            "Poisson" = svyglm(.formula, .design, family = poisson()),
-                            "Quasi-Poisson" = svyglm(.formula, .design, family = quasipoisson()))
+                            "Binary Logit" = svyglm(.formula, .design, subset = non.outlier.data,
+                                                    family = quasibinomial()),
+                            "Poisson" = svyglm(.formula, .design, subset = non.outlier.data,
+                                               family = poisson()),
+                            "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data,
+                                                     family = quasipoisson()))
             assign(".design", .design, envir=.GlobalEnv)
             aic <- extractAIC(model)
             remove(".design", envir=.GlobalEnv)
@@ -768,11 +806,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             model$aic <- aic[2]
         }
     }
-    non.outlier.data <- if (remove.outliers) non.outlier.data else NULL
-    result <- list(original = model, formula = .formula, design = .design,
-                   weights = .weights, robust.se = robust.se, non.outlier.data = non.outlier.data)
-    class(result) <- "FitRegression"
-    result
+    return(list(model = model, formula = .formula, design = .design, estimation.data = .estimation.data))
 }
 
 
@@ -929,12 +963,12 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     }
 }
 
-#' @importFrom stats model.frame model.response
-fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
+#' @importFrom stats model.frame model.matrix model.response
+fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data, ...)
 {
     model <- InterceptExceptions(
         if (is.null(weights))
-            polr(.formula, .estimation.data, Hess = TRUE, ...)
+            polr(.formula, .estimation.data, subset = non.outlier.data, Hess = TRUE, ...)
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, weights)
@@ -1037,7 +1071,8 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
         warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
                 "These variable(s) have been removed from the analysis: ", missing.variable.names, ".")
     }
-    return(list(data = data, formula = formula, formula.with.interaction = formula.with.interaction))
+    return(list(data = data, formula = formula, input.formula = input.formula,
+                formula.with.interaction = formula.with.interaction))
 }
 
 # Helper function to check user has input a valid value.
@@ -1050,6 +1085,20 @@ checkAutomaterOutlierRemovalSetting <- function(outlier.proportion)
     remove.outliers
 }
 
+# Identifies the outliers and refits the model
+refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
+                                      type, robust.se, outlier.proportion, ...)
+{
+    non.outlier.data <- findNonOutlierObservations(.estimation.data,
+                                                   outlier.proportion,
+                                                   model,
+                                                   type)
+    .estimation.data$non.outlier.data <- non.outlier.data
+    fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
+                             type, robust.se, subset = non.outlier.data, ...)
+    return(list(model = fitted.model$model, .estimation.data = .estimation.data,
+                design = fitted.model$design, non.outlier.data = non.outlier.data))
+}
 
 # Returns a logical vector of observations that are not deemed outlier observations
 findNonOutlierObservations <- function(data, outlier.proportion, model, type)
@@ -1057,9 +1106,11 @@ findNonOutlierObservations <- function(data, outlier.proportion, model, type)
     n.model <- nrow(data)
     if (type == "Linear")
         model.residuals <- model$residuals
+    else if (type %in% c("Binary Logit", "Poisson", "Quasi-Poisson"))
+        model.residuals <- model$residuals
     else
         stop("Not ready yet")
     bound <- ceiling(n.model * (1 - outlier.proportion))
-    valid.data <- unname(rank(abs(model.residuals)) <= bound)
-    return(valid.data)
+    valid.data.indices <- unname(rank(abs(model.residuals)) <= bound)
+    return(valid.data.indices)
 }

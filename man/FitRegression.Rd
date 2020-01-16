@@ -7,7 +7,6 @@
 FitRegression(
   .formula,
   .estimation.data,
-  subset,
   .weights,
   type,
   robust.se,
@@ -21,8 +20,6 @@ coerced to that class): a symbolic description of the model to be fitted.
 The details of type specification are given under \sQuote{Details}.}
 
 \item{.estimation.data}{A \code{\link{data.frame}}.}
-
-\item{subset}{Not used.}
 
 \item{.weights}{An optional vector of sampling weights, or, the name or, the
 name of a variable in \code{data}. It may not be an expression.}

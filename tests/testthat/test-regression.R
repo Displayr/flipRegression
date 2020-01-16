@@ -77,13 +77,17 @@ test_that(missing,
 missing <- "Multiple imputation"
 test_that("DS-2645 - Entirely Missing predictor", {
     bank$Bogus <- rep(NA, nrow(bank))
-    expect_warning(Regression(Overall ~ ., data = bank, missing = missing),
+    base.string <- paste0("Overall ~ ", paste0(names(bank)[-which(names(bank) == "Overall")], collapse = " + "))
+    test.formula <- as.formula(base.string)
+    expect_warning(Regression(test.formula, data = bank, missing = missing),
                    "Data has variable(s) that are entirely missing values (all observed values of the variable are missing). These variable(s) have been removed from the analysis: Bogus.", fixed = TRUE)
     bank$Nothing <- bank$Bogus
-    expect_warning(Regression(Overall ~ ., data = bank, missing = missing),
+    test.formula.with.two.all.missing <- as.formula(paste0(base.string, " + Nothing"))
+    expect_warning(Regression(test.formula.with.two.all.missing, data = bank, missing = missing),
                    "Data has variable(s) that are entirely missing values (all observed values of the variable are missing). These variable(s) have been removed from the analysis: Bogus, Nothing.", fixed = TRUE)
     bank$Bogus <- NULL
-    expect_error(Regression(Nothing ~ ., data = bank),
+    missing.response.formula <- as.formula(gsub("Overall", "Nothing", gsub(" + Bogus", "", base.string, fixed = TRUE)))
+    expect_error(Regression(missing.response.formula, data = bank),
                  "Response variable is entirely missing (all observed values of the variable are missing).", fixed = TRUE)
     bank$Nothing <- NULL
 })

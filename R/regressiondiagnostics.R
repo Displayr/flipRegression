@@ -411,8 +411,6 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
     model <- x$original
 
     assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
-    if (!is.null(x$non.outlier.data))
-        assign("non.outlier.data", x$non.outlier.data, envir=.GlobalEnv)
     ## drop aliased/colinear variables
     ## if (any(x$summary$aliased))
     ##     model <- updateAliasedModel(x)
@@ -426,8 +424,6 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
         remove(".formula", envir = .GlobalEnv)
     if (exists(".estimation.data", envir = .GlobalEnv))
         remove(".estimation.data", envir = .GlobalEnv)
-    if (exists("non.outlier.data", envir = .GlobalEnv))
-        remove("non.outlier.data", envir = .GlobalEnv)
     t
 }
 

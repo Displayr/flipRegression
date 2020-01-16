@@ -30,8 +30,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (is.null(importance))
     {
-        fit2 <- FitRegression(formula.with.interaction, result$estimation.data,
-                              result$subset, weights, result$type, result$robust.se, result$outlier.proportion, ...)
+        fit2 <- FitRegression(formula.with.interaction, result$estimation.data, weights,
+                              result$type, result$robust.se, result$outlier.proportion, ...)
         atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
         if (!is.null(weights))
         {
@@ -123,7 +123,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 next
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,],
-                                         NULL, weights[is.split], result$type, result$robust.se,
+                                         weights[is.split], result$type, result$robust.se,
                                          result$outlier.proportion),
                            silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
@@ -131,7 +131,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                      " takes the value ", split.labels[j], ". ", attr(tmp.fit, "condition")$message, "\n")
 
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
-                                          NULL, weights[-is.split], result$type, result$robust.se,
+                                          weights[-is.split], result$type, result$robust.se,
                                           result$outlier.proportion),
                             silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))

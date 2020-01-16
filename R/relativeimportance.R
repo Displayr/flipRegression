@@ -76,7 +76,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     fit <- if (type == "Linear")
         lm(y ~ 0 + z, weights = weights)
     else
-        FitRegression(data.formula, reg.data, NULL, input.weights,
+        FitRegression(data.formula, reg.data, input.weights,
                       type, FALSE, outlier.proportion,...)$original
     beta <- extractVariableCoefficients(fit, type, FALSE)
     beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
@@ -209,7 +209,7 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
         formula2 <- DataFormula(formula, data)
-        fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, outlier.proportion, ...)
+        fit <- FitRegression(formula2, data, weights, type, robust.se, outlier.proportion, ...)
         if (is.null(signs) || any(is.na(signs)))
         {
             signs <- sign(round(extractVariableCoefficients(fit$original, type), 13))

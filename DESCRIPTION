@@ -7,7 +7,8 @@ Maintainer: Displayr <opensource@displayr.com>
 Description: Regression models according to the flip Project conventions.
 License: GPL-3
 LazyData: TRUE
-Depends: Rcpp (>= 0.12.15)
+Depends: R (>= 3.0.2),
+    Rcpp (>= 0.12.15)
 Imports:
     car,
     effects,
