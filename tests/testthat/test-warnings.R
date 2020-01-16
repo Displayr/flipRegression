@@ -7,7 +7,7 @@ test_that("Predictor is outcome",
               y  <- 1:100 + .001
               x <- rnorm(100, y, y)
 
-              expect_error(Regression(y ~ y, robust.se = FALSE))
+              expect_error(Regression(y ~ y, robust.se = FALSE), "A variable may only appear once")
               ExpectNoWarning(Regression(y ~ x, robust.se = TRUE), "Outcome' variable has been s")
 
           })
@@ -15,8 +15,8 @@ test_that("Heteroskedasticity",
           {
               y  <- 1:100 + .001
               x <- rnorm(100, y, y)
-              out <- Regression(y ~ x, robust.se = FALSE)
-              ExpectWarning(out, "Breusch")
+              expect_error(out <- Regression(y ~ x, robust.se = FALSE), NA)
+              expect_warning(print(out), "Breusch")
               ExpectNoWarning(Regression(y ~ x, robust.se = TRUE), "Breusch")
           })
 
@@ -25,10 +25,10 @@ test_that("Outliers",
               set.seed(133452)
               y  <- 1:10 + rnorm(10, .1)
               x <- 1:10
-              out <- Regression(y ~ x)
+              expect_error(out <- Regression(y ~ x), NA)
               ExpectNoWarning(out, "Unusual observations")
               x <- c(10, 1:9)
-              out <- Regression(y ~ x)
+              expect_error(out <- Regression(y ~ x), NA)
               ExpectWarning(out, "Unusual observations")
           })
 
@@ -38,7 +38,7 @@ test_that("Dichotomized",
               set.seed(12)
               y  <- 1:10 + rnorm(10, .1)
               x <- 1:10
-              ExpectWarning(Regression(y ~ x, type = "Binary Logit"), "dichotimized")
+              expect_warning(Regression(y ~ x, type = "Binary Logit"), "dichotimized")
               y <- factor(round(y / 15) + 1)
               ExpectNoWarning(Regression(y ~ x, type = "Binary Logit"), "dichotimized")
           })
@@ -50,7 +50,7 @@ test_that("Missing",
                 ExpectNoWarning(Regression(y ~ x), "the data is missing")
                 y  <- c(rep(NA, 500), 1:50 + rnorm(50, .1))
                 x <- 1:550
-                ExpectWarning(Regression(y ~ x), "the data is missing")
+                expect_warning(Regression(y ~ x), "the data is missing")
 
           })
 

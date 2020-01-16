@@ -157,16 +157,20 @@ test_that("BaseDescription",
           {
               library(flipRegression)
               # Unweighted, unfiltered
-              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank))
+              expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank)),
+                           NA)
               #z$sample.description
               # Weighted
-              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = ID))
+              expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = ID)),
+                           NA)
               #z$sample.description
               # Filtered
-              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = ID > 0.5))
+              expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = ID > 0.5)),
+                           NA)
               #z$sample.description
               # Weighted, Filtered
-              z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = ID))
+              expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = ID)),
+                           NA)
               #z$sample.description
           })
 

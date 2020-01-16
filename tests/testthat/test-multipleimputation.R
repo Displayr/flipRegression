@@ -43,12 +43,14 @@ test_that("Multiple imputation with auxiliary variables ", {
 test_that("Multiple imputation run using Regression", {
     est <- flipData::EstimationData(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, zbank, missing = "Multiple imputation", m = 10)
     models <- lapply(est$estimation.data, FUN = function(x) Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = x))
-    coefs <- MultipleImputationCoefficientTable(models)
+    coefs <- expect_error(MultipleImputationCoefficientTable(models), NA)
     #expect_equal(coefs[12,5], 0.211, 0.001)
 })
 
 test_that("Multiple imputation ", {
-    z = Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = zbank, missing = "Multiple imputation")
+    expect_error(z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4,
+                                data = zbank, missing = "Multiple imputation"),
+                 NA)
     #expect_equal(z$coefficient.table[12,5], 0.187, 0.001)
 })
 
@@ -56,77 +58,77 @@ test_that("Multiple imputation ", {
 
 test_that("Other examples",
 {
-#  generate data
-set.seed(88)
-n <- 1000
-X <- rnorm(n)
-y <- X + rnorm(n)
+    #  generate data
+    set.seed(88)
+    n <- 1000
+    X <- rnorm(n)
+    y <- X + rnorm(n)
 
-# drop values of x
-# probability of x being missing 10%
-# data is MCAR
-x <- X
-x[runif(n) < .1] <- NA
+    # drop values of x
+    # probability of x being missing 10%
+    # data is MCAR
+    x <- X
+    x[runif(n) < .1] <- NA
 
-Regression(y ~ x, data = data.frame(y = y, x = x))
-Regression(y ~ x, data = data.frame(y = y, x = x), missing = "Multiple imputation", m = 10)
+    expect_error(Regression(y ~ x, data = data.frame(y = y, x = x)), NA)
+    expect_error(Regression(y ~ x, data = data.frame(y = y, x = x), missing = "Multiple imputation", m = 10), NA)
 
-# drop values of x
-# probability of x being missing depends on y (observed)
-# data is MAR
-x <- X
-x[runif(n) < y] <- NA
-Regression(y ~ x, data = data.frame(y = y, x = x))
-Regression(y ~ x, data = data.frame(y = y, x = x), missing = "Multiple imputation")
-
-
-# drop values of x
-# probability of x being missing now depends on x (sometimes unobserved)
-# data is MNAR
-x <- X
-x[X < runif(n)] <- NA
-z <- runif(n)
-suppressWarnings(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z)))
-Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Multiple imputation")
-Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Use partial data (pairwise correlations)")
+    # drop values of x
+    # probability of x being missing depends on y (observed)
+    # data is MAR
+    x <- X
+    x[runif(n) < y] <- NA
+    expect_error(Regression(y ~ x, data = data.frame(y = y, x = x)), NA)
+    expect_error(Regression(y ~ x, data = data.frame(y = y, x = x), missing = "Multiple imputation"), NA)
 
 
-# Case study
+    # drop values of x
+    # probability of x being missing now depends on x (sometimes unobserved)
+    # data is MNAR
+    x <- X
+    x[X < runif(n)] <- NA
+    z <- runif(n)
+    suppressWarnings(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z)))
+    expect_error(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Multiple imputation"), NA)
+    expect_error(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Use partial data (pairwise correlations)"), NA)
 
-distance <- Distance <- c(5, 5, 10, 10, 15, 15, 20, 20)
-price <- Price <- c(1.6, 2.4, 1.1, 1.9, .6, 1.4, .1, .9)
 
-PredictionPlot(Regression(price ~ distance))
+    # Case study
 
-## M ~ X
-distance <- Distance
-distance[7:8] <- NA
+    distance <- Distance <- c(5, 5, 10, 10, 15, 15, 20, 20)
+    price <- Price <- c(1.6, 2.4, 1.1, 1.9, .6, 1.4, .1, .9)
 
-# Complete case
-Regression(price ~ distance, data = data.frame(distance, price))
+    expect_error(PredictionPlot(Regression(price ~ distance)), NA)
 
-Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)")
-Regression(price ~ distance, data = data.frame(distance, price)[1:6, ], missing = "Use partial data (pairwise correlations)")
+    ## M ~ X
+    distance <- Distance
+    distance[7:8] <- NA
 
-# Regression-based imputation
-Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation")
+    # Complete case
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price)), NA)
 
-# Hot decking
-distance[7:8] <- 15
-Regression(price ~ distance, data = data.frame(distance, price))
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)"), NA)
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price)[1:6, ], missing = "Use partial data (pairwise correlations)"), NA)
 
-# Mean imputation
-distance[7:8] <- mean(distance[1:6])
-Regression(price ~ distance, data = data.frame(distance, price))
+    # Regression-based imputation
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation"), NA)
 
-predict(Regression(distance ~ price))
+    # Hot decking
+    distance[7:8] <- 15
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price)), NA)
 
-# M ~ Y
-distance <- Distance
-distance[c(5,7)] <- NA
-Regression(price ~ distance, data = data.frame(distance, price))
-Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)")
-Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation")
+    # Mean imputation
+    distance[7:8] <- mean(distance[1:6])
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price)), NA)
+
+    expect_error(predict(Regression(distance ~ price)), NA)
+
+    # M ~ Y
+    distance <- Distance
+    distance[c(5,7)] <- NA
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price)), NA)
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)"), NA)
+    expect_error(Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation"), NA)
 })
 
 df <- structure(list(Churn_cat = structure(c(1L, 1L, 2L, 1L, 2L, 2L,
