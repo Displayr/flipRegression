@@ -1101,6 +1101,7 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
 }
 
 # Returns a logical vector of observations that are not deemed outlier observations
+#' @importFrom sure resids
 findNonOutlierObservations <- function(data, outlier.proportion, model, type)
 {
     n.model <- nrow(data)
@@ -1108,6 +1109,8 @@ findNonOutlierObservations <- function(data, outlier.proportion, model, type)
         model.residuals <- model$residuals
     else if (type %in% c("Binary Logit", "Poisson", "Quasi-Poisson"))
         model.residuals <- model$residuals
+    else if (type %in% "Ordered Logit")
+        model.residuals <- resids(model)
     else
         stop("Not ready yet")
     bound <- ceiling(n.model * (1 - outlier.proportion))

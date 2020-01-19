@@ -26,6 +26,7 @@ Imports:
     psych,
     rhtmlHeatmap,
     stats,
+    sure,
     survey,
     xml2
 Suggests:
