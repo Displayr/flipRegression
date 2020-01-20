@@ -32,6 +32,26 @@ test_that("Outliers",
               ExpectWarning(out, "Unusual observations")
           })
 
+test_that("DS-2704: Check user prompts for automated outlier detection in unusual observation case",
+          {
+              set.seed(133452)
+              y  <- 1:10 + rnorm(10, .1)
+              x <- 1:10
+              x <- c(10, 1:9)
+              expect_error(out <- Regression(y ~ x), NA)
+              expect_warning(print(out),
+                             "Unusual observations detected. Consider re-running the analysis using automated outlier removal")
+              expect_error(out <- Regression(y ~ x, outlier.proportion = 0.1), NA)
+              expect_warning(print(out), NA)
+              x <- c(0, x)
+              y <- c(10, y)
+              expect_error(out <- Regression(y ~ x, outlier.proportion = 0.1), NA)
+              expect_warning(print(out),
+                             paste0("Unusual observations detected. After removing a proportion of the data from the ",
+                                    "analysis, unusual observations exist in the"))
+          })
+
+
 
 test_that("Dichotomized",
           {
@@ -100,3 +120,4 @@ test_that("Removed aliased predictors (ordered logit)",
                                     "the estimation."),
                              fixed = TRUE)
           })
+
