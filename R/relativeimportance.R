@@ -54,7 +54,9 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     }
     else
         data[[outcome.name]]
-
+    # Protect against ordered factor with empty levels
+    if (type == "Ordered Logit")
+        y <- Ordered(y)
     corr.x <- cov.wt(num.X, wt = weights, cor = TRUE)$cor
     diag(corr.x) <- 1    # may not be exactly 1 from cov.wt
     eigen.corr.x <- eigen(corr.x)

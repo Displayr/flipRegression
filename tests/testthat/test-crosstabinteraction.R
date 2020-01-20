@@ -24,10 +24,15 @@ test_that("Weights", {
     {
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                                  interaction = ATM, data = bank, type = tt)), NA)
+        # svyolr (weighted Ordered Logit) will error since it wants to invert the Hessian and the response variable
+        # will have unobserved levels for some sub-groups splitting by ATM for the interaction test. This gives a
+        # singular Hessian (row/column for the intercept adjustments at the unobserved level)
+        error.msg <- if (tt != "Ordered Logit") NA else "^Cannot perform regression split by interaction term"
+
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
-                                                 interaction = ATM, data = bank, type = tt, weights = w1)), NA)
+                                                 interaction = ATM, data = bank, type = tt, weights = w1)), error.msg)
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
-                                                 interaction = ATM, data = bank, type = tt, weights = w1, subset = f1)), NA)
+                                                 interaction = ATM, data = bank, type = tt, weights = w1, subset = f1)), error.msg)
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                                  interaction = ATM, data = bank, type = tt,
                                                      weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
