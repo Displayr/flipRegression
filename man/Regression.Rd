@@ -79,7 +79,7 @@ summary and model statistics. It is the default.
 
 \item{m}{The number of imputed samples, if using multiple imputation.}
 
-\item{seed}{The random number seed used in imputation.}
+\item{seed}{The random number seed used in imputation and residual computations.}
 
 \item{statistical.assumptions}{A Statistical Assumptions object.}
 

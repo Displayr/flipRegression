@@ -39,7 +39,7 @@
 #' @param method The method to be used; for fitting. This will only do something if
 #'   method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
-#' @param seed The random number seed used in imputation.
+#' @param seed The random number seed used in imputation and residual computations.
 #' @param statistical.assumptions A Statistical Assumptions object.
 #' @param auxiliary.data A \code{\link{data.frame}} containing additional variables
 #'   to be used in imputation (if required). While adding more variables will improve
@@ -388,7 +388,7 @@ Regression <- function(formula,
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, ...)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, seed = seed, ...)
         .estimation.data <- fit$.estimation.data
         .formula <- fit$formula
         if (internal)
@@ -642,6 +642,7 @@ importanceFooter <- function(x)
 #'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
 #'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
 #'   denote that a percentage between none and 50\% of the data points are removed.
+#' @param seed A integer seed to generate the surrogate residuals.
 #' @param ... Arguments to the wrapped functions.
 #' @importFrom flipData CalibrateWeight WeightedSurveyDesign
 #' @importFrom flipFormat FormatAsPercent
@@ -651,7 +652,7 @@ importanceFooter <- function(x)
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, seed = 12321, ...)
 {
     .design <- NULL
     # Initially fit model on all the data and then refit with outlier removal if necessary
@@ -665,10 +666,10 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
     if (remove.outliers)
     {
         # Don't support Multinomial Logit for now.
-        if (type != "Multinomial Logit")
+        if (type == "Multinomial Logit")
             stop("Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported")
         refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
-                                                         type, robust.se, outlier.proportion, ...)
+                                                         type, robust.se, outlier.proportion, seed = seed,...)
         model <- refitted.model.data$model
         .estimation.data <- refitted.model.data$.estimation.data
         .design <- refitted.model.data$.design
@@ -1090,13 +1091,14 @@ checkAutomaterOutlierRemovalSetting <- function(outlier.proportion)
 
 # Identifies the outliers and refits the model
 refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
-                                      type, robust.se, outlier.proportion, ...)
+                                      type, robust.se, outlier.proportion, seed, ...)
 {
     non.outlier.data <- findNonOutlierObservations(.estimation.data,
                                                    outlier.proportion,
                                                    model,
                                                    type,
-                                                   .weights)
+                                                   .weights,
+                                                   seed)
     .estimation.data$non.outlier.data <- non.outlier.data
     fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
                              type, robust.se, subset = non.outlier.data, ...)
@@ -1106,15 +1108,22 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
 
 # Returns a logical vector of observations that are not deemed outlier observations
 #' @importFrom sure resids
-#' @importFrom MASS studres
-findNonOutlierObservations <- function(data, outlier.proportion, model, type, weights)
+#' @importFrom stats rstudent
+findNonOutlierObservations <- function(data, outlier.proportion, model, type, weights, seed)
 {
     n.model <- nrow(data)
     # In the Ordered Logit and Binary Logit cases use the Surrogate residuals
-    # fr both the weighted and non-weighted modls
-    if (type %in% c("Binary Logit", "Ordered Logit"))
-        model.residuals <- resids(model, method = "latent")
-    else {
+    # for both the weighted and non-weighted models
+    if (type %in% c("Ordered Logit", "Binary Logit"))
+    {
+        set.seed(seed)
+        if (type == "Ordered Logit")
+            model.residuals <- resids(model, method = "latent")
+        else
+            model.residuals <- resids(model, method = "jitter", type = "response")
+    }
+    else
+    {
         # use standardised deviance residuals in standard linear and GLM cases.
         # otherwise use the Pearson sampling re-weighted residuals.
         if (is.null(weights))
@@ -1125,12 +1134,12 @@ findNonOutlierObservations <- function(data, outlier.proportion, model, type, we
                 stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
         } else {
             if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
-                model.residuals <- residuals(model, type = "Pearson")
+                model.residuals <- residuals(model, type = "pearson")
             else
                 stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
         }
     }
     bound <- ceiling(n.model * (1 - outlier.proportion))
-    valid.data.indices <- unname(rank(abs(model.residuals)) <= bound)
+    valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
     return(valid.data.indices)
 }
