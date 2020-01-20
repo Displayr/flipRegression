@@ -664,6 +664,9 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
     remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.proportion)
     if (remove.outliers)
     {
+        # Don't support Multinomial Logit for now.
+        if (type != "Multinomial Logit")
+            stop("Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported")
         refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
                                                          type, robust.se, outlier.proportion, ...)
         model <- refitted.model.data$model
@@ -1092,7 +1095,8 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
     non.outlier.data <- findNonOutlierObservations(.estimation.data,
                                                    outlier.proportion,
                                                    model,
-                                                   type)
+                                                   type,
+                                                   .weights)
     .estimation.data$non.outlier.data <- non.outlier.data
     fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
                              type, robust.se, subset = non.outlier.data, ...)
@@ -1102,17 +1106,30 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
 
 # Returns a logical vector of observations that are not deemed outlier observations
 #' @importFrom sure resids
-findNonOutlierObservations <- function(data, outlier.proportion, model, type)
+#' @importFrom MASS studres
+findNonOutlierObservations <- function(data, outlier.proportion, model, type, weights)
 {
     n.model <- nrow(data)
-    if (type == "Linear")
-        model.residuals <- model$residuals
-    else if (type %in% c("Binary Logit", "Poisson", "Quasi-Poisson"))
-        model.residuals <- model$residuals
-    else if (type %in% "Ordered Logit")
-        model.residuals <- resids(model)
-    else
-        stop("Not ready yet")
+    # In the Ordered Logit and Binary Logit cases use the Surrogate residuals
+    # fr both the weighted and non-weighted modls
+    if (type %in% c("Binary Logit", "Ordered Logit"))
+        model.residuals <- resids(model, method = "latent")
+    else {
+        # use standardised deviance residuals in standard linear and GLM cases.
+        # otherwise use the Pearson sampling re-weighted residuals.
+        if (is.null(weights))
+        {
+            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
+                model.residuals <- rstudent(model, type = "deviance")
+            else
+                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
+        } else {
+            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
+                model.residuals <- residuals(model, type = "Pearson")
+            else
+                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
+        }
+    }
     bound <- ceiling(n.model * (1 - outlier.proportion))
     valid.data.indices <- unname(rank(abs(model.residuals)) <= bound)
     return(valid.data.indices)
