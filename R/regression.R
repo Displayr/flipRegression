@@ -917,7 +917,19 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
             out$aic <- out$deviance + 2 * out$deltabar * out$df
             # Need this model element to handle the code in the predict.Regression method
             out$model <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            # Need linear predictor element to compute the surrogate residuals.
+            Terms <- attr(out$model, "terms")
+            x <- model.matrix(Terms, out$model)
+            # Remove intercept if if exists
+            if  (length(xint <- match("(Intercept)", colnames(x), nomatch = 0)) > 0)
+                x <- x[, -xint, drop = FALSE]
+            # Remove any colinear variables that were dropped by polr/svyolr
+            if (any(keep <- colnames(x) %in% names(out$coefficients)))
+                x <- x[, keep, drop = FALSE]
+            out$lp <- drop(x %*% out$coefficients)
             # Give it the polr class to use the predict.polr method while using summary.svyolr method
+            # Also allows the sure resids method to compute the mean via the polr method to get the linear
+            # predictor.
             class(out) <- c("svyolr", "polr")
             out
         },
