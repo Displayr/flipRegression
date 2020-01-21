@@ -693,13 +693,14 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
     if (is.null(subset))
     {
         non.outlier.data <- rep(TRUE, nrow(.estimation.data))
-        .estimation.data$non.outlier.data <- non.outlier.data
+        .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
     } else
         non.outlier.data <- subset
     # Protect against . operator used in RHS of formula
     # If so, it will include non.outlier.data as a predictor now.
+
     formula.terms <- terms.formula(.formula, data = .estimation.data)
-    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data"))
+    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data_GQ9KqD7YOf"))
         .formula <- update.formula(.formula, drop.terms(formula.terms,
                                                         which(non.outlier.in.data.frame),
                                                         keep.response = TRUE))
@@ -707,24 +708,24 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
     {
         if (type == "Linear")
         {
-            model <- lm(.formula, .estimation.data, subset = non.outlier.data, model = TRUE)
+            model <- lm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, model = TRUE)
             model$aic <- AIC(model)
         }
         else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-            model <- glm(.formula, .estimation.data, subset = non.outlier.data,
+            model <- glm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
                          family = switch(type,
                                          "Poisson" = poisson,
                                          "Quasi-Poisson" = quasipoisson,
                                          "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- fitOrderedLogit(.formula, .estimation.data, weights = NULL,
-                                     non.outlier.data = non.outlier.data, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, NULL,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
         {
-            model <- multinom(.formula, .estimation.data, subset = non.outlier.data,
+            model <- multinom(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
                               Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
@@ -740,7 +741,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 list(value = val, warnings = myWarnings)
             }
 
-            result <- withWarnings(glm.nb(.formula, .estimation.data, subset = non.outlier.data))
+            result <- withWarnings(glm.nb(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf))
             model <- result$value
             if (!is.null(result$warnings))
                 if (result$warnings[[1]]$message == "iteration limit reached")
@@ -762,7 +763,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
         if (type == "Linear")
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
-            model <- svyglm(.formula, .design, subset = non.outlier.data, ...)
+            model <- svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf, ...)
             if (all(model$residuals == 0)) # perfect fit
                 model$df <- NA
             else
@@ -782,28 +783,37 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             }
         }
         else if (type == "Ordered Logit")
-            model <- fitOrderedLogit(.formula, .estimation.data, weights, non.outlier.data = non.outlier.data, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, weights,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- multinom(.formula, .estimation.data, weights = weights, subset = non.outlier.data,
+            model <- multinom(.formula, .estimation.data, weights = weights, subset = non.outlier.data_GQ9KqD7YOf,
                               Hess = TRUE, trace = FALSE, maxit = 10000, MaxNWts = 1e9, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- glm.nb(.formula, .estimation.data, weights = weights, subset = non.outlier.data, ...)
+            model <- InterceptExceptions(
+                glm.nb(.formula, .estimation.data, weights = weights, subset = non.outlier.data_GQ9KqD7YOf, ...),
+                warning.handler = function(w) {
+                    if (w$message == "iteration limit reached")
+                        warning("Model may not have converged. If the dispersion parameter from the Detail",
+                                " output is large, a Poisson model may be appropriate.")
+                    else
+                        warning(w$message)
+                })
         }
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
             model <- switch(type,
-                            "Binary Logit" = svyglm(.formula, .design, subset = non.outlier.data,
+                            "Binary Logit" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                     family = quasibinomial()),
-                            "Poisson" = svyglm(.formula, .design, subset = non.outlier.data,
+                            "Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                family = poisson()),
-                            "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data,
+                            "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                      family = quasipoisson()))
             assign(".design", .design, envir=.GlobalEnv)
             aic <- extractAIC(model)
@@ -970,18 +980,18 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
 }
 
 #' @importFrom stats model.frame model.matrix model.response
-fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data, ...)
+fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data_GQ9KqD7YOf, ...)
 {
     model <- InterceptExceptions(
         if (is.null(weights))
-            polr(.formula, .estimation.data, subset = non.outlier.data, Hess = TRUE, ...)
+            polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, ...)
         else
         {
             # svyolr (currently 21/01/2020) doesn't have a subset argument
             # Instead manually filter the data using the provided non.outlier.data column
-            .estimation.data <- .estimation.data[, -which(colnames(.estimation.data) == "non.outlier.data")]
-            .estimation.data <- .estimation.data[non.outlier.data, ]
-            .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data])
+            .estimation.data <- .estimation.data[, -which(colnames(.estimation.data) == "non.outlier.data_GQ9KqD7YOf")]
+            .estimation.data <- .estimation.data[non.outlier.data_GQ9KqD7YOf, ]
+            .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data_GQ9KqD7YOf])
             out <- svyolr(.formula, .design, ...)
             out$df <- out$edf
             # Compute the dAIC
@@ -1109,7 +1119,7 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                                                    type,
                                                    .weights,
                                                    seed)
-    .estimation.data$non.outlier.data <- non.outlier.data
+    .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
     # svyolr is fragile and errors if ordered response values have empty levels since the
     # Hessian is singular. Removing data with automated outlier removal can trigger this.
     if (type == "Ordered Logit" && !is.null(.weights))
@@ -1165,8 +1175,10 @@ findNonOutlierObservations <- function(data, outlier.proportion, model, type, we
     }
     else
     {
-        # use standardised deviance residuals in standard linear and GLM cases.
+        # use standardised deviance residuals in unweighted cases.
         # otherwise use the Pearson sampling re-weighted residuals.
+        # These are computed in residuals.svyglm except in the NBD case.
+        # NBD kept as Pearson for consistency.
         if (is.null(weights))
         {
             if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))

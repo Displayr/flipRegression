@@ -8,7 +8,9 @@ bank.formula <- list("Linear" = formula("Overall ~ Fees + Interest + Phone + Bra
                      "Ordered Logit" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
                      "Poisson" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
                      "Quasi-Poisson" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "NBD" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"), "Weighted Ordered Logit" = as.formula("ReducedOverall ~ Fees + Interest + Phone + Branch + Online"))
+                     "NBD" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
+                     "Weighted Ordered Logit" = as.formula("ReducedOverall ~ Fees + Interest + Phone + Branch + Online"),
+                     "Multinomial Logit" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"))
 
 # Combine highest category for weighted Ordered Logit tests
 small.bank$ReducedOverall = small.bank$Overall
@@ -106,27 +108,91 @@ test_that("Weighted Ordered Logit (svyolr)", {
     }
 })
 
-regression.types <- c("Linear", "Binary Logit", "Ordered Logit")
+poisson.coef <- structure(c(-0.033102, 0.054263, 0.08203, -0.006858, 0.09939,
+                            0.102068, 0.08594, 0.098248, 0.072796, 0.067073, 0.069967, 0.067454,
+                            0.095385, 0.087733, 0.081678, 0.098152, 0.07608, 0.07944, 0.081667,
+                            0.077377, 0.033132, 0.021127, 0.02856, 0.030338),
+                          .Dim = c(4L,6L),
+                          .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
+poisson.coef.with.weight <- structure(c(-0.038808, 0.030415, 0.052372, -0.031036, 0.099405,
+                                       0.099918, 0.093745, 0.105088, 0.069434, 0.064036, 0.067405, 0.066951,
+                                       0.094989, 0.086389, 0.079522, 0.094368, 0.077888, 0.086115, 0.081464,
+                                       0.076753, 0.036209, 0.026473, 0.03302, 0.034317),
+                                     .Dim = c(4L, 6L),
+                                     .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
+quasipoisson.coef <- structure(c(-0.033102, 0.054263, 0.08203, -0.006858, 0.09939,
+                                 0.102068, 0.08594, 0.098248, 0.072796, 0.067073, 0.069967, 0.067454,
+                                 0.095385, 0.087733, 0.081678, 0.098152, 0.07608, 0.07944, 0.081667,
+                                 0.077377, 0.033132, 0.021127, 0.02856, 0.030338),
+                               .Dim = c(4L,6L),
+                               .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
+quasipoisson.coef.with.weight <- structure(c(-0.038808, 0.030415, 0.052372, -0.031036, 0.099405,
+                                             0.099918, 0.093745, 0.105088, 0.069434, 0.064036, 0.067405, 0.066951,
+                                             0.094989, 0.086389, 0.079522, 0.094368, 0.077888, 0.086115, 0.081464,
+                                             0.076753, 0.036209, 0.026473, 0.03302, 0.034317),
+                                           .Dim = c(4L, 6L),
+                                           .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
+nbd.coef <- structure(c(-0.033102, 0.054263, 0.08203, -0.006858, 0.09939,
+                        0.102068, 0.08594, 0.098248, 0.072796, 0.067073, 0.069967, 0.067454,
+                        0.095385, 0.087733, 0.081678, 0.098152, 0.07608, 0.07944, 0.081667,
+                        0.077377, 0.033132, 0.021127, 0.02856, 0.030338), .Dim = c(4L, 6L),
+                      .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
+nbd.coef.with.weight <- structure(c(-0.038809, 0.021439, 0.083738, 0.005239, 0.099405,
+                                    0.103246, 0.104868, 0.103977, 0.069434, 0.061136, 0.057542, 0.065668,
+                                    0.094989, 0.088558, 0.084856, 0.094597, 0.077888, 0.080988, 0.078403,
+                                    0.077274, 0.036209, 0.03073, 0.023232, 0.02616), .Dim = c(4L, 6L),
+                                  .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
+regression.types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson", "NBD")
 regression.names <- tolower(gsub("-|\\s", "", regression.types))
-# regression.types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson",
-                      # "NBD", "Multinomial")
+
+miss <- "Exclude cases with missing data"
+
+tt <- "Multinomial Logit"
+expected.multinomial.error <- "Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported"
+test_that("Multinomial Logit", {
+    expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                          missing = miss, outlier.proportion = 0),
+                 NA)
+    expect_error(print(regression), NA)
+    expect_error(regression.with.weight <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                      missing = miss, outlier.proportion = 0, weights = weight),
+                 NA)
+    expect_error(print(regression.with.weight), NA)
+    # Expect errors for outlier proportion requested
+    expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                          missing = miss, outlier.proportion = 0.1),
+                 expected.multinomial.error)
+    expect_error(regression.with.weight <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                      missing = miss, outlier.proportion = 0.1, weights = weight),
+                 expected.multinomial.error)
+})
+
 for (i in seq_along(regression.types))
 {
     expected.coefs <- get(paste0(regression.names[i], ".coef"))
     expected.coefs.with.weights <- get(paste0(regression.names[i], ".coef.with.weight"))
+    expected.warning <- if (regression.types[i] == "NBD") "Model may not have converged" else NA
     test_that(paste0("Coefficient estimates consistent across standard regression: ", regression.types[i]), {
         for (j in seq_along(outlier.proportions))
         {
-            regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
-                                     missing = miss, outlier.proportion = outlier.proportions[j])
+            expect_warning(regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
+                                                    missing = miss, outlier.proportion = outlier.proportions[j]),
+                           expected.warning)
             expect_equivalent(regression$coef, expected.coefs[j, ], tolerance = 1e-6)
             if (regression.types[i] == "Ordered Logit")
                 next
             else
             {
-                weighted.regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
-                                                  weights = weight, missing = miss,
-                                                  outlier.proportion = outlier.proportions[j])
+                expect_warning(weighted.regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
+                                                                 weights = weight, missing = miss,
+                                                                 outlier.proportion = outlier.proportions[j]),
+                               expected.warning)
 
                 expect_equivalent(weighted.regression$coef, expected.coefs.with.weights[j, ], tolerance = 1e-6)
             }
@@ -135,21 +201,22 @@ for (i in seq_along(regression.types))
 }
 
 test_that("Consistent structure with automated outlier removal", {
-    basic.linear <- suppressWarnings(Regression(bank.formula[["Linear"]], data = bank))
+    basic.linear <- Regression(bank.formula[["Linear"]], data = small.bank)
     # Logical vector of data selected after outlier detection included in outputs and data
-    expect_true("non.outlier.data" %in% colnames(basic.linear$estimation.data))
-    expect_identical(basic.linear$non.outlier.data, basic.linear$estimation.data$non.outlier.data)
-    expect_true(all(basic.linear$non.outlier.data))
+    expect_true("non.outlier.data_GQ9KqD7YOf" %in% colnames(basic.linear$estimation.data))
+    expect_identical(basic.linear$non.outlier.data,
+                     basic.linear$estimation.data$non.outlier.data_GQ9KqD7YOf)
+    expect_true(all(basic.linear$non.outlier.data_GQ9KqD7YOf))
     # Check automated output has the anticipated structure
-    automated.removal.linear <- suppressWarnings(Regression(bank.formula[["Linear"]], data = bank,
-                                                            outlier.proportion = 0.25))
-    expect_true("non.outlier.data" %in% colnames(automated.removal.linear$estimation.data))
-    expect_identical(automated.removal.linear$non.outlier.data, automated.removal.linear$estimation.data$non.outlier.data)
+    automated.removal.linear <- Regression(bank.formula[["Linear"]], data = small.bank, outlier.proportion = 0.25)
+    expect_true("non.outlier.data_GQ9KqD7YOf" %in% colnames(automated.removal.linear$estimation.data))
+    expect_identical(automated.removal.linear$non.outlier.data,
+                     automated.removal.linear$estimation.data$non.outlier.data_GQ9KqD7YOf)
     expect_false(all(automated.removal.linear$non.outlier.data))
     expect_equal(mean(automated.removal.linear$non.outlier.data), 0.75, tolerance = 1e-2)
     # Outputs not the same and take the expected subsets
     expect_false(identical(automated.removal.linear$coef, basic.linear$coef))
-    expect_equal(basic.linear$coef, lm(bank.formula[["Linear"]], data = bank)$coefficients)
+    expect_equal(basic.linear$coef, lm(bank.formula[["Linear"]], data = small.bank)$coefficients)
     n.data <- nrow(basic.linear$estimation.data)
     computed.subset <- flipRegression:::findNonOutlierObservations(data = basic.linear$estimation.data,
                                                                    model = lm(bank.formula[["Linear"]],
