@@ -8,7 +8,11 @@ bank.formula <- list("Linear" = formula("Overall ~ Fees + Interest + Phone + Bra
                      "Ordered Logit" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
                      "Poisson" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
                      "Quasi-Poisson" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "NBD" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"))
+                     "NBD" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"), "Weighted Ordered Logit" = as.formula("ReducedOverall ~ Fees + Interest + Phone + Branch + Online"))
+
+# Combine highest category for weighted Ordered Logit tests
+small.bank$ReducedOverall = small.bank$Overall
+small.bank$ReducedOverall[small.bank$ReducedOverall == 7] = 6
 
 # coleman data from robustbase
 
@@ -63,22 +67,49 @@ orderedlogit.coef <- structure(c(1.074733, 1.506681, 1.79141, 2.55067, 0.763027,
                                  38.766009, 49.958933), .Dim = c(4L, 10L),
                                .Dimnames = list(NULL, c("Fees", "Interest", "Phone", "Branch", "Online",
                                                         "2|3", "3|4", "4|5", "5|6", "6|7")))
-orderedlogit.coef.with.weight <- structure(c(1.085241, 1.509284, 1.914931, 2.712219, 0.72927,
-                                             0.784851, 0.942189, 0.827967, 0.986447, 1.093787, 1.514573, 1.980449,
-                                             0.830456, 1.060155, 1.342253, 1.840812, 0.394908, 0.494562, 0.678219,
-                                             0.624628, 11.056142, 13.407721, 17.650062, 21.687388, 13.547036,
-                                             16.436244, 21.535164, 26.744278, 16.498211, 20.114851, 26.03545,
-                                             32.571995, 19.204273, 23.39747, 29.775601, 37.565976, 21.204937,
-                                             10897203221075.6, 64.983996, 52.79153), .Dim = c(4L, 10L),
-                                           .Dimnames = list(NULL, c("Fees", "Interest", "Phone", "Branch", "Online",
-                                                                    "2|3", "3|4", "4|5", "5|6", "6|7")))
+orderedlogit.coef.with.weight <- structure(c(1.093002, 1.508906, 1.960617, 2.696281, 0.734564,
+                                             0.784731, 0.847043, 0.839381, 0.990432, 1.093496, 1.522127, 1.936009,
+                                             0.835325, 1.059941, 1.364337, 1.728631, 0.398258, 0.494446, 0.634532,
+                                             0.580282, 11.136874, 13.403966, 17.392275, 21.083152, 13.633699,
+                                             16.432427, 21.283742, 26.096664, 16.590643, 20.110522, 25.756754,
+                                             31.742763, 19.273532, 23.392693, 29.813049, 37.52649),
+                                           .Dim = c(4L, 9L),
+                                           .Dimnames = list(NULL, c("Fees", "Interest", "Phone", "Branch",
+                                                                    "Online", "2|3", "3|4", "4|5", "5|6")))
+
+# Test Ordered Logit separately since svyolr is fragile.
+miss <- "Exclude cases with missing data"
+test_that("Weighted Ordered Logit (svyolr)", {
+    expect_error(regression <- Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
+                                          type = "Ordered Logit", outlier.proportion = 0),
+                 NA)
+    non.outlier.data <- flipRegression:::findNonOutlierObservations(data = small.bank, outlier.proportion = 0.1,
+                                                                    model = regression$original, type = "Ordered Logit",
+                                                                    weights = small.bank$weight, seed = 12321)
+    expected.error.message <- paste0("Removing outliers has removed all the observations in the outcome variable with",
+                                     " level(s): 7. If possible, this issue could be solved by merging the categories ",
+                                     "of the outcome variable or reducing the Automated Outlier removal setting.")
+    # Expect Overall level 7 to disappear
+    expect_equal(table(small.bank$Overall)[6], c(`7` = 1))
+    expect_equal(table(small.bank$Overall[non.outlier.data])[6], structure(NA_integer_, .Names = NA_character_))
+
+    expect_error(Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
+                            type = "Ordered Logit", outlier.proportion = 0.1),
+                 expected.error.message, fixed = TRUE)
+    # Used combine category data (move level 7 to level 6 for weighted ordered logit) for further tests
+    for (j in seq_along(outlier.proportions))
+    {
+        weighted.regression <- Regression(bank.formula[["Weighted Ordered Logit"]], data = small.bank,
+                                          type = "Ordered Logit",weights = weight, missing = miss,
+                                          outlier.proportion = outlier.proportions[j])
+        expect_equivalent(weighted.regression$coef, orderedlogit.coef.with.weight[j, ], tolerance = 1e-6)
+    }
+})
 
 regression.types <- c("Linear", "Binary Logit", "Ordered Logit")
 regression.names <- tolower(gsub("-|\\s", "", regression.types))
 # regression.types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson",
                       # "NBD", "Multinomial")
-
-miss <- "Exclude cases with missing data"
 for (i in seq_along(regression.types))
 {
     expected.coefs <- get(paste0(regression.names[i], ".coef"))
@@ -88,11 +119,17 @@ for (i in seq_along(regression.types))
         {
             regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
                                      missing = miss, outlier.proportion = outlier.proportions[j])
-            weighted.regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
-                                              weights = weight, missing = miss,
-                                              outlier.proportion = outlier.proportions[j])
             expect_equivalent(regression$coef, expected.coefs[j, ], tolerance = 1e-6)
-            expect_equivalent(weighted.regression$coef, expected.coefs.with.weights[j, ], tolerance = 1e-6)
+            if (regression.types[i] == "Ordered Logit")
+                next
+            else
+            {
+                weighted.regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
+                                                  weights = weight, missing = miss,
+                                                  outlier.proportion = outlier.proportions[j])
+
+                expect_equivalent(weighted.regression$coef, expected.coefs.with.weights[j, ], tolerance = 1e-6)
+            }
         }
     })
 }

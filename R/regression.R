@@ -694,8 +694,9 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
     {
         non.outlier.data <- rep(TRUE, nrow(.estimation.data))
         .estimation.data$non.outlier.data <- non.outlier.data
-    }
-    # Proteect against . operator used in RHS of formula
+    } else
+        non.outlier.data <- subset
+    # Protect against . operator used in RHS of formula
     # If so, it will include non.outlier.data as a predictor now.
     formula.terms <- terms.formula(.formula, data = .estimation.data)
     if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data"))
@@ -717,7 +718,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                          "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- fitOrderedLogit(.formula, .estimation.data, NULL, non.outlier.data = non.outlier.data, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, weights = NULL,
+                                     non.outlier.data = non.outlier.data, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
@@ -780,7 +782,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             }
         }
         else if (type == "Ordered Logit")
-            model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, weights, non.outlier.data = non.outlier.data, ...)
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
@@ -975,7 +977,11 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             polr(.formula, .estimation.data, subset = non.outlier.data, Hess = TRUE, ...)
         else
         {
-            .design <- WeightedSurveyDesign(.estimation.data, weights)
+            # svyolr (currently 21/01/2020) doesn't have a subset argument
+            # Instead manually filter the data using the provided non.outlier.data column
+            .estimation.data <- .estimation.data[, -which(colnames(.estimation.data) == "non.outlier.data")]
+            .estimation.data <- .estimation.data[non.outlier.data, ]
+            .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data])
             out <- svyolr(.formula, .design, ...)
             out$df <- out$edf
             # Compute the dAIC
@@ -998,6 +1004,9 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             # Also allows the sure resids method to compute the mean via the polr method to get the linear
             # predictor.
             class(out) <- c("svyolr", "polr")
+            # Retain the design and formula for later use
+            out$formula <- .formula
+            out$design <- .design
             out
         },
         warning.handler = function(w) {
@@ -1090,6 +1099,7 @@ checkAutomaterOutlierRemovalSetting <- function(outlier.proportion)
 }
 
 # Identifies the outliers and refits the model
+#' @importFrom flipU InterceptExceptions
 refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
                                       type, robust.se, outlier.proportion, seed, ...)
 {
@@ -1100,8 +1110,29 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                                                    .weights,
                                                    seed)
     .estimation.data$non.outlier.data <- non.outlier.data
-    fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
-                             type, robust.se, subset = non.outlier.data, ...)
+    # svyolr is fragile and errors if ordered response values have empty levels since the
+    # Hessian is singular. Removing data with automated outlier removal can trigger this.
+    if (type == "Ordered Logit" && !is.null(.weights))
+    {
+        fitted.model <- InterceptExceptions(
+            fitModel(formula, .estimation.data, .weights = .weights,
+                     type, robust.se, subset = non.outlier.data, ...),
+            error.handler = function(e) {
+                if (grepl("Outcome variable has level", e$message))
+                {
+                    missing.levels <- regmatches(e$message,
+                                                 regexpr("(?<=level\\(s\\): )(.*?)(?= that)", e$message, perl = TRUE))
+                    stop("Removing outliers has removed all the observations in the outcome variable with level(s): ",
+                         missing.levels,  ". If possible, this issue could be solved by merging the categories of the",
+                         " outcome variable or reducing the Automated Outlier removal setting.")
+                }
+                else
+                    stop(e$message)
+            }
+        )
+    } else
+        fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
+                                 type, robust.se, subset = non.outlier.data, ...)
     return(list(model = fitted.model$model, .estimation.data = .estimation.data,
                 design = fitted.model$design, non.outlier.data = non.outlier.data))
 }
@@ -1118,7 +1149,17 @@ findNonOutlierObservations <- function(data, outlier.proportion, model, type, we
     {
         set.seed(seed)
         if (type == "Ordered Logit")
-            model.residuals <- resids(model, method = "latent")
+        {
+            if (!is.null(weights))
+            {
+                assign(".design", model$design, envir=.GlobalEnv)
+                assign(".formula", model$formula, envir=.GlobalEnv)
+                model.residuals <- resids(model, method = "latent")
+                remove(".design", envir=.GlobalEnv)
+                remove(".formula", envir=.GlobalEnv)
+            } else
+                model.residuals <- resids(model, method = "latent")
+        }
         else
             model.residuals <- resids(model, method = "jitter", type = "response")
     }
