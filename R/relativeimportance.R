@@ -30,15 +30,6 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     if (type == "Multinomial Logit")
         stop("Relative importance analysis is not available for ", type)
 
-    info <- extractRegressionInfo(formula, data, weights, type, signs,
-                                  r.square, variable.names, robust.se,
-                                  outlier.prop.to.remove, ...)
-    signs <- info$signs
-    r.square <- info$r.square
-    variable.names <- info$variable.names
-
-    signsWarning(signs, show.warnings, type)
-
     # If necessary, filter the data to the outlier adjusted subset
     if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
     {
@@ -47,6 +38,15 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         if (!is.null(weights))
             weights <- weights[data.indices]
     }
+
+    info <- extractRegressionInfo(formula, data, weights, type, signs,
+                                  r.square, variable.names, robust.se,
+                                  outlier.prop.to.remove, ...)
+    signs <- info$signs
+    r.square <- info$r.square
+    variable.names <- info$variable.names
+
+    signsWarning(signs, show.warnings, type)
 
     num.X <- extractNumericX(formula, data, show.warnings)
 

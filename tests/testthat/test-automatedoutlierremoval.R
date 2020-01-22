@@ -238,21 +238,44 @@ test_that("Consistent structure with automated outlier removal", {
 })
 
 test_that("Relative Importance and Shapley Output", {
-    for (tt in "Linear")
+    for (tt in regression.types)
     {
+        expected.warning <- if (tt == "NBD") "Model may not have converged" else NA
         # Determine subset for 10% outlier removal.
-        regression.non.outlier.data <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                  outlier.prop.to.remove = 0.1)$non.outlier.data
+        expect_warning(regression.non.outlier.data <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                                 outlier.prop.to.remove = 0.1)$non.outlier.data,
+                       expected.warning)
         expect_equal(mean(regression.non.outlier.data), 0.9, tolerance = 1e-2)
         # Check importance output is the same on auto removed and subsetted data
-        importance.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                              outlier.prop.to.remove = 0.1,
-                                              output = "Relative Importance Analysis")$importance
-        importance.on.subset <- Regression(bank.formula[[tt]], type = tt,
-                                           data = small.bank[regression.non.outlier.data, ],
-                                           outlier.prop.to.remove = 0,
-                                           output = "Relative Importance Analysis")$importance
+        expect_warning(importance.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                               outlier.prop.to.remove = 0.1,
+                                                               output = "Relative Importance Analysis")$importance,
+                         expected.warning)
+        expect_warning(importance.on.subset <- Regression(bank.formula[[tt]], type = tt,
+                                                            data = small.bank[regression.non.outlier.data, ],
+                                                            outlier.prop.to.remove = 0,
+                                                            output = "Relative Importance Analysis")$importance,
+                         expected.warning)
         expect_equal(importance.with.removal, importance.on.subset)
+        # Same for weighted make adjustments for Ordered Logit to avoid error
+        ttw <- if (tt == "Ordered Logit") "Weighted Ordered Logit" else tt
+        expect_warning(weighted.regression.non.outlier.data <- Regression(bank.formula[[ttw]], data = small.bank,
+                                                                            type = tt, weights = weight,
+                                                                            outlier.prop.to.remove = 0.1)$non.outlier.data,
+                         expected.warning)
+        expect_equal(mean(weighted.regression.non.outlier.data), 0.9, tolerance = 1e-2)
+        expect_warning(weighted.importance.with.removal <- Regression(bank.formula[[ttw]], data = small.bank, type = tt,
+                                                                        weights = weight,
+                                                                        outlier.prop.to.remove = 0.1,
+                                                                        output = "Relative Importance Analysis")$importance,
+                         expected.warning)
+        expect_warning(weighted.importance.on.subset <- Regression(bank.formula[[ttw]], type = tt,
+                                                                     data = small.bank[weighted.regression.non.outlier.data, ],
+                                                                     outlier.prop.to.remove = 0,
+                                                                     weights = weight,
+                                                                     output = "Relative Importance Analysis")$importance,
+                         expected.warning)
+        expect_equal(weighted.importance.with.removal, weighted.importance.on.subset)
         # Check Shapley output is the same on auto removed and subsetted data
         if (tt == "Linear")
         {
@@ -264,6 +287,16 @@ test_that("Relative Importance and Shapley Output", {
                                                outlier.prop.to.remove = 0,
                                                output = "Shapley Regression")$importance
             expect_equal(shapley.with.removal, shapley.on.subset)
+            weighted.shapley.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                           weights = weight,
+                                                           outlier.prop.to.remove = 0.1,
+                                                           output = "Shapley Regression")$importance
+            weighted.shapley.on.subset <- Regression(bank.formula[[tt]], type = tt,
+                                                        data = small.bank[weighted.regression.non.outlier.data, ],
+                                                        outlier.prop.to.remove = 0,
+                                                        weights = weight,
+                                                        output = "Shapley Regression")$importance
+            expect_equal(weighted.shapley.with.removal, weighted.shapley.on.subset)
         }
     }
 })
