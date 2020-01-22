@@ -10,6 +10,15 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
     info <- extractRegressionInfo(formula, data, weights, "Linear", signs, NA,
                                   variable.names, robust.se, outlier.prop.to.remove, ...)
 
+    # If necessary, filter the data to the outlier adjusted subset
+    if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+    {
+        data.indices <- data[, "non.outlier.data_GQ9KqD7YOf"]
+        data <- data[data.indices, ]
+        if (!is.null(weights))
+            weights <- weights[data.indices]
+    }
+
     signs <- info$signs
     variable.names <- info$variable.names
 
@@ -44,7 +53,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
                                                       "Linear", signs,
                                                       sum(raw.importance),
                                                       variable.names, robust.se,
-                                                      outlier.prop.to.remove,
+                                                      outlier.prop.to.remove = 0,
                                                       show.warnings,
                                                       correction, ...)
     standard.errors <- raw.importance * relative.importance$standard.errors /

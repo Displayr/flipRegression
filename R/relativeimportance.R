@@ -39,6 +39,15 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
 
     signsWarning(signs, show.warnings, type)
 
+    # If necessary, filter the data to the outlier adjusted subset
+    if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+    {
+        data.indices <- data[, "non.outlier.data_GQ9KqD7YOf"]
+        data <- data[data.indices, ]
+        if (!is.null(weights))
+            weights <- weights[data.indices]
+    }
+
     num.X <- extractNumericX(formula, data, show.warnings)
 
     input.weights <- weights
@@ -60,6 +69,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     # Protect against ordered factor with empty levels
     if (type == "Ordered Logit")
         y <- Ordered(y)
+
     corr.x <- cov.wt(num.X, wt = weights, cor = TRUE)$cor
     diag(corr.x) <- 1    # may not be exactly 1 from cov.wt
     eigen.corr.x <- eigen(corr.x)
@@ -77,7 +87,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         lm(y ~ 0 + z, weights = weights)
     else
         FitRegression(data.formula, reg.data, input.weights,
-                      type, FALSE, outlier.prop.to.remove,...)$original
+                      type, FALSE, outlier.prop.to.remove = 0, seed = 12321, ...)$original
     beta <- extractVariableCoefficients(fit, type, FALSE)
     beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
 

@@ -236,3 +236,35 @@ test_that("Consistent structure with automated outlier removal", {
     expect_equal(automated.removal.linear$coef, lm(bank.formula[["Linear"]],
                                                    data = basic.linear$estimation.data[computed.subset, ])$coefficients)
 })
+
+test_that("Relative Importance and Shapley Output", {
+    for (tt in "Linear")
+    {
+        # Determine subset for 10% outlier removal.
+        regression.non.outlier.data <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                  outlier.prop.to.remove = 0.1)$non.outlier.data
+        expect_equal(mean(regression.non.outlier.data), 0.9, tolerance = 1e-2)
+        # Check importance output is the same on auto removed and subsetted data
+        importance.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                              outlier.prop.to.remove = 0.1,
+                                              output = "Relative Importance Analysis")$importance
+        importance.on.subset <- Regression(bank.formula[[tt]], type = tt,
+                                           data = small.bank[regression.non.outlier.data, ],
+                                           outlier.prop.to.remove = 0,
+                                           output = "Relative Importance Analysis")$importance
+        expect_equal(importance.with.removal, importance.on.subset)
+        # Check Shapley output is the same on auto removed and subsetted data
+        if (tt == "Linear")
+        {
+            shapley.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                                                  outlier.prop.to.remove = 0.1,
+                                                  output = "Shapley Regression")$importance
+            shapley.on.subset <- Regression(bank.formula[[tt]], type = tt,
+                                               data = small.bank[regression.non.outlier.data, ],
+                                               outlier.prop.to.remove = 0,
+                                               output = "Shapley Regression")$importance
+            expect_equal(shapley.with.removal, shapley.on.subset)
+        }
+    }
+})
+
