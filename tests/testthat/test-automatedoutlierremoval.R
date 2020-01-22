@@ -33,7 +33,7 @@ test_that("Linear method consistent with robustbase", {
     for (outlier.prop in outlier.proportions)
     {
         ltsreg.single.pred.out <- robustbase::ltsReg(Y ~ motherLev, data = coleman, alpha = 1 - outlier.prop)
-        regression.single.pred.out <- Regression(Y ~ motherLev, coleman, outlier.proportion = outlier.prop)
+        regression.single.pred.out <- Regression(Y ~ motherLev, coleman, outlier.prop.to.remove = outlier.prop)
         expect_equivalent(ltsreg.single.pred.out$raw.coefficients, regression.single.pred.out$coef)
     }
 })
@@ -83,9 +83,9 @@ orderedlogit.coef.with.weight <- structure(c(1.093002, 1.508906, 1.960617, 2.696
 miss <- "Exclude cases with missing data"
 test_that("Weighted Ordered Logit (svyolr)", {
     expect_error(regression <- Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
-                                          type = "Ordered Logit", outlier.proportion = 0),
+                                          type = "Ordered Logit", outlier.prop.to.remove = 0),
                  NA)
-    non.outlier.data <- flipRegression:::findNonOutlierObservations(data = small.bank, outlier.proportion = 0.1,
+    non.outlier.data <- flipRegression:::findNonOutlierObservations(data = small.bank, outlier.prop.to.remove = 0.1,
                                                                     model = regression$original, type = "Ordered Logit",
                                                                     weights = small.bank$weight, seed = 12321)
     expected.error.message <- paste0("Removing outliers has removed all the observations in the outcome variable with",
@@ -96,14 +96,16 @@ test_that("Weighted Ordered Logit (svyolr)", {
     expect_equal(table(small.bank$Overall[non.outlier.data])[6], structure(NA_integer_, .Names = NA_character_))
 
     expect_error(Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
-                            type = "Ordered Logit", outlier.proportion = 0.1),
+                            type = "Ordered Logit", outlier.prop.to.remove = 0.1),
                  expected.error.message, fixed = TRUE)
     # Used combine category data (move level 7 to level 6 for weighted ordered logit) for further tests
     for (j in seq_along(outlier.proportions))
     {
         weighted.regression <- Regression(bank.formula[["Weighted Ordered Logit"]], data = small.bank,
                                           type = "Ordered Logit",weights = weight, missing = miss,
-                                          outlier.proportion = outlier.proportions[j])
+                                          outlier.prop.to.remove = outlier.proportions[j])
+        expect_equal(mean(weighted.regression$estimation.data$non.outlier.data_GQ9KqD7YOf),
+                     1 - outlier.proportions[j], tolerance = 1e-2)
         expect_equivalent(weighted.regression$coef, orderedlogit.coef.with.weight[j, ], tolerance = 1e-6)
     }
 })
@@ -157,19 +159,19 @@ tt <- "Multinomial Logit"
 expected.multinomial.error <- "Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported"
 test_that("Multinomial Logit", {
     expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                          missing = miss, outlier.proportion = 0),
+                                          missing = miss, outlier.prop.to.remove = 0),
                  NA)
     expect_error(print(regression), NA)
     expect_error(regression.with.weight <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                      missing = miss, outlier.proportion = 0, weights = weight),
+                                                      missing = miss, outlier.prop.to.remove = 0, weights = weight),
                  NA)
     expect_error(print(regression.with.weight), NA)
     # Expect errors for outlier proportion requested
     expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                          missing = miss, outlier.proportion = 0.1),
+                                          missing = miss, outlier.prop.to.remove = 0.1),
                  expected.multinomial.error)
     expect_error(regression.with.weight <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                      missing = miss, outlier.proportion = 0.1, weights = weight),
+                                                      missing = miss, outlier.prop.to.remove = 0.1, weights = weight),
                  expected.multinomial.error)
 })
 
@@ -182,8 +184,10 @@ for (i in seq_along(regression.types))
         for (j in seq_along(outlier.proportions))
         {
             expect_warning(regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
-                                                    missing = miss, outlier.proportion = outlier.proportions[j]),
+                                                    missing = miss, outlier.prop.to.remove = outlier.proportions[j]),
                            expected.warning)
+            expect_equal(mean(regression$estimation.data$non.outlier.data_GQ9KqD7YOf),
+                         1 - outlier.proportions[j], tolerance = 1e-2)
             expect_equivalent(regression$coef, expected.coefs[j, ], tolerance = 1e-6)
             if (regression.types[i] == "Ordered Logit")
                 next
@@ -191,9 +195,10 @@ for (i in seq_along(regression.types))
             {
                 expect_warning(weighted.regression <- Regression(bank.formula[[i]], data = small.bank, type = regression.types[i],
                                                                  weights = weight, missing = miss,
-                                                                 outlier.proportion = outlier.proportions[j]),
+                                                                 outlier.prop.to.remove = outlier.proportions[j]),
                                expected.warning)
-
+                expect_equal(mean(weighted.regression$estimation.data$non.outlier.data_GQ9KqD7YOf),
+                             1 - outlier.proportions[j], tolerance = 1e-2)
                 expect_equivalent(weighted.regression$coef, expected.coefs.with.weights[j, ], tolerance = 1e-6)
             }
         }
@@ -201,6 +206,7 @@ for (i in seq_along(regression.types))
 }
 
 test_that("Consistent structure with automated outlier removal", {
+    proportion <- 0.25
     basic.linear <- Regression(bank.formula[["Linear"]], data = small.bank)
     # Logical vector of data selected after outlier detection included in outputs and data
     expect_true("non.outlier.data_GQ9KqD7YOf" %in% colnames(basic.linear$estimation.data))
@@ -208,12 +214,12 @@ test_that("Consistent structure with automated outlier removal", {
                      basic.linear$estimation.data$non.outlier.data_GQ9KqD7YOf)
     expect_true(all(basic.linear$non.outlier.data_GQ9KqD7YOf))
     # Check automated output has the anticipated structure
-    automated.removal.linear <- Regression(bank.formula[["Linear"]], data = small.bank, outlier.proportion = 0.25)
+    automated.removal.linear <- Regression(bank.formula[["Linear"]], data = small.bank, outlier.prop.to.remove = proportion)
     expect_true("non.outlier.data_GQ9KqD7YOf" %in% colnames(automated.removal.linear$estimation.data))
     expect_identical(automated.removal.linear$non.outlier.data,
                      automated.removal.linear$estimation.data$non.outlier.data_GQ9KqD7YOf)
     expect_false(all(automated.removal.linear$non.outlier.data))
-    expect_equal(mean(automated.removal.linear$non.outlier.data), 0.75, tolerance = 1e-2)
+    expect_equal(mean(automated.removal.linear$non.outlier.data), 1 - proportion, tolerance = 1e-2)
     # Outputs not the same and take the expected subsets
     expect_false(identical(automated.removal.linear$coef, basic.linear$coef))
     expect_equal(basic.linear$coef, lm(bank.formula[["Linear"]], data = small.bank)$coefficients)
@@ -221,11 +227,11 @@ test_that("Consistent structure with automated outlier removal", {
     computed.subset <- flipRegression:::findNonOutlierObservations(data = basic.linear$estimation.data,
                                                                    model = lm(bank.formula[["Linear"]],
                                                                               data = basic.linear$estimation.data),
-                                                                   outlier.proportion = 0.25,
+                                                                   outlier.prop.to.remove = proportion,
                                                                    type = "Linear",
                                                                    weights = NULL)
     expect_equal(computed.subset, automated.removal.linear$non.outlier.data)
-    manually.computed.subset <- rank(abs(basic.linear$original$residuals)) <= ceiling(n.data * 0.75)
+    manually.computed.subset <- rank(abs(basic.linear$original$residuals)) <= ceiling(n.data * (1 - proportion))
     expect_equivalent(computed.subset, manually.computed.subset)
     expect_equal(automated.removal.linear$coef, lm(bank.formula[["Linear"]],
                                                    data = basic.linear$estimation.data[computed.subset, ])$coefficients)

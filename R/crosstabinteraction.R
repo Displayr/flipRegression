@@ -31,7 +31,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     if (is.null(importance))
     {
         fit2 <- FitRegression(formula.with.interaction, result$estimation.data, weights,
-                              result$type, result$robust.se, result$outlier.proportion, ...)
+                              result$type, result$robust.se, result$outlier.prop.to.remove, ...)
         atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
         if (!is.null(weights))
         {
@@ -91,11 +91,11 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmp.ri <- try(estimateImportance(result$formula,
                                      RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
                                      weights[is.split], result$type, signs, NA, NA,
-                                     result$robust.se, result$outlier.proportion, FALSE, correction, importance))
+                                     result$robust.se, result$outlier.prop.to.remove, FALSE, correction, importance))
             tmpC.ri <- try(estimateImportance(result$formula,
                                       RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
                                       weights[-is.split], result$type, signs, NA, NA,
-                                      result$robust.se, result$outlier.proportion, FALSE, correction, importance))
+                                      result$robust.se, result$outlier.prop.to.remove, FALSE, correction, importance))
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
@@ -124,7 +124,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,],
                                          weights[is.split], result$type, result$robust.se,
-                                         result$outlier.proportion),
+                                         result$outlier.prop.to.remove),
                            silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
                 stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
@@ -132,7 +132,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
                                           weights[-is.split], result$type, result$robust.se,
-                                          result$outlier.proportion),
+                                          result$outlier.prop.to.remove),
                             silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))
                 stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,

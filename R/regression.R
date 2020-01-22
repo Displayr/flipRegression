@@ -64,7 +64,7 @@
 #' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param effects.format A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 #'   and \code{y.title} (the title of the y-axis, defaults to outcome label).
-#' @param outlier.proportion A single numeric value that determines the percentage of data points to remove from the
+#' @param outlier.prop.to.remove A single numeric value that determines the percentage of data points to remove from the
 #'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
 #'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
 #'   denote that a percentage between none and 50\% of the data points are removed.
@@ -127,7 +127,7 @@ Regression <- function(formula,
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        recursive.call = FALSE,
                        effects.format = list(max.label = 10),
-                       outlier.proportion = NULL,
+                       outlier.prop.to.remove = NULL,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -388,7 +388,7 @@ Regression <- function(formula,
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, seed = seed, ...)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = seed, ...)
         .estimation.data <- fit$.estimation.data
         .formula <- fit$formula
         if (internal)
@@ -424,7 +424,7 @@ Regression <- function(formula,
     result$type <- type
     result$weights <- unfiltered.weights
     result$output <- output
-    result$outlier.proportion <- outlier.proportion
+    result$outlier.prop.to.remove <- outlier.prop.to.remove
     result$show.labels <- show.labels
     result$missing <- missing
     result$test.interaction <- !is.null(interaction)
@@ -487,7 +487,7 @@ Regression <- function(formula,
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$importance <- estimateImportance(.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
-                                                labels, robust.se, outlier.proportion,
+                                                labels, robust.se, outlier.prop.to.remove,
                                                 !recursive.call, correction, importance, ...)
         result$importance.type <- importance
         if (importance == "Relative Importance Analysis")
@@ -519,9 +519,9 @@ Regression <- function(formula,
     if (!is.null(result$importance))
         result$importance.footer <- importanceFooter(result)
     options(contrasts = old.contrasts[[1]])
-    if (!is.null(result$outlier.proportion) && result$outlier.proportion > 0)
-        result$footer <- paste0(result$footer, "; ", FormatAsPercent(result$outlier.proportion),
-                                " of the outliers in the data removed;")
+    if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
+        result$footer <- paste0(result$footer, "; ", FormatAsPercent(result$outlier.prop.to.remove),
+                                " of the outliers in the data removed and model refitted;")
     result <- setChartData(result, output)
 
     return(result)
@@ -638,7 +638,7 @@ importanceFooter <- function(x)
 #'   the assumption of constant variance, using the HC1 (degrees of freedom)
 #'   modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
 #'   if weights are applied (as weights already employ a sandwich estimator).
-#' @param outlier.proportion A single numeric value that determines the percentage of data points to remove from the
+#' @param outlier.prop.to.remove A single numeric value that determines the percentage of data points to remove from the
 #'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
 #'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
 #'   denote that a percentage between none and 50\% of the data points are removed.
@@ -652,7 +652,7 @@ importanceFooter <- function(x)
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.proportion, seed = 12321, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = 12321, ...)
 {
     .design <- NULL
     # Initially fit model on all the data and then refit with outlier removal if necessary
@@ -662,14 +662,14 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
     .design <- fitted.model$design
     .estimation.data <- fitted.model$estimation.data
     .formula <- fitted.model$formula
-    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.proportion)
+    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove)
     if (remove.outliers)
     {
         # Don't support Multinomial Logit for now.
         if (type == "Multinomial Logit")
             stop("Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported")
         refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
-                                                         type, robust.se, outlier.proportion, seed = seed,...)
+                                                         type, robust.se, outlier.prop.to.remove, seed = seed,...)
         model <- refitted.model.data$model
         .estimation.data <- refitted.model.data$.estimation.data
         .design <- refitted.model.data$.design
@@ -689,7 +689,7 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
 fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
-    .design <- NULL
+    .design <- non.outlier.data_GQ9KqD7YOf <- NULL
     if (is.null(subset))
     {
         non.outlier.data <- rep(TRUE, nrow(.estimation.data))
@@ -1099,11 +1099,11 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
 }
 
 # Helper function to check user has input a valid value.
-checkAutomaterOutlierRemovalSetting <- function(outlier.proportion)
+checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove)
 {
-    if ((remove.outliers <- (!is.null(outlier.proportion) && outlier.proportion > 0)) && outlier.proportion >= 0.5)
+    if ((remove.outliers <- (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)) && outlier.prop.to.remove >= 0.5)
         stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
-             FormatAsPercent(outlier.proportion), " of outliers were asked to be removed, please set this ",
+             FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
              " to a lower setting and re-run the analysis.")
     remove.outliers
 }
@@ -1111,10 +1111,10 @@ checkAutomaterOutlierRemovalSetting <- function(outlier.proportion)
 # Identifies the outliers and refits the model
 #' @importFrom flipU InterceptExceptions
 refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
-                                      type, robust.se, outlier.proportion, seed, ...)
+                                      type, robust.se, outlier.prop.to.remove, seed, ...)
 {
     non.outlier.data <- findNonOutlierObservations(.estimation.data,
-                                                   outlier.proportion,
+                                                   outlier.prop.to.remove,
                                                    model,
                                                    type,
                                                    .weights,
@@ -1150,7 +1150,7 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
 # Returns a logical vector of observations that are not deemed outlier observations
 #' @importFrom sure resids
 #' @importFrom stats rstudent
-findNonOutlierObservations <- function(data, outlier.proportion, model, type, weights, seed)
+findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type, weights, seed)
 {
     n.model <- nrow(data)
     # In the Ordered Logit and Binary Logit cases use the Surrogate residuals
@@ -1192,7 +1192,7 @@ findNonOutlierObservations <- function(data, outlier.proportion, model, type, we
                 stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
         }
     }
-    bound <- ceiling(n.model * (1 - outlier.proportion))
+    bound <- ceiling(n.model * (1 - outlier.prop.to.remove))
     valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
     return(valid.data.indices)
 }
