@@ -485,7 +485,7 @@ Regression <- function(formula,
         labels <- rownames(result$summary$coefficients)
         labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
-        result$importance <- estimateImportance(.formula, .estimation.data, .weights,
+        result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,
                                                 !recursive.call, correction, importance, ...)

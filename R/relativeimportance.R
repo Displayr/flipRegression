@@ -38,6 +38,12 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         if (!is.null(weights))
             weights <- weights[data.indices]
     }
+    # Protect against dot in formula with the non.outlier indicator variable
+    formula.terms <- terms.formula(formula, data = data)
+    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data_GQ9KqD7YOf"))
+        formula <- update.formula(formula, drop.terms(formula.terms,
+                                                      which(non.outlier.in.data.frame),
+                                                      keep.response = TRUE))
 
     info <- extractRegressionInfo(formula, data, weights, type, signs,
                                   r.square, variable.names, robust.se,
