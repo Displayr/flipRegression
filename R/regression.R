@@ -520,8 +520,14 @@ Regression <- function(formula,
         result$importance.footer <- importanceFooter(result)
     options(contrasts = old.contrasts[[1]])
     if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
+    {
         result$footer <- paste0(result$footer, "; ", FormatAsPercent(result$outlier.prop.to.remove),
                                 " of the outliers in the data removed and model refitted;")
+        if (!is.null(result$importance))
+            result$importance.footer <- paste(result$importance.footer,
+                                              FormatAsPercent(result$outlier.prop.to.remove),
+                                              "of the outliers in the data removed and model refitted;")
+    }
     result <- setChartData(result, output)
 
     return(result)

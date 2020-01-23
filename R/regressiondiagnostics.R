@@ -256,7 +256,7 @@ UnusualObservations <- function(model)
     else
       message <- paste("After removing a proportion of the data from the analysis, unusual observations exist in the",
                        "data. Recommend inspecting the model diagnostics and possibly increasing the automatic outlier",
-                       "removal if necessary.")
+                       "removal if necessary.", message)
   }
 
   paste("Unusual observations detected.", message)
