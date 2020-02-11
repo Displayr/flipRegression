@@ -156,7 +156,7 @@ regression.names <- tolower(gsub("-|\\s", "", regression.types))
 miss <- "Exclude cases with missing data"
 
 tt <- "Multinomial Logit"
-expected.multinomial.error <- "Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported"
+expected.multinomial.warning <- "Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported"
 test_that("Multinomial Logit", {
     expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
                                           missing = miss, outlier.prop.to.remove = 0),
@@ -167,12 +167,12 @@ test_that("Multinomial Logit", {
                  NA)
     expect_error(print(regression.with.weight), NA)
     # Expect errors for outlier proportion requested
-    expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                          missing = miss, outlier.prop.to.remove = 0.1),
-                 expected.multinomial.error)
-    expect_error(regression.with.weight <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                      missing = miss, outlier.prop.to.remove = 0.1, weights = weight),
-                 expected.multinomial.error)
+    expect_warning(Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                              missing = miss, outlier.prop.to.remove = 0.1),
+                   expected.multinomial.warning)
+    expect_warning(Regression(bank.formula[[tt]], data = small.bank, type = tt,
+                              missing = miss, outlier.prop.to.remove = 0.1, weights = weight),
+                   expected.multinomial.warning)
 })
 
 for (i in seq_along(regression.types))

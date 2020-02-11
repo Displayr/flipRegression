@@ -86,12 +86,11 @@ test_that("Duplicated labels",
             Q5r_2 = structure(c(2, 2, 4, 5, 5, 5, 4, 5, 5, 3, 5, 3, 5,
             4, 3, 4, 3, 4, 5, 5), questiontype = "NumberMulti", name = "Q5r_2", label = "Landscaping", question = "How satisfied were you with... 2")), row.names = c(NA,
         20L), class = "data.frame")
-    test.formula <- as.formula(paste0("Q4_2 ~ ", paste0(names(df.small)[-1], collapse = " + ")))
-    expect_warning(print(Regression(test.formula, data = df.small, show.labels = TRUE,
+    expect_warning(print(Regression(Q4_2 ~ ., data = df.small, show.labels = TRUE,
             output = "Relative Importance Analysis")))
-    expect_warning(print(Regression(test.formula, data = df.small, show.labels = TRUE,
+    expect_warning(print(Regression(Q4_2 ~ ., data = df.small, show.labels = TRUE,
             output = "ANOVA"), NA))
-    expect_warning(print(Regression(test.formula, data = df.small, show.labels = TRUE,
+    expect_warning(print(Regression(Q4_2 ~ ., data = df.small, show.labels = TRUE,
             missing = "Multiple imputation")))
 })
 

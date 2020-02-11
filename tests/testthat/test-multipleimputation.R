@@ -43,7 +43,7 @@ test_that("Multiple imputation with auxiliary variables ", {
 test_that("Multiple imputation run using Regression", {
     est <- flipData::EstimationData(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, zbank, missing = "Multiple imputation", m = 10)
     models <- lapply(est$estimation.data, FUN = function(x) Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + rnd + rnd1 + rnd2 + rnd3 + rnd4, data = x))
-    coefs <- expect_error(MultipleImputationCoefficientTable(models), NA)
+    expect_error(MultipleImputationCoefficientTable(models), NA)
     #expect_equal(coefs[12,5], 0.211, 0.001)
 })
 
