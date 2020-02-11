@@ -901,7 +901,7 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     }
 }
 
-#' @importFrom stats model.frame model.response
+#' @importFrom stats model.frame model.response model.matrix
 fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
 {
     model <- InterceptExceptions(
