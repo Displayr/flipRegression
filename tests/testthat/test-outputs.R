@@ -32,9 +32,14 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
           })
 
 test_that("allEffects : Labels", {
-    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, show.labels = TRUE, detail = FALSE))
-    z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, missing = "Multiple imputation", data = bank, show.labels = TRUE, detail = FALSE))
-    flipFormat::Labels(z$model)
+    expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM,
+                                                  data = bank, show.labels = TRUE, detail = FALSE)),
+                 NA)
+    expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM,
+                                                  missing = "Multiple imputation", data = bank, show.labels = TRUE,
+                                                  detail = FALSE)),
+                 NA)
+    expect_error(flipFormat::Labels(z$model), NA)
 })
 
 

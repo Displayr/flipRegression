@@ -230,6 +230,7 @@ outlierTest.Regression <- function(model, ...)
 UnusualObservations <- function(model)
 {
   message <- "";
+  # Bonferroni adjusted residual outlier check
   o <- OutlierTest(model)
   if (o$max.is.high)
     message <- o$description
@@ -245,6 +246,19 @@ UnusualObservations <- function(model)
     cat("No outliers have been identified.\n")
     return(invisible(NULL))
   }
+  # If user has unusual observations, consider prompts about automated outlier removal
+  if (any(c(o$max.is.high, h$max.is.high, d$max.is.high)))
+  {
+    # Suggest they use the automated outlier tool if they haven't or re-examine the model and amend if they have.
+    if (all(model$non.outlier.data))
+      message <- paste("Consider re-running the analysis using automated outlier removal with a non-zero setting to",
+                       "automatically remove unusual observations that can affect the final Regression model.", message)
+    else
+      message <- paste("After removing a proportion of the data from the analysis, unusual observations exist in the",
+                       "data. Recommend inspecting the model diagnostics and possibly increasing the automatic outlier",
+                       "removal if necessary.", message)
+  }
+
   paste("Unusual observations detected.", message)
 }
 
@@ -421,9 +435,9 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
     t <- eval(parse(text = txt))
 
     if (exists(".formula", envir = .GlobalEnv))
-        remove(".formula", envir=.GlobalEnv)
+        remove(".formula", envir = .GlobalEnv)
     if (exists(".estimation.data", envir = .GlobalEnv))
-        remove(".estimation.data", envir=.GlobalEnv)
+        remove(".estimation.data", envir = .GlobalEnv)
     t
 }
 

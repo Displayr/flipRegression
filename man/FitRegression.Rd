@@ -7,10 +7,11 @@
 FitRegression(
   .formula,
   .estimation.data,
-  subset,
   .weights,
   type,
   robust.se,
+  outlier.prop.to.remove,
+  seed = 12321,
   ...
 )
 }
@@ -21,8 +22,6 @@ The details of type specification are given under \sQuote{Details}.}
 
 \item{.estimation.data}{A \code{\link{data.frame}}.}
 
-\item{subset}{Not used.}
-
 \item{.weights}{An optional vector of sampling weights, or, the name or, the
 name of a variable in \code{data}. It may not be an expression.}
 
@@ -32,6 +31,13 @@ name of a variable in \code{data}. It may not be an expression.}
 the assumption of constant variance, using the HC1 (degrees of freedom)
 modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
 if weights are applied (as weights already employ a sandwich estimator).}
+
+\item{outlier.prop.to.remove}{A single numeric value that determines the percentage of data points to remove from the
+analysis. The data points removed correspond to those in the proportion with the largest residuals.
+A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+denote that a percentage between none and 50\% of the data points are removed.}
+
+\item{seed}{A integer seed to generate the surrogate residuals.}
 
 \item{...}{Arguments to the wrapped functions.}
 }
