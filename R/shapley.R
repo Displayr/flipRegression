@@ -2,13 +2,22 @@
 # Shapley, L.S. (1953). "A value for n-person games"
 #' @importFrom utils combn
 computeShapleyImportance <- function(formula, data = NULL, weights, signs,
-                                     variable.names, robust.se = FALSE,
+                                     variable.names, robust.se = FALSE, outlier.prop.to.remove = NULL,
                                      show.warnings = TRUE, correction, ...)
 {
     signsWarning(signs, show.warnings, "Linear")
 
+    # If necessary, filter the data to the outlier adjusted subset
+    if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+    {
+        data.indices <- data[, "non.outlier.data_GQ9KqD7YOf"]
+        data <- data[data.indices, ]
+        if (!is.null(weights))
+            weights <- weights[data.indices]
+    }
+
     info <- extractRegressionInfo(formula, data, weights, "Linear", signs, NA,
-                                  variable.names, robust.se, ...)
+                                  variable.names, robust.se, outlier.prop.to.remove, ...)
 
     signs <- info$signs
     variable.names <- info$variable.names
@@ -44,6 +53,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
                                                       "Linear", signs,
                                                       sum(raw.importance),
                                                       variable.names, robust.se,
+                                                      outlier.prop.to.remove = 0,
                                                       show.warnings,
                                                       correction, ...)
     standard.errors <- raw.importance * relative.importance$standard.errors /

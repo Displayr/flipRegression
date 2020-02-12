@@ -2,7 +2,7 @@
 % Please edit documentation in R/regression.R
 \name{Regression}
 \alias{Regression}
-\title{\code{Regression}}
+\title{Generalized Regression Outputs}
 \usage{
 Regression(
   formula,
@@ -29,6 +29,7 @@ Regression(
   interaction.formula = NULL,
   recursive.call = FALSE,
   effects.format = list(max.label = 10),
+  outlier.prop.to.remove = NULL,
   ...
 )
 }
@@ -78,7 +79,7 @@ summary and model statistics. It is the default.
 
 \item{m}{The number of imputed samples, if using multiple imputation.}
 
-\item{seed}{The random number seed used in imputation.}
+\item{seed}{The random number seed used in imputation and residual computations.}
 
 \item{statistical.assumptions}{A Statistical Assumptions object.}
 
@@ -116,11 +117,16 @@ See \code{\link{contrasts}} for more information.}
 \item{effects.format}{A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 and \code{y.title} (the title of the y-axis, defaults to outcome label).}
 
+\item{outlier.prop.to.remove}{A single numeric value that determines the percentage of data points to remove from the
+analysis. The data points removed correspond to those in the proportion with the largest residuals.
+A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+denote that a percentage between none and 50\% of the data points are removed.}
+
 \item{...}{Additional argments to be passed to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.}
 }
 \description{
-Generalized Regression. Computes output for seven different regression types.
+Computes output for seven different regression types.
 Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
 multinomial. Output includes general coefficient estimates and importance analysis estimates
 with possibilities for handling missing data and interaction terms.
@@ -136,17 +142,38 @@ In the case of Ordered Logistic regression, this function computes a proporional
  have invalid weights, but including cases with missing values of the outcome variable.
  Then, cases with missing values in the outcome variable are excluded from
  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
+
+ Outlier removal is performed by computing residuals for the regression model and removing the largest residuals
+ from the dataset (outlier removal). The model is then refit on the reduced dataset after outliers are removed.
+ The residuals used in this process depend on the regression type. For a regression with a numeric response
+ (\code{type} is "Linear", "Poisson", "Quasi-Poisson" or  "NBD") in an unweighted regression, the studentised
+ deviance residuals are used (see Davison and Snell (1991) and \code{\link[stats]{rstudent}}). In the weighted case
+ of the numeric response, the Pearson residuals are used (see Davison and Snell (1991) and
+ \code{\link[stats]{residuals.glm}}). In the case of Binary and Ordinal data for both the unweighted and weighted
+ regression cases, the Surrogate residuals (SURE) are used (via the implementation in Greenwell, McCarthy and
+ Boehmke (2017) with their sure R package). This was based on the recent theoretical paper in Liu and Zhang (2018).
+ Currently "Multinomial Logit" is unsupported for automated outlier removal. Possible surrogate residual to be used
+ in a future version.
 }
 \references{
-von Hippel, Paul T. 2007. "Regression With Missing Y's: An
+Davison, A. C. and Snell, E. J. (1991) Residuals and diagnostics. In: Statistical Theory and Modelling.
+  In Honour of Sir David Cox, FRS, eds. Hinkley, D. V., Reid, N. and Snell, E. J., Chapman & Hall.
+
+  Greenwell, B., McCarthy, A. and Boehmke, B. (2017). sure: Surrogate Residuals for Ordinal and General
+  Regression Models. R package version 0.2.0. https://CRAN.R-project.org/package=sure
+
+  von Hippel, Paul T. 2007. "Regression With Missing Y's: An
   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
   Methodology 37:83-117.
-
-  White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
-  and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
 
   Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
   standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
 
+  Lui, D. and Zhang, H. (2018). Residuals and Diagnostics for Ordinal Regression Models: A Surrogate Approach.
+  Journal of the American Statistical Association, 113:522, 845-854.
+
   Lumley, T. (2004) Analysis of complex survey samples. Journal of Statistical Software 9(1): 1-19
+
+  White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
+  and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
 }

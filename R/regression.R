@@ -1,8 +1,10 @@
-#' \code{Regression}
-#' @description Generalized Regression. Computes output for seven different regression types.
+#' Generalized Regression Outputs
+#'
+#' Computes output for seven different regression types.
 #' Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
 #' multinomial. Output includes general coefficient estimates and importance analysis estimates
 #' with possibilities for handling missing data and interaction terms.
+#'
 #' @param formula An object of class \code{\link{formula}} (or one that can be
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
@@ -37,7 +39,7 @@
 #' @param method The method to be used; for fitting. This will only do something if
 #'   method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
-#' @param seed The random number seed used in imputation.
+#' @param seed The random number seed used in imputation and residual computations.
 #' @param statistical.assumptions A Statistical Assumptions object.
 #' @param auxiliary.data A \code{\link{data.frame}} containing additional variables
 #'   to be used in imputation (if required). While adding more variables will improve
@@ -62,6 +64,10 @@
 #' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param effects.format A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 #'   and \code{y.title} (the title of the y-axis, defaults to outcome label).
+#' @param outlier.prop.to.remove A single numeric value that determines the percentage of data points to remove from the
+#'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
+#'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+#'   denote that a percentage between none and 50\% of the data points are removed.
 #' @param ... Additional argments to be passed to  \code{\link{lm}} or, if the
 #'  data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.
 #' @details In the case of Ordered Logistic regression, this function computes a proporional odds model using
@@ -74,17 +80,39 @@
 #'  have invalid weights, but including cases with missing values of the outcome variable.
 #'  Then, cases with missing values in the outcome variable are excluded from
 #'  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
-#' @references von Hippel, Paul T. 2007. "Regression With Missing Y's: An
+#'
+#'  Outlier removal is performed by computing residuals for the regression model and removing the largest residuals
+#'  from the dataset (outlier removal). The model is then refit on the reduced dataset after outliers are removed.
+#'  The residuals used in this process depend on the regression type. For a regression with a numeric response
+#'  (\code{type} is "Linear", "Poisson", "Quasi-Poisson" or  "NBD") in an unweighted regression, the studentised
+#'  deviance residuals are used (see Davison and Snell (1991) and \code{\link[stats]{rstudent}}). In the weighted case
+#'  of the numeric response, the Pearson residuals are used (see Davison and Snell (1991) and
+#'  \code{\link[stats]{residuals.glm}}). In the case of Binary and Ordinal data for both the unweighted and weighted
+#'  regression cases, the Surrogate residuals (SURE) are used (via the implementation in Greenwell, McCarthy and
+#'  Boehmke (2017) with their sure R package). This was based on the recent theoretical paper in Liu and Zhang (2018).
+#'  Currently "Multinomial Logit" is unsupported for automated outlier removal. Possible surrogate residual to be used
+#'  in a future version.
+#'
+#' @references Davison, A. C. and Snell, E. J. (1991) Residuals and diagnostics. In: Statistical Theory and Modelling.
+#'   In Honour of Sir David Cox, FRS, eds. Hinkley, D. V., Reid, N. and Snell, E. J., Chapman & Hall.
+#'
+#'   Greenwell, B., McCarthy, A. and Boehmke, B. (2017). sure: Surrogate Residuals for Ordinal and General
+#'   Regression Models. R package version 0.2.0. https://CRAN.R-project.org/package=sure
+#'
+#'   von Hippel, Paul T. 2007. "Regression With Missing Y's: An
 #'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
 #'   Methodology 37:83-117.
-#'
-#'   White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
-#'   and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
 #'
 #'   Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
 #'   standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
 #'
+#'   Lui, D. and Zhang, H. (2018). Residuals and Diagnostics for Ordinal Regression Models: A Surrogate Approach.
+#'   Journal of the American Statistical Association, 113:522, 845-854.
+#'
 #'   Lumley, T. (2004) Analysis of complex survey samples. Journal of Statistical Software 9(1): 1-19
+#'
+#'   White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
+#'   and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
 #'
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
@@ -121,6 +149,7 @@ Regression <- function(formula,
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        recursive.call = FALSE,
                        effects.format = list(max.label = 10),
+                       outlier.prop.to.remove = NULL,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -380,9 +409,10 @@ Regression <- function(formula,
             stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
-        subset <-  processed.data$subset
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = seed, ...)
+        .estimation.data <- fit$.estimation.data
+        .formula <- fit$formula
         if (internal)
         {
             fit$subset <- row.names %in% rownames(.estimation.data)
@@ -393,6 +423,8 @@ Regression <- function(formula,
         .design <- fit$design
 
         result <- list(original = original, call = cl)
+
+        result$non.outlier.data <- fit$non.outlier.data
 
         if (!is.null(.design))
             result$design <- .design
@@ -414,6 +446,7 @@ Regression <- function(formula,
     result$type <- type
     result$weights <- unfiltered.weights
     result$output <- output
+    result$outlier.prop.to.remove <- outlier.prop.to.remove
     result$show.labels <- show.labels
     result$missing <- missing
     result$test.interaction <- !is.null(interaction)
@@ -476,8 +509,8 @@ Regression <- function(formula,
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
-                                                labels, robust.se, !recursive.call,
-                                                correction, importance, ...)
+                                                labels, robust.se, outlier.prop.to.remove,
+                                                !recursive.call, correction, importance, ...)
         result$importance.type <- importance
         if (importance == "Relative Importance Analysis")
             result$relative.importance <- result$importance
@@ -508,7 +541,15 @@ Regression <- function(formula,
     if (!is.null(result$importance))
         result$importance.footer <- importanceFooter(result)
     options(contrasts = old.contrasts[[1]])
-
+    if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
+    {
+        result$footer <- paste0(result$footer, "; ", FormatAsPercent(result$outlier.prop.to.remove),
+                                " of the outliers in the data removed and model refitted;")
+        if (!is.null(result$importance))
+            result$importance.footer <- paste(result$importance.footer,
+                                              FormatAsPercent(result$outlier.prop.to.remove),
+                                              "of the outliers in the data removed and model refitted;")
+    }
     result <- setChartData(result, output)
 
     return(result)
@@ -618,7 +659,6 @@ importanceFooter <- function(x)
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
 #' @param .estimation.data A \code{\link{data.frame}}.
-#' @param subset Not used.
 #' @param .weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
 #' @param type See \link{Regression}.
@@ -626,38 +666,99 @@ importanceFooter <- function(x)
 #'   the assumption of constant variance, using the HC1 (degrees of freedom)
 #'   modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
 #'   if weights are applied (as weights already employ a sandwich estimator).
+#' @param outlier.prop.to.remove A single numeric value that determines the percentage of data points to remove from the
+#'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
+#'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+#'   denote that a percentage between none and 50\% of the data points are removed.
+#' @param seed A integer seed to generate the surrogate residuals.
 #' @param ... Arguments to the wrapped functions.
 #' @importFrom flipData CalibrateWeight WeightedSurveyDesign
+#' @importFrom flipFormat FormatAsPercent
 #' @importFrom flipU InterceptExceptions
 #' @importFrom MASS polr glm.nb
 #' @importFrom nnet multinom
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = 12321, ...)
+{
+    .design <- NULL
+    # Initially fit model on all the data and then refit with outlier removal if necessary
+    fitted.model <- fitModel(.formula, .estimation.data, .weights, type,
+                             robust.se, subset = NULL, ...)
+    model <- fitted.model$model
+    .design <- fitted.model$design
+    .estimation.data <- fitted.model$estimation.data
+    .formula <- fitted.model$formula
+    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove)
+    # Don't support Multinomial Logit for now.
+    if (remove.outliers && type == "Multinomial Logit")
+    {
+        warning("Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported",
+                "Regression model is fitted without outlier removal.")
+        remove.outliers <- FALSE
+    }
+    if (remove.outliers)
+    {
+        refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
+                                                         type, robust.se, outlier.prop.to.remove, seed = seed,...)
+        model <- refitted.model.data$model
+        .estimation.data <- refitted.model.data$.estimation.data
+        .design <- refitted.model.data$.design
+        non.outlier.data <- refitted.model.data$non.outlier.data
+    } else
+        non.outlier.data <- rep(TRUE, nrow(.estimation.data))
+
+    result <- list(original = model, formula = .formula, .estimation.data = .estimation.data,
+                   design = .design, weights = .weights, robust.se = robust.se,
+                   non.outlier.data = non.outlier.data)
+    class(result) <- "FitRegression"
+    result
+}
+
+# Fits the models. Now in a separate function to FitRegression for repeated use
+# to prevent code duplication with the automated outlier removal refitting.
+fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
-    .design <- NULL
+    .design <- non.outlier.data_GQ9KqD7YOf <- NULL
+    if (is.null(subset))
+    {
+        non.outlier.data <- rep(TRUE, nrow(.estimation.data))
+        .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
+    } else
+        non.outlier.data <- subset
+    # Protect against . operator used in RHS of formula
+    # If so, it will include non.outlier.data as a predictor now.
+
+    formula.terms <- terms.formula(.formula, data = .estimation.data)
+    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data_GQ9KqD7YOf"))
+        .formula <- update.formula(.formula, drop.terms(formula.terms,
+                                                        which(non.outlier.in.data.frame),
+                                                        keep.response = TRUE))
     if (is.null(.weights))
     {
         if (type == "Linear")
         {
-            model <- lm(.formula, .estimation.data, model = TRUE)
+            model <- lm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, model = TRUE)
             model$aic <- AIC(model)
         }
         else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-            model <- glm(.formula, .estimation.data, family = switch(type,
-                                                                     "Poisson" = poisson,
-                                                                     "Quasi-Poisson" = quasipoisson,
-                                                                     "Binary Logit" = binomial(link = "logit")))
+            model <- glm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
+                         family = switch(type,
+                                         "Poisson" = poisson,
+                                         "Quasi-Poisson" = quasipoisson,
+                                         "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- fitOrderedLogit(.formula, .estimation.data, NULL, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, NULL,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
         {
-            model <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
+            model <- multinom(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
+                              Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
@@ -672,7 +773,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 list(value = val, warnings = myWarnings)
             }
 
-            result <- withWarnings(glm.nb(.formula, .estimation.data))
+            result <- withWarnings(glm.nb(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf))
             model <- result$value
             if (!is.null(result$warnings))
                 if (result$warnings[[1]]$message == "iteration limit reached")
@@ -694,7 +795,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         if (type == "Linear")
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
-            model <- svyglm(.formula, .design)
+            model <- svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf, ...)
             if (all(model$residuals == 0)) # perfect fit
                 model$df <- NA
             else
@@ -714,26 +815,38 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             }
         }
         else if (type == "Ordered Logit")
-            model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, weights,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- multinom(.formula, .estimation.data, weights = weights,
+            model <- multinom(.formula, .estimation.data, weights = weights, subset = non.outlier.data_GQ9KqD7YOf,
                               Hess = TRUE, trace = FALSE, maxit = 10000, MaxNWts = 1e9, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- glm.nb(.formula, .estimation.data, weights = weights, ...)
+            model <- InterceptExceptions(
+                glm.nb(.formula, .estimation.data, weights = weights, subset = non.outlier.data_GQ9KqD7YOf, ...),
+                warning.handler = function(w) {
+                    if (w$message == "iteration limit reached")
+                        warning("Model may not have converged. If the dispersion parameter from the Detail",
+                                " output is large, a Poisson model may be appropriate.")
+                    else
+                        warning(w$message)
+                })
         }
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
             model <- switch(type,
-                            "Binary Logit" = svyglm(.formula, .design, family = quasibinomial()),
-                            "Poisson" = svyglm(.formula, .design, family = poisson()),
-                            "Quasi-Poisson" = svyglm(.formula, .design, family = quasipoisson()))
+                            "Binary Logit" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
+                                                    family = quasibinomial()),
+                            "Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
+                                               family = poisson()),
+                            "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
+                                                     family = quasipoisson()))
             assign(".design", .design, envir=.GlobalEnv)
             aic <- extractAIC(model)
             remove(".design", envir=.GlobalEnv)
@@ -741,9 +854,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             model$aic <- aic[2]
         }
     }
-    result <- list(original = model, formula = .formula, design = .design, weights = .weights, robust.se = robust.se)
-    class(result) <- "FitRegression"
-    result
+    return(list(model = model, formula = .formula, design = .design, estimation.data = .estimation.data))
 }
 
 
@@ -900,15 +1011,19 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     }
 }
 
-#' @importFrom stats model.frame model.response
-fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
+#' @importFrom stats model.frame model.matrix model.response
+fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data_GQ9KqD7YOf, ...)
 {
     model <- InterceptExceptions(
         if (is.null(weights))
-            polr(.formula, .estimation.data, Hess = TRUE, ...)
+            polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, ...)
         else
         {
-            .design <- WeightedSurveyDesign(.estimation.data, weights)
+            # svyolr (currently 21/01/2020) doesn't have a subset argument
+            # Instead manually filter the data using the provided non.outlier.data column
+            .estimation.data <- .estimation.data[, -which(colnames(.estimation.data) == "non.outlier.data_GQ9KqD7YOf")]
+            .estimation.data <- .estimation.data[non.outlier.data_GQ9KqD7YOf, ]
+            .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data_GQ9KqD7YOf])
             out <- svyolr(.formula, .design, ...)
             out$df <- out$edf
             # Compute the dAIC
@@ -931,6 +1046,9 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
             # Also allows the sure resids method to compute the mean via the polr method to get the linear
             # predictor.
             class(out) <- c("svyolr", "polr")
+            # Retain the design and formula for later use
+            out$formula <- .formula
+            out$design <- .design
             out
         },
         warning.handler = function(w) {
@@ -1008,5 +1126,105 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
         warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
                 "These variable(s) have been removed from the analysis: ", missing.variable.names, ".")
     }
-    return(list(data = data, formula = formula, formula.with.interaction = formula.with.interaction))
+    return(list(data = data, formula = formula, input.formula = input.formula,
+                formula.with.interaction = formula.with.interaction))
+}
+
+# Helper function to check user has input a valid value.
+checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove)
+{
+    if ((remove.outliers <- (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)) && outlier.prop.to.remove >= 0.5)
+        stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
+             FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
+             " to a lower setting and re-run the analysis.")
+    remove.outliers
+}
+
+# Identifies the outliers and refits the model
+#' @importFrom flipU InterceptExceptions
+refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
+                                      type, robust.se, outlier.prop.to.remove, seed, ...)
+{
+    non.outlier.data <- findNonOutlierObservations(.estimation.data,
+                                                   outlier.prop.to.remove,
+                                                   model,
+                                                   type,
+                                                   .weights,
+                                                   seed)
+    .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
+    # svyolr is fragile and errors if ordered response values have empty levels since the
+    # Hessian is singular. Removing data with automated outlier removal can trigger this.
+    if (type == "Ordered Logit" && !is.null(.weights))
+    {
+        fitted.model <- InterceptExceptions(
+            fitModel(formula, .estimation.data, .weights = .weights,
+                     type, robust.se, subset = non.outlier.data, ...),
+            error.handler = function(e) {
+                if (grepl("Outcome variable has level", e$message))
+                {
+                    missing.levels <- regmatches(e$message,
+                                                 regexpr("(?<=level\\(s\\): )(.*?)(?= that)", e$message, perl = TRUE))
+                    stop("Removing outliers has removed all the observations in the outcome variable with level(s): ",
+                         missing.levels,  ". If possible, this issue could be solved by merging the categories of the",
+                         " outcome variable or reducing the Automated Outlier removal setting.")
+                }
+                else
+                    stop(e$message)
+            }
+        )
+    } else
+        fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
+                                 type, robust.se, subset = non.outlier.data, ...)
+    return(list(model = fitted.model$model, .estimation.data = .estimation.data,
+                design = fitted.model$design, non.outlier.data = non.outlier.data))
+}
+
+# Returns a logical vector of observations that are not deemed outlier observations
+#' @importFrom sure resids
+#' @importFrom stats rstudent
+findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type, weights, seed)
+{
+    n.model <- nrow(data)
+    # In the Ordered Logit and Binary Logit cases use the Surrogate residuals
+    # for both the weighted and non-weighted models
+    if (type %in% c("Ordered Logit", "Binary Logit"))
+    {
+        set.seed(seed)
+        if (type == "Ordered Logit")
+        {
+            if (!is.null(weights))
+            {
+                assign(".design", model$design, envir=.GlobalEnv)
+                assign(".formula", model$formula, envir=.GlobalEnv)
+                model.residuals <- resids(model, method = "latent")
+                remove(".design", envir=.GlobalEnv)
+                remove(".formula", envir=.GlobalEnv)
+            } else
+                model.residuals <- resids(model, method = "latent")
+        }
+        else
+            model.residuals <- resids(model, method = "jitter", type = "response")
+    }
+    else
+    {
+        # use standardised deviance residuals in unweighted cases.
+        # otherwise use the Pearson sampling re-weighted residuals.
+        # These are computed in residuals.svyglm except in the NBD case.
+        # NBD kept as Pearson for consistency.
+        if (is.null(weights))
+        {
+            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
+                model.residuals <- rstudent(model, type = "deviance")
+            else
+                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
+        } else {
+            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
+                model.residuals <- residuals(model, type = "pearson")
+            else
+                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
+        }
+    }
+    bound <- ceiling(n.model * (1 - outlier.prop.to.remove))
+    valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
+    return(valid.data.indices)
 }

@@ -9,7 +9,8 @@ for (type in c("Linear", "Multinomial Logit", "Binary Logit"))
                     {
                         z <- suppressWarnings(Regression(relationship ~ age + sex, data = adult.2000, type = type, output = output))
                         expect_equal(length(dim(attr(z, "ChartData"))), 2L)
-                    }
+                    } else
+                        expect_true(TRUE) # Prevent test skipped note.
                 })
 
 
