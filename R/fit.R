@@ -92,7 +92,7 @@ GoodnessOfFit.Regression <- function(object, digits = max(3L, getOption("digits"
         relevant.subset <- object$non.outlier.data
         set.seed(1223)
         predicted <- UnclassIfNecessary(predict(object)[object$subset][relevant.subset], FALSE)
-        if (sd(predicted) == 0)
+        if (sd(predicted, na.rm = TRUE) == 0)
             r2 <- 0
         else
         {

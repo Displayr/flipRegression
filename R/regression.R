@@ -398,6 +398,8 @@ Regression <- function(formula,
                                                                        importance.absolute)
                 final.model$importance.footer <- importanceFooter(final.model)
             }
+            final.model$model <- data
+            final.model$weights <- weights
             final.model <- setChartData(final.model, output)
             return(final.model)
         }
