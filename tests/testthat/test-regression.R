@@ -240,7 +240,7 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
 })
 
 
-for(missing in c("Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Imputation (replace missing values with estimates)", "Multiple imputation", "Exclude cases with missing data"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste(type, " save variables"),{
             z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb))
