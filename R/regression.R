@@ -150,6 +150,8 @@ Regression <- function(formula,
                        recursive.call = FALSE,
                        effects.format = list(max.label = 10),
                        outlier.prop.to.remove = NULL,
+                       stacked.data.check = FALSE,
+                       stacked.data = NULL,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -202,6 +204,14 @@ Regression <- function(formula,
             interaction.name <- attr(interaction, "name")
         interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
         else interaction.name
+    }
+    # Check if stackable data is input
+    if (stacked.data.check)
+    {
+        if (is.null(stacked.data) || any(null.elements <- sapply(stacked.data, is.null)))
+            stop("Expected non-NULL list of 'stacked.data'")
+        stacked.data <- removeDataReductionColumns(stacked.data)
+        checkDataAppropriateForStacking(stacked.data)
     }
 
     if (!is.null(interaction.formula))
@@ -1229,4 +1239,27 @@ findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type
     bound <- ceiling(n.model * (1 - outlier.prop.to.remove))
     valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
     return(valid.data.indices)
+}
+
+removeDataReductionColumns <- function(data)
+{
+    # Remove the Data Reduction from the Response
+    # Remove the SUM column from the Number Multi
+    # PickAnyMulti doesn't have a DataReduction here.
+    y.question.type <- attr(data[["Y"]], "questiontype")
+    if (y.question.type == "NumberMulti")
+        data[["Y"]] <- data[["Y"]][-ncol(data[["Y"]])]
+    else if (y.question.type != "PickAnyMulti")
+        stop("Unexpected Stackable data in the outcome variable",
+             "Expected a Number Multi or Pick Any Multi but received a '", y.questiontype, "'")
+    # Clean the DataReduction for the predictor variables
+    x.question.type <- attr(data[["X"]], "questiontype")
+    if (x.question.type %in% c("PickAnyGrid", "NumberGrid"))
+    {
+        data.reduction.string <- if(x.question.type == "PickAnyGrid") "NET" else "SUM"
+        grep.pattern <- paste0("(^", data.reduction.string, ", )|(, ", data.reduction.string,"$)")
+        data.reduction.columns <- grepl(grep.pattern, names(data$X))
+        data[["X"]][data.reduction.columns] <- NULL
+    }
+    data
 }
