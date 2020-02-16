@@ -151,7 +151,7 @@ Regression <- function(formula,
                        effects.format = list(max.label = 10),
                        outlier.prop.to.remove = NULL,
                        stacked.data.check = FALSE,
-                       stacked.data = NULL,
+                       unstacked.data = NULL,
                        ...)
 {
     old.contrasts <- options("contrasts")
@@ -208,10 +208,13 @@ Regression <- function(formula,
     # Check if stackable data is input
     if (stacked.data.check)
     {
-        if (is.null(stacked.data) || any(null.elements <- sapply(stacked.data, is.null)))
-            stop("Expected non-NULL list of 'stacked.data'")
-        stacked.data <- removeDataReductionColumns(stacked.data)
-        checkDataAppropriateForStacking(stacked.data)
+        if (is.null(unstacked.data) || any(null.elements <- sapply(unstacked.data, is.null)))
+            stop("Expected non-NULL list of 'unstacked.data'")
+        unstacked.data <- removeDataReductionColumns(unstacked.data)
+        unstacked.data <- checkDataAppropriateForStacking(unstacked.data)
+        data <- stackData(unstacked.data)
+        # Update formula
+        formula <- input.formula <- updateStackedFormula(data, formula)
     }
 
     if (!is.null(interaction.formula))
@@ -1248,7 +1251,7 @@ removeDataReductionColumns <- function(data)
     # PickAnyMulti doesn't have a DataReduction here.
     y.question.type <- attr(data[["Y"]], "questiontype")
     if (y.question.type == "NumberMulti")
-        data[["Y"]] <- data[["Y"]][-ncol(data[["Y"]])]
+        data[["Y"]][ncol(data[["Y"]])] <- NULL
     else if (y.question.type != "PickAnyMulti")
         stop("Unexpected Stackable data in the outcome variable",
              "Expected a Number Multi or Pick Any Multi but received a '", y.questiontype, "'")
@@ -1262,4 +1265,72 @@ removeDataReductionColumns <- function(data)
         data[["X"]][data.reduction.columns] <- NULL
     }
     data
+}
+
+# Checks to be coded
+checkDataAppropriateForStacking <- function(data)
+{
+    outcome.names <- getMultiOutcomeNames(data[["Y"]])
+    names.in.predictor.grid <- getGridPredictorNames(data[["X"]])
+    unique.stackable.names <- unique(names.in.predictor.grid[[2]])
+    if (!identical(unique.stackable.names, outcome.names))
+    {
+        if (!all(unstackable.names <- !unique.stackable.names %in% outcome.names))
+        {
+            unstackable.names <- unique.stackable.names[unstackable.names]
+            data[["X"]][names.in.predictor.grid[[2]] %in% unstackable.names] <- NULL
+            unstackable.names <- paste0(sQuote(unstackable.names), collapse = ", ")
+            warning("Cannot stack variable(s): ", unstackable.names, " found in the Predictor Input since it isn't defined in the outcome variables. These variable(s) have been removed.")
+        }
+    }
+    return(data)
+}
+
+stackData <- function(data)
+{
+    stacked.outcome <- stackOutcome(data[["Y"]])
+    stacked.predictors <- stackPredictors(data[["X"]])
+    stacked.data <- cbind(stacked.outcome, stacked.predictors)
+    attr(stacked.data, "Outcome") <- attr(data[["Y"]], "question")
+    attr(stacked.data, "Predictors") <- names(stacked.predictors)
+    return(stacked.data)
+}
+
+stackPredictors <- function(data)
+{
+    stacked.data <- reshape(data, varying = names(data), sep = ", ", direction = "long")
+    stacked.data <- removeReshapingHelperVariables(stacked.data)
+    stacked.data
+}
+
+stackOutcome <- function(data)
+{
+    stacked.data <- reshape(data, varying = names(data), v.names = attr(data, "question"), direction = "long")
+    stacked.data <- removeReshapingHelperVariables(stacked.data)
+    stacked.data
+}
+
+removeReshapingHelperVariables <- function(data)
+{
+    data[["id"]] <- NULL
+    data[["time"]] <- NULL
+    data
+}
+
+# Return the name of the predictors and their associated matched response values
+getGridPredictorNames <- function(data)
+{
+    split.names <- strsplit(names(data), ", ")
+    outcome.names <- sapply(split.names, "[", 2)
+    predictor.names <- sapply(split.names, "[", 1)
+    list(predictor.names, outcome.names)
+}
+
+getMultiOutcomeNames <- function(data) names(data)
+
+updateStackedFormula <- function(data, formula)
+{
+    # TBA
+    new.formula <- formula
+    return(new.formula)
 }
