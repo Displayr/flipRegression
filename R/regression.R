@@ -209,7 +209,8 @@ Regression <- function(formula,
     if (stacked.data.check)
     {
         if (is.null(unstacked.data) || any(null.elements <- sapply(unstacked.data, is.null)))
-            stop("Expected non-NULL list of 'unstacked.data'")
+            stop("'unstacked.data' arguments needs to have list with two elements, 'X' and 'Y'",
+                 "that contain suitable variable sets that can be stacked.")
         unstacked.data <- removeDataReductionColumns(unstacked.data)
         unstacked.data <- checkDataAppropriateForStacking(unstacked.data)
         data <- stackData(unstacked.data)
@@ -1250,11 +1251,8 @@ removeDataReductionColumns <- function(data)
     # Remove the SUM column from the Number Multi
     # PickAnyMulti doesn't have a DataReduction here.
     y.question.type <- attr(data[["Y"]], "questiontype")
-    if (y.question.type == "NumberMulti")
+    if (y.question.type %in% c("NumberMulti", "PickAny"))
         data[["Y"]][ncol(data[["Y"]])] <- NULL
-    else if (y.question.type != "PickAnyMulti")
-        stop("Unexpected Stackable data in the outcome variable",
-             "Expected a Number Multi or Pick Any Multi but received a '", y.questiontype, "'")
     # Clean the DataReduction for the predictor variables
     x.question.type <- attr(data[["X"]], "questiontype")
     if (x.question.type %in% c("PickAnyGrid", "NumberGrid"))
@@ -1270,20 +1268,54 @@ removeDataReductionColumns <- function(data)
 # Checks to be coded
 checkDataAppropriateForStacking <- function(data)
 {
+    # Check valid input
+    validMultiOutcome(data[["Y"]])
+    validGridPredictor(data[["X"]])
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
     names.in.predictor.grid <- getGridPredictorNames(data[["X"]])
     unique.stackable.names <- unique(names.in.predictor.grid[[2]])
     if (!identical(unique.stackable.names, outcome.names))
     {
-        if (!all(unstackable.names <- !unique.stackable.names %in% outcome.names))
+        # Check if there are any predictor names that aren't named in the outcome data.frame
+        if (!all(unstackable.predictor.names <- !unique.stackable.names %in% outcome.names))
         {
-            unstackable.names <- unique.stackable.names[unstackable.names]
-            data[["X"]][names.in.predictor.grid[[2]] %in% unstackable.names] <- NULL
-            unstackable.names <- paste0(sQuote(unstackable.names), collapse = ", ")
-            warning("Cannot stack variable(s): ", unstackable.names, " found in the Predictor Input since it isn't defined in the outcome variables. These variable(s) have been removed.")
+            unstackable.predictor.names <- unique.stackable.names[unstackable.predictor.names]
+            data[["X"]][names.in.predictor.grid[[2]] %in% unstackable.predictor.names] <- NULL
+            unstackable.predictor.names <- paste0(sQuote(unstackable.predictor.names), collapse = ", ")
+            warning("Cannot stack variable(s): ", unstackable.predictor.names,
+                    " found in the Predictor Input since it isn't defined in the outcome variables. These variable(s) have been removed.")
         }
+        # Check if there are any names in the outcome data.frame that aren't in the predictor grid
+
     }
     return(data)
+}
+
+validMultiOutcome <- function(data)
+{
+    allowed.types <- c("PickAny", "PickOneMulti", "NumberMulti")
+    if (is.null(attr(data, "questiontype")))
+        stop("Outcome variable needs to have the question type attribute to be processed for stacking")
+    if (!attr(data, "questiontype") %in% allowed.types)
+    {
+        allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
+        stop("Outcome variable to be stacked needs to be either a ", allowed.types, " question type.",
+             " Supplied outcome variable is ", attr(data, "questiontype"))
+    }
+
+}
+
+validGridPredictor <- function(data)
+{
+    allowed.types <- c("PickAnyGrid", "NumberGrid")
+    if (is.null(attr(data, "questiontype")))
+        stop("Predictor variables needs to have the question type attribute to be processed for stacking")
+    if (!attr(data, "questiontype") %in% allowed.types)
+    {
+        allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
+        stop("Outcome variable to be stacked needs to be either a 'NumberGrid' or 'PickAnyGrid' queston type",
+             "Supplied outcome variable is ", attr(data, "questiontype"))
+    }
 }
 
 stackData <- function(data)
@@ -1291,8 +1323,6 @@ stackData <- function(data)
     stacked.outcome <- stackOutcome(data[["Y"]])
     stacked.predictors <- stackPredictors(data[["X"]])
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
-    attr(stacked.data, "Outcome") <- attr(data[["Y"]], "question")
-    attr(stacked.data, "Predictors") <- names(stacked.predictors)
     return(stacked.data)
 }
 
@@ -1300,6 +1330,8 @@ stackPredictors <- function(data)
 {
     stacked.data <- reshape(data, varying = names(data), sep = ", ", direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
+    stacked.data <- addLabelAttribute(stacked.data)
+    names(stacked.data) <- paste0("X", 1:ncol(stacked.data))
     stacked.data
 }
 
@@ -1307,7 +1339,17 @@ stackOutcome <- function(data)
 {
     stacked.data <- reshape(data, varying = names(data), v.names = attr(data, "question"), direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
+    stacked.data <- addLabelAttribute(stacked.data)
+    names(stacked.data) <- "Y"
     stacked.data
+}
+
+addLabelAttribute <- function(data)
+{
+    variable.names <- colnames(data)
+    for (i in seq_along(data))
+        attr(data[[i]], "label") <- variable.names[i]
+    data
 }
 
 removeReshapingHelperVariables <- function(data)
@@ -1330,7 +1372,7 @@ getMultiOutcomeNames <- function(data) names(data)
 
 updateStackedFormula <- function(data, formula)
 {
-    # TBA
-    new.formula <- formula
+    new.formula <- as.formula(paste0("Y ~ ", paste0("X", 1:(ncol(data) - 1), collapse = " + ")),
+                              env = environment(formula))
     return(new.formula)
 }
