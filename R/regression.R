@@ -208,11 +208,9 @@ Regression <- function(formula,
     # Check if stackable data is input
     if (stacked.data.check)
     {
-        if (is.null(unstacked.data) || any(null.elements <- sapply(unstacked.data, is.null)))
-            stop("'unstacked.data' arguments needs to have list with two elements, 'X' and 'Y'",
-                 "that contain suitable variable sets that can be stacked.")
+        checkDataFeasibleForStacking(unstacked.data)
         unstacked.data <- removeDataReductionColumns(unstacked.data)
-        unstacked.data <- checkDataAppropriateForStacking(unstacked.data)
+        unstacked.data <- validateDataForStacking(unstacked.data)
         data <- stackData(unstacked.data)
         # Update formula
         formula <- input.formula <- updateStackedFormula(data, formula)
@@ -1266,14 +1264,34 @@ removeDataReductionColumns <- function(data)
 }
 
 # Checks to be coded
-checkDataAppropriateForStacking <- function(data)
+checkDataFeasibleForStacking <- function(data)
 {
-    # Check valid input
+    checkListStructure(data)
+    checkNumberObservations(data)
     validMultiOutcome(data[["Y"]])
     validGridPredictor(data[["X"]])
+}
+
+checkListStructure <- function(data)
+{
+    named.elements <- c("X", "Y") %in% names(data)
+    variable.types <- paste0(" The outcome variable should be a Binary - Multi, Nominal - Multi, ",
+                             "Ordinal - Multi or Numeric - Multi and",
+                             " The predictor variable should be a Binary - Grid or Numeric - Grid.")
+    if ((is.null(data) || !(is.list(data) && all(named.elements))))
+        stop("'unstacked.data' needs to be a list with two elements, ",
+             "'Y' containing the outcome variables and 'X' containing the predictor variables. ",
+             "Outcome and predictor variables need to be variable sets that can be stacked.", variable.types)
+}
+
+validateDataForStacking <- function(data)
+{
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
     names.in.predictor.grid <- getGridPredictorNames(data[["X"]])
     unique.stackable.names <- unique(names.in.predictor.grid[[2]])
+    # Check at least one outcome variable is seen in the grid of predictors.
+    checkStackingFeasible(outcome.names, unique.stackable.names, data)
+    # Remove any outcome variables that
     if (!identical(unique.stackable.names, outcome.names))
     {
         # Check if there are any predictor names that aren't named in the outcome data.frame
@@ -1303,6 +1321,30 @@ validMultiOutcome <- function(data)
              " Supplied outcome variable is ", attr(data, "questiontype"))
     }
 
+}
+
+checkNumberObservations <- function(data)
+{
+    if (!diff(nrows <- sapply(data, NROW)) == 0)
+    {
+        y.label <- sQuote(attr(data[["Y"]], "question"))
+        x.label <- sQuote(attr(data[["X"]], "question"))
+        stop("Size of variables doesn't agree, the provided outcome variables ", y.label,
+             " have ", nrows[1], " observations while the provided predictor variables ", x.label, " have ",
+             nrows[2], " observations. Please input variables that have the same size.")
+    }
+}
+
+checkStackingFeasible <- function(outcome.names, predictor.names, data)
+{
+    if (all(!outcome.names %in% predictor.names))
+    {
+        predictor.names <- paste0(sQuote(predictor.names), collapse = ", ")
+        outcome.names <- paste0(sQuote(outcome.names), collapse = ", ")
+
+        stop("It is not possible to stack these variables since none of the outcome variable names ",
+             "match the variable names in the predictor variables. The ")
+    }
 }
 
 validGridPredictor <- function(data)
