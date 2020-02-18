@@ -87,41 +87,41 @@ binary.grid.cleaned <- structure(list(`Fun, Apple` = c(0, 1), `Fun, Microsoft` =
 
 # Expected Stacked data
 
-binary.binary.stacked <- structure(list(Y = structure(c(0, 1, 1, 1), label = "Brand Binary"),
-                                        X1 = structure(c(0, 1, 1, 0), label = "Fun"),
-                                        X2 = structure(c(1, 1, 1, 1), label = "Innovative")),
-                                   class = "data.frame", row.names = c("1.1","2.1", "1.2", "2.2"))
+binary.binary.stacked <-structure(list(Y = structure(c(0, 1, 1, 1), label = "Brand Binary"),
+                                       X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
+                                       X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
+                                  class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 binary.numeric.stacked <- structure(list(Y = structure(c(0, 1, 1, 1), label = "Brand Binary"),
-                                         X1 = structure(c(0, 12, 11, 0), label = "Fun"),
-                                         X2 = structure(c(15, 9, 9, 19), label = "Innovative")),
+                                         X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
+                                         X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 nominal.binary.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                        class = "factor", label = "Brand Nominal"),
-                                         X1 = structure(c(0, 1, 1, 0), label = "Fun"),
-                                         X2 = structure(c(1, 1, 1, 1), label = "Innovative")),
+                                         X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
+                                         X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 nominal.numeric.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                         class = "factor", label = "Brand Nominal"),
-                                          X1 = structure(c(0, 12, 11, 0), label = "Fun"),
-                                          X2 = structure(c(15, 9, 9, 19), label = "Innovative")),
+                                          X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
+                                          X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
                                      class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 ordinal.binary.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                        class = c("ordered", "factor"), label = "Brand Ordinal"),
-                                         X1 = structure(c(0, 1, 1, 0), label = "Fun"),
-                                         X2 = structure(c(1, 1, 1, 1), label = "Innovative")),
+                                         X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
+                                         X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 ordinal.numeric.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                         class = c("ordered", "factor"), label = "Brand Ordinal"),
-                                          X1 = structure(c(0, 12, 11, 0), label = "Fun"),
-                                          X2 = structure(c(15, 9, 9, 19), label = "Innovative")),
+                                          X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
+                                          X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
                                      class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 numeric.binary.stacked <- structure(list(Y = structure(c(6, 8, 10, 8), label = "Brand Numeric"),
-                                         X1 = structure(c(0, 1, 1, 0), label = "Fun"),
-                                         X2 = structure(c(1, 1, 1, 1), label = "Innovative")),
+                                         X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
+                                         X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 numeric.numeric.stacked <- structure(list(Y = structure(c(6, 8, 10, 8), label = "Brand Numeric"),
-                                          X1 = structure(c(0, 12, 11, 0), label = "Fun"),
-                                          X2 = structure(c(15, 9, 9, 19), label = "Innovative")),
+                                          X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
+                                          X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
                                      class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
 
 test_that("Test input error messages", {
@@ -328,10 +328,14 @@ test_that("Valid stackable data converted", {
                             nrow = length(valid.outcome.vars), byrow = TRUE)
     for (i in seq_along(valid.outcome.vars))
         for (j in seq_along(valid.predictor.vars))
-            expect_equal(Regression(formula = Y ~ X, stacked.data.check = TRUE,
-                                    unstacked.data = list(Y = get(valid.outcome.vars[i]),
-                                                          X = get(valid.predictor.vars[j])), method = "model.frame"),
-                         get(output.stacked.dfs[stacked.index[i, j]]))
+            expect_identical(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+                                        unstacked.data = list(Y = get(valid.outcome.vars[i]),
+                                                              X = get(valid.predictor.vars[j])), method = "model.frame"),
+                             get(output.stacked.dfs[stacked.index[i, j]]))
 })
 
+# Test Stacking output is consistent with already stacked data output
+test_that("Stacking output constitent", {
+
+})
 

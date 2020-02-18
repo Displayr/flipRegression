@@ -1443,9 +1443,10 @@ stackData <- function(data)
 
 stackPredictors <- function(data)
 {
+    question.label <- attr(data, "question")
     stacked.data <- reshape(data, varying = names(data), sep = ", ", direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
-    stacked.data <- addLabelAttribute(stacked.data)
+    stacked.data <- addLabelAttribute(stacked.data, label = question.label)
     names(stacked.data) <- paste0("X", 1:ncol(stacked.data))
     stacked.data
 }
@@ -1459,9 +1460,11 @@ stackOutcome <- function(data)
     stacked.data
 }
 
-addLabelAttribute <- function(data)
+addLabelAttribute <- function(data, label = NULL)
 {
     variable.names <- colnames(data)
+    if (!is.null(label))
+        variable.names <- paste0(label, ": ", variable.names)
     for (i in seq_along(data))
         attr(data[[i]], "label") <- variable.names[i]
     data
