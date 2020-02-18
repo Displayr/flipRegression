@@ -1249,7 +1249,7 @@ removeDataReductionColumns <- function(data)
     # Remove the SUM column from the Number Multi
     # PickAnyMulti doesn't have a DataReduction here.
     y.question.type <- attr(data[["Y"]], "questiontype")
-    if (y.question.type %in% c("NumberMulti", "PickAny"))
+    if (y.question.type %in% c("NumberMulti", "PickAny") && any(c("NET", "SUM") %in% names(data[["Y"]])))
         data[["Y"]][ncol(data[["Y"]])] <- NULL
     # Clean the DataReduction for the predictor variables
     x.question.type <- attr(data[["X"]], "questiontype")
@@ -1287,26 +1287,67 @@ checkListStructure <- function(data)
 validateDataForStacking <- function(data)
 {
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
-    names.in.predictor.grid <- getGridPredictorNames(data[["X"]])
-    unique.stackable.names <- unique(names.in.predictor.grid[[2]])
-    # Check at least one outcome variable is seen in the grid of predictors.
-    checkStackingFeasible(outcome.names, unique.stackable.names, data)
-    # Remove any outcome variables that
-    if (!identical(unique.stackable.names, outcome.names))
-    {
-        # Check if there are any predictor names that aren't named in the outcome data.frame
-        if (!all(unstackable.predictor.names <- !unique.stackable.names %in% outcome.names))
-        {
-            unstackable.predictor.names <- unique.stackable.names[unstackable.predictor.names]
-            data[["X"]][names.in.predictor.grid[[2]] %in% unstackable.predictor.names] <- NULL
-            unstackable.predictor.names <- paste0(sQuote(unstackable.predictor.names), collapse = ", ")
-            warning("Cannot stack variable(s): ", unstackable.predictor.names,
-                    " found in the Predictor Input since it isn't defined in the outcome variables. These variable(s) have been removed.")
-        }
-        # Check if there are any names in the outcome data.frame that aren't in the predictor grid
+    # Validate the Grid predictors, transpose if necessary and error if no matches between X and Y
+    data[["X"]] <- validateNamesInGrid(data)
+    names.in.predictor.grid <- getGridNames(data[["X"]])
 
-    }
+    unstacked.names <- names.in.predictor.grid[[2]]
+    predictor.names <- unique(unstacked.names)
+    # Remove any outcome variables that aren't seen in predictors and warn
+    data[["Y"]] <- validateOutcomeVariables(data, outcome.names, predictor.names)
+    outcome.names <- getMultiOutcomeNames(data[["Y"]])
+    # Remove any predictor variables that aren't seen in outcome variables and warn
+    data[["X"]] <- validatePredictorVariables(data, outcome.names, predictor.names, unstacked.names)
+    names.in.predictor.grid <- getGridNames(data[["X"]])
+    unstacked.names <- names.in.predictor.grid[[2]]
+    predictor.names <- unique(unstacked.names)
+    # Ensure columns align before stacking
+    data[["Y"]] <- checkStackAlignment(data, outcome.names, predictor.names)
     return(data)
+}
+
+# The stacking requires names of the grid data.frame to be in the form predictor, outcome (comma separated)
+validateNamesInGrid <- function(data)
+{
+    outcome.names <- names(data[["Y"]])
+    outcome.variable.set.name <- sQuote(attr(data[["Y"]], "question"))
+    # Determine which dimension labels in the grid match the outcome.names
+    # getGridNames extracts a list with two elements, the "a, b" parts of the grid names
+    grid.names <- getGridNames(data[["X"]])
+    # Check if any labels match
+    matches <- lapply(grid.names, function(x) outcome.names %in% x)
+    any.matches <- sapply(matches, any)
+    # No labels match at all, error since there is nothing to align for stacking
+    if (all(!any.matches))
+        stop("It is not possible to stack these variables since none of the outcome variable names ",
+             "match the variable names in the predictor variables. The outcome variable set ",
+             outcome.variable.set.name, " has names: ", paste0(sQuote(outcome.names), collapse = ", "),
+             " which don't appear in the names of the grid predictor variable set structure")
+    # Check if is a clear match (no clash of predictor names with outcome names)
+    # If necessary, 'transpose' the grid labels, i.e. outcome, predictor labels changed to predictor, outcome
+    dimensions.matching <- sum(any.matches)
+    if (dimensions.matching == 1 && any.matches[1])
+        names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
+    # In ambiguous case, if one dimension seems to match perfectly then pick that one.
+    if (dimensions.matching == 2)
+    {
+        perfect.matches <- sapply(matches, all)
+        matched.outcomes <- outcome.names[unique(unlist(sapply(matches, which)))]
+        ambiguous.message <- paste0("The outcome variable ", outcome.variable.set.name, " has names: ",
+                                    paste0(sQuote(matched.outcomes), collapse = ", "), " and these names appear ",
+                                    "in both dimensions of the grid predictor input variable set. Please rename the ",
+                                    "names in eithe the outcome variable set or grid predictor variable set to ",
+                                    "stack the variables and proceed.")
+        if (!any(perfect.matches))
+            stop("Ambiguous names in the grid predictors need to be reconciled before stacking can occur. ",
+                 ambiguous.message)
+        else
+            warning("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
+                    ambiguous.message)
+        if (perfect.matches[1])
+            names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
+    }
+    return(data[["X"]])
 }
 
 validMultiOutcome <- function(data)
@@ -1318,7 +1359,7 @@ validMultiOutcome <- function(data)
     {
         allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
         stop("Outcome variable to be stacked needs to be either a ", allowed.types, " question type.",
-             " Supplied outcome variable is ", attr(data, "questiontype"))
+             " Supplied outcome variable is ", sQuote(attr(data, "questiontype")))
     }
 
 }
@@ -1335,29 +1376,61 @@ checkNumberObservations <- function(data)
     }
 }
 
-checkStackingFeasible <- function(outcome.names, predictor.names, data)
-{
-    if (all(!outcome.names %in% predictor.names))
-    {
-        predictor.names <- paste0(sQuote(predictor.names), collapse = ", ")
-        outcome.names <- paste0(sQuote(outcome.names), collapse = ", ")
-
-        stop("It is not possible to stack these variables since none of the outcome variable names ",
-             "match the variable names in the predictor variables. The ")
-    }
-}
-
 validGridPredictor <- function(data)
 {
     allowed.types <- c("PickAnyGrid", "NumberGrid")
     if (is.null(attr(data, "questiontype")))
-        stop("Predictor variables needs to have the question type attribute to be processed for stacking")
+        stop("Grid Predictor variable set needs to have the question type attribute to be processed for stacking")
     if (!attr(data, "questiontype") %in% allowed.types)
     {
         allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
-        stop("Outcome variable to be stacked needs to be either a 'NumberGrid' or 'PickAnyGrid' queston type",
-             "Supplied outcome variable is ", attr(data, "questiontype"))
+        stop("Grid Predictor variable set to be stacked needs to be either a ", allowed.types, " question type. ",
+             "Supplied variable is ", sQuote(attr(data, "questiontype")))
     }
+}
+
+validateOutcomeVariables <- function(data, outcome.names, predictor.names)
+{
+    if (any(missing.stack <- !outcome.names %in% predictor.names))
+    {
+        data[["Y"]][missing.stack] <- NULL
+        outcome.variable.set.name <- attr(data[["Y"]], "question")
+        predictor.variable.set.name <- attr(data[["X"]], "question")
+        removed.outcome.variables <- paste0(sQuote(outcome.names[missing.stack]), collapse = ", ")
+        warning("The variable(s): ", removed.outcome.variables, " have been removed from the Outcome variable set ",
+                sQuote(outcome.variable.set.name), " since these variables don't appear in the predictor variable set ",
+                sQuote(predictor.variable.set.name))
+    }
+    return(data[["Y"]])
+}
+
+validatePredictorVariables <- function(data, outcome.names, predictor.names, unstacked.names)
+{
+    if (any(unstackable.predictors <- !predictor.names %in% outcome.names))
+    {
+        unstackable.predictor.names <- predictor.names[unstackable.predictors]
+        data[["X"]][unstacked.names %in% unstackable.predictor.names] <- NULL
+        removed.predictor.variables <- paste0(sQuote(unstackable.predictor.names), collapse = ", ")
+        outcome.variable.set.name <- attr(data[["Y"]], "question")
+        predictor.variable.set.name <- attr(data[["X"]], "question")
+        warning("The variable(s): ", removed.predictor.variables, " have been removed from the Predictor variable set ",
+                sQuote(predictor.variable.set.name), " since these variables don't appear in the outcome variable set ",
+                sQuote(outcome.variable.set.name))
+    }
+    return(data[["X"]])
+}
+
+#' @importFrom flipU CopyAttributes
+checkStackAlignment <- function(data, outcome.names, predictor.names)
+{
+    if (!identical(outcome.names, predictor.names))
+    {
+        new.column.order <- match(outcome.names, predictor.names)
+        tmp <- data[["Y"]]
+        data[["Y"]] <- data[["Y"]][new.column.order]
+        data[["Y"]] <- CopyAttributes(data[["Y"]], tmp)
+    }
+    return(data[["Y"]])
 }
 
 stackData <- function(data)
@@ -1402,7 +1475,7 @@ removeReshapingHelperVariables <- function(data)
 }
 
 # Return the name of the predictors and their associated matched response values
-getGridPredictorNames <- function(data)
+getGridNames <- function(data)
 {
     split.names <- strsplit(names(data), ", ")
     outcome.names <- sapply(split.names, "[", 2)

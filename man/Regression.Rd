@@ -31,7 +31,7 @@ Regression(
   effects.format = list(max.label = 10),
   outlier.prop.to.remove = NULL,
   stacked.data.check = FALSE,
-  stacked.data = NULL,
+  unstacked.data = NULL,
   ...
 )
 }
