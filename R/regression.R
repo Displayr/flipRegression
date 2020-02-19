@@ -70,7 +70,7 @@
 #'   denote that a percentage between none and 50\% of the data points are removed.
 #' @param stacked.data.check Logical value to determine if the Regression should be the data and formula based off
 #'   the \code{unstacked.data} argument by stacking the input and creating a formula based off attributes and provided
-#'   labels in the data. More details are given in the arugment details for \code{unstacked.data}
+#'   labels in the data. More details are given in the argument details for \code{unstacked.data}
 #' @param unstacked.data A list with two elements that provide the Outcome and Predictors respectively for data that
 #'   needs to be stacked. In particular, this is designed to work with input that is created with Q or Displayr which
 #'   creates \code{data.frame}s with a particular structure. In particular, the list has two elements, \itemize{
@@ -141,7 +141,7 @@
 #' @importFrom utils tail
 #' @importFrom stats drop.terms terms.formula
 #' @export
-Regression <- function(formula,
+Regression <- function(formula = as.formula(NULL),
                        data = NULL,
                        subset = NULL,
                        weights = NULL,
@@ -170,6 +170,10 @@ Regression <- function(formula,
                        unstacked.data = NULL,
                        ...)
 {
+    if (identical(formula, formula(NULL)) && !stacked.data.check)
+        stop(dQuote("formula"), " is missing and is required unless stackable data is provided via the ",
+             dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
+             "Please provide a formula or stackable data and re-run the Regression.")
     old.contrasts <- options("contrasts")
     options(contrasts = contrasts)
     if (detail || output == "Detail")

@@ -5,7 +5,7 @@
 \title{Generalized Regression Outputs}
 \usage{
 Regression(
-  formula,
+  formula = as.formula(NULL),
   data = NULL,
   subset = NULL,
   weights = NULL,
@@ -126,7 +126,7 @@ denote that a percentage between none and 50\% of the data points are removed.}
 
 \item{stacked.data.check}{Logical value to determine if the Regression should be the data and formula based off
 the \code{unstacked.data} argument by stacking the input and creating a formula based off attributes and provided
-labels in the data. More details are given in the arugment details for \code{unstacked.data}}
+labels in the data. More details are given in the argument details for \code{unstacked.data}}
 
 \item{unstacked.data}{A list with two elements that provide the Outcome and Predictors respectively for data that
 needs to be stacked. In particular, this is designed to work with input that is created with Q or Displayr which

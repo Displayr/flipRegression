@@ -125,24 +125,29 @@ numeric.numeric.stacked <- structure(list(Y = structure(c(6, 8, 10, 8), label = 
                                      class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 
 test_that("Test input error messages", {
+    # Test formula error when none provided outside stacking context
+    error.msg <- paste0(dQuote("formula"), " argument is missing and is required unless stackable data is provided ",
+                               "via the ", dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"),
+                               " arguments. Please provide a formula or stackable data and re-run the Regression")
+    expect_error(Regression(), error.msg)
     # Test default incorrect input format
     error.msg <- paste0("'unstacked.data' needs to be a list with two elements, ",
                         "'Y' containing the outcome variables and 'X' containing the predictor variables. ",
                         "Outcome and predictor variables need to be variable sets that can be stacked. ",
                         "The outcome variable should be a Binary - Multi, Nominal - Multi, Ordinal - Multi ",
                         "or Numeric - Multi and The predictor variable should be a Binary - Grid or Numeric - Grid.")
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE, unstacked.data = NULL), error.msg)
+    expect_error(Regression(stacked.data.check = TRUE, unstacked.data = NULL), error.msg)
     error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables  have 2 observations",
                         " while the provided predictor variables  have 3 observations. ",
                         "Please input variables that have the same size.")
     # Test different sizes inputs
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE, unstacked.data = list(Y = data.frame(1:2),
+    expect_error(Regression(stacked.data.check = TRUE, unstacked.data = list(Y = data.frame(1:2),
                                                                                               X = data.frame(1:3))),
                  error.msg)
     error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables ", sQuote('Brand Binary'),
                         " have 2 observations while the provided predictor variables ", sQuote('Qualities Binary'),
                         " have 1 observations. Please input variables that have the same size.")
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.multi.outcome,
                                                   X = binary.grid.cleaned[1, ])),
                  error.msg, fixed = TRUE)
@@ -153,7 +158,7 @@ test_that("Test input error messages", {
                         "the variable names in the predictor variables. The outcome variable set ",
                         sQuote("Brand Binary"), " has names: ", paste0(sQuote(c("Google", "Amazon")), collapse = ", "),
                         " which don't appear in the names of the grid predictor variable set structure")
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.mismatch.outcome,
                                                   X = binary.grid.cleaned)),
                  error.msg, fixed = TRUE)
@@ -165,14 +170,14 @@ test_that("Test input error messages", {
                         "dimensions of the grid predictor input variable set. Please rename the names ",
                         "in eithe the outcome variable set or grid predictor variable set to stack the variables ",
                         "and proceed")
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.mismatch.outcome,
                                                   X = binary.grid.cleaned)),
                  error.msg, fixed = TRUE)
     # Check outcome input appropriate
     error.msg <- "Outcome variable needs to have the question type attribute to be processed for stacking"
     outcome.without.attributes <- numeric.multi.outcome[1:ncol(numeric.multi.outcome.cleaned)]
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = outcome.without.attributes,
                                                   X = binary.grid.cleaned)),
                  error.msg)
@@ -181,14 +186,14 @@ test_that("Test input error messages", {
     allowed.types <- paste0(sQuote(c('PickAny', 'PickOneMulti', 'NumberMulti')), collapse = ", ")
     error.msg <- paste0("Outcome variable to be stacked needs to be either a ", allowed.types,
                         " question type. Supplied outcome variable is ", sQuote("Text"))
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = wrong.type,
                                                   X = binary.grid.cleaned)),
                  error.msg)
     # Check Grid input appropriate
     error.msg <- "Grid Predictor variable set needs to have the question type attribute to be processed for stacking"
     predictor.without.attributes <- numeric.grid[1:ncol(numeric.grid.cleaned)]
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = numeric.multi.outcome,
                                                   X = predictor.without.attributes)),
                  error.msg)
@@ -197,7 +202,7 @@ test_that("Test input error messages", {
     allowed.types <- paste0(sQuote(c('PickAnyGrid', 'NumberGrid')), collapse = ", ")
     error.msg <- paste0("Grid Predictor variable set to be stacked needs to be either a ", allowed.types,
                         " question type. Supplied variable is ", sQuote("Text"))
-    expect_error(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = numeric.multi.outcome,
                                                   X = wrong.type)),
                  error.msg)
@@ -213,7 +218,7 @@ test_that("Mismatch warnings", {
     warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the Outcome variable set ",
                           sQuote("Brand Binary"), " since these variables don't appear in the predictor variable set ",
                           sQuote("Qualities Binary"))
-    expect_warning(output <- Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_warning(output <- Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = extra.outcome,
                                                               X = binary.grid),
                                         method = "model.frame"),
@@ -226,7 +231,7 @@ test_that("Mismatch warnings", {
                           " have been removed from the Outcome variable set ", sQuote("Brand Binary"),
                           " since these variables don't appear in the predictor variable set ",
                           sQuote("Qualities Binary"))
-    expect_warning(output <- Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_warning(output <- Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = extra.outcome,
                                                               X = binary.grid),
                                         method = "model.frame"),
@@ -244,7 +249,7 @@ test_that("Mismatch warnings", {
     warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the Predictor variable set ",
                           sQuote("Qualities Numeric"), " since these variables don't appear in the outcome variable set ",
                           sQuote("Brand Numeric"))
-    expect_warning(output <- Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_warning(output <- Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = numeric.multi.outcome,
                                                               X = extra.numeric.grid),
                                         method = "model.frame"),
@@ -257,7 +262,7 @@ test_that("Mismatch warnings", {
                           "in both dimensions of the grid predictor input variable set. Please rename the ",
                           "names in eithe the outcome variable set or grid predictor variable set to ",
                           "stack the variables and proceed.")
-    expect_warning(ambiguous.output.1 <- Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_warning(ambiguous.output.1 <- Regression(stacked.data.check = TRUE,
                                                     unstacked.data = list(Y = numeric.multi.outcome,
                                                                           X = ambiguous.numeric.grid),
                                                     method = "model.frame"),
@@ -268,7 +273,7 @@ test_that("Mismatch warnings", {
                           "in both dimensions of the grid predictor input variable set. Please rename the ",
                           "names in eithe the outcome variable set or grid predictor variable set to ",
                           "stack the variables and proceed.")
-    expect_warning(ambiguous.output.2 <- Regression(formula = Y ~ X, stacked.data.check = TRUE,
+    expect_warning(ambiguous.output.2 <- Regression(stacked.data.check = TRUE,
                                                     unstacked.data = list(Y = numeric.multi.outcome,
                                                                           X = transposed.ambiguous.numeric.grid),
                                                     method = "model.frame"),
@@ -279,20 +284,20 @@ test_that("Mismatch warnings", {
 
 test_that("Transpose and alignment correct", {
     # Check transposing
-    expect_identical(Regression(Y ~ X, stacked.data.check = TRUE,
+    expect_identical(Regression(formula(NULL), stacked.data.check = TRUE,
                                 unstacked.data = list(Y = numeric.multi.outcome,
                                                       X = transposed.numeric.grid),
                                 method = "model.frame"),
-                     Regression(Y ~ X, stacked.data.check = TRUE,
+                     Regression(formula(NULL), stacked.data.check = TRUE,
                                 unstacked.data = list(Y = numeric.multi.outcome,
                                                       X = numeric.grid),
                                 method = "model.frame"))
     # Check alignement
-    original.data.frame <- Regression(Y ~ X, stacked.data.check = TRUE,
+    original.data.frame <- Regression(formula(NULL), stacked.data.check = TRUE,
                                       unstacked.data = list(Y = larger.numeric.multi.outcome,
                                                             X = larger.numeric.grid),
                                       method = "model.frame")
-    data.frame.after.alignment <- Regression(Y ~ X, stacked.data.check = TRUE,
+    data.frame.after.alignment <- Regression(formula(NULL), stacked.data.check = TRUE,
                                              unstacked.data = list(Y = larger.numeric.multi.outcome,
                                                                    X = misaligned.larger.numeric.grid),
                                              method = "model.frame")
@@ -328,7 +333,7 @@ test_that("Valid stackable data converted", {
                             nrow = length(valid.outcome.vars), byrow = TRUE)
     for (i in seq_along(valid.outcome.vars))
         for (j in seq_along(valid.predictor.vars))
-            expect_identical(Regression(formula = Y ~ X, stacked.data.check = TRUE,
+            expect_identical(Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = get(valid.outcome.vars[i]),
                                                               X = get(valid.predictor.vars[j])), method = "model.frame"),
                              get(output.stacked.dfs[stacked.index[i, j]]))
@@ -434,7 +439,7 @@ for (type in types)
                                                                   subset = rep(subset.choices[[s]], n.outcomes),
                                                                   weights = rep(weight.choices[[w]], n.outcomes),
                                                                   data = mod.technology.stacked))
-                stackable.regression <- suppressWarnings(Regression(Y ~ X, type = type, stacked.data.check = TRUE,
+                stackable.regression <- suppressWarnings(Regression(type = type, stacked.data.check = TRUE,
                                                                     output = "Summary",
                                                                     subset = subset.choices[[s]],
                                                                     weights = weight.choices[[w]],
