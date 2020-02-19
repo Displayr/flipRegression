@@ -171,7 +171,7 @@ Regression <- function(formula = as.formula(NULL),
                        ...)
 {
     if (identical(formula, formula(NULL)) && !stacked.data.check)
-        stop(dQuote("formula"), " is missing and is required unless stackable data is provided via the ",
+        stop(dQuote("formula"), " argument is missing and is required unless stackable data is provided via the ",
              dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
              "Please provide a formula or stackable data and re-run the Regression.")
     old.contrasts <- options("contrasts")
