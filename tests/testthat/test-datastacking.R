@@ -90,39 +90,39 @@ binary.grid.cleaned <- structure(list(`Fun, Apple` = c(0, 1), `Fun, Microsoft` =
 binary.binary.stacked <-structure(list(Y = structure(c(0, 1, 1, 1), label = "Brand Binary"),
                                        X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
                                        X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
-                                  class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                  class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 binary.numeric.stacked <- structure(list(Y = structure(c(0, 1, 1, 1), label = "Brand Binary"),
                                          X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
                                          X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
-                                    class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                    class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 nominal.binary.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                        class = "factor", label = "Brand Nominal"),
                                          X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
                                          X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
-                                    class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                    class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 nominal.numeric.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                         class = "factor", label = "Brand Nominal"),
                                           X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
                                           X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
-                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                     class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 ordinal.binary.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                        class = c("ordered", "factor"), label = "Brand Ordinal"),
                                          X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
                                          X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
-                                    class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                    class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 ordinal.numeric.stacked <- structure(list(Y = structure(c(1L, 2L, 2L, 2L), .Label = c("Low", "High"),
                                                         class = c("ordered", "factor"), label = "Brand Ordinal"),
                                           X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
                                           X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
-                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                     class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 numeric.binary.stacked <- structure(list(Y = structure(c(6, 8, 10, 8), label = "Brand Numeric"),
                                          X1 = structure(c(0, 1, 1, 0), label = "Qualities Binary: Fun"),
                                          X2 = structure(c(1, 1, 1, 1), label = "Qualities Binary: Innovative")),
-                                    class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                    class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 numeric.numeric.stacked <- structure(list(Y = structure(c(6, 8, 10, 8), label = "Brand Numeric"),
                                           X1 = structure(c(0, 12, 11, 0), label = "Qualities Numeric: Fun"),
                                           X2 = structure(c(15, 9, 9, 19), label = "Qualities Numeric: Innovative")),
-                                     class = "data.frame", row.names = c("1.1", "2.1", "1.2", "2.2"))
+                                     class = "data.frame", row.names = c("1.Apple", "2.Apple", "1.Microsoft", "2.Microsoft"))
 
 test_that("Test input error messages", {
     # Test default incorrect input format
@@ -335,7 +335,149 @@ test_that("Valid stackable data converted", {
 })
 
 # Test Stacking output is consistent with already stacked data output
-test_that("Stacking output constitent", {
+data(technology.unstacked, package = "flipRegression")
 
+# Create the stacked data from the unstacked data for comparison
+variables.to.stack <- list(Q3 = c("Apple", "Microsoft", "IBM", "Google", "Intel", "Hewlett-Packard",
+                                  "Sony", "Dell", "Yahoo", "Nokia", "Samsung", "LG", "Panasonic"),
+                           Q4a = c("Fun, Apple", "Fun, Microsoft",
+                                   "Fun, IBM", "Fun, Google", "Fun, Intel", "Fun, Hewlett-Packard",
+                                   "Fun, Sony", "Fun, Dell", "Fun, Yahoo", "Fun, Nokia", "Fun, Samsung",
+                                   "Fun, LG", "Fun, Panasonic"),
+                           Q4b = c("Worth what you pay for, Apple",
+                                   "Worth what you pay for, Microsoft", "Worth what you pay for, IBM",
+                                   "Worth what you pay for, Google", "Worth what you pay for, Intel",
+                                   "Worth what you pay for, Hewlett-Packard", "Worth what you pay for, Sony",
+                                   "Worth what you pay for, Dell", "Worth what you pay for, Yahoo",
+                                   "Worth what you pay for, Nokia", "Worth what you pay for, Samsung",
+                                   "Worth what you pay for, LG", "Worth what you pay for, Panasonic"),
+                           Q4c = c("Innovative, Apple",
+                                   "Innovative, Microsoft", "Innovative, IBM", "Innovative, Google",
+                                   "Innovative, Intel", "Innovative, Hewlett-Packard", "Innovative, Sony",
+                                   "Innovative, Dell", "Innovative, Yahoo", "Innovative, Nokia",
+                                   "Innovative, Samsung", "Innovative, LG", "Innovative, Panasonic"),
+                           Q4d = c("Good customer service, Apple",
+                                   "Good customer service, Microsoft", "Good customer service, IBM",
+                                   "Good customer service, Google", "Good customer service, Intel",
+                                   "Good customer service, Hewlett-Packard", "Good customer service, Sony",
+                                   "Good customer service, Dell", "Good customer service, Yahoo",
+                                   "Good customer service, Nokia", "Good customer service, Samsung",
+                                   "Good customer service, LG", "Good customer service, Panasonic"),
+                           Q4e = c("Stylish, Apple",
+                                   "Stylish, Microsoft", "Stylish, IBM", "Stylish, Google",
+                                   "Stylish, Intel", "Stylish, Hewlett-Packard", "Stylish, Sony",
+                                   "Stylish, Dell", "Stylish, Yahoo", "Stylish, Nokia", "Stylish, Samsung",
+                                   "Stylish, LG", "Stylish, Panasonic"),
+                           Q4f = c("Easy to use, Apple", "Easy to use, Microsoft",
+                                   "Easy to use, IBM", "Easy to use, Google", "Easy to use, Intel",
+                                   "Easy to use, Hewlett-Packard", "Easy to use, Sony", "Easy to use, Dell",
+                                   "Easy to use, Yahoo", "Easy to use, Nokia", "Easy to use, Samsung",
+                                   "Easy to use, LG", "Easy to use, Panasonic"),
+                           Q4g = c("High quality, Apple", "High quality, Microsoft",
+                                   "High quality, IBM", "High quality, Google", "High quality, Intel",
+                                   "High quality, Hewlett-Packard", "High quality, Sony", "High quality, Dell",
+                                   "High quality, Yahoo", "High quality, Nokia", "High quality, Samsung",
+                                   "High quality, LG", "High quality, Panasonic"),
+                           Q4h = c("High performance, Apple", "High performance, Microsoft",
+                                   "High performance, IBM", "High performance, Google", "High performance, Intel",
+                                   "High performance, Hewlett-Packard", "High performance, Sony",
+                                   "High performance, Dell", "High performance, Yahoo", "High performance, Nokia",
+                                   "High performance, Samsung", "High performance, LG", "High performance, Panasonic"),
+                           Q4i = c("Low prices, Apple",
+                                   "Low prices, Microsoft", "Low prices, IBM", "Low prices, Google",
+                                   "Low prices, Intel", "Low prices, Hewlett-Packard", "Low prices, Sony",
+                                   "Low prices, Dell", "Low prices, Yahoo", "Low prices, Nokia",
+                                   "Low prices, Samsung", "Low prices, LG", "Low prices, Panasonic"))
+technology.unstacked.df <- cbind.data.frame(unname(technology.unstacked))
+id.variable <- 1:nrow(technology.unstacked.df)
+technology.unstacked.df[["id.variable"]] <- id.variable
+all.names <- names(technology.unstacked.df)
+variables.to.exclude <- all.names[!all.names %in% c(unlist(variables.to.stack), "id.variable")]
+technology.stacked <- reshape(technology.unstacked.df, idvar = 'id.variable', direction = "long",
+                              drop = variables.to.exclude, varying = variables.to.stack)
+technology.stacked["time"] <- NULL
+technology.stacked["id.variable"] <- NULL
+names(technology.stacked) <- names(variables.to.stack)
+# Relabel outcome to allow count regression (inappropriate model for the data, just checking the model is computed)
+count.Y <- as.data.frame(lapply(technology.unstacked[["Y"]], as.integer))
+names(count.Y) <- names(technology.unstacked[["Y"]])
+attr(count.Y, "question") <- "Brand"
+attr(count.Y, "questiontype") <- "PickOneMulti"
+stacked.count <- as.integer(technology.stacked$Q3)
+
+types <- c("Linear" , "Ordered Logit", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Multinomial Logit")
+count.types <- c("Poisson", "Quasi-Poisson", "NBD")
+stacked.formula <- Q3 ~ Q4a + Q4b + Q4c + Q4d + Q4e + Q4f + Q4g + Q4h + Q4i
+set.seed(12321)
+n.cases <- nrow(technology.unstacked[["X"]])
+n.outcomes <- ncol(technology.unstacked[["Y"]])
+random.weights <- runif(n.cases)
+random.subset <- sample(c(TRUE, FALSE), size = n.cases, prob = c(0.75, 0.25), replace = TRUE)
+interaction <- factor(sample(c("Male", "Female"), size = n.cases, prob = c(2/3, 1/3), replace = TRUE))
+weight.choices <- list(NULL, random.weights)
+subset.choices <- list(NULL, random.subset)
+for (type in types)
+    for (s in seq_along(subset.choices))
+        for (w in seq_along(weight.choices))
+            test_that(paste0(type, " Regression Stacking output consistent: ",
+                             " weights = ", if (w == 2) "Random" else "NULL",
+                             ", subset = ", if (s == 2) "Random" else "NULL"), {
+                mod.technology.stacked <- technology.stacked
+                mod.technology.unstacked <- technology.unstacked
+                if (type %in% count.types)
+                {
+                    mod.technology.stacked$Q3 <- stacked.count
+                    mod.technology.unstacked$Y <- count.Y
+                }
+                stacked.regression <- suppressWarnings(Regression(stacked.formula, type = type,
+                                                                  output = "Summary",
+                                                                  subset = rep(subset.choices[[s]], n.outcomes),
+                                                                  weights = rep(weight.choices[[w]], n.outcomes),
+                                                                  data = mod.technology.stacked))
+                stackable.regression <- suppressWarnings(Regression(Y ~ X, type = type, stacked.data.check = TRUE,
+                                                                    output = "Summary",
+                                                                    subset = subset.choices[[s]],
+                                                                    weights = weight.choices[[w]],
+                                                                    unstacked.data = mod.technology.unstacked))
+                expect_equal(unname(stacked.regression$coef),
+                             unname(stackable.regression$coef))
+            })
+
+
+outputs <- c("Relative Importance Analysis", "Shapley Regression")
+# Test Relative importance output and Shapley, use subset for slight speed improvement
+for (output in outputs)
+    test_that(paste0(output, " consistent when stacking"), {
+        stacked.regression <- suppressWarnings(Regression(stacked.formula, type = "Linear",
+                                                          output = output,
+                                                          subset = rep(subset.choices[[2]], n.outcomes),
+                                                          data = technology.stacked))
+        stackable.regression <- suppressWarnings(Regression(Y ~ X, type = "Linear", stacked.data.check = TRUE,
+                                                            output = output,
+                                                            subset = subset.choices[[2]],
+                                                            unstacked.data = technology.unstacked))
+        # Ignore names since formula names are slightly different
+        stacked.output <- lapply(stacked.regression$importance, unname)
+        stackable.output <- lapply(stackable.regression$importance, unname)
+        # Check all importance values, statistics, standard.errors and p-values are the same
+        expect_equal(stacked.output, stackable.output)
+    })
+
+# Check interaction output works and is the same between models
+test_that("Interaction consistent when stacking:", {
+    stacked.regression <- suppressWarnings(Regression(stacked.formula, type = "Linear",
+                                                      output = "Summary",
+                                                      subset = rep(subset.choices[[2]], n.outcomes),
+                                                      interaction = interaction,
+                                                      data = technology.stacked))
+    stackable.regression <- suppressWarnings(Regression(Y ~ X, type = "Linear", stacked.data.check = TRUE,
+                                                        output = "Summary",
+                                                        subset = subset.choices[[2]],
+                                                        interaction = interaction,
+                                                        unstacked.data = technology.unstacked))
+    # Check interaction coefficient table
+    # Again ignore the names since formulae have different names
+    expect_true(all.equal(stacked.regression$interaction$coefficients,
+                          stackable.regression$interaction$coefficients,
+                          check.attributes = FALSE))
 })
-

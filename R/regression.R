@@ -68,6 +68,22 @@
 #'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
 #'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
 #'   denote that a percentage between none and 50\% of the data points are removed.
+#' @param stacked.data.check Logical value to determine if the Regression should be the data and formula based off
+#'   the \code{unstacked.data} argument by stacking the input and creating a formula based off attributes and provided
+#'   labels in the data. More details are given in the arugment details for \code{unstacked.data}
+#' @param unstacked.data A list with two elements that provide the Outcome and Predictors respectively for data that
+#'   needs to be stacked. In particular, this is designed to work with input that is created with Q or Displayr which
+#'   creates \code{data.frame}s with a particular structure. In particular, the list has two elements, \itemize{
+#'   \item \code{Y} A \code{data.frame} with \code{m} columns that represent the \code{m} variables to be stacked.
+#'   This \code{data.frame} can also contain an optional 'question' attribute to denote the overall name of this
+#'   set variable
+#'   \item \code{X} A \code{data.frame} where each column represents a column of a design matrix relevant to one of the
+#'   \code{m} variables given in element \code{Y} above. So if the overall regression model has \code{p} predictors.
+#'   Then this \code{data.frame} should contain \code{m * p} columns. The naming structure each column is comma
+#'   separated of the form 'predictor, outcome' where 'predictor' denotes the predictor name in the regression design
+#'   matrix and 'outcome' denotes the name of the variable in element \code{Y}. This format is required to ensure that
+#'   the columns are appropriately matched and stacked. The function also accepts column names of the reverse order
+#'   with 'outcome, predictor', so long as there isn't any ambiguity.}
 #' @param ... Additional argments to be passed to  \code{\link{lm}} or, if the
 #'  data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.
 #' @details In the case of Ordered Logistic regression, this function computes a proporional odds model using
@@ -181,7 +197,6 @@ Regression <- function(formula,
     if (!is.null(importance) && is.null(importance.absolute))
         importance.absolute <- FALSE
 
-    input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
     subset <- eval(substitute(subset), data, parent.frame())
     if (!is.null(subset))
@@ -210,11 +225,39 @@ Regression <- function(formula,
     {
         checkDataFeasibleForStacking(unstacked.data)
         unstacked.data <- removeDataReductionColumns(unstacked.data)
-        unstacked.data <- validateDataForStacking(unstacked.data)
+        validated.unstacked.output <- validateDataForStacking(unstacked.data)
+        unstacked.data <- validated.unstacked.output[["data"]]
+        stacks <- validated.unstacked.output[["stacks"]]
         data <- stackData(unstacked.data)
+        # Update interaction, subset and weights if necessary
+        # if interaction vector supplied
+        # it should be original n, needs to be stacked to n = nv where v is number oof outcome vars
+        if (!is.null(interaction))
+        {
+            if (length(interaction) != nrow(data))
+                interaction <- rep(interaction, stacks)
+            # Update subset to be consistent with interaction
+            subset.description <- Labels(subset)
+            tmp.sub <- !is.na(interaction)
+            if (is.null(subset) || length(subset) <= 1)
+            {
+                subset <- tmp.sub
+                attr(subset, "label") <- ""
+            } else
+            {
+                subset <- subset & tmp.sub
+                attr(subset, "label") <- subset.description
+            }
+        } else if (!is.null(subset) && length(subset) > 1)
+            subset <- rep(subset, stacks)
+
+        # Update weights
+        if (!is.null(weights) && length(weights) != nrow(data))
+            weights <- rep(weights, stacks)
         # Update formula
         formula <- input.formula <- updateStackedFormula(data, formula)
-    }
+    } else
+        input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
 
     if (!is.null(interaction.formula))
     {
@@ -1303,7 +1346,7 @@ validateDataForStacking <- function(data)
     predictor.names <- unique(unstacked.names)
     # Ensure columns align before stacking
     data[["Y"]] <- checkStackAlignment(data, outcome.names, predictor.names)
-    return(data)
+    return(list(data = data, stacks = ncol(data[["Y"]])))
 }
 
 # The stacking requires names of the grid data.frame to be in the form predictor, outcome (comma separated)
@@ -1436,24 +1479,28 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
 stackData <- function(data)
 {
     stacked.outcome <- stackOutcome(data[["Y"]])
-    stacked.predictors <- stackPredictors(data[["X"]])
+    stacked.predictors <- stackPredictors(data[["X"]], names(data[["Y"]]))
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
     return(stacked.data)
 }
 
-stackPredictors <- function(data)
+#' @importFrom stats reshape
+stackPredictors <- function(data, outcome.names)
 {
     question.label <- attr(data, "question")
-    stacked.data <- reshape(data, varying = names(data), sep = ", ", direction = "long")
+    stacked.data <- reshape(data, varying = names(data), sep = ", ",
+                            times = outcome.names, direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data, label = question.label)
     names(stacked.data) <- paste0("X", 1:ncol(stacked.data))
     stacked.data
 }
 
+#' @importFrom stats reshape
 stackOutcome <- function(data)
 {
-    stacked.data <- reshape(data, varying = names(data), v.names = attr(data, "question"), direction = "long")
+    stacked.data <- reshape(data, varying = names(data), v.names = attr(data, "question"),
+                            times = names(data), direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data)
     names(stacked.data) <- "Y"
@@ -1478,6 +1525,9 @@ removeReshapingHelperVariables <- function(data)
 }
 
 # Return the name of the predictors and their associated matched response values
+# Usually outcome names are given as the second comma separate value
+# and preditor names would be the first (Displayr and Q convention)
+# However, this is not required since it would be transposed in validateNamesInGrid
 getGridNames <- function(data)
 {
     split.names <- strsplit(names(data), ", ")
