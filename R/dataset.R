@@ -1,0 +1,21 @@
+#' @name technology.unstacked
+#'
+#' @title Technology Brand data unstacked
+#' @docType data
+#' @description Case study from the technology market where 302 respondents rated how likely they were to
+#' recommend 13 tech brands. For a series of 9 attributes, the respondents indicated which brands they
+#' felt possessed the attribute.
+#' @format This list contains two \code{data.frame} elements:
+#' \itemize{
+#' \item \code{Y}: A \code{data.frame} that contains the recommendation values on a scale of 0 to 10.
+#'  This \code{data.frame} has 13 columns, one for each brand (\code{Apple}, \code{Microsoft}, \code{IBM}, \code{Google}, \code{Intel}, \code{Hewlett-Packard}, \code{Sony}, \code{Dell}, \code{Yahoo}, \code{Nokia}, \code{Samsung}, \code{LG}, \code{Panasonic}).
+#' \item \code{X}:  A \code{data.frame} that contains the respondents values for each attribute on each
+#' brand. There are 117 columns, one of each of the 9 attributes by 13 brands. The nine attributes are (\code{Fun}, \code{Worth what you pay for}, \code{Innovative}, \code{Good customer service}, \code{Stylish}, \code{Easy to use}, \code{High quality}, \code{High performance} and  \code{Low prices}). The names of the columns are of the form 'attribute, brand'.
+#' }
+#' @source
+#'
+#' These data are available from the Q research software website. The address is: \url{https://wiki.q-researchsoftware.com/images/3/35/Technology_2018.sav}
+#'
+#' More details of the analysis and stacking available in the 'How to do Driver Analysis: Ebook' available
+#' on the Displayr website. \url{https://www.displayr.com}
+NULL

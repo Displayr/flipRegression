@@ -1,13 +1,13 @@
 Package: flipRegression
 Type: Package
 Title: Estimates standard regression models
-Version: 1.1.10
+Version: 1.1.11
 Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
 Description: Regression models according to the flip Project conventions.
 License: GPL-3
 LazyData: TRUE
-Depends: R (>= 3.0.2),
+Depends: R (>= 3.5.0),
     Rcpp (>= 0.12.15)
 Imports:
     car,
