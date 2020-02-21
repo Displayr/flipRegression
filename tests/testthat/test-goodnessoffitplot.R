@@ -11,7 +11,8 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 attr(bank$Fees, "label") <- "Fees paid"
 attr(bank$Online, "label") <- "Online banking"
 
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c( "Linear","Poisson", "Quasi-Poisson", "Binary Logit", "Ordered Logit", "NBD", "Multinomial Logit"))
         test_that(paste("GoodnessOfFitPlot:", missing, type),
                   {
