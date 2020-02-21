@@ -310,16 +310,16 @@ test_that("Transpose and alignment correct", {
 # Test Data Reduction columns are removed successfully.
 test_that("Data Reduction for Multi and Grid inputs", {
     expect_identical(list(Y = binary.multi.outcome.cleaned, X = binary.grid.cleaned),
-                     flipRegression::removeDataReductionColumns(list(Y = binary.multi.outcome,
+                     flipRegression:::removeDataReductionColumns(list(Y = binary.multi.outcome,
                                                                      X = binary.grid)))
     expect_identical(list(Y = nominal.multi.outcome, X = numeric.grid.cleaned),
-                     flipRegression::removeDataReductionColumns(list(Y = nominal.multi.outcome,
+                     flipRegression:::removeDataReductionColumns(list(Y = nominal.multi.outcome,
                                                                      X = numeric.grid)))
     expect_identical(list(Y = ordinal.multi.outcome, X = numeric.grid.cleaned),
-                     flipRegression::removeDataReductionColumns(list(Y = ordinal.multi.outcome,
+                     flipRegression:::removeDataReductionColumns(list(Y = ordinal.multi.outcome,
                                                                      X = numeric.grid)))
     expect_identical(list(Y = numeric.multi.outcome.cleaned, X = numeric.grid.cleaned),
-                     flipRegression::removeDataReductionColumns(list(Y = numeric.multi.outcome,
+                     flipRegression:::removeDataReductionColumns(list(Y = numeric.multi.outcome,
                                                                      X = numeric.grid)))
 })
 
