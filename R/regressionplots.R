@@ -81,6 +81,8 @@ EffectsPlot <- function(model,
         ## model$summary$aliased <- model$summary$aliased[!model$summary$aliased]
 
     effects <- allEffects(model)
+    relevant.coefs <- !grepDummyVars(names(effects))
+    effects <- effects[relevant.coefs]
 
     limitEffectsLabels <- function(ef, max.len){
 
@@ -125,8 +127,9 @@ EffectsPlot <- function(model,
         "response"
 
     # Top 4 most important, ordered by increasing p-value from anova
-    p.values <- model$anova[, ncol(model$anova)]
-    p.values <- p.values[!rownames(model$anova) == "Residuals"]
+    anova.obj <- model$anova[relevant.coefs, ]
+    p.values <- anova.obj[, ncol(anova.obj)]
+    p.values <- p.values[!rownames(anova.obj) == "Residuals"]
     effects <- effects[order(p.values)]
     ## effects <- effects[1:min(4, length(effects))]
 

@@ -18,6 +18,7 @@
 #'   \code{"Error if missing data"},
 #'   \code{"Exclude cases with missing data"},
 #'   \code{"Use partial data (pairwise correlations)"},
+#'   \code{"Dummy variable adjustment"},
 #'   \code{"Imputation (replace missing values with estimates)"}, and
 #'   \code{"Multiple imputation"}.
 #' @param type Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
@@ -133,6 +134,7 @@
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
+#' AddDummyVariablesForNAs
 #' @importFrom flipFormat Labels OriginalName
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
@@ -463,15 +465,26 @@ Regression <- function(formula = as.formula(NULL),
             return(final.model)
         }
 
+        if (missing == "Dummy variable adjustment")
+        {
+            new.formulae <- updateDummyVariableFormulae(input.formula, formula.with.interaction,
+                                                        data = processed.data$estimation.data)
+            input.formula <- new.formulae$formula
+            formula.with.interaction <- new.formulae$formula.with.interaction
+        }
+
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
+
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
             stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = seed, ...)
+        # dummy.adjustment.list <- determineDummyAdjustment(data, missing)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se,
+                             outlier.prop.to.remove, seed = seed, ...)
         .estimation.data <- fit$.estimation.data
         .formula <- fit$formula
         if (internal)
@@ -482,7 +495,6 @@ Regression <- function(formula = as.formula(NULL),
         }
         original <- fit$original
         .design <- fit$design
-
         result <- list(original = original, call = cl)
 
         result$non.outlier.data <- fit$non.outlier.data
@@ -500,9 +512,16 @@ Regression <- function(formula = as.formula(NULL),
     }
     class(result) <- "Regression"
     result$correction <- correction
-    result$formula <- input.formula
+
     # Inserting the coefficients from the partial data.
-    result$model <- data
+    if (missing != "Dummy variable adjustment")
+    {
+        result$formula <- input.formula
+        result$model <- data
+    }
+    else
+        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
@@ -741,7 +760,8 @@ importanceFooter <- function(x)
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = 12321, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove,
+                          seed = 12321, ...)
 {
     .design <- NULL
     # Initially fit model on all the data and then refit with outlier removal if necessary
@@ -1548,3 +1568,15 @@ updateStackedFormula <- function(data, formula)
                               env = environment(formula))
     return(new.formula)
 }
+
+updateDummyVariableFormulae <- function(formula, formula.with.interaction, data)
+{
+    if (!any(dummy.vars <- grepDummyVars(names(data))))
+        stop("'missing == \"Dummy variable adjustment\" selected but no dummy variables have been created")
+    dummy.var <- paste0(names(data)[dummy.vars], collapse = " + ")
+    new.formula <- update(terms(formula), as.formula(paste0(". ~ . + ", dummy.var)))
+    new.formula.with.interaction <- update(terms(formula.with.interaction), as.formula(paste0(". ~ . + ", dummy.var)))
+    return(list(formula = new.formula, formula.with.interaction = new.formula.with.interaction))
+}
+
+grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
