@@ -771,7 +771,7 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
     .design <- fitted.model$design
     .estimation.data <- fitted.model$estimation.data
     .formula <- fitted.model$formula
-    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove)
+    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove, .estimation.data)
     # Don't support Multinomial Logit for now.
     if (remove.outliers && type == "Multinomial Logit")
     {
@@ -1212,12 +1212,20 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
 }
 
 # Helper function to check user has input a valid value.
-checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove)
+checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimation.data)
 {
     if ((remove.outliers <- (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)) && outlier.prop.to.remove >= 0.5)
         stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
              FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
              " to a lower setting and re-run the analysis.")
+    n <- nrow(estimation.data)
+    p <- ncol(estimation.data)
+    outlier.prop.to.remove <- if (is.null(outlier.prop.to.remove)) 0 else outlier.prop.to.remove
+    if (floor(n * (1 - outlier.prop.to.remove)) < p + 1)
+        stop(warningSampleSizeTooSmall(), " If ", outlier.prop.to.remove * 100, "% of the outlying data is ",
+             "removed there will be less data than parameters to predict in the model which is not possible. ",
+             " Consider a simpler model with less parameters or change the automated outlier removal setting ",
+             " to a smaller value.")
     remove.outliers
 }
 
@@ -1569,13 +1577,29 @@ updateStackedFormula <- function(data, formula)
     return(new.formula)
 }
 
-updateDummyVariableFormulae <- function(formula, formula.with.interaction, data)
+# Updates a formula and optionally a formula with interaction
+# It checks if the formula has any dummy variables in the data and either adds or removes
+# predictors for those dummy variables in the formula
+# The control to add or remove is via the update.string argument, " + " adds to the formulae
+# while " - " removes dummy variables from the formulae
+updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
+                                        update.string = " + ", warn = TRUE)
 {
     if (!any(dummy.vars <- grepDummyVars(names(data))))
-        stop("'missing == \"Dummy variable adjustment\" selected but no dummy variables have been created")
-    dummy.var <- paste0(names(data)[dummy.vars], collapse = " + ")
-    new.formula <- update(terms(formula), as.formula(paste0(". ~ . + ", dummy.var)))
-    new.formula.with.interaction <- update(terms(formula.with.interaction), as.formula(paste0(". ~ . + ", dummy.var)))
+    {
+        if (warn)
+            warning("'Dummy variable adjustment' selected to handle missing data ",
+                    "but no missing values appear in the predictors")
+        return(list(formula = formula, formula.with.interaction = formula.with.interaction))
+    }
+
+    dummy.var <- paste0(names(data)[dummy.vars], collapse = update.string)
+    new.formula <- update(terms(formula), as.formula(paste0(". ~ .", update.string, dummy.var)))
+    if (!is.null(formula.with.interaction))
+        new.formula.with.interaction <- update(terms(formula.with.interaction),
+                                               as.formula(paste0(". ~ .", update.string, dummy.var)))
+    else
+        new.formula.with.interaction <- NULL
     return(list(formula = new.formula, formula.with.interaction = new.formula.with.interaction))
 }
 

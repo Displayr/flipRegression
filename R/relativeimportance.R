@@ -130,9 +130,9 @@ extractNumericX <- function(formula, data, show.warnings)
         if (all(c("factor", "ordered") %in% class(X[, j])))
             class(X[, j]) <- "factor"
 
-    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
-        warning(paste0("The following variables have been treated as categorical: ",
-                       paste0(names(X), collapse = ","),
+    if (show.warnings && any(factors <- sapply(X, function(x) class(x) == "factor")))
+        warning(paste0("The following variables have been treated as nominal: ",
+                       paste0(names(X)[factors], collapse = ","),
                        ". This may over-inflate their effects."))
 
     AsNumeric(X, remove.first = TRUE)

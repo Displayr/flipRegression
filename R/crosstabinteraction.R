@@ -6,6 +6,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                                        importance.absolute, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
+    if (result$missing == "Dummy variable adjustment")
+        net.coef <- net.coef[!grepDummyVars(names(net.coef))]
     correction <- result$correction
     if (internal.loop)
         correction <- "None"
@@ -139,6 +141,12 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                      " doesn't take the value ", split.labels[j], ". ", attr(tmpC.fit, "condition")$message, "\n")
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
+
+            if (result$missing == "Dummy variable adjustment")
+            {
+                tmp.coefs <- tmp.coefs[!grepDummyVars(row.names(tmp.coefs)), ]
+                tmpC.coefs <- tmpC.coefs[!grepDummyVars(row.names(tmpC.coefs)), ]
+            }
 
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
