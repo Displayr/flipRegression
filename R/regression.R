@@ -482,7 +482,6 @@ Regression <- function(formula = as.formula(NULL),
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
-        # dummy.adjustment.list <- determineDummyAdjustment(data, missing)
         fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se,
                              outlier.prop.to.remove, seed = seed, ...)
         .estimation.data <- fit$.estimation.data
@@ -597,12 +596,11 @@ Regression <- function(formula = as.formula(NULL),
             # Update the formula silently (don't throw a warning)
             signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
             classes <- sapply(data, class)
-            browser()
             if (!is.null(interaction) && interaction.name %in% names(classes))
                 classes <- classes[-which(names(classes) == interaction.name)]
             if (any(classes == "factor"))
                 stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
-                     "variables for ", output, ". Please remove the categorical predictors: ",
+                     "variables in ", output, ". Please remove the categorical predictors: ",
                      paste0(names(classes), collapse = ", "), " and re-run the analysis.")
             .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
             input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
@@ -1115,21 +1113,24 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
         dummy.aliased <- aliased[grepDummyVars(names.aliased)]
         alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
         regular.aliased <- aliased[!grepDummyVars(names.aliased)]
+        regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
+                                  " coefficients have been estimated: ",
+                                  paste(alias.vars[regular.aliased], collapse = ", "))
+        dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
+
         # If no dummy variables in the aliasing, report all aliased.
         # Otherwise only report the dummy variable scenario if a regular variable is also aliased
         # i.e. silently have aliased dummy variables.
-        if (all(regular.aliased))
-            warning("The following variable(s) are colinear with other variables and no",
-                    " coefficients have been estimated: ", paste(alias.vars[aliased], collapse = ", "))
-        else if (any(dummy.aliased) && any(regular.aliased))
+        if (any(regular.aliased))
+            warning(regular.warning)
+        if (any(dummy.aliased))
         {
-            dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
-            regular.aliased <- alias.vars[aliased][!dummy.aliased]
-            warning("The following variable(s) are colinear with other variable and no ",
-                    "coefficients have been estimated: ", paste(regular.aliased, collapse = ", "),
-                    " The dummy variable adjustment variables: ", dummy.aliased.variables,
-                    " are also colinear with other variables and the following dummy adjustments couldn't be made.",
-                    "A different missing value technique might be more suitable.")
+            dummy.aliased.variables <- extractDummyNames(names.aliased[dummy.aliased])
+            dummy.warning <- paste0("The following dummy variable adjustment variable(s) are colinear ",
+                                    "with other variables and no dummy variables have been estimated: ",
+                                    alias.vars[dummy.aliased],
+                                    "A different missing value technique might be more suitable.")
+            warning(regular.warning)
         }
     }
 }

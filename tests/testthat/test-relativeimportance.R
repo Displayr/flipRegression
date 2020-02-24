@@ -322,3 +322,29 @@ test_that("Shapley",
                                                    correction = "None"),
         "Shapley can run with a maximum of 27 predictors. Set the output to Relative Importance Analysis instead.")
 })
+
+test_that("Dummy variable adjustment valid", {
+    # Simulate correlated predictors
+    set.seed(12321)
+    X <- MASS::mvrnorm(n = 200, mu = rep(0, 3), Sigma = matrix(c(1, 0.2, 0.3, 0.2, 1, 0.3, 0.2, 0.2, 1), ncol = 3))
+    beta <- c(0.4, 0.3, 0.25)
+    r2 <- 0.30
+
+    Y <- X %*% beta + rnorm(n = 200)
+
+    not.missing.data <- data.frame(Y, X)
+    Xm <- X
+    missing <- sample(1:nrow(X), size = 50, replace = FALSE)
+    Xm[, 2][missing] <- NA
+    missing.data <- data.frame(Y, Xm)
+    for(out in c("Relative Importance Analysis", "Shapley Regression"))
+    {
+        expect_warning(z <- Regression(Y ~ X1 + X2 + X3, data = not.missing.data, output = out),
+                       NA)
+        expect_warning(print(z), "Unusual observations detected")
+        expect_warning(z <- Regression(Y ~ X1 + X2 + X3, data = missing.data, output = out, missing = "Dummy variable adjustment"),
+                       NA)
+        expect_warning(print(z), "Unusual observations detected")
+    }
+
+})

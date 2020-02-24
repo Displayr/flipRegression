@@ -188,6 +188,7 @@ extractVariableStandardErrors <- function(model, type, robust.se, linear.regress
 extractVariableCoefficientNames <- function(obj)
 {
     coef.names <- rownames(obj$summary$coefficients)
+    coef.names <- coef.names[!grepDummyVars(coef.names)]
     if (obj$type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         coef.names[-1]
     else if (obj$type %in% c("Ordered Logit"))
