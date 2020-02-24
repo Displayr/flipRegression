@@ -512,13 +512,10 @@ Regression <- function(formula = as.formula(NULL),
     }
     class(result) <- "Regression"
     result$correction <- correction
-
+    result$formula <- input.formula
     # Inserting the coefficients from the partial data.
     if (missing != "Dummy variable adjustment")
-    {
-        result$formula <- input.formula
         result$model <- data
-    }
     else
         result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
 
@@ -584,9 +581,37 @@ Regression <- function(formula = as.formula(NULL),
 
     if (!is.null(importance))
     {
-        labels <- rownames(result$summary$coefficients)
-        labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        labels <- rownames(result$summary$coefficients)[relevant.coefs]
+        if (result$type == "Ordered Logit")
+        {
+            if (missing == "Dummy variable adjustment")
+                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
+            else
+                labels <- labels[1:result$n.predictors]
+        } else
+            labels <- labels[-1]
+        if (missing == "Dummy variable adjustment")
+        {
+            # Update the formula silently (don't throw a warning)
+            signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
+            classes <- sapply(data, class)
+            browser()
+            if (!is.null(interaction) && interaction.name %in% names(classes))
+                classes <- classes[-which(names(classes) == interaction.name)]
+            if (any(classes == "factor"))
+                stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
+                     "variables for ", output, ". Please remove the categorical predictors: ",
+                     paste0(names(classes), collapse = ", "), " and re-run the analysis.")
+            .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
+            input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
+                                                         data = processed.data$estimation.data,
+                                                         update.string = " - ",
+                                                         warn = FALSE)$formula
+            result$formula <- input.formula
+        }
+
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,
@@ -1086,9 +1111,26 @@ tryError <- function(x)
 aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
-        alias.vars <- if (!is.null(aliased.labels)) aliased.labels[aliased] else names(aliased)[aliased]
-        warning("The following variable(s) are colinear with other variables and no",
-                " coefficients have been estimated: ", paste(alias.vars, collapse = ", "))
+        names.aliased <- names(aliased)
+        dummy.aliased <- aliased[grepDummyVars(names.aliased)]
+        alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
+        regular.aliased <- aliased[!grepDummyVars(names.aliased)]
+        # If no dummy variables in the aliasing, report all aliased.
+        # Otherwise only report the dummy variable scenario if a regular variable is also aliased
+        # i.e. silently have aliased dummy variables.
+        if (all(regular.aliased))
+            warning("The following variable(s) are colinear with other variables and no",
+                    " coefficients have been estimated: ", paste(alias.vars[aliased], collapse = ", "))
+        else if (any(dummy.aliased) && any(regular.aliased))
+        {
+            dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
+            regular.aliased <- alias.vars[aliased][!dummy.aliased]
+            warning("The following variable(s) are colinear with other variable and no ",
+                    "coefficients have been estimated: ", paste(regular.aliased, collapse = ", "),
+                    " The dummy variable adjustment variables: ", dummy.aliased.variables,
+                    " are also colinear with other variables and the following dummy adjustments couldn't be made.",
+                    "A different missing value technique might be more suitable.")
+        }
     }
 }
 
@@ -1221,7 +1263,7 @@ checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimati
     n <- nrow(estimation.data)
     p <- ncol(estimation.data)
     outlier.prop.to.remove <- if (is.null(outlier.prop.to.remove)) 0 else outlier.prop.to.remove
-    if (floor(n * (1 - outlier.prop.to.remove)) < p + 1)
+    if (floor(n * (1 - outlier.prop.to.remove)) < p + 1 && outlier.prop.to.remove > 0)
         stop(warningSampleSizeTooSmall(), " If ", outlier.prop.to.remove * 100, "% of the outlying data is ",
              "removed there will be less data than parameters to predict in the model which is not possible. ",
              " Consider a simpler model with less parameters or change the automated outlier removal setting ",
@@ -1604,3 +1646,43 @@ updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
 }
 
 grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
+
+adjustDataMissingDummy <- function(data, model, estimation.data, interaction.name = "NULL")
+{
+    model.formula <- formula(model)
+    outcome.name <- as.character(attr(terms(model.formula), "variables"))[2]
+    outcome.variable <- data[[outcome.name]]
+    design.data <- data[-which(names(data) == outcome.name)]
+    if (!any(sapply(design.data, function(x) any(is.na(x)))))
+        return(estimation.data)
+    missing.replacements <- extractDummyAdjustedCoefs(model$coefficients)
+    missing.numeric <- sapply(names(missing.replacements), function(x) is.numeric(design.data[[x]]))
+    for (pred.name in names(missing.numeric)[which(missing.numeric)])
+    {
+        x.col <- design.data[[pred.name]]
+        x.col[is.na(x.col)] <- missing.replacements[[pred.name]]
+        design.data[[pred.name]] <- x.col
+    }
+    new.data <- cbind.data.frame(data[outcome.name], design.data, deparse.level = 0)
+    # Check if any removed cases in .estimation.data
+    if (!all(cases.to.include <- row.names(data) %in% row.names(estimation.data)))
+        new.data <- new.data[cases.to.include, ]
+    # Add outlier removal column
+    new.data[["non.outlier.data_GQ9KqD7YOf"]] <- estimation.data[["non.outlier.data_GQ9KqD7YOf"]]
+    new.data <- CopyAttributes(new.data, data)
+    return(new.data)
+}
+
+extractDummyAdjustedCoefs <- function(coefficients)
+{
+    dummy.vars <- grepDummyVars(names(coefficients))
+    dummy.var.names <- extractDummyNames(names(coefficients)[dummy.vars])
+    base.vars <- grepl(paste0("^", dummy.var.names, "$", collapse = "|"), names(coefficients))
+    base.var.names <- names(coefficients)[base.vars]
+    adjusted.vals <- as.list(coefficients[dummy.vars]/coefficients[base.vars])
+    names(adjusted.vals) <- dummy.var.names
+    return(adjusted.vals)
+}
+
+extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
+    sapply(strsplit(string, dummy.pattern), "[", 1)

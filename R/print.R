@@ -175,14 +175,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         {# Ignore the dummy variables, if they exist
             if (x$type != "Multinomial Logit")
             {
-                relevant.coefs <- !grepDummyVars(names(x$coef))
+                relevant.coefs <- !grepDummyVars(rownames(x$summary$coefficients))
                 coefs <- x$summary$coefficients[relevant.coefs, , drop = FALSE]
                 z.statistics <- x$z.statistics[relevant.coefs, , drop = FALSE]
                 p.values <- x$p.values[relevant.coefs, , drop = FALSE]
             }
             else
             {
-                relevant.coefs <- !grepDummyVars(colnames(x$coef))
+                relevant.coefs <- !grepDummyVars(colnames(x$summary$coefficients))
                 coefs <- x$summary$coefficients[, relevant.coefs, drop = FALSE]
                 z.statistics <- x$z.statistics[, relevant.coefs, drop = FALSE]
                 p.values <- x$p.values[, relevant.coefs, drop = FALSE]
