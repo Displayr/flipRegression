@@ -135,7 +135,7 @@
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
 #' AddDummyVariablesForNAs
-#' @importFrom flipFormat Labels OriginalName
+#' @importFrom flipFormat Labels OriginalName SampleDescription
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
@@ -518,7 +518,7 @@ Regression <- function(formula = as.formula(NULL),
                                                            subset.label = Labels(subset),
                                                            weighted = !is.null(weights),
                                                            weight.label, missing, imputation.label, m,
-                                                           if(HasOutcome(formula)) "predictor" else "")
+                                                           variable.description = "predictor")
             processed.data$description <- result$sample.description
         }
 
