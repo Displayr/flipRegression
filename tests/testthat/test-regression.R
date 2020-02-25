@@ -204,7 +204,7 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
           expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = NULL, type = type)), NA)
           # weight, filter
           expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = TRUE,  weights = wgt, type = type)), NA)
-          3# weight, filter
+          # weight, filter
           expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, type = type)), NA)
           expect_error(capture.output(suppressWarnings(print(z))),NA)
       })
