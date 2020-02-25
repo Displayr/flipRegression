@@ -504,9 +504,26 @@ Regression <- function(formula = as.formula(NULL),
         if (missing == "Imputation (replace missing values with estimates)")
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
-        result$sample.description <- processed.data$description
         result$n.predictors <- sum(!(names(result$original$coefficients) %in% "(Intercept)"))
-        result$n.observations <- n
+        result$n.observations <- sum(.estimation.data$non.outlier.data_GQ9KqD7YOf)
+        # If outliers are removed, remake the footer
+        if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
+        {
+            weight.label <- if (is.null(weights)) "" else Labels(weights)
+            n.subset <- attr(CleanSubset(subset, nrow(data)), "n.subset")
+            if (grepl("imputation", missing, ignore.case = TRUE))
+                imputation.label <- attr(processed.data$estimation.data[[1]], "imputation.method")
+            result$sample.description <- SampleDescription(n.total = nrow(data), n.subset = n.subset,
+                                                           n.estimation = result$n.observations,
+                                                           subset.label = Labels(subset),
+                                                           weighted = !is.null(weights),
+                                                           weight.label, missing, imputation.label, m,
+                                                           if(HasOutcome(formula)) "predictor" else "")
+            processed.data$description <- result$sample.description
+        }
+
+        else
+            result$sample.description <- processed.data$description
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
@@ -646,12 +663,13 @@ Regression <- function(formula = as.formula(NULL),
     options(contrasts = old.contrasts[[1]])
     if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
     {
-        result$footer <- paste0(result$footer, "; ", FormatAsPercent(result$outlier.prop.to.remove),
-                                " of the outliers in the data removed and model refitted;")
+        result$footer <- paste0(result$footer, "; the ", FormatAsPercent(result$outlier.prop.to.remove),
+                                " most outlying observations in the data have been removed and the model refitted;")
         if (!is.null(result$importance))
-            result$importance.footer <- paste(result$importance.footer,
+            result$importance.footer <- paste(result$importance.footer, "the",
                                               FormatAsPercent(result$outlier.prop.to.remove),
-                                              "of the outliers in the data removed and model refitted;")
+                                              "most outlying observations in the data have been removed",
+                                              "and the model refitted;")
     }
     result <- setChartData(result, output)
 
