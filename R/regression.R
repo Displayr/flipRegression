@@ -1655,9 +1655,9 @@ updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
     }
 
     dummy.var <- paste0(names(data)[dummy.vars], collapse = update.string)
-    new.formula <- update(terms(formula), as.formula(paste0(". ~ .", update.string, dummy.var)))
+    new.formula <- update(terms(formula, data = data), as.formula(paste0(". ~ .", update.string, dummy.var)))
     if (!is.null(formula.with.interaction))
-        new.formula.with.interaction <- update(terms(formula.with.interaction),
+        new.formula.with.interaction <- update(terms(formula.with.interaction, data = data),
                                                as.formula(paste0(". ~ .", update.string, dummy.var)))
     else
         new.formula.with.interaction <- NULL
