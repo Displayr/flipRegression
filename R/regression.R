@@ -18,6 +18,7 @@
 #'   \code{"Error if missing data"},
 #'   \code{"Exclude cases with missing data"},
 #'   \code{"Use partial data (pairwise correlations)"},
+#'   \code{"Dummy variable adjustment"},
 #'   \code{"Imputation (replace missing values with estimates)"}, and
 #'   \code{"Multiple imputation"}.
 #' @param type Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
@@ -133,7 +134,8 @@
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
-#' @importFrom flipFormat Labels OriginalName
+#' AddDummyVariablesForNAs
+#' @importFrom flipFormat Labels OriginalName SampleDescription
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
@@ -463,15 +465,25 @@ Regression <- function(formula = as.formula(NULL),
             return(final.model)
         }
 
+        if (missing == "Dummy variable adjustment")
+        {
+            new.formulae <- updateDummyVariableFormulae(input.formula, formula.with.interaction,
+                                                        data = processed.data$estimation.data)
+            input.formula <- new.formulae$formula
+            formula.with.interaction <- new.formulae$formula.with.interaction
+        }
+
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
+
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
             stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = seed, ...)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se,
+                             outlier.prop.to.remove, seed = seed, ...)
         .estimation.data <- fit$.estimation.data
         .formula <- fit$formula
         if (internal)
@@ -482,7 +494,6 @@ Regression <- function(formula = as.formula(NULL),
         }
         original <- fit$original
         .design <- fit$design
-
         result <- list(original = original, call = cl)
 
         result$non.outlier.data <- fit$non.outlier.data
@@ -493,16 +504,37 @@ Regression <- function(formula = as.formula(NULL),
         if (missing == "Imputation (replace missing values with estimates)")
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
-        result$sample.description <- processed.data$description
         result$n.predictors <- sum(!(names(result$original$coefficients) %in% "(Intercept)"))
-        result$n.observations <- n
+        result$n.observations <- sum(.estimation.data$non.outlier.data_GQ9KqD7YOf)
+        # If outliers are removed, remake the footer
+        if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
+        {
+            weight.label <- if (is.null(weights)) "" else Labels(weights)
+            n.subset <- attr(CleanSubset(subset, nrow(data)), "n.subset")
+            if (grepl("imputation", missing, ignore.case = TRUE))
+                imputation.label <- attr(processed.data$estimation.data[[1]], "imputation.method")
+            result$sample.description <- SampleDescription(n.total = nrow(data), n.subset = n.subset,
+                                                           n.estimation = result$n.observations,
+                                                           subset.label = Labels(subset),
+                                                           weighted = !is.null(weights),
+                                                           weight.label, missing, imputation.label, m,
+                                                           variable.description = "predictor")
+            processed.data$description <- result$sample.description
+        }
+
+        else
+            result$sample.description <- processed.data$description
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
     result$correction <- correction
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
-    result$model <- data
+    if (missing != "Dummy variable adjustment")
+        result$model <- data
+    else
+        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
@@ -565,9 +597,36 @@ Regression <- function(formula = as.formula(NULL),
 
     if (!is.null(importance))
     {
-        labels <- rownames(result$summary$coefficients)
-        labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        labels <- rownames(result$summary$coefficients)[relevant.coefs]
+        if (result$type == "Ordered Logit")
+        {
+            if (missing == "Dummy variable adjustment")
+                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
+            else
+                labels <- labels[1:result$n.predictors]
+        } else
+            labels <- labels[-1]
+        if (missing == "Dummy variable adjustment")
+        {
+            # Update the formula silently (don't throw a warning)
+            signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
+            classes <- sapply(data, class)
+            if (!is.null(interaction) && interaction.name %in% names(classes))
+                classes <- classes[-which(names(classes) == interaction.name)]
+            if (any(classes == "factor"))
+                stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
+                     "variables in ", output, ". Please remove the categorical predictors: ",
+                     paste0(names(classes), collapse = ", "), " and re-run the analysis.")
+            .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
+            input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
+                                                         data = processed.data$estimation.data,
+                                                         update.string = " - ",
+                                                         warn = FALSE)$formula
+            result$formula <- input.formula
+        }
+
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,
@@ -604,12 +663,13 @@ Regression <- function(formula = as.formula(NULL),
     options(contrasts = old.contrasts[[1]])
     if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
     {
-        result$footer <- paste0(result$footer, "; ", FormatAsPercent(result$outlier.prop.to.remove),
-                                " of the outliers in the data removed and model refitted;")
+        result$footer <- paste0(result$footer, "; the ", FormatAsPercent(result$outlier.prop.to.remove),
+                                " most outlying observations in the data have been removed and the model refitted;")
         if (!is.null(result$importance))
-            result$importance.footer <- paste(result$importance.footer,
+            result$importance.footer <- paste(result$importance.footer, "the",
                                               FormatAsPercent(result$outlier.prop.to.remove),
-                                              "of the outliers in the data removed and model refitted;")
+                                              "most outlying observations in the data have been removed",
+                                              "and the model refitted;")
     }
     result <- setChartData(result, output)
 
@@ -741,7 +801,8 @@ importanceFooter <- function(x)
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
 #' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove, seed = 12321, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove,
+                          seed = 12321, ...)
 {
     .design <- NULL
     # Initially fit model on all the data and then refit with outlier removal if necessary
@@ -751,7 +812,7 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
     .design <- fitted.model$design
     .estimation.data <- fitted.model$estimation.data
     .formula <- fitted.model$formula
-    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove)
+    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove, .estimation.data)
     # Don't support Multinomial Logit for now.
     if (remove.outliers && type == "Multinomial Logit")
     {
@@ -1066,9 +1127,29 @@ tryError <- function(x)
 aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
-        alias.vars <- if (!is.null(aliased.labels)) aliased.labels[aliased] else names(aliased)[aliased]
-        warning("The following variable(s) are colinear with other variables and no",
-                " coefficients have been estimated: ", paste(alias.vars, collapse = ", "))
+        names.aliased <- names(aliased)
+        dummy.aliased <- aliased[grepDummyVars(names.aliased)]
+        alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
+        regular.aliased <- aliased[!grepDummyVars(names.aliased)]
+        regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
+                                  " coefficients have been estimated: ",
+                                  paste(alias.vars[regular.aliased], collapse = ", "))
+        dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
+
+        # If no dummy variables in the aliasing, report all aliased.
+        # Otherwise only report the dummy variable scenario if a regular variable is also aliased
+        # i.e. silently have aliased dummy variables.
+        if (any(regular.aliased))
+            warning(regular.warning)
+        if (any(dummy.aliased))
+        {
+            dummy.aliased.variables <- extractDummyNames(names.aliased[dummy.aliased])
+            dummy.warning <- paste0("The following dummy variable adjustment variable(s) are colinear ",
+                                    "with other variables and no dummy variables have been estimated: ",
+                                    alias.vars[dummy.aliased],
+                                    "A different missing value technique might be more suitable.")
+            warning(regular.warning)
+        }
     }
 }
 
@@ -1192,12 +1273,20 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
 }
 
 # Helper function to check user has input a valid value.
-checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove)
+checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimation.data)
 {
     if ((remove.outliers <- (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)) && outlier.prop.to.remove >= 0.5)
         stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
              FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
              " to a lower setting and re-run the analysis.")
+    n <- nrow(estimation.data)
+    p <- ncol(estimation.data)
+    outlier.prop.to.remove <- if (is.null(outlier.prop.to.remove)) 0 else outlier.prop.to.remove
+    if (floor(n * (1 - outlier.prop.to.remove)) < p + 1 && outlier.prop.to.remove > 0)
+        stop(warningSampleSizeTooSmall(), " If ", outlier.prop.to.remove * 100, "% of the outlying data is ",
+             "removed there will be less data than parameters to predict in the model which is not possible. ",
+             " Consider a simpler model with less parameters or change the automated outlier removal setting ",
+             " to a smaller value.")
     remove.outliers
 }
 
@@ -1548,3 +1637,71 @@ updateStackedFormula <- function(data, formula)
                               env = environment(formula))
     return(new.formula)
 }
+
+# Updates a formula and optionally a formula with interaction
+# It checks if the formula has any dummy variables in the data and either adds or removes
+# predictors for those dummy variables in the formula
+# The control to add or remove is via the update.string argument, " + " adds to the formulae
+# while " - " removes dummy variables from the formulae
+updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
+                                        update.string = " + ", warn = TRUE)
+{
+    if (!any(dummy.vars <- grepDummyVars(names(data))))
+    {
+        if (warn)
+            warning("'Dummy variable adjustment' selected to handle missing data ",
+                    "but no missing values appear in the predictors")
+        return(list(formula = formula, formula.with.interaction = formula.with.interaction))
+    }
+
+    dummy.var <- paste0(names(data)[dummy.vars], collapse = update.string)
+    new.formula <- update(terms(formula, data = data), as.formula(paste0(". ~ .", update.string, dummy.var)))
+    if (!is.null(formula.with.interaction))
+        new.formula.with.interaction <- update(terms(formula.with.interaction, data = data),
+                                               as.formula(paste0(". ~ .", update.string, dummy.var)))
+    else
+        new.formula.with.interaction <- NULL
+    return(list(formula = new.formula, formula.with.interaction = new.formula.with.interaction))
+}
+
+grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
+
+adjustDataMissingDummy <- function(data, model, estimation.data, interaction.name = "NULL")
+{
+    model.formula <- formula(model)
+    outcome.name <- as.character(attr(terms(model.formula), "variables"))[2]
+    outcome.variable <- data[[outcome.name]]
+    design.data <- data[-which(names(data) == outcome.name)]
+    if (!any(sapply(design.data, function(x) any(is.na(x)))))
+        return(estimation.data)
+    missing.replacements <- extractDummyAdjustedCoefs(model$coefficients)
+    missing.numeric <- sapply(names(missing.replacements), function(x) is.numeric(design.data[[x]]))
+    for (pred.name in names(missing.numeric)[which(missing.numeric)])
+    {
+        x.col <- design.data[[pred.name]]
+        x.col[is.na(x.col)] <- missing.replacements[[pred.name]]
+        design.data[[pred.name]] <- x.col
+    }
+    new.data <- cbind.data.frame(data[outcome.name], design.data, deparse.level = 0)
+    # Check if any removed cases in .estimation.data
+    if (!all(cases.to.include <- row.names(data) %in% row.names(estimation.data)))
+        new.data <- new.data[cases.to.include, ]
+    # Add outlier removal column
+    new.data[["non.outlier.data_GQ9KqD7YOf"]] <- estimation.data[["non.outlier.data_GQ9KqD7YOf"]]
+    new.data <- CopyAttributes(new.data, data)
+    return(new.data)
+}
+
+extractDummyAdjustedCoefs <- function(coefficients)
+{
+    dummy.vars <- grepDummyVars(names(coefficients))
+    dummy.var.names <- extractDummyNames(names(coefficients)[dummy.vars])
+    base.vars <- grepl(paste0("^", dummy.var.names, "$", collapse = "|"), names(coefficients))
+    base.var.names <- names(coefficients)[base.vars]
+    adjusted.vals <- as.list(coefficients[dummy.vars]/coefficients[base.vars])
+    names(adjusted.vals) <- dummy.var.names
+    return(adjusted.vals)
+}
+
+extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
+    sapply(strsplit(string, dummy.pattern), "[", 1)

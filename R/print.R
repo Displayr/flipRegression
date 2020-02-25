@@ -26,11 +26,29 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             {
                 pref <- if(x$type == "Linear") "" else "Generalized "
                 nms <- rownames(x$summary$coefficients)[-1]
+                dummy.vars <- grepDummyVars(nms)
+                if (any(dummy.vars))
+                {
+                    nms <- nms[!dummy.vars]
+                    dummy.vifs <- vifs[dummy.vars]
+                    if (any(dummy.vifs > 10))
+                        dummy.var.msg <- paste0("At least one of the dummy variable predictors has a ",
+                                                "Variance Inflation Factor larger than 10. ")
+                    else if (any(dummy.vifs >= 4))
+                        dummy.var.msg <- paste0("At least one of the dummy variable predictors has a ",
+                                                "Variance Inflation Factor larger than 4. ")
+                    else
+                        dummy.var.msg <- NULL
+                    vifs <- vifs[!dummy.vars]
+                } else
+                    dummy.var.msg <- NULL
                 VIFs <- paste0(nms,": ", FormatAsReal(vifs, 2), c(rep("; ", length(nms) - 1), ""), collapse = "")
-                warning(paste0("The ",pref, "Variance Inflation Factor of the coefficients are: ", VIFs,
-                               ". A value of 4 or more indicates the confidence interval for the coefficient is
-                               twice as wide as they would be for uncorrelated predictors. A value of 10 or more
-                               indicates high multicollinearity."))
+                regular.var.msg <- paste0("The ", pref, "Variance Inflation Factor of the coefficients are: ",
+                                          VIFs, ". ")
+                warning(paste0(regular.var.msg, dummy.var.msg,
+                               "A value of 4 or more indicates the confidence interval for the coefficient is ",
+                               "twice as wide as they would be for uncorrelated predictors. A value of 10 or more ",
+                               "indicates high multicollinearity."))
             }
         }
     }
@@ -108,9 +126,11 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             rownames(x$interaction$coefficients)[ind] <- res$shortened.labels
             title <- paste0(title, " by ", res$common.prefix)
         }
-        dt <- CrosstabInteractionTable(x$interaction$coefficients,
-                                       x$interaction$coef.tstat,
-                                       x$interaction$coef.pvalues,
+        relevant.coefs <- !grepDummyVars(row.names(x$interaction$coefficients))
+
+        dt <- CrosstabInteractionTable(x$interaction$coefficients[relevant.coefs, ],
+                                       x$interaction$coef.tstat[relevant.coefs, ],
+                                       x$interaction$coef.pvalues[relevant.coefs, ],
                                        x$interaction$split.size,
                                        title = title,
                                        footer = caption,
@@ -154,8 +174,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         if (x$missing == "Multiple imputation")
             warning("ANOVA output is based on only the first imputed dataset.")
 
+        relevant.coefs <- !grepDummyVars(row.names(x$anova))
         attr(x$anova, "footer") <- x$footer
-        print(x$anova)
+        print(x$anova[relevant.coefs, ])
     }
     else if (x$output == "Effects Plot")
     {
@@ -167,7 +188,31 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     {    # Pretty table.
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
         title <- paste0(regressionType(x$type), ": ", x$outcome.label)
-        coefs <- x$summary$coefficients
+
+        if (x$missing == "Dummy variable adjustment")
+        {# Ignore the dummy variables, if they exist
+            if (x$type != "Multinomial Logit")
+            {
+                relevant.coefs <- !grepDummyVars(rownames(x$summary$coefficients))
+                coefs <- x$summary$coefficients[relevant.coefs, , drop = FALSE]
+                z.statistics <- x$z.statistics[relevant.coefs, , drop = FALSE]
+                p.values <- x$p.values[relevant.coefs, , drop = FALSE]
+            }
+            else
+            {
+                relevant.coefs <- !grepDummyVars(colnames(x$summary$coefficients))
+                coefs <- x$summary$coefficients[, relevant.coefs, drop = FALSE]
+                z.statistics <- x$z.statistics[, relevant.coefs, drop = FALSE]
+                p.values <- x$p.values[, relevant.coefs, drop = FALSE]
+            }
+
+        } else
+        {
+            coefs <- x$summary$coefficients
+            z.statistics <- x$z.statistics
+            p.values <- x$p.values
+        }
+
         #statistic.name <- if ("t" == substr(colnames(coefs)[3], 1, 1)) "t" else
         statistic.name <- paste0("<span style='font-style:italic;'>", substr(colnames(coefs)[3], 1, 1) ,"</span>")
         se.name <- if (x$robust.se != FALSE) "Robust SE" else "Standard Error"
@@ -206,8 +251,8 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                 title <- paste0(title, " by ", res$common.prefix)
             }
             dt <- MultinomialLogitTable(coefs,
-                                        x$z.statistics,
-                                        x$p.values,
+                                        z.statistics,
+                                        p.values,
                                         title = title,
                                         subtitle = subtitle,
                                         footer = caption)

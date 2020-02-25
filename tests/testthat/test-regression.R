@@ -21,6 +21,18 @@ test_that(missing,
               expect_equal(round(z,4),round(0.2539403,4))
           })
 
+missing <- "Dummy variable adjustment"
+test_that(missing,
+          {
+            z <- as.numeric(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.28768,4))
+            z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, subset = sb,  missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.28978,4))
+            z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.29824, 4))
+            z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, subset = sb, missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.29795,4))
+          })
 
 missing <- "Imputation (replace missing values with estimates)"
 test_that(missing,
@@ -181,7 +193,8 @@ test_that(paste("Robust se does something"),
 
 type = "Multinomial Logit"
 missing = "Multiple imputation"
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Type by residual", missing, type),
       {
@@ -191,7 +204,7 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
           expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = NULL, type = type)), NA)
           # weight, filter
           expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = TRUE,  weights = wgt, type = type)), NA)
-          # weight, filter
+          3# weight, filter
           expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, type = type)), NA)
           expect_error(capture.output(suppressWarnings(print(z))),NA)
       })
@@ -204,7 +217,8 @@ test_that("allEffects works on Regression object",
     expect_equal(effects::allEffects(z), effects::allEffects(zlm), check.attributes = FALSE)
 })
 
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit","Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Stops gracefully with small sample size", missing, type),
 {
@@ -220,7 +234,8 @@ test_that("Error due to missing data",
 })
 
 
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         for (detail in c(FALSE, TRUE))
             test_that(paste("No error", missing, type, "detail =", detail),
@@ -240,7 +255,8 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
 })
 
 
-for(missing in c("Imputation (replace missing values with estimates)", "Multiple imputation", "Exclude cases with missing data"))
+for(missing in c("Imputation (replace missing values with estimates)", "Multiple imputation",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste(type, " save variables"),{
             z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb))

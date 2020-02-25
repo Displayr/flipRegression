@@ -1,0 +1,68 @@
+context("Dummy variable adjustment")
+
+test_that("Coefficient estimates are the same ", {
+    # Simulate correlated predictors
+    X <- MASS::mvrnorm(n = 200, mu = rep(0, 3), Sigma = matrix(c(1, 0.2, 0.3, 0.2, 1, 0.3, 0.2, 0.2, 1), ncol = 3))
+    beta <- c(0.4, 0.3, 0.25)
+    r2 <- 0.30
+
+    Y <- X %*% beta + rnorm(n = 200)
+
+    not.missing.data <- data.frame(Y, X)
+
+    missing.data <- data.frame(lapply(not.missing.data, function(x) {
+        missing <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+        x[missing] <- NA
+        x
+    }))
+
+    missing.data <- data.frame(missing.data)
+
+
+    dummy.regression <- Regression(Y ~ ., data = missing.data, missing = "Dummy variable adjustment")
+    all.coefs <- dummy.regression$coef
+
+    # Check extracted Coefs correct, they will be the last three of the regular coefficients
+    dummy.adjusted.coefs <- extractDummyAdjustedCoefs(all.coefs)
+
+    expect_equal(names(dummy.adjusted.coefs), c("X1", "X2", "X3"))
+
+    # dummy adjusted coefficients should be dummy coefficients divided by regular slope coefficient
+    expected.coefs <- list(X1 = unname(all.coefs[5]/all.coefs[2]),
+                           X2 = unname(all.coefs[6]/all.coefs[3]),
+                           X3 = unname(all.coefs[7]/all.coefs[4]))
+    expect_identical(dummy.adjusted.coefs, expected.coefs)
+
+    # Check remapped matrix correct
+    remapped.data <- flipRegression:::adjustDataMissingDummy(missing.data, dummy.regression$original,
+                                                             estimation.data = dummy.regression$estimation.data)
+
+    # Create corerct remapped data
+    missing.data.processed <- missing.data
+    # Remove missing response cases
+    non.missing.outcomes <- which(!is.na(missing.data[[1]]))
+    missing.data.processed <- missing.data.processed[non.missing.outcomes, ]
+    # Check all predictors missing in remainder
+    if (any(all.missing.predictors <- apply(missing.data.processed[-1], 1, function(x) all(is.na(x)))))
+        missing.data.processed <- missing.data.processed[!all.missing.predictors, ]
+    processed.row.names <- row.names(missing.data.processed)
+    missing.data.processed <- lapply(names(missing.data.processed), function(x) {
+        if (x == "Y")
+            return(missing.data.processed[[x]])
+        x.col <- missing.data.processed[[x]]
+        replace.val <- dummy.adjusted.coefs[[x]]
+        x.col[is.na(x.col)] <- replace.val
+        x.col
+    })
+    names(missing.data.processed) <- names(missing.data)
+    missing.data.processed <- data.frame(missing.data.processed)
+    row.names(missing.data.processed) <- processed.row.names
+    missing.data.processed$non.outlier.data_GQ9KqD7YOf <- TRUE
+
+    # Data is the same
+    expect_equal(missing.data.processed, remapped.data, check.attributes = FALSE)
+
+    # Expect coefficients to be the same between original dummy adjusted regression and
+    # on the remapped dataset.
+    expect_equal(lm(Y ~ X1 + X2 + X3, data = missing.data.processed)$coef, all.coefs[-(5:7)])
+})

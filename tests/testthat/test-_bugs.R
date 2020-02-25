@@ -11,7 +11,8 @@ bank$o2 <- factor(unclass(bank$Overall) > 3)
 
 
 type = "Multinomial Logit"
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
         test_that(paste("DS-884 MNL with 2 category dependent variable", missing),
       {
           # no weight, no filter

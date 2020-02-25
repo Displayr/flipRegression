@@ -130,9 +130,9 @@ extractNumericX <- function(formula, data, show.warnings)
         if (all(c("factor", "ordered") %in% class(X[, j])))
             class(X[, j]) <- "factor"
 
-    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
+    if (show.warnings && any(factors <- sapply(X, function(x) class(x) == "factor")))
         warning(paste0("The following variables have been treated as categorical: ",
-                       paste0(names(X), collapse = ","),
+                       paste0(names(X)[factors], collapse = ","),
                        ". This may over-inflate their effects."))
 
     AsNumeric(X, remove.first = TRUE)
@@ -188,6 +188,7 @@ extractVariableStandardErrors <- function(model, type, robust.se, linear.regress
 extractVariableCoefficientNames <- function(obj)
 {
     coef.names <- rownames(obj$summary$coefficients)
+    coef.names <- coef.names[!grepDummyVars(coef.names)]
     if (obj$type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         coef.names[-1]
     else if (obj$type %in% c("Ordered Logit"))

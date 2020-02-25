@@ -301,3 +301,29 @@ test_that("Relative Importance and Shapley Output", {
     }
 })
 
+test_that("Correct n.estimation used with outlier removal and checks", {
+    z.0 <- Regression(Overall ~ Fees + ATM, data = bank, outlier.prop.to.remove = 0)
+    expect_equal(z.0$sample.description,
+                 paste0("n = 686 cases used in estimation of a total sample size of 896; ",
+                        "cases containing missing values have been excluded;"))
+    z.0 <- Regression(Overall ~ Fees + ATM, data = bank, outlier.prop.to.remove = 0)
+    expect_warning(print(z.0),
+                   paste0("Unusual observations detected. Consider re-running the analysis using ",
+                          "automated outlier removal with a non-zero setting to automatically remove unusual ",
+                          "observations that can affect the final Regression model. The largest hat value is ",
+                          "0.0252, which is higher than the threshhold of 0.0117 = 2 * (k + 1) / n"),
+                   fixed = TRUE)
+    z.10 <- Regression(Overall ~ Fees + ATM, data = bank, outlier.prop.to.remove = 0.1)
+    expect_equal(z.10$sample.description,
+                 paste0("n = 618 cases used in estimation of a total sample size of 896; ",
+                        "cases containing missing values have been excluded;"))
+    expect_warning(print(z.10),
+                   paste0("Unusual observations detected. After removing a proportion of the data from the ",
+                          "analysis, unusual observations exist in the data. Recommend inspecting the model ",
+                          "diagnostics and possibly increasing the automatic outlier removal if necessary. ",
+                          "The largest hat value is 0.0286, which is higher than the threshhold of 0.0129 ",
+                          "= 2 * (k + 1) / n"),
+                   fixed = TRUE)
+
+})
+
