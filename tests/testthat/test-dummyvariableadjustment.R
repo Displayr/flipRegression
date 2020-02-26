@@ -18,19 +18,22 @@ test_that("Coefficient estimates are the same ", {
 
     missing.data <- data.frame(missing.data)
 
-
+    # Remove Y values with missing
     dummy.regression <- Regression(Y ~ ., data = missing.data, missing = "Dummy variable adjustment")
     all.coefs <- dummy.regression$coef
 
+    computed.means <- lapply(missing.data, mean, na.rm = TRUE)
+
     # Check extracted Coefs correct, they will be the last three of the regular coefficients
-    dummy.adjusted.coefs <- extractDummyAdjustedCoefs(all.coefs)
+    dummy.adjusted.coefs <- extractDummyAdjustedCoefs(all.coefs, computed.means)
 
     expect_equal(names(dummy.adjusted.coefs), c("X1", "X2", "X3"))
 
     # dummy adjusted coefficients should be dummy coefficients divided by regular slope coefficient
-    expected.coefs <- list(X1 = unname(all.coefs[5]/all.coefs[2]),
-                           X2 = unname(all.coefs[6]/all.coefs[3]),
-                           X3 = unname(all.coefs[7]/all.coefs[4]))
+    # Ignore the first computed mean, thats Y
+    expected.coefs <- list(X1 = unname(computed.means[[2]] + all.coefs[5]/all.coefs[2]),
+                           X2 = unname(computed.means[[3]] + all.coefs[6]/all.coefs[3]),
+                           X3 = unname(computed.means[[4]] + all.coefs[7]/all.coefs[4]))
     expect_identical(dummy.adjusted.coefs, expected.coefs)
 
     # Check remapped matrix correct
@@ -42,7 +45,7 @@ test_that("Coefficient estimates are the same ", {
     # Remove missing response cases
     non.missing.outcomes <- which(!is.na(missing.data[[1]]))
     missing.data.processed <- missing.data.processed[non.missing.outcomes, ]
-    # Check all predictors missing in remainder
+    # Check all predictors missing
     if (any(all.missing.predictors <- apply(missing.data.processed[-1], 1, function(x) all(is.na(x)))))
         missing.data.processed <- missing.data.processed[!all.missing.predictors, ]
     processed.row.names <- row.names(missing.data.processed)
@@ -64,5 +67,6 @@ test_that("Coefficient estimates are the same ", {
 
     # Expect coefficients to be the same between original dummy adjusted regression and
     # on the remapped dataset.
-    expect_equal(lm(Y ~ X1 + X2 + X3, data = missing.data.processed)$coef, all.coefs[-(5:7)])
+    expect_equal(lm(Y ~ X1 + X2 + X3, data = remapped.data)$coef, all.coefs[-(5:7)])
 })
+
