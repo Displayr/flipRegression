@@ -1666,15 +1666,22 @@ updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
 
 grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
 
+#' @importFrom stats terms.formula
 adjustDataMissingDummy <- function(data, model, estimation.data, interaction.name = "NULL")
 {
     model.formula <- formula(model)
+    formula.terms <- terms(model.formula)
     outcome.name <- as.character(attr(terms(model.formula), "variables"))[2]
     outcome.variable <- data[[outcome.name]]
     design.data <- data[-which(names(data) == outcome.name)]
     if (!any(sapply(design.data, function(x) any(is.na(x)))))
         return(estimation.data)
-    missing.replacements <- extractDummyAdjustedCoefs(model$coefficients)
+    # Compute means
+    predictor.names <- attr(terms(model.formula), "term.labels")
+    data.for.means <- data[which(names(data) %in% predictor.names)]
+    means.from.data <- lapply(data.for.means, function(x) {
+        if (is.numeric(x)) mean(x, na.rm = TRUE) else NULL})
+    missing.replacements <- extractDummyAdjustedCoefs(model$coefficients, means.from.data)
     missing.numeric <- sapply(names(missing.replacements), function(x) is.numeric(design.data[[x]]))
     for (pred.name in names(missing.numeric)[which(missing.numeric)])
     {
@@ -1692,14 +1699,19 @@ adjustDataMissingDummy <- function(data, model, estimation.data, interaction.nam
     return(new.data)
 }
 
-extractDummyAdjustedCoefs <- function(coefficients)
+extractDummyAdjustedCoefs <- function(coefficients, computed.means)
 {
-    dummy.vars <- grepDummyVars(names(coefficients))
-    dummy.var.names <- extractDummyNames(names(coefficients)[dummy.vars])
-    base.vars <- grepl(paste0("^", dummy.var.names, "$", collapse = "|"), names(coefficients))
-    base.var.names <- names(coefficients)[base.vars]
-    adjusted.vals <- as.list(coefficients[dummy.vars]/coefficients[base.vars])
-    names(adjusted.vals) <- dummy.var.names
+    dummy.variables <- grepDummyVars(names(coefficients))
+    dummy.variable.names <- extractDummyNames(names(coefficients)[dummy.variables])
+    standard.variables <- grepl(paste0("^", dummy.variable.names, "$", collapse = "|"), names(coefficients))
+    standard.variable.names <- names(coefficients)[standard.variables]
+    slope.values <- as.list(coefficients[standard.variables])
+    names(slope.values) <- standard.variable.names
+    dummy.values <- as.list(coefficients[dummy.variables])
+    names(dummy.values) <- dummy.variable.names
+    adjusted.vals <- lapply(dummy.variable.names, function(x) {
+        computed.means[[x]] + dummy.values[[x]]/slope.values[[x]]})
+    names(adjusted.vals) <- dummy.variable.names
     return(adjusted.vals)
 }
 

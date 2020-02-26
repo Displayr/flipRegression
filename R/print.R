@@ -32,11 +32,11 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                     nms <- nms[!dummy.vars]
                     dummy.vifs <- vifs[dummy.vars]
                     if (any(dummy.vifs > 10))
-                        dummy.var.msg <- paste0("At least one of the dummy variable predictors has a ",
-                                                "Variance Inflation Factor larger than 10. ")
+                        dummy.var.msg <- paste0("At least one of the dummy variable adjustment predictors for the ",
+                                                "missing data has a Variance Inflation Factor larger than 10. ")
                     else if (any(dummy.vifs >= 4))
-                        dummy.var.msg <- paste0("At least one of the dummy variable predictors has a ",
-                                                "Variance Inflation Factor larger than 4. ")
+                        dummy.var.msg <- paste0("At least one of the dummy variable adjustment predictors for the ",
+                                                "missing data has a Variance Inflation Factor larger than 4. ")
                     else
                         dummy.var.msg <- NULL
                     vifs <- vifs[!dummy.vars]

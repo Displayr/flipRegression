@@ -121,14 +121,9 @@ test_that("Removed aliased predictors (ordered logit)",
                              fixed = TRUE)
           })
 
-test_that("VIF with dummy variables", {
+test_that("No VIF warning with dummy variables", {
     data(bank, package = "flipExampleData")
     z <- Regression(Overall ~ Fees + ATM + Branch, data = bank, missing = "Dummy variable adjustment")
-    expect_warning(print(z), paste0("The Variance Inflation Factor of the coefficients are: Fees: 1.6; ",
-                                    "ATM: 1.6; Branch: 6.8. At least one of the dummy variable predictors has ",
-                                    "a Variance Inflation Factor larger than 4. A value of 4 or more indicates ",
-                                    "the confidence interval for the coefficient is twice as wide as they would ",
-                                    "be for uncorrelated predictors. A value of 10 or more indicates high ",
-                                    "multicollinearity"), fixed = TRUE)
+    expect_warning(print(z), paste0("Unusual observations detected"), fixed = TRUE)
 })
 
