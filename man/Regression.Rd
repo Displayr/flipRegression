@@ -49,13 +49,34 @@ may not be an expression. \code{subset} may not}
 \item{weights}{An optional vector of sampling weights, or, the name or, the
 name of a variable in \code{data}. It may not be an expression.}
 
-\item{missing}{How missing data is to be treated in the regression. Options:
-\code{"Error if missing data"},
-\code{"Exclude cases with missing data"},
-\code{"Use partial data (pairwise correlations)"},
-\code{"Dummy variable adjustment"},
-\code{"Imputation (replace missing values with estimates)"}, and
-\code{"Multiple imputation"}.}
+\item{missing}{How missing data is to be treated in the regression. Supplied parameter needs to be one
+of the following strings:
+\itemize{
+\item \code{"Error if missing data"}: Throws an error if any case has a missing value,
+\item \code{"Exclude cases with missing data"}: Filters out cases that have any missing values,
+\item \code{"Use partial data (pairwise correlations)"}: This method is only valid for \code{type = "Linear"}
+   and it computes the pairwise correlations using all the available data. Given the pairwise computed
+   correlation matrix, a linear regression model is computed.
+\item \code{"Dummy variable adjustment"}: This method assumes that the missing data is structurally missing and
+   that a predictor could be impossible for some cases and hence coded as missing. E.g. if a non-married
+   person is asked to rate the quality of their marriage (or a person with no pets is asked the age of their
+   pet). A model with a structure to allow this is used whereby the missing predictor is removed and an
+   intercept adjustment is performed. This is implemented by adding a dummy variable for each predictor that
+   has at least one missing value. The dummy indicator variables take the value zero if the original predictor
+   has a non-missing value and the value one if the original predictor is missing. The original missing value
+   is then recoded to a new value. In particular, missing numeric predictors are recoded to be the mean of the
+   predictor (excluding the missing data) and factors are recoded to have their missing values recoded as the
+   reference level of the factor.
+\item \code{"Imputation (replace missing values with estimates)"}: Missing values in the data are imputed via the
+   use of the predictive mean matching method implemented in \code{\link[mice]{mice}}. Missing values in the
+   outcome variable are excluded from the analysis after the imputation has been performed. If the
+   \code{\link[mice]{mice}} method fails, hot-decking is used via the \code{\link[hot.deck]{hot.deck}} package.
+\item \code{"Multiple imputation"}: Implements the imputation method described above with option
+    \code{"Imputation (replace missing values with estimates)"}. However, repeated imputation data is computed
+    \code{m} times (see parameter below). The repeated set of imputed datasets are used to create \code{m} sets
+    of separate regression coefficients that are then combined to produce a single set of estimated regression
+    coefficients.
+}}
 
 \item{type}{Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
