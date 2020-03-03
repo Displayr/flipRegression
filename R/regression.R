@@ -1078,6 +1078,13 @@ vcov.Regression <- function(object, robust.se = FALSE, ...)
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
+        # hc3 rescales the estimate of variance with the influence
+        # residual.adjusted = r_i^2/(1 - h.ii)^2
+        # Details in Long and Ervin
+        # If any h.ii = 1, then NaN will result (division by zero)
+        # Fall back to the df adjusted estimator in that case (hc1).
+        if (any(hatvalues(object$original) == 1))
+            robust.se <- "hc1"
         v <- hccm(object$original, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
@@ -1095,6 +1102,13 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
+        # hc3 rescales the estimate of variance with the influence
+        # residual.adjusted = r_i^2/(1 - h.ii)^2
+        # Details in Long and Ervin
+        # If any h.ii = 1, then NaN will result (division by zero)
+        # Fall back to the df adjusted estimator in that case (hc1).
+        if (any(hatvalues(fit.reg) == 1))
+            robust.se <- "hc1"
         v <- hccm(fit.reg, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
@@ -1131,7 +1145,7 @@ vcov.FitRegression <- function(object, robust.se = FALSE, ...)
 #' @export
 FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
 {
-    wng <- "There is a technical problem with the parameter variance-covariance matrix. This is most likely due to either a problem or the appropriateness of the statistical model (e.g., using weights or robust standard errors where a sub-group in the analysis has no variation in its residuals, or lack of variation in one or more predictors."
+    wng <- "There is a technical problem with the parameter variance-covariance matrix. This is most likely due to either a problem or the appropriateness of the statistical model (e.g., using weights or robust standard errors where a sub-group in the analysis has no variation in its residuals, or lack of variation in one or more predictors.)"
     v <- x
     v <- try(
         {

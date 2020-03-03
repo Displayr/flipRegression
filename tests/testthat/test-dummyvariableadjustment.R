@@ -1,23 +1,23 @@
 context("Dummy variable adjustment")
 
+# Simulate correlated predictors
+X <- MASS::mvrnorm(n = 200, mu = rep(0, 3), Sigma = matrix(c(1, 0.2, 0.3, 0.2, 1, 0.3, 0.2, 0.2, 1), ncol = 3))
+beta <- c(0.4, 0.3, 0.25)
+r2 <- 0.30
+
+Y <- X %*% beta + rnorm(n = 200)
+
+not.missing.data <- data.frame(Y, X)
+
+missing.data <- data.frame(lapply(not.missing.data, function(x) {
+    missing <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+    x[missing] <- NA
+    x
+}))
+
+missing.data <- data.frame(missing.data)
+
 test_that("Coefficient estimates are the same ", {
-    # Simulate correlated predictors
-    X <- MASS::mvrnorm(n = 200, mu = rep(0, 3), Sigma = matrix(c(1, 0.2, 0.3, 0.2, 1, 0.3, 0.2, 0.2, 1), ncol = 3))
-    beta <- c(0.4, 0.3, 0.25)
-    r2 <- 0.30
-
-    Y <- X %*% beta + rnorm(n = 200)
-
-    not.missing.data <- data.frame(Y, X)
-
-    missing.data <- data.frame(lapply(not.missing.data, function(x) {
-        missing <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
-        x[missing] <- NA
-        x
-    }))
-
-    missing.data <- data.frame(missing.data)
-
     # Remove Y values with missing
     dummy.regression <- Regression(Y ~ ., data = missing.data, missing = "Dummy variable adjustment")
     all.coefs <- dummy.regression$coef
@@ -68,5 +68,47 @@ test_that("Coefficient estimates are the same ", {
     # Expect coefficients to be the same between original dummy adjusted regression and
     # on the remapped dataset.
     expect_equal(lm(Y ~ X1 + X2 + X3, data = remapped.data)$coef, all.coefs[-(5:7)])
+})
+
+test_that("Robust SE compatible with Dummy variable adjustment", {
+
+    expect_error(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
+                                                       missing = "Dummy variable adjustment",
+                                                       robust.se = TRUE),
+                 NA)
+    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
+    missing.data <- data.frame(Y, X)
+    missing.data$X1[1] <- NA
+    expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
+                                                         missing = "Dummy variable adjustment",
+                                                         robust.se = TRUE),
+                   "There is a technical problem with the parameter variance-covariance matrix")
+    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
+    # Expect issues with the variance-covariance matrix but it can still be computed.
+    missing.data <- data.frame(Y, X)
+    missing.data$X1[1] <- NA
+    missing.data$X2[2] <- NA
+    expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
+                                                         missing = "Dummy variable adjustment",
+                                                         robust.se = TRUE),
+                   "There is a technical problem with the parameter variance-covariance matrix")
+    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    missing.data <- data.frame(Y, X)
+    missing.data$X1[1] <- NA
+    missing.data$X2[1:2] <- NA
+    expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
+                                                         missing = "Dummy variable adjustment",
+                                                         robust.se = TRUE),
+                   "There is a technical problem with the parameter variance-covariance matrix")
+    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    missing.data <- data.frame(Y, X)
+    missing.data$X1[c(1, 3)] <- NA
+    expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
+                                                         missing = "Dummy variable adjustment",
+                                                         robust.se = TRUE),
+                   NA)
+    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
 })
 
