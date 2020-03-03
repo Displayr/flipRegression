@@ -306,7 +306,6 @@ test_that("Correct n.estimation used with outlier removal and checks", {
     expect_equal(z.0$sample.description,
                  paste0("n = 686 cases used in estimation of a total sample size of 896; ",
                         "cases containing missing values have been excluded;"))
-    z.0 <- Regression(Overall ~ Fees + ATM, data = bank, outlier.prop.to.remove = 0)
     expect_warning(print(z.0),
                    paste0("Unusual observations detected. Consider re-running the analysis using ",
                           "automated outlier removal with a non-zero setting to automatically remove unusual ",
@@ -324,6 +323,45 @@ test_that("Correct n.estimation used with outlier removal and checks", {
                           "The largest hat value is 0.0286, which is higher than the threshhold of 0.0129 ",
                           "= 2 * (k + 1) / n"),
                    fixed = TRUE)
-
+    # Expect outlier removal not to conflict with missing data description
+    complete.cases.bank <- bank[complete.cases(bank), ]
+    z.0 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0)
+    expect_equal(z.0$sample.description, "n = 244 cases used in estimation;")
+    z.10 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0.1)
+    expect_equal(z.10$sample.description, "n = 220 cases used in estimation of a total sample size of 244;")
+    complete.bank.subset <- sample(c(TRUE, FALSE), size = nrow(complete.cases.bank), replace = TRUE)
+    attr(complete.bank.subset, "name") <- "Some Fancy Subset"
+    z.0 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0,
+                      subset = complete.bank.subset)
+    expect_match(z.0$sample.description, "^n = \\d+ cases used in estimation \\(Some Fancy Subset\\);$")
+    z.10 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0.1,
+                       subset = complete.bank.subset)
+    expect_match(z.10$sample.description,
+                 paste0("^n = \\d+ cases used in estimation of a total sample size of \\d+ \\(Some Fancy Subset\\);$"),
+                 perl = TRUE)
+    # Ensure subset with clashing name doesn't cause issues
+    attr(complete.bank.subset, "name") <- "(Men); Women, (Children);"
+    z.0 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0,
+                       subset = complete.bank.subset)
+    expect_match(z.0$sample.description,
+                 paste0("^n = \\d+ cases used in estimation \\(\\(Men\\); Women, \\(Children\\);\\);$"),
+                 perl = TRUE)
+    z.10 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0.1,
+                       subset = complete.bank.subset)
+    expect_match(z.10$sample.description,
+                 paste0("^n = \\d+ cases used in estimation of a total sample size of \\d+ \\(\\(Men\\); Women, \\(Children\\);\\);$"),
+                 perl = TRUE)
+    # Make some missing
+    missing.index <- sample(c(TRUE, FALSE), size = nrow(complete.cases.bank), replace = TRUE, prob = c(1, 5))
+    complete.cases.bank$Fees[missing.index] <- NA
+    non.missing <- sum(!is.na(complete.cases.bank$Fees))
+    z.0 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0)
+    expect_match(z.0$sample.description, paste0("^n = ", non.missing," cases used in estimation of a total sample ",
+                                                "size of 244; cases containing missing values have been excluded;$"),
+                 perl = TRUE)
+    z.10 <- Regression(Overall ~ Fees + ATM, data = complete.cases.bank, outlier.prop.to.remove = 0.1)
+    expect_match(z.0$sample.description, paste0("^n = ", non.missing," cases used in estimation of a total sample ",
+                                                "size of 244; cases containing missing values have been excluded;$"),
+                 perl = TRUE)
 })
 
