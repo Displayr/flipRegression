@@ -417,10 +417,18 @@ set.seed(12321)
 n.cases <- nrow(technology.unstacked[["X"]])
 n.outcomes <- ncol(technology.unstacked[["Y"]])
 random.weights <- runif(n.cases)
+attr(random.weights, "label") <- "Some Weights"
 random.subset <- sample(c(TRUE, FALSE), size = n.cases, prob = c(0.75, 0.25), replace = TRUE)
+attr(random.subset, "label") <- "A Filter"
 interaction <- factor(sample(c("Male", "Female"), size = n.cases, prob = c(2/3, 1/3), replace = TRUE))
 weight.choices <- list(NULL, random.weights)
 subset.choices <- list(NULL, random.subset)
+stacked.random.weights <- rep(random.weights, n.outcomes)
+attr(stacked.random.weights, "label") <- "Some Weights"
+stacked.random.filter <- rep(random.subset, n.outcomes)
+attr(stacked.random.filter, "label") <- "A Filter"
+stacked.weight.choices <- list(NULL, stacked.random.weights)
+stacked.subset.choices <- list(NULL, stacked.random.filter)
 for (type in types)
     for (s in seq_along(subset.choices))
         for (w in seq_along(weight.choices))
@@ -436,8 +444,8 @@ for (type in types)
                 }
                 stacked.regression <- suppressWarnings(Regression(stacked.formula, type = type,
                                                                   output = "Summary",
-                                                                  subset = rep(subset.choices[[s]], n.outcomes),
-                                                                  weights = rep(weight.choices[[w]], n.outcomes),
+                                                                  subset = stacked.subset.choices[[s]],
+                                                                  weights = stacked.weight.choices[[w]],
                                                                   data = mod.technology.stacked))
                 stackable.regression <- suppressWarnings(Regression(type = type, stacked.data.check = TRUE,
                                                                     output = "Summary",
@@ -446,6 +454,11 @@ for (type in types)
                                                                     unstacked.data = mod.technology.unstacked))
                 expect_equal(unname(stacked.regression$coef),
                              unname(stackable.regression$coef))
+                # Check meta data in weights and filters exists
+                if (!is.null(weight.choices[[w]]))
+                    expect_match(stackable.regression$sample.description, attr(weight.choices[[w]], "label"))
+                if (!is.null(subset.choices[[s]]))
+                    expect_match(stackable.regression$sample.description, attr(subset.choices[[s]], "label"))
             })
 
 
@@ -485,4 +498,28 @@ test_that("Interaction consistent when stacking:", {
     expect_true(all.equal(stacked.regression$interaction$coefficients,
                           stackable.regression$interaction$coefficients,
                           check.attributes = FALSE))
+})
+
+test_that("Check categorical to numeric outcome warning", {
+    outcome.test <- do.call("rbind", replicate(2, nominal.multi.outcome, simplify = FALSE))
+    numeric.grid.test <- do.call("rbind", replicate(2, numeric.grid, simplify = FALSE))
+    unstacked.data.test <- list(Y = outcome.test,
+                                X = numeric.grid.test)
+    subset <- c(TRUE, FALSE, FALSE, TRUE)
+    attr(subset, "label") <- "A Filter"
+    weights <- runif(4)
+    attr(weights, "label") <- "Some weights"
+    categorical.outcome.warnings <- capture_warnings(z <- Regression(type = "Linear",
+                                                                     output = "Summary",
+                                                                     subset = subset,
+                                                                     stacked.data.check = TRUE,
+                                                                     unstacked.data = unstacked.data.test))
+    expect_equal(categorical.outcome.warnings[1],
+                 paste0("Outcome variable is a factor; it has been made numeric. Consider using another ",
+                        "type of regression (e.g., Ordered Logit or Binary Logit)."))
+    expect_equal(categorical.outcome.warnings[2],
+                 paste0("The variable Brand Nominal has been converted automatically to numeric. ",
+                        "Values are assigned in the order of the categories: 1, 2, 3, ...; To use ",
+                        "alternative numeric values, transform the data prior including it in this ",
+                        "analysis (e.g. by changing its structure)."))
 })
