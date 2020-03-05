@@ -518,8 +518,9 @@ test_that("Check categorical to numeric outcome warning", {
                  paste0("Outcome variable is a factor; it has been made numeric. Consider using another ",
                         "type of regression (e.g., Ordered Logit or Binary Logit)."))
     expect_equal(categorical.outcome.warnings[2],
-                 paste0("The variable Brand Nominal has been converted automatically to numeric. ",
+                 paste0("Data has been automatically converted to numeric. ",
                         "Values are assigned in the order of the categories: 1, 2, 3, ...; To use ",
                         "alternative numeric values, transform the data prior including it in this ",
-                        "analysis (e.g. by changing its structure)."))
+                        "analysis (e.g. by changing its structure). ",
+                        "The variable Brand Nominal has been converted."))
 })
