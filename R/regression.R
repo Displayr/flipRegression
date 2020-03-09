@@ -156,7 +156,7 @@
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
 #' AddDummyVariablesForNAs
-#' @importFrom flipFormat Labels OriginalName SampleDescription
+#' @importFrom flipFormat Labels OriginalName BaseDescription
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
@@ -544,21 +544,21 @@ Regression <- function(formula = as.formula(NULL),
         # If outliers are removed, remake the footer
         if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
         {
-            weight.label <- if (is.null(weights)) "" else Labels(weights)
             n.subset <- attr(CleanSubset(subset, nrow(data)), "n.subset")
-            if (grepl("imputation", missing, ignore.case = TRUE))
-                imputation.label <- attr(processed.data$estimation.data[[1]], "imputation.method")
-            result$sample.description <- SampleDescription(n.total = nrow(data), n.subset = n.subset,
-                                                           n.estimation = result$n.observations,
-                                                           subset.label = Labels(subset),
-                                                           weighted = !is.null(weights),
-                                                           weight.label, missing, imputation.label, m,
-                                                           variable.description = "predictor")
-            processed.data$description <- result$sample.description
+            n.estimation <- result$n.observations
+            # Create new base description up to the first ;
+            new.base.description <- BaseDescription(paste0("n = ", FormatAsReal(n.estimation),
+                                                           " cases used in estimation"),
+                                                    n.total = nrow(data), n.subset = n.subset,
+                                                    n.estimation = n.estimation,
+                                                    subset.label = Labels(subset),
+                                                    weighted = FALSE)
+            # Match start of footer until first ;
+            base.footer.pattern <- paste0("^.+(estimation|\\d|\\Q", Labels(subset), "\\E\\));")
+            processed.data$description <- sub(base.footer.pattern, new.base.description,
+                                              processed.data$description, perl = TRUE)
         }
-
-        else
-            result$sample.description <- processed.data$description
+        result$sample.description <- processed.data$description
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
