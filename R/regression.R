@@ -262,8 +262,14 @@ Regression <- function(formula = as.formula(NULL),
         if (!is.null(interaction))
         {
             if (length(interaction) != nrow(data))
-                interaction <- rep(interaction, stacks)
+            {
+                old.interaction <- interaction
+                interaction <- rep(old.interaction, stacks)
+                interaction <- CopyAttributes(interaction, old.interaction)
+            }
+
             # Update subset to be consistent with interaction
+            old.subset <- subset
             subset.description <- Labels(subset)
             tmp.sub <- !is.na(interaction)
             if (is.null(subset) || length(subset) <= 1)
@@ -276,11 +282,19 @@ Regression <- function(formula = as.formula(NULL),
                 attr(subset, "label") <- subset.description
             }
         } else if (!is.null(subset) && length(subset) > 1)
-            subset <- rep(subset, stacks)
-
+        {
+            old.subset <- subset
+            subset <- rep(old.subset, stacks)
+            subset <- CopyAttributes(subset, old.subset)
+        }
         # Update weights
         if (!is.null(weights) && length(weights) != nrow(data))
+        {
+            old.weights <- weights
             weights <- rep(weights, stacks)
+            weights <- CopyAttributes(weights, old.weights)
+        }
+
         # Update formula
         formula <- input.formula <- updateStackedFormula(data, formula)
     } else
