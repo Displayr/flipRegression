@@ -6,6 +6,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                                        importance.absolute, internal.loop, ...)
 {
     net.coef <- summary(result$original)$coef[,1]
+    if (result$missing == "Dummy variable adjustment")
+        net.coef <- net.coef[!grepDummyVars(names(net.coef))]
     correction <- result$correction
     if (internal.loop)
         correction <- "None"
@@ -30,8 +32,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (is.null(importance))
     {
-        fit2 <- FitRegression(formula.with.interaction, result$estimation.data,
-                              result$subset, weights, result$type, result$robust.se, ...)
+        fit2 <- FitRegression(formula.with.interaction, result$estimation.data, weights,
+                              result$type, result$robust.se, result$outlier.prop.to.remove, ...)
         atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
         if (!is.null(weights))
         {
@@ -91,11 +93,11 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmp.ri <- try(estimateImportance(result$formula,
                                      RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
                                      weights[is.split], result$type, signs, NA, NA,
-                                     result$robust.se, FALSE, correction, importance))
+                                     result$robust.se, result$outlier.prop.to.remove, FALSE, correction, importance))
             tmpC.ri <- try(estimateImportance(result$formula,
                                       RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
                                       weights[-is.split], result$type, signs, NA, NA,
-                                      result$robust.se, FALSE, correction, importance))
+                                      result$robust.se, result$outlier.prop.to.remove, FALSE, correction, importance))
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
@@ -109,6 +111,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         }
     } else
     {
+        base.error.msg <- paste0("Cannot perform regression split by interaction term. Settings require fitting ",
+                                 "the model for all sub-groups determined by the interaction variable ",
+                                 interaction.name, ".")
         ## in case original formula has ., need to remove interaction
         ## term from formula
         formula2 <- update.formula(result$terms, paste0("~.-", interaction.name))
@@ -120,18 +125,28 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 next
 
             tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,],
-                                         NULL, weights[is.split], result$type, result$robust.se))
+                                         weights[is.split], result$type, result$robust.se,
+                                         result$outlier.prop.to.remove),
+                           silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
-                stop("Cannot perform regression split by interaction term:",
-                     attr(tmp.fit, "condition")$message, "\n")
+                stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
+                     " takes the value ", split.labels[j], ". ", attr(tmp.fit, "condition")$message, "\n")
 
             tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
-                                          NULL, weights[-is.split], result$type, result$robust.se))
+                                          weights[-is.split], result$type, result$robust.se,
+                                          result$outlier.prop.to.remove),
+                            silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))
-                stop("Cannot preform regression split by interaction term:",
-                     attr(tmpC.fit, "condition")$message, "\n")
+                stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
+                     " doesn't take the value ", split.labels[j], ". ", attr(tmpC.fit, "condition")$message, "\n")
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
+
+            if (result$missing == "Dummy variable adjustment")
+            {
+                tmp.coefs <- tmp.coefs[!grepDummyVars(row.names(tmp.coefs)), ]
+                tmpC.coefs <- tmpC.coefs[!grepDummyVars(row.names(tmpC.coefs)), ]
+            }
 
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))
             {
@@ -194,4 +209,3 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, importance)
     res$pvalues <- matrix(pvalAdjust(pp, correction), nrow=nrow(bb), ncol=ncol(bb))
     return (res)
 }
-

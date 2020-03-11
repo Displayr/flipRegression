@@ -11,7 +11,8 @@ bank$o2 <- factor(unclass(bank$Overall) > 3)
 
 
 type = "Multinomial Logit"
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
         test_that(paste("DS-884 MNL with 2 category dependent variable", missing),
       {
           # no weight, no filter
@@ -86,12 +87,11 @@ test_that("Duplicated labels",
             Q5r_2 = structure(c(2, 2, 4, 5, 5, 5, 4, 5, 5, 3, 5, 3, 5,
             4, 3, 4, 3, 4, 5, 5), questiontype = "NumberMulti", name = "Q5r_2", label = "Landscaping", question = "How satisfied were you with... 2")), row.names = c(NA,
         20L), class = "data.frame")
-
-    expect_warning(print(Regression(Q4_2~.,, data = df.small, show.labels = TRUE,
+    expect_warning(print(Regression(Q4_2 ~ ., data = df.small, show.labels = TRUE,
             output = "Relative Importance Analysis")))
-    expect_warning(print(Regression(Q4_2~.,, data = df.small, show.labels = TRUE,
+    expect_warning(print(Regression(Q4_2 ~ ., data = df.small, show.labels = TRUE,
             output = "ANOVA"), NA))
-    expect_warning(print(Regression(Q4_2~.,, data = df.small, show.labels = TRUE,
+    expect_warning(print(Regression(Q4_2 ~ ., data = df.small, show.labels = TRUE,
             missing = "Multiple imputation")))
 })
 

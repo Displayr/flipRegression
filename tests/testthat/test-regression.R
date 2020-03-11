@@ -21,6 +21,18 @@ test_that(missing,
               expect_equal(round(z,4),round(0.2539403,4))
           })
 
+missing <- "Dummy variable adjustment"
+test_that(missing,
+          {
+            z <- as.numeric(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.28768,4))
+            z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, subset = sb,  missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.28978,4))
+            z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.29824, 4))
+            z <- as.numeric(suppressWarnings(Regression(zformula, data = bank, weights = wgt, subset = sb, missing = missing))$coef[3])
+            expect_equal(round(z,4), round(0.29795,4))
+          })
 
 missing <- "Imputation (replace missing values with estimates)"
 test_that(missing,
@@ -77,13 +89,17 @@ test_that(missing,
 missing <- "Multiple imputation"
 test_that("DS-2645 - Entirely Missing predictor", {
     bank$Bogus <- rep(NA, nrow(bank))
-    expect_warning(Regression(Overall ~ ., data = bank, missing = missing),
+    base.string <- paste0("Overall ~ ", paste0(names(bank)[-which(names(bank) == "Overall")], collapse = " + "))
+    test.formula <- as.formula(base.string)
+    expect_warning(Regression(test.formula, data = bank, missing = missing),
                    "Data has variable(s) that are entirely missing values (all observed values of the variable are missing). These variable(s) have been removed from the analysis: Bogus.", fixed = TRUE)
     bank$Nothing <- bank$Bogus
-    expect_warning(Regression(Overall ~ ., data = bank, missing = missing),
+    test.formula.with.two.all.missing <- as.formula(paste0(base.string, " + Nothing"))
+    expect_warning(Regression(test.formula.with.two.all.missing, data = bank, missing = missing),
                    "Data has variable(s) that are entirely missing values (all observed values of the variable are missing). These variable(s) have been removed from the analysis: Bogus, Nothing.", fixed = TRUE)
     bank$Bogus <- NULL
-    expect_error(Regression(Nothing ~ ., data = bank),
+    missing.response.formula <- as.formula(gsub("Overall", "Nothing", gsub(" + Bogus", "", base.string, fixed = TRUE)))
+    expect_error(Regression(missing.response.formula, data = bank),
                  "Response variable is entirely missing (all observed values of the variable are missing).", fixed = TRUE)
     bank$Nothing <- NULL
 })
@@ -177,7 +193,8 @@ test_that(paste("Robust se does something"),
 
 type = "Multinomial Logit"
 missing = "Multiple imputation"
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Type by residual", missing, type),
       {
@@ -200,7 +217,8 @@ test_that("allEffects works on Regression object",
     expect_equal(effects::allEffects(z), effects::allEffects(zlm), check.attributes = FALSE)
 })
 
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit","Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste("Stops gracefully with small sample size", missing, type),
 {
@@ -216,7 +234,8 @@ test_that("Error due to missing data",
 })
 
 
-for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         for (detail in c(FALSE, TRUE))
             test_that(paste("No error", missing, type, "detail =", detail),
@@ -231,11 +250,13 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
          expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = TRUE, detail = detail, weights = wgt, type = type)), NA)
          # weight, filter
          expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, detail = detail, type = type)), NA)
-    }
+    } else
+        expect_true(TRUE)
 })
 
 
-for(missing in c("Imputation (replace missing values with estimates)", "Exclude cases with missing data"))
+for(missing in c("Imputation (replace missing values with estimates)", "Multiple imputation",
+                 "Exclude cases with missing data", "Dummy variable adjustment"))
     for (type in c("Multinomial Logit", "Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
         test_that(paste(type, " save variables"),{
             z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb))
@@ -256,7 +277,6 @@ test_that("Error if too many dummy predictors",
                            "There are fewer observations.")
           })
 
-
 test_that("Outcome labels", {
     bank$Overall <- as.factor(bank$Overall)
     attr(bank$Overall, "label") <- "lbl"
@@ -264,3 +284,10 @@ test_that("Outcome labels", {
                                           data = bank, show.labels = TRUE))
     expect_equal(result$outcome.label, "lbl")
 })
+
+test_that("Ensure output size does not get too large (DS-2518)", {
+              bank50 <- do.call("rbind", lapply(1:50, function(x) bank))
+              result <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank50))
+              expect_true(as.numeric(object.size(result)) < 10000000) # less than 10MB
+          })
+

@@ -1,14 +1,15 @@
 estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
-                               robust.se = FALSE, show.warnings = TRUE, correction, importance, ...)
+                               robust.se = FALSE, outlier.prop.to.remove, show.warnings = TRUE, correction,
+                               importance, ...)
 {
     if (!is.null(weights))
         robust.se <- FALSE
 
     if (importance == "Relative Importance Analysis")
         estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
-                                   robust.se, show.warnings, correction, ...)
-    else if (importance == "Shapley regression")
-        computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se,
+                                   robust.se, outlier.prop.to.remove, show.warnings, correction, ...)
+    else if (importance == "Shapley Regression")
+        computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se, outlier.prop.to.remove,
                                  show.warnings, correction, ...)
     else
         stop("Importance type not handled: ", importance)
@@ -20,7 +21,8 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
 #' @importFrom flipU OutcomeName AllVariablesNames
 #' @noRd
 estimateRelativeImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
-                                       robust.se = FALSE, show.warnings = TRUE, correction, ...)
+                                       robust.se = FALSE, outlier.prop.to.remove = NULL, show.warnings = TRUE,
+                                       correction, ...)
 {
     # Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight
     # of Predictor Variables in Multiple Regression"
@@ -28,8 +30,24 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     if (type == "Multinomial Logit")
         stop("Relative importance analysis is not available for ", type)
 
+    # If necessary, filter the data to the outlier adjusted subset
+    if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+    {
+        data.indices <- data[, "non.outlier.data_GQ9KqD7YOf"]
+        data <- data[data.indices, ]
+        if (!is.null(weights))
+            weights <- weights[data.indices]
+    }
+    # Protect against dot in formula with the non.outlier indicator variable
+    formula.terms <- terms.formula(formula, data = data)
+    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data_GQ9KqD7YOf"))
+        formula <- update.formula(formula, drop.terms(formula.terms,
+                                                      which(non.outlier.in.data.frame),
+                                                      keep.response = TRUE))
+
     info <- extractRegressionInfo(formula, data, weights, type, signs,
-                                  r.square, variable.names, robust.se, ...)
+                                  r.square, variable.names, robust.se,
+                                  outlier.prop.to.remove, ...)
     signs <- info$signs
     r.square <- info$r.square
     variable.names <- info$variable.names
@@ -54,6 +72,9 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     }
     else
         data[[outcome.name]]
+    # Protect against ordered factor with empty levels
+    if (type == "Ordered Logit")
+        y <- Ordered(y)
 
     corr.x <- cov.wt(num.X, wt = weights, cor = TRUE)$cor
     diag(corr.x) <- 1    # may not be exactly 1 from cov.wt
@@ -71,7 +92,8 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     fit <- if (type == "Linear")
         lm(y ~ 0 + z, weights = weights)
     else
-        FitRegression(data.formula, reg.data, NULL, input.weights, type, FALSE, ...)$original
+        FitRegression(data.formula, reg.data, input.weights,
+                      type, FALSE, outlier.prop.to.remove = 0, seed = 12321, ...)$original
     beta <- extractVariableCoefficients(fit, type, FALSE)
     beta.se <- extractVariableStandardErrors(fit, type, robust.se, FALSE)
 
@@ -108,9 +130,9 @@ extractNumericX <- function(formula, data, show.warnings)
         if (all(c("factor", "ordered") %in% class(X[, j])))
             class(X[, j]) <- "factor"
 
-    if (show.warnings && any(sapply(X, function(x) class(x) == "factor")))
+    if (show.warnings && any(factors <- sapply(X, function(x) class(x) == "factor")))
         warning(paste0("The following variables have been treated as categorical: ",
-                       paste0(names(X), collapse = ","),
+                       paste0(names(X)[factors], collapse = ","),
                        ". This may over-inflate their effects."))
 
     AsNumeric(X, remove.first = TRUE)
@@ -166,6 +188,7 @@ extractVariableStandardErrors <- function(model, type, robust.se, linear.regress
 extractVariableCoefficientNames <- function(obj)
 {
     coef.names <- rownames(obj$summary$coefficients)
+    coef.names <- coef.names[!grepDummyVars(coef.names)]
     if (obj$type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
         coef.names[-1]
     else if (obj$type %in% c("Ordered Logit"))
@@ -198,12 +221,12 @@ appendStatistics <- function(obj, raw.importance, standard.errors, signs, fit, c
 
 extractRegressionInfo <- function(formula, data, weights, type, signs,
                                   r.square, variable.names, robust.se = FALSE,
-                                  ...)
+                                  outlier.prop.to.remove, ...)
 {
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
         formula2 <- DataFormula(formula, data)
-        fit <- FitRegression(formula2, data, NULL, weights, type, robust.se, ...)
+        fit <- FitRegression(formula2, data, weights, type, robust.se, outlier.prop.to.remove, ...)
         if (is.null(signs) || any(is.na(signs)))
         {
             signs <- sign(round(extractVariableCoefficients(fit$original, type), 13))

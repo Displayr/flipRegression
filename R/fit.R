@@ -89,14 +89,15 @@ GoodnessOfFit.Regression <- function(object, digits = max(3L, getOption("digits"
         r2 <- object$summary$r.square
     else
     {
+        relevant.subset <- object$non.outlier.data
         set.seed(1223)
-        predicted <- UnclassIfNecessary(predict(object)[object$subset], FALSE)
-        if (sd(predicted) == 0)
+        predicted <- UnclassIfNecessary(predict(object)[object$subset][relevant.subset], FALSE)
+        if (sd(predicted, na.rm = TRUE) == 0)
             r2 <- 0
         else
         {
-            observed <- UnclassIfNecessary(Observed(object)[object$subset], FALSE)
-            cor <- Correlation(predicted, observed, object$weights[object$subset])
+            observed <- UnclassIfNecessary(Observed(object)[object$subset][relevant.subset], FALSE)
+            cor <- Correlation(predicted, observed, object$weights[object$subset][relevant.subset])
             r2 <- cor * cor
         }
     }

@@ -1,5 +1,10 @@
-#' \code{Regression}
-#' @description Generalized Regression.
+#' Generalized Regression Outputs
+#'
+#' Computes output for seven different regression types.
+#' Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
+#' multinomial. Output includes general coefficient estimates and importance analysis estimates
+#' with possibilities for handling missing data and interaction terms.
+#'
 #' @param formula An object of class \code{\link{formula}} (or one that can be
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
@@ -9,13 +14,35 @@
 #'   may not be an expression. \code{subset} may not
 #' @param weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
-#' @param missing How missing data is to be treated in the regression. Options:
-#'   \code{"Error if missing data"},
-#'   \code{"Exclude cases with missing data"},
-#'   \code{"Use partial data (pairwise correlations)"},
-#'   \code{"Imputation (replace missing values with estimates)"}, and
-#'   \code{"Multiple imputation"}.
-#' @param type Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
+#' @param missing How missing data is to be treated in the regression. Supplied parameter needs to be one
+#'   of the following strings:
+#'   \itemize{
+#'   \item \code{"Error if missing data"}: Throws an error if any case has a missing value,
+#'   \item \code{"Exclude cases with missing data"}: Filters out cases that have any missing values,
+#'   \item \code{"Use partial data (pairwise correlations)"}: This method is only valid for \code{type = "Linear"}
+#'      and it computes the pairwise correlations using all the available data. Given the pairwise computed
+#'      correlation matrix, a linear regression model is computed.
+#'   \item \code{"Dummy variable adjustment"}: This method assumes that the missing data is structurally missing and
+#'      that a predictor could be impossible for some cases and hence coded as missing. E.g. if a non-married
+#'      person is asked to rate the quality of their marriage (or a person with no pets is asked the age of their
+#'      pet). A model with a structure to allow this is used whereby the missing predictor is removed and an
+#'      intercept adjustment is performed. This is implemented by adding a dummy variable for each predictor that
+#'      has at least one missing value. The dummy indicator variables take the value zero if the original predictor
+#'      has a non-missing value and the value one if the original predictor is missing. The original missing value
+#'      is then recoded to a new value. In particular, missing numeric predictors are recoded to be the mean of the
+#'      predictor (excluding the missing data) and factors are recoded to have their missing values recoded as the
+#'      reference level of the factor.
+#'   \item \code{"Imputation (replace missing values with estimates)"}: Missing values in the data are imputed via the
+#'      use of the predictive mean matching method implemented in \code{\link[mice]{mice}}. Missing values in the
+#'      outcome variable are excluded from the analysis after the imputation has been performed. If the
+#'      \code{\link[mice]{mice}} method fails, hot-decking is used via the \code{\link[hot.deck]{hot.deck}} package.
+#'   \item \code{"Multiple imputation"}: Implements the imputation method described above with option
+#'       \code{"Imputation (replace missing values with estimates)"}. However, repeated imputation data is computed
+#'       \code{m} times (see parameter below). The repeated set of imputed datasets are used to create \code{m} sets
+#'       of separate regression coefficients that are then combined to produce a single set of estimated regression
+#'       coefficients.
+#'   }
+#' @param type Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 #'   \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 #'   \code{"Ordered Logit"}, and \code{"Multinomial Logit"}
 #' @param robust.se If \code{TRUE}, computes standard errors that are robust to violations of
@@ -28,13 +55,13 @@
 #'   \code{"ANOVA"} returns an ANOVA table.
 #'   \code{"Detail"} returns a more traditional R output.
 #'   \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
-#'   \code{"Shapley regression"} returns a table with Shapley Importance scores.
+#'   \code{"Shapley Regression"} returns a table with Shapley Importance scores.
 #'   \code{"Effects Plot"} returns the effects plot per predictor.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #'   method = "model.frame", which returns the model frame.
 #' @param m The number of imputed samples, if using multiple imputation.
-#' @param seed The random number seed used in imputation.
+#' @param seed The random number seed used in imputation and residual computations.
 #' @param statistical.assumptions A Statistical Assumptions object.
 #' @param auxiliary.data A \code{\link{data.frame}} containing additional variables
 #'   to be used in imputation (if required). While adding more variables will improve
@@ -59,36 +86,84 @@
 #' @param recursive.call Used internally to indicate if call is a result of recursion (e.g., multiple imputation).
 #' @param effects.format A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 #'   and \code{y.title} (the title of the y-axis, defaults to outcome label).
-#' @param ... Additional argments to be past to  \code{\link{lm}} or, if the
-#'  data is weighted,  \code{\link[survey]{svyglm}}.
-#' @details "Imputation (replace missing values with estimates)". All selected
+#' @param outlier.prop.to.remove A single numeric value that determines the percentage of data points to remove from the
+#'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
+#'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+#'   denote that a percentage between none and 50\% of the data points are removed.
+#' @param stacked.data.check Logical value to determine if the Regression should be the data and formula based off
+#'   the \code{unstacked.data} argument by stacking the input and creating a formula based off attributes and provided
+#'   labels in the data. More details are given in the argument details for \code{unstacked.data}
+#' @param unstacked.data A list with two elements that provide the Outcome and Predictors respectively for data that
+#'   needs to be stacked. In particular, this is designed to work with input that is created with Q or Displayr which
+#'   creates \code{data.frame}s with a particular structure. In particular, the list has two elements, \itemize{
+#'   \item \code{Y} A \code{data.frame} with \code{m} columns that represent the \code{m} variables to be stacked.
+#'   This \code{data.frame} can also contain an optional 'question' attribute to denote the overall name of this
+#'   set variable
+#'   \item \code{X} A \code{data.frame} where each column represents a column of a design matrix relevant to one of the
+#'   \code{m} variables given in element \code{Y} above. So if the overall regression model has \code{p} predictors.
+#'   Then this \code{data.frame} should contain \code{m * p} columns. The naming structure each column is comma
+#'   separated of the form 'predictor, outcome' where 'predictor' denotes the predictor name in the regression design
+#'   matrix and 'outcome' denotes the name of the variable in element \code{Y}. This format is required to ensure that
+#'   the columns are appropriately matched and stacked. The function also accepts column names of the reverse order
+#'   with 'outcome, predictor', so long as there isn't any ambiguity.}
+#' @param ... Additional argments to be passed to  \code{\link{lm}} or, if the
+#'  data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.
+#' @details In the case of Ordered Logistic regression, this function computes a proporional odds model using
+#'  the cumulative link (logistic). In the case of no weights, the \code{\link[MASS]{polr}} function is used.
+#'  In the case of a weighted regresion, the \code{\link[survey]{svyolr}} function is used.
+#'
+#'  "Imputation (replace missing values with estimates)". All selected
 #'  outcome and predictor variables are included in the imputation, along with
 #'  all \code{auxiliary.data}, excluding cases that are excluded via subset or
 #'  have invalid weights, but including cases with missing values of the outcome variable.
 #'  Then, cases with missing values in the outcome variable are excluded from
 #'  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
-#' @references von Hippel, Paul T. (2007). "Regression With Missing Y's: An
-#'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
-#'   Methodology 37:83-117.
 #'
-#'   White, H. (1980), "A heteroskedastic-consistent
-#'   covariance matrix estimator and a direct test of heteroskedasticity".
-#'   Econometrica, 48, 817-838.
+#'  Outlier removal is performed by computing residuals for the regression model and removing the largest residuals
+#'  from the dataset (outlier removal). The model is then refit on the reduced dataset after outliers are removed.
+#'  The residuals used in this process depend on the regression type. For a regression with a numeric response
+#'  (\code{type} is "Linear", "Poisson", "Quasi-Poisson" or  "NBD") in an unweighted regression, the studentised
+#'  deviance residuals are used (see Davison and Snell (1991) and \code{\link[stats]{rstudent}}). In the weighted case
+#'  of the numeric response, the Pearson residuals are used (see Davison and Snell (1991) and
+#'  \code{\link[stats]{residuals.glm}}). In the case of Binary and Ordinal data for both the unweighted and weighted
+#'  regression cases, the Surrogate residuals (SURE) are used (via the implementation in Greenwell, McCarthy and
+#'  Boehmke (2017) with their sure R package). This was based on the recent theoretical paper in Liu and Zhang (2018).
+#'  Currently "Multinomial Logit" is unsupported for automated outlier removal. Possible surrogate residual to be used
+#'  in a future version.
 #'
-#'   Long, J. S. and Ervin, L. H. (2000). "Using
-#'   heteroscedasticity consistent standard errors in the linear regression
-#'   model". The American Statistician, 54(3): 217-224.
+#' @references Davison, A. C. and Snell, E. J. (1991) Residuals and diagnostics. In: Statistical Theory and Modelling.
+#'   In Honour of Sir David Cox, FRS, eds. Hinkley, D. V., Reid, N. and Snell, E. J., Chapman & Hall.
 #'
-#'   Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight",
-#'   Multivariate Behavioral Research, 35:1-19.
+#'   Greenwell, B., McCarthy, A. and Boehmke, B. (2017). sure: Surrogate Residuals for Ordinal and General
+#'   Regression Models. R package version 0.2.0. https://CRAN.R-project.org/package=sure
 #'
 #'   Gromping, U. (2007). "Estimators of Relative Importance in Linear
 #'   Regression Based on Variance Decomposition", The American Statistician,
 #'   61, 139-147.
+#'
+#'   von Hippel, Paul T. 2007. "Regression With Missing Y's: An
+#'   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
+#'   Methodology 37:83-117.
+#'
+#'   Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight",
+#'   Multivariate Behavioral Research, 35:1-19.
+#'
+#'   Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
+#'   standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
+#'
+#'   Lui, D. and Zhang, H. (2018). Residuals and Diagnostics for Ordinal Regression Models: A Surrogate Approach.
+#'   Journal of the American Statistical Association, 113:522, 845-854.
+#'
+#'   Lumley, T. (2004) Analysis of complex survey samples. Journal of Statistical Software 9(1): 1-19
+#'
+#'   White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
+#'   and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
+#'
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
-#' @importFrom flipFormat Labels OriginalName
+#' AddDummyVariablesForNAs
+#' @importFrom flipFormat Labels OriginalName BaseDescription
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
@@ -96,7 +171,7 @@
 #' @importFrom utils tail
 #' @importFrom stats drop.terms terms.formula
 #' @export
-Regression <- function(formula,
+Regression <- function(formula = as.formula(NULL),
                        data = NULL,
                        subset = NULL,
                        weights = NULL,
@@ -120,8 +195,15 @@ Regression <- function(formula,
                        interaction.formula = NULL,     # only non-NULL in multiple imputation inner loop
                        recursive.call = FALSE,
                        effects.format = list(max.label = 10),
+                       outlier.prop.to.remove = NULL,
+                       stacked.data.check = FALSE,
+                       unstacked.data = NULL,
                        ...)
 {
+    if (identical(formula, formula(NULL)) && !stacked.data.check)
+        stop(dQuote("formula"), " argument is missing and is required unless stackable data is provided via the ",
+             dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
+             "Please provide a formula or stackable data and re-run the Regression.")
     old.contrasts <- options("contrasts")
     options(contrasts = contrasts)
     if (detail || output == "Detail")
@@ -134,10 +216,11 @@ Regression <- function(formula,
 
     importance <- if (output == "Relative Importance Analysis" || relative.importance)
         "Relative Importance Analysis"
-    else if (output == "Shapley regression")
+    else if (output == "Shapley regression" || output == "Shapley Regression")
     {
+        output <- "Shapley Regression"
         if (type == "Linear")
-            "Shapley regression"
+            "Shapley Regression"
         else
             stop("Shapley requires Regression type to be Linear. Set the output to ",
                  "Relative Importance Analysis instead.")
@@ -148,7 +231,6 @@ Regression <- function(formula,
     if (!is.null(importance) && is.null(importance.absolute))
         importance.absolute <- FALSE
 
-    input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
     subset.description <- try(deparse(substitute(subset)), silent = TRUE) #We don't know whether subset is a variable in the environment or in data.
     subset <- eval(substitute(subset), data, parent.frame())
     if (!is.null(subset))
@@ -172,6 +254,58 @@ Regression <- function(formula,
         interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
         else interaction.name
     }
+    # Check if stackable data is input
+    if (stacked.data.check)
+    {
+        checkDataFeasibleForStacking(unstacked.data)
+        unstacked.data <- removeDataReductionColumns(unstacked.data)
+        validated.unstacked.output <- validateDataForStacking(unstacked.data)
+        unstacked.data <- validated.unstacked.output[["data"]]
+        stacks <- validated.unstacked.output[["stacks"]]
+        data <- stackData(unstacked.data)
+        # Update interaction, subset and weights if necessary
+        # if interaction vector supplied
+        # it should be original n, needs to be stacked to n = nv where v is number oof outcome vars
+        if (!is.null(interaction))
+        {
+            if (length(interaction) != nrow(data))
+            {
+                old.interaction <- interaction
+                interaction <- rep(old.interaction, stacks)
+                interaction <- CopyAttributes(interaction, old.interaction)
+            }
+
+            # Update subset to be consistent with interaction
+            old.subset <- subset
+            subset.description <- Labels(subset)
+            tmp.sub <- !is.na(interaction)
+            if (is.null(subset) || length(subset) <= 1)
+            {
+                subset <- tmp.sub
+                attr(subset, "label") <- ""
+            } else
+            {
+                subset <- subset & tmp.sub
+                attr(subset, "label") <- subset.description
+            }
+        } else if (!is.null(subset) && length(subset) > 1)
+        {
+            old.subset <- subset
+            subset <- rep(old.subset, stacks)
+            subset <- CopyAttributes(subset, old.subset)
+        }
+        # Update weights
+        if (!is.null(weights) && length(weights) != nrow(data))
+        {
+            old.weights <- weights
+            weights <- rep(weights, stacks)
+            weights <- CopyAttributes(weights, old.weights)
+        }
+
+        # Update formula
+        formula <- input.formula <- updateStackedFormula(data, formula)
+    } else
+        input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
 
     if (!is.null(interaction.formula))
     {
@@ -285,7 +419,7 @@ Regression <- function(formula,
         if (internal)
             stop("'internal' may not be selected with regressions based on correlation matrices.")
         if (!is.null(importance))
-            stop("Relative importance analysis and Shapley regression are not ",
+            stop("Relative importance analysis and Shapley Regression are not ",
                  "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
@@ -370,20 +504,33 @@ Regression <- function(formula,
                                                                        importance.absolute)
                 final.model$importance.footer <- importanceFooter(final.model)
             }
+            final.model$model <- data
+            final.model$weights <- weights
             final.model <- setChartData(final.model, output)
             return(final.model)
         }
 
+        if (missing == "Dummy variable adjustment")
+        {
+            new.formulae <- updateDummyVariableFormulae(input.formula, formula.with.interaction,
+                                                        data = processed.data$estimation.data)
+            input.formula <- new.formulae$formula
+            formula.with.interaction <- new.formulae$formula.with.interaction
+        }
+
         unfiltered.weights <- processed.data$unfiltered.weights
         .estimation.data <- processed.data$estimation.data
+
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
             stop(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
-        subset <-  processed.data$subset
         .formula <- DataFormula(input.formula, data)
-        fit <- FitRegression(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
+        fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se,
+                             outlier.prop.to.remove, seed = seed, ...)
+        .estimation.data <- fit$.estimation.data
+        .formula <- fit$formula
         if (internal)
         {
             fit$subset <- row.names %in% rownames(.estimation.data)
@@ -392,8 +539,9 @@ Regression <- function(formula,
         }
         original <- fit$original
         .design <- fit$design
-
         result <- list(original = original, call = cl)
+
+        result$non.outlier.data <- fit$non.outlier.data
 
         if (!is.null(.design))
             result$design <- .design
@@ -401,24 +549,50 @@ Regression <- function(formula,
         if (missing == "Imputation (replace missing values with estimates)")
             data <- processed.data$data
         result$subset <- row.names %in% rownames(.estimation.data)
-        result$sample.description <- processed.data$description
         result$n.predictors <- sum(!(names(result$original$coefficients) %in% "(Intercept)"))
-        result$n.observations <- n
+        result$n.observations <- sum(.estimation.data$non.outlier.data_GQ9KqD7YOf)
+        # If outliers are removed, remake the footer
+        if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
+        {
+            n.subset <- attr(CleanSubset(subset, nrow(data)), "n.subset")
+            n.estimation <- result$n.observations
+            # Create new base description up to the first ;
+            new.base.description <- BaseDescription(paste0("n = ", FormatAsReal(n.estimation),
+                                                           " cases used in estimation"),
+                                                    n.total = nrow(data), n.subset = n.subset,
+                                                    n.estimation = n.estimation,
+                                                    subset.label = Labels(subset),
+                                                    weighted = FALSE)
+            # Match start of footer until first ;
+            base.footer.pattern <- paste0("^.+(estimation|\\d|\\Q", Labels(subset), "\\E\\));")
+            processed.data$description <- sub(base.footer.pattern, new.base.description,
+                                              processed.data$description, perl = TRUE)
+        }
+        result$sample.description <- processed.data$description
         result$estimation.data <- .estimation.data
     }
     class(result) <- "Regression"
     result$correction <- correction
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
-    result$model <- data
+    if (missing != "Dummy variable adjustment")
+        result$model <- data
+    else
+        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
     result$output <- output
+    result$outlier.prop.to.remove <- outlier.prop.to.remove
     result$show.labels <- show.labels
     result$missing <- missing
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
+
+    # remove environment attribute to reduce size
+    attr(result$original$terms, ".Environment") <- NULL
+    attr(attr(result$original$model, "terms"), ".Environment") <- NULL
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
@@ -451,7 +625,7 @@ Regression <- function(formula,
     result$coef <- coef(result$original)
     if (!result$test.interaction)
         result$r.squared <- GoodnessOfFit(result)$value
-    if (type == "Ordered Logit")
+    if (type == "Ordered Logit" & !inherits(result$original, "svyolr"))
         result$coef <- c(result$coef, result$original$zeta)
     if (type == "Multinomial Logit")
     {
@@ -468,13 +642,40 @@ Regression <- function(formula,
 
     if (!is.null(importance))
     {
-        labels <- rownames(result$summary$coefficients)
-        labels <- if (result$type == "Ordered Logit") labels[1:result$n.predictors] else labels[-1]
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        labels <- rownames(result$summary$coefficients)[relevant.coefs]
+        if (result$type == "Ordered Logit")
+        {
+            if (missing == "Dummy variable adjustment")
+                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
+            else
+                labels <- labels[1:result$n.predictors]
+        } else
+            labels <- labels[-1]
+        if (missing == "Dummy variable adjustment")
+        {
+            # Update the formula silently (don't throw a warning)
+            signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
+            classes <- sapply(data, class)
+            if (!is.null(interaction) && interaction.name %in% names(classes))
+                classes <- classes[-which(names(classes) == interaction.name)]
+            if (any(classes == "factor"))
+                stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
+                     "variables in ", output, ". Please remove the categorical predictors: ",
+                     paste0(names(classes), collapse = ", "), " and re-run the analysis.")
+            .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
+            input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
+                                                         data = processed.data$estimation.data,
+                                                         update.string = " - ",
+                                                         warn = FALSE)$formula
+            result$formula <- input.formula
+        }
+
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
-                                                labels, robust.se, !recursive.call,
-                                                correction, importance, ...)
+                                                labels, robust.se, outlier.prop.to.remove,
+                                                !recursive.call, correction, importance, ...)
         result$importance.type <- importance
         if (importance == "Relative Importance Analysis")
             result$relative.importance <- result$importance
@@ -505,7 +706,16 @@ Regression <- function(formula,
     if (!is.null(result$importance))
         result$importance.footer <- importanceFooter(result)
     options(contrasts = old.contrasts[[1]])
-
+    if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
+    {
+        result$footer <- paste0(result$footer, "; the ", FormatAsPercent(result$outlier.prop.to.remove),
+                                " most outlying observations in the data have been removed and the model refitted;")
+        if (!is.null(result$importance))
+            result$importance.footer <- paste(result$importance.footer, "the",
+                                              FormatAsPercent(result$outlier.prop.to.remove),
+                                              "most outlying observations in the data have been removed",
+                                              "and the model refitted;")
+    }
     result <- setChartData(result, output)
 
     return(result)
@@ -615,7 +825,6 @@ importanceFooter <- function(x)
 #'   coerced to that class): a symbolic description of the model to be fitted.
 #'   The details of type specification are given under \sQuote{Details}.
 #' @param .estimation.data A \code{\link{data.frame}}.
-#' @param subset Not used.
 #' @param .weights An optional vector of sampling weights, or, the name or, the
 #'   name of a variable in \code{data}. It may not be an expression.
 #' @param type See \link{Regression}.
@@ -623,38 +832,100 @@ importanceFooter <- function(x)
 #'   the assumption of constant variance, using the HC1 (degrees of freedom)
 #'   modification of White's (1980) estimator (Long and Ervin, 2000). This parameter is ignored
 #'   if weights are applied (as weights already employ a sandwich estimator).
+#' @param outlier.prop.to.remove A single numeric value that determines the percentage of data points to remove from the
+#'   analysis. The data points removed correspond to those in the proportion with the largest residuals.
+#'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+#'   denote that a percentage between none and 50\% of the data points are removed.
+#' @param seed A integer seed to generate the surrogate residuals.
 #' @param ... Arguments to the wrapped functions.
 #' @importFrom flipData CalibrateWeight WeightedSurveyDesign
+#' @importFrom flipFormat FormatAsPercent
 #' @importFrom flipU InterceptExceptions
 #' @importFrom MASS polr glm.nb
 #' @importFrom nnet multinom
 #' @importFrom stats glm lm poisson quasipoisson binomial pt quasibinomial
-#' @importFrom survey svyglm
+#' @importFrom survey svyglm svyolr
 #' @export
-FitRegression <- function(.formula, .estimation.data, subset, .weights, type, robust.se, ...)
+FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove,
+                          seed = 12321, ...)
+{
+    .design <- NULL
+    # Initially fit model on all the data and then refit with outlier removal if necessary
+    fitted.model <- fitModel(.formula, .estimation.data, .weights, type,
+                             robust.se, subset = NULL, ...)
+    model <- fitted.model$model
+    .design <- fitted.model$design
+    .estimation.data <- fitted.model$estimation.data
+    .formula <- fitted.model$formula
+    remove.outliers <- checkAutomaterOutlierRemovalSetting(outlier.prop.to.remove, .estimation.data)
+    # Don't support Multinomial Logit for now.
+    if (remove.outliers && type == "Multinomial Logit")
+    {
+        warning("Automated outlier removal and re-fitting a 'Multinomial Logit' model is not supported",
+                "Regression model is fitted without outlier removal.")
+        remove.outliers <- FALSE
+    }
+    if (remove.outliers)
+    {
+        refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
+                                                         type, robust.se, outlier.prop.to.remove, seed = seed,...)
+        model <- refitted.model.data$model
+        .estimation.data <- refitted.model.data$.estimation.data
+        .design <- refitted.model.data$.design
+        non.outlier.data <- refitted.model.data$non.outlier.data
+    } else
+        non.outlier.data <- rep(TRUE, nrow(.estimation.data))
+
+    result <- list(original = model, formula = .formula, .estimation.data = .estimation.data,
+                   design = .design, weights = .weights, robust.se = robust.se,
+                   non.outlier.data = non.outlier.data)
+    class(result) <- "FitRegression"
+    result
+}
+
+# Fits the models. Now in a separate function to FitRegression for repeated use
+# to prevent code duplication with the automated outlier removal refitting.
+fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
-    .design <- NULL
+    .design <- non.outlier.data_GQ9KqD7YOf <- NULL
+    if (is.null(subset))
+    {
+        non.outlier.data <- rep(TRUE, nrow(.estimation.data))
+        .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
+    } else
+        non.outlier.data <- subset
+    # Protect against . operator used in RHS of formula
+    # If so, it will include non.outlier.data as a predictor now.
+
+    formula.terms <- terms.formula(.formula, data = .estimation.data)
+    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data_GQ9KqD7YOf"))
+        .formula <- update.formula(.formula, drop.terms(formula.terms,
+                                                        which(non.outlier.in.data.frame),
+                                                        keep.response = TRUE))
     if (is.null(.weights))
     {
         if (type == "Linear")
         {
-            model <- lm(.formula, .estimation.data, model = TRUE)
+            model <- lm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, model = TRUE)
             model$aic <- AIC(model)
         }
         else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
-            model <- glm(.formula, .estimation.data, family = switch(type,
-                                                                     "Poisson" = poisson,
-                                                                     "Quasi-Poisson" = quasipoisson,
-                                                                     "Binary Logit" = binomial(link = "logit")))
+            model <- glm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
+                         family = switch(type,
+                                         "Poisson" = poisson,
+                                         "Quasi-Poisson" = quasipoisson,
+                                         "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- fitOrderedLogit(.formula, .estimation.data, NULL, ...)
+            model <- fitOrderedLogit(.formula, .estimation.data, NULL,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
         {
-            model <- multinom(.formula, .estimation.data, Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
+            model <- multinom(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
+                              Hess = TRUE, trace = FALSE, MaxNWts = 1e9, maxit = 10000, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
@@ -669,7 +940,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
                 list(value = val, warnings = myWarnings)
             }
 
-            result <- withWarnings(glm.nb(.formula, .estimation.data))
+            result <- withWarnings(glm.nb(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf))
             model <- result$value
             if (!is.null(result$warnings))
                 if (result$warnings[[1]]$message == "iteration limit reached")
@@ -691,7 +962,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
         if (type == "Linear")
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
-            model <- svyglm(.formula, .design)
+            model <- svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf, ...)
             if (all(model$residuals == 0)) # perfect fit
                 model$df <- NA
             else
@@ -711,30 +982,38 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             }
         }
         else if (type == "Ordered Logit")
-        {
-            .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- fitOrderedLogit(.formula, .estimation.data, weights, ...)
-            model$aic <- AIC(model)
-        }
+            model <- fitOrderedLogit(.formula, .estimation.data, weights,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- multinom(.formula, .estimation.data, weights = weights,
+            model <- multinom(.formula, .estimation.data, weights = weights, subset = non.outlier.data_GQ9KqD7YOf,
                               Hess = TRUE, trace = FALSE, maxit = 10000, MaxNWts = 1e9, ...)
             model$aic <- AIC(model)
         }
         else if (type == "NBD")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
-            model <- glm.nb(.formula, .estimation.data, weights = weights, ...)
+            model <- InterceptExceptions(
+                glm.nb(.formula, .estimation.data, weights = weights, subset = non.outlier.data_GQ9KqD7YOf, ...),
+                warning.handler = function(w) {
+                    if (w$message == "iteration limit reached")
+                        warning("Model may not have converged. If the dispersion parameter from the Detail",
+                                " output is large, a Poisson model may be appropriate.")
+                    else
+                        warning(w$message)
+                })
         }
         else
         {
             .design <- WeightedSurveyDesign(.estimation.data, .weights)
             model <- switch(type,
-                            "Binary Logit" = svyglm(.formula, .design, family = quasibinomial()),
-                            "Poisson" = svyglm(.formula, .design, family = poisson()),
-                            "Quasi-Poisson" = svyglm(.formula, .design, family = quasipoisson()))
+                            "Binary Logit" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
+                                                    family = quasibinomial()),
+                            "Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
+                                               family = poisson()),
+                            "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
+                                                     family = quasipoisson()))
             assign(".design", .design, envir=.GlobalEnv)
             aic <- extractAIC(model)
             remove(".design", envir=.GlobalEnv)
@@ -742,9 +1021,7 @@ FitRegression <- function(.formula, .estimation.data, subset, .weights, type, ro
             model$aic <- aic[2]
         }
     }
-    result <- list(original = model, formula = .formula, design = .design, weights = .weights, robust.se = robust.se)
-    class(result) <- "FitRegression"
-    result
+    return(list(model = model, formula = .formula, design = .design, estimation.data = .estimation.data))
 }
 
 
@@ -895,19 +1172,72 @@ tryError <- function(x)
 aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
-        alias.vars <- if (!is.null(aliased.labels)) aliased.labels[aliased] else names(aliased)[aliased]
-        warning("The following variable(s) are colinear with other variables and no",
-                " coefficients have been estimated: ", paste(alias.vars, collapse = ", "))
+        names.aliased <- names(aliased)
+        dummy.aliased <- aliased[grepDummyVars(names.aliased)]
+        alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
+        regular.aliased <- aliased[!grepDummyVars(names.aliased)]
+        regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
+                                  " coefficients have been estimated: ",
+                                  paste(alias.vars[regular.aliased], collapse = ", "))
+        dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
+
+        # If no dummy variables in the aliasing, report all aliased.
+        # Otherwise only report the dummy variable scenario if a regular variable is also aliased
+        # i.e. silently have aliased dummy variables.
+        if (any(regular.aliased))
+            warning(regular.warning)
+        if (any(dummy.aliased))
+        {
+            dummy.aliased.variables <- extractDummyNames(names.aliased[dummy.aliased])
+            dummy.warning <- paste0("The following dummy variable adjustment variable(s) are colinear ",
+                                    "with other variables and no dummy variables have been estimated: ",
+                                    alias.vars[dummy.aliased],
+                                    "A different missing value technique might be more suitable.")
+            warning(regular.warning)
+        }
     }
 }
 
-fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
+#' @importFrom stats model.frame model.matrix model.response
+fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data_GQ9KqD7YOf, ...)
 {
     model <- InterceptExceptions(
         if (is.null(weights))
-            polr(.formula, .estimation.data, Hess = TRUE, ...)
+            polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, ...)
         else
-            polr(.formula, .estimation.data, weights = weights, Hess = TRUE, ...),
+        {
+            # svyolr (currently 21/01/2020) doesn't have a subset argument
+            # Instead manually filter the data using the provided non.outlier.data column
+            .estimation.data <- .estimation.data[, -which(colnames(.estimation.data) == "non.outlier.data_GQ9KqD7YOf")]
+            .estimation.data <- .estimation.data[non.outlier.data_GQ9KqD7YOf, ]
+            .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data_GQ9KqD7YOf])
+            out <- svyolr(.formula, .design, ...)
+            out$df <- out$edf
+            # Compute the dAIC
+            wt <- weights(.design)
+            out$deltabar <- mean(diag(out$Hessian %*% out$var))/mean(wt)
+            out$aic <- out$deviance + 2 * out$deltabar * out$df
+            # Need this model element to handle the code in the predict.Regression method
+            out$model <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            # Need linear predictor element to compute the surrogate residuals.
+            Terms <- attr(out$model, "terms")
+            x <- model.matrix(Terms, out$model)
+            # Remove intercept if if exists
+            if  (length(xint <- match("(Intercept)", colnames(x), nomatch = 0)) > 0)
+                x <- x[, -xint, drop = FALSE]
+            # Remove any colinear variables that were dropped by polr/svyolr
+            if (any(keep <- colnames(x) %in% names(out$coefficients)))
+                x <- x[, keep, drop = FALSE]
+            out$lp <- drop(x %*% out$coefficients)
+            # Give it the polr class to use the predict.polr method while using summary.svyolr method
+            # Also allows the sure resids method to compute the mean via the polr method to get the linear
+            # predictor.
+            class(out) <- c("svyolr", "polr")
+            # Retain the design and formula for later use
+            out$formula <- .formula
+            out$design <- .design
+            out
+        },
         warning.handler = function(w) {
             if (w$message == "design appears to be rank-deficient, so dropping some coefs")
                 warning("Some variable(s) are colinear with other variables ",
@@ -916,10 +1246,16 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, ...)
                 warning(w$message)
         },
         error.handler = function(e) {
-            message(e)
-            dput(.formula, dput(.estimation.data))
-            stop("An error occurred during model fitting. ",
-                 "Please check your input data for unusual values: ", e$message)
+            m <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            y <- model.response(m)
+            unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
+            if (unobserved.levels != "")
+                stop("Outcome variable has level(s): ", unobserved.levels, " that are not observed in the data. ",
+                     "If possible, this issue could be solved by merging the categories of the outcome variable ",
+                     "such that all categories appear in all sub-groups.")
+            else
+                stop("An error occurred during model fitting. ",
+                     "Please check your input data for unusual values: ", e$message)
         })
 }
 
@@ -935,7 +1271,7 @@ setChartData <- function(result, output)
                       dt
                   }
                   else if (output %in% c("Relative Importance Analysis",
-                                         "Shapley regression"))
+                                         "Shapley Regression"))
                   {
                       importance <- result$importance
                       df <- data.frame(importance$importance,
@@ -977,5 +1313,452 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
         warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
                 "These variable(s) have been removed from the analysis: ", missing.variable.names, ".")
     }
-    return(list(data = data, formula = formula, formula.with.interaction = formula.with.interaction))
+    return(list(data = data, formula = formula, input.formula = input.formula,
+                formula.with.interaction = formula.with.interaction))
 }
+
+# Helper function to check user has input a valid value.
+checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimation.data)
+{
+    if ((remove.outliers <- (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)) && outlier.prop.to.remove >= 0.5)
+        stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
+             FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
+             " to a lower setting and re-run the analysis.")
+    n <- nrow(estimation.data)
+    p <- ncol(estimation.data)
+    outlier.prop.to.remove <- if (is.null(outlier.prop.to.remove)) 0 else outlier.prop.to.remove
+    if (floor(n * (1 - outlier.prop.to.remove)) < p + 1 && outlier.prop.to.remove > 0)
+        stop(warningSampleSizeTooSmall(), " If ", outlier.prop.to.remove * 100, "% of the outlying data is ",
+             "removed there will be less data than parameters to predict in the model which is not possible. ",
+             " Consider a simpler model with less parameters or change the automated outlier removal setting ",
+             " to a smaller value.")
+    remove.outliers
+}
+
+# Identifies the outliers and refits the model
+#' @importFrom flipU InterceptExceptions
+refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
+                                      type, robust.se, outlier.prop.to.remove, seed, ...)
+{
+    non.outlier.data <- findNonOutlierObservations(.estimation.data,
+                                                   outlier.prop.to.remove,
+                                                   model,
+                                                   type,
+                                                   .weights,
+                                                   seed)
+    .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
+    # svyolr is fragile and errors if ordered response values have empty levels since the
+    # Hessian is singular. Removing data with automated outlier removal can trigger this.
+    if (type == "Ordered Logit" && !is.null(.weights))
+    {
+        fitted.model <- InterceptExceptions(
+            fitModel(formula, .estimation.data, .weights = .weights,
+                     type, robust.se, subset = non.outlier.data, ...),
+            error.handler = function(e) {
+                if (grepl("Outcome variable has level", e$message))
+                {
+                    missing.levels <- regmatches(e$message,
+                                                 regexpr("(?<=level\\(s\\): )(.*?)(?= that)", e$message, perl = TRUE))
+                    stop("Removing outliers has removed all the observations in the outcome variable with level(s): ",
+                         missing.levels,  ". If possible, this issue could be solved by merging the categories of the",
+                         " outcome variable or reducing the Automated Outlier removal setting.")
+                }
+                else
+                    stop(e$message)
+            }
+        )
+    } else
+        fitted.model <- fitModel(formula, .estimation.data, .weights = .weights,
+                                 type, robust.se, subset = non.outlier.data, ...)
+    return(list(model = fitted.model$model, .estimation.data = .estimation.data,
+                design = fitted.model$design, non.outlier.data = non.outlier.data))
+}
+
+# Returns a logical vector of observations that are not deemed outlier observations
+#' @importFrom sure resids
+#' @importFrom stats rstudent
+findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type, weights, seed)
+{
+    n.model <- nrow(data)
+    # In the Ordered Logit and Binary Logit cases use the Surrogate residuals
+    # for both the weighted and non-weighted models
+    if (type %in% c("Ordered Logit", "Binary Logit"))
+    {
+        set.seed(seed)
+        if (type == "Ordered Logit")
+        {
+            if (!is.null(weights))
+            {
+                assign(".design", model$design, envir=.GlobalEnv)
+                assign(".formula", model$formula, envir=.GlobalEnv)
+                model.residuals <- resids(model, method = "latent")
+                remove(".design", envir=.GlobalEnv)
+                remove(".formula", envir=.GlobalEnv)
+            } else
+                model.residuals <- resids(model, method = "latent")
+        }
+        else
+            model.residuals <- resids(model, method = "jitter", type = "response")
+    }
+    else
+    {
+        # use standardised deviance residuals in unweighted cases.
+        # otherwise use the Pearson sampling re-weighted residuals.
+        # These are computed in residuals.svyglm except in the NBD case.
+        # NBD kept as Pearson for consistency.
+        if (is.null(weights))
+        {
+            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
+                model.residuals <- rstudent(model, type = "deviance")
+            else
+                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
+        } else {
+            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
+                model.residuals <- residuals(model, type = "pearson")
+            else
+                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
+        }
+    }
+    bound <- ceiling(n.model * (1 - outlier.prop.to.remove))
+    valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
+    return(valid.data.indices)
+}
+
+removeDataReductionColumns <- function(data)
+{
+    # Remove the Data Reduction from the Response
+    # Remove the SUM column from the Number Multi
+    # PickAnyMulti doesn't have a DataReduction here.
+    y.question.type <- attr(data[["Y"]], "questiontype")
+    if (y.question.type %in% c("NumberMulti", "PickAny") && any(c("NET", "SUM") %in% names(data[["Y"]])))
+        data[["Y"]][ncol(data[["Y"]])] <- NULL
+    # Clean the DataReduction for the predictor variables
+    x.question.type <- attr(data[["X"]], "questiontype")
+    if (x.question.type %in% c("PickAnyGrid", "NumberGrid"))
+    {
+        data.reduction.string <- if(x.question.type == "PickAnyGrid") "NET" else "SUM"
+        grep.pattern <- paste0("(^", data.reduction.string, ", )|(, ", data.reduction.string,"$)")
+        data.reduction.columns <- grepl(grep.pattern, names(data$X))
+        data[["X"]][data.reduction.columns] <- NULL
+    }
+    data
+}
+
+# Checks to be coded
+checkDataFeasibleForStacking <- function(data)
+{
+    checkListStructure(data)
+    checkNumberObservations(data)
+    validMultiOutcome(data[["Y"]])
+    validGridPredictor(data[["X"]])
+}
+
+checkListStructure <- function(data)
+{
+    named.elements <- c("X", "Y") %in% names(data)
+    variable.types <- paste0(" The outcome variable should be a Binary - Multi, Nominal - Multi, ",
+                             "Ordinal - Multi or Numeric - Multi and",
+                             " The predictor variable should be a Binary - Grid or Numeric - Grid.")
+    if ((is.null(data) || !(is.list(data) && all(named.elements))))
+        stop("'unstacked.data' needs to be a list with two elements, ",
+             "'Y' containing the outcome variables and 'X' containing the predictor variables. ",
+             "Outcome and predictor variables need to be variable sets that can be stacked.", variable.types)
+}
+
+validateDataForStacking <- function(data)
+{
+    outcome.names <- getMultiOutcomeNames(data[["Y"]])
+    # Validate the Grid predictors, transpose if necessary and error if no matches between X and Y
+    data[["X"]] <- validateNamesInGrid(data)
+    names.in.predictor.grid <- getGridNames(data[["X"]])
+
+    unstacked.names <- names.in.predictor.grid[[2]]
+    predictor.names <- unique(unstacked.names)
+    # Remove any outcome variables that aren't seen in predictors and warn
+    data[["Y"]] <- validateOutcomeVariables(data, outcome.names, predictor.names)
+    outcome.names <- getMultiOutcomeNames(data[["Y"]])
+    # Remove any predictor variables that aren't seen in outcome variables and warn
+    data[["X"]] <- validatePredictorVariables(data, outcome.names, predictor.names, unstacked.names)
+    names.in.predictor.grid <- getGridNames(data[["X"]])
+    unstacked.names <- names.in.predictor.grid[[2]]
+    predictor.names <- unique(unstacked.names)
+    # Ensure columns align before stacking
+    data[["Y"]] <- checkStackAlignment(data, outcome.names, predictor.names)
+    return(list(data = data, stacks = ncol(data[["Y"]])))
+}
+
+# The stacking requires names of the grid data.frame to be in the form predictor, outcome (comma separated)
+validateNamesInGrid <- function(data)
+{
+    outcome.names <- names(data[["Y"]])
+    outcome.variable.set.name <- sQuote(attr(data[["Y"]], "question"))
+    # Determine which dimension labels in the grid match the outcome.names
+    # getGridNames extracts a list with two elements, the "a, b" parts of the grid names
+    grid.names <- getGridNames(data[["X"]])
+    # Check if any labels match
+    matches <- lapply(grid.names, function(x) outcome.names %in% x)
+    any.matches <- sapply(matches, any)
+    # No labels match at all, error since there is nothing to align for stacking
+    if (all(!any.matches))
+        stop("It is not possible to stack these variables since none of the outcome variable names ",
+             "match the variable names in the predictor variables. The outcome variable set ",
+             outcome.variable.set.name, " has names: ", paste0(sQuote(outcome.names), collapse = ", "),
+             " which don't appear in the names of the grid predictor variable set structure")
+    # Check if is a clear match (no clash of predictor names with outcome names)
+    # If necessary, 'transpose' the grid labels, i.e. outcome, predictor labels changed to predictor, outcome
+    dimensions.matching <- sum(any.matches)
+    if (dimensions.matching == 1 && any.matches[1])
+        names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
+    # In ambiguous case, if one dimension seems to match perfectly then pick that one.
+    if (dimensions.matching == 2)
+    {
+        perfect.matches <- sapply(matches, all)
+        matched.outcomes <- outcome.names[unique(unlist(sapply(matches, which)))]
+        ambiguous.message <- paste0("The outcome variable ", outcome.variable.set.name, " has names: ",
+                                    paste0(sQuote(matched.outcomes), collapse = ", "), " and these names appear ",
+                                    "in both dimensions of the grid predictor input variable set. Please rename the ",
+                                    "names in eithe the outcome variable set or grid predictor variable set to ",
+                                    "stack the variables and proceed.")
+        if (!any(perfect.matches))
+            stop("Ambiguous names in the grid predictors need to be reconciled before stacking can occur. ",
+                 ambiguous.message)
+        else
+            warning("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
+                    ambiguous.message)
+        if (perfect.matches[1])
+            names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
+    }
+    return(data[["X"]])
+}
+
+validMultiOutcome <- function(data)
+{
+    allowed.types <- c("PickAny", "PickOneMulti", "NumberMulti")
+    if (is.null(attr(data, "questiontype")))
+        stop("Outcome variable needs to have the question type attribute to be processed for stacking")
+    if (!attr(data, "questiontype") %in% allowed.types)
+    {
+        allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
+        stop("Outcome variable to be stacked needs to be either a ", allowed.types, " question type.",
+             " Supplied outcome variable is ", sQuote(attr(data, "questiontype")))
+    }
+
+}
+
+checkNumberObservations <- function(data)
+{
+    if (!diff(nrows <- sapply(data, NROW)) == 0)
+    {
+        y.label <- sQuote(attr(data[["Y"]], "question"))
+        x.label <- sQuote(attr(data[["X"]], "question"))
+        stop("Size of variables doesn't agree, the provided outcome variables ", y.label,
+             " have ", nrows[1], " observations while the provided predictor variables ", x.label, " have ",
+             nrows[2], " observations. Please input variables that have the same size.")
+    }
+}
+
+validGridPredictor <- function(data)
+{
+    allowed.types <- c("PickAnyGrid", "NumberGrid")
+    if (is.null(attr(data, "questiontype")))
+        stop("Grid Predictor variable set needs to have the question type attribute to be processed for stacking")
+    if (!attr(data, "questiontype") %in% allowed.types)
+    {
+        allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
+        stop("Grid Predictor variable set to be stacked needs to be either a ", allowed.types, " question type. ",
+             "Supplied variable is ", sQuote(attr(data, "questiontype")))
+    }
+}
+
+validateOutcomeVariables <- function(data, outcome.names, predictor.names)
+{
+    if (any(missing.stack <- !outcome.names %in% predictor.names))
+    {
+        data[["Y"]][missing.stack] <- NULL
+        outcome.variable.set.name <- attr(data[["Y"]], "question")
+        predictor.variable.set.name <- attr(data[["X"]], "question")
+        removed.outcome.variables <- paste0(sQuote(outcome.names[missing.stack]), collapse = ", ")
+        warning("The variable(s): ", removed.outcome.variables, " have been removed from the Outcome variable set ",
+                sQuote(outcome.variable.set.name), " since these variables don't appear in the predictor variable set ",
+                sQuote(predictor.variable.set.name))
+    }
+    return(data[["Y"]])
+}
+
+validatePredictorVariables <- function(data, outcome.names, predictor.names, unstacked.names)
+{
+    if (any(unstackable.predictors <- !predictor.names %in% outcome.names))
+    {
+        unstackable.predictor.names <- predictor.names[unstackable.predictors]
+        data[["X"]][unstacked.names %in% unstackable.predictor.names] <- NULL
+        removed.predictor.variables <- paste0(sQuote(unstackable.predictor.names), collapse = ", ")
+        outcome.variable.set.name <- attr(data[["Y"]], "question")
+        predictor.variable.set.name <- attr(data[["X"]], "question")
+        warning("The variable(s): ", removed.predictor.variables, " have been removed from the Predictor variable set ",
+                sQuote(predictor.variable.set.name), " since these variables don't appear in the outcome variable set ",
+                sQuote(outcome.variable.set.name))
+    }
+    return(data[["X"]])
+}
+
+#' @importFrom flipU CopyAttributes
+checkStackAlignment <- function(data, outcome.names, predictor.names)
+{
+    if (!identical(outcome.names, predictor.names))
+    {
+        new.column.order <- match(outcome.names, predictor.names)
+        tmp <- data[["Y"]]
+        data[["Y"]] <- data[["Y"]][new.column.order]
+        data[["Y"]] <- CopyAttributes(data[["Y"]], tmp)
+    }
+    return(data[["Y"]])
+}
+
+stackData <- function(data)
+{
+    stacked.outcome <- stackOutcome(data[["Y"]])
+    stacked.predictors <- stackPredictors(data[["X"]], names(data[["Y"]]))
+    stacked.data <- cbind(stacked.outcome, stacked.predictors)
+    return(stacked.data)
+}
+
+#' @importFrom stats reshape
+stackPredictors <- function(data, outcome.names)
+{
+    question.label <- attr(data, "question")
+    stacked.data <- reshape(data, varying = names(data), sep = ", ",
+                            times = outcome.names, direction = "long")
+    stacked.data <- removeReshapingHelperVariables(stacked.data)
+    stacked.data <- addLabelAttribute(stacked.data, label = question.label)
+    names(stacked.data) <- paste0("X", 1:ncol(stacked.data))
+    stacked.data
+}
+
+#' @importFrom stats reshape
+stackOutcome <- function(data)
+{
+    stacked.data <- reshape(data, varying = names(data), v.names = attr(data, "question"),
+                            times = names(data), direction = "long")
+    stacked.data <- removeReshapingHelperVariables(stacked.data)
+    stacked.data <- addLabelAttribute(stacked.data)
+    names(stacked.data) <- "Y"
+    stacked.data
+}
+
+addLabelAttribute <- function(data, label = NULL)
+{
+    variable.names <- colnames(data)
+    if (!is.null(label))
+        variable.names <- paste0(label, ": ", variable.names)
+    for (i in seq_along(data))
+        attr(data[[i]], "label") <- variable.names[i]
+    data
+}
+
+removeReshapingHelperVariables <- function(data)
+{
+    data[["id"]] <- NULL
+    data[["time"]] <- NULL
+    data
+}
+
+# Return the name of the predictors and their associated matched response values
+# Usually outcome names are given as the second comma separate value
+# and preditor names would be the first (Displayr and Q convention)
+# However, this is not required since it would be transposed in validateNamesInGrid
+getGridNames <- function(data)
+{
+    split.names <- strsplit(names(data), ", ")
+    outcome.names <- sapply(split.names, "[", 2)
+    predictor.names <- sapply(split.names, "[", 1)
+    list(predictor.names, outcome.names)
+}
+
+getMultiOutcomeNames <- function(data) names(data)
+
+updateStackedFormula <- function(data, formula)
+{
+    new.formula <- as.formula(paste0("Y ~ ", paste0("X", 1:(ncol(data) - 1), collapse = " + ")),
+                              env = environment(formula))
+    return(new.formula)
+}
+
+# Updates a formula and optionally a formula with interaction
+# It checks if the formula has any dummy variables in the data and either adds or removes
+# predictors for those dummy variables in the formula
+# The control to add or remove is via the update.string argument, " + " adds to the formulae
+# while " - " removes dummy variables from the formulae
+updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
+                                        update.string = " + ", warn = TRUE)
+{
+    if (!any(dummy.vars <- grepDummyVars(names(data))))
+    {
+        if (warn)
+            warning("'Dummy variable adjustment' selected to handle missing data ",
+                    "but no missing values appear in the predictors")
+        return(list(formula = formula, formula.with.interaction = formula.with.interaction))
+    }
+
+    dummy.var <- paste0(names(data)[dummy.vars], collapse = update.string)
+    new.formula <- update(terms(formula, data = data), as.formula(paste0(". ~ .", update.string, dummy.var)))
+    if (!is.null(formula.with.interaction))
+        new.formula.with.interaction <- update(terms(formula.with.interaction, data = data),
+                                               as.formula(paste0(". ~ .", update.string, dummy.var)))
+    else
+        new.formula.with.interaction <- NULL
+    return(list(formula = new.formula, formula.with.interaction = new.formula.with.interaction))
+}
+
+grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
+
+#' @importFrom stats terms.formula
+adjustDataMissingDummy <- function(data, model, estimation.data, interaction.name = "NULL")
+{
+    model.formula <- formula(model)
+    formula.terms <- terms(model.formula)
+    outcome.name <- as.character(attr(terms(model.formula), "variables"))[2]
+    outcome.variable <- data[[outcome.name]]
+    design.data <- data[-which(names(data) == outcome.name)]
+    if (!any(sapply(design.data, function(x) any(is.na(x)))))
+        return(estimation.data)
+    # Compute means
+    predictor.names <- attr(terms(model.formula), "term.labels")
+    data.for.means <- data[which(names(data) %in% predictor.names)]
+    means.from.data <- lapply(data.for.means, function(x) {
+        if (is.numeric(x)) mean(x, na.rm = TRUE) else NULL})
+    missing.replacements <- extractDummyAdjustedCoefs(model$coefficients, means.from.data)
+    missing.numeric <- sapply(names(missing.replacements), function(x) is.numeric(design.data[[x]]))
+    for (pred.name in names(missing.numeric)[which(missing.numeric)])
+    {
+        x.col <- design.data[[pred.name]]
+        x.col[is.na(x.col)] <- missing.replacements[[pred.name]]
+        design.data[[pred.name]] <- x.col
+    }
+    new.data <- cbind.data.frame(data[outcome.name], design.data, deparse.level = 0)
+    # Check if any removed cases in .estimation.data
+    if (!all(cases.to.include <- row.names(data) %in% row.names(estimation.data)))
+        new.data <- new.data[cases.to.include, ]
+    # Add outlier removal column
+    new.data[["non.outlier.data_GQ9KqD7YOf"]] <- estimation.data[["non.outlier.data_GQ9KqD7YOf"]]
+    new.data <- CopyAttributes(new.data, data)
+    return(new.data)
+}
+
+extractDummyAdjustedCoefs <- function(coefficients, computed.means)
+{
+    dummy.variables <- grepDummyVars(names(coefficients))
+    dummy.variable.names <- extractDummyNames(names(coefficients)[dummy.variables])
+    standard.variables <- grepl(paste0("^", dummy.variable.names, "$", collapse = "|"), names(coefficients))
+    standard.variable.names <- names(coefficients)[standard.variables]
+    slope.values <- as.list(coefficients[standard.variables])
+    names(slope.values) <- standard.variable.names
+    dummy.values <- as.list(coefficients[dummy.variables])
+    names(dummy.values) <- dummy.variable.names
+    adjusted.vals <- lapply(dummy.variable.names, function(x) {
+        computed.means[[x]] + dummy.values[[x]]/slope.values[[x]]})
+    names(adjusted.vals) <- dummy.variable.names
+    return(adjusted.vals)
+}
+
+extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
+    sapply(strsplit(string, dummy.pattern), "[", 1)

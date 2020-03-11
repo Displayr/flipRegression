@@ -2,10 +2,10 @@
 % Please edit documentation in R/regression.R
 \name{Regression}
 \alias{Regression}
-\title{\code{Regression}}
+\title{Generalized Regression Outputs}
 \usage{
 Regression(
-  formula,
+  formula = as.formula(NULL),
   data = NULL,
   subset = NULL,
   weights = NULL,
@@ -29,6 +29,9 @@ Regression(
   interaction.formula = NULL,
   recursive.call = FALSE,
   effects.format = list(max.label = 10),
+  outlier.prop.to.remove = NULL,
+  stacked.data.check = FALSE,
+  unstacked.data = NULL,
   ...
 )
 }
@@ -46,14 +49,36 @@ may not be an expression. \code{subset} may not}
 \item{weights}{An optional vector of sampling weights, or, the name or, the
 name of a variable in \code{data}. It may not be an expression.}
 
-\item{missing}{How missing data is to be treated in the regression. Options:
-\code{"Error if missing data"},
-\code{"Exclude cases with missing data"},
-\code{"Use partial data (pairwise correlations)"},
-\code{"Imputation (replace missing values with estimates)"}, and
-\code{"Multiple imputation"}.}
+\item{missing}{How missing data is to be treated in the regression. Supplied parameter needs to be one
+of the following strings:
+\itemize{
+\item \code{"Error if missing data"}: Throws an error if any case has a missing value,
+\item \code{"Exclude cases with missing data"}: Filters out cases that have any missing values,
+\item \code{"Use partial data (pairwise correlations)"}: This method is only valid for \code{type = "Linear"}
+   and it computes the pairwise correlations using all the available data. Given the pairwise computed
+   correlation matrix, a linear regression model is computed.
+\item \code{"Dummy variable adjustment"}: This method assumes that the missing data is structurally missing and
+   that a predictor could be impossible for some cases and hence coded as missing. E.g. if a non-married
+   person is asked to rate the quality of their marriage (or a person with no pets is asked the age of their
+   pet). A model with a structure to allow this is used whereby the missing predictor is removed and an
+   intercept adjustment is performed. This is implemented by adding a dummy variable for each predictor that
+   has at least one missing value. The dummy indicator variables take the value zero if the original predictor
+   has a non-missing value and the value one if the original predictor is missing. The original missing value
+   is then recoded to a new value. In particular, missing numeric predictors are recoded to be the mean of the
+   predictor (excluding the missing data) and factors are recoded to have their missing values recoded as the
+   reference level of the factor.
+\item \code{"Imputation (replace missing values with estimates)"}: Missing values in the data are imputed via the
+   use of the predictive mean matching method implemented in \code{\link[mice]{mice}}. Missing values in the
+   outcome variable are excluded from the analysis after the imputation has been performed. If the
+   \code{\link[mice]{mice}} method fails, hot-decking is used via the \code{\link[hot.deck]{hot.deck}} package.
+\item \code{"Multiple imputation"}: Implements the imputation method described above with option
+    \code{"Imputation (replace missing values with estimates)"}. However, repeated imputation data is computed
+    \code{m} times (see parameter below). The repeated set of imputed datasets are used to create \code{m} sets
+    of separate regression coefficients that are then combined to produce a single set of estimated regression
+    coefficients.
+}}
 
-\item{type}{Defaults to \code{"linear"}. Other types are: \code{"Poisson"},
+\item{type}{Defaults to \code{"Linear"}. Other types are: \code{"Poisson"},
 \code{"Quasi-Poisson"}, \code{"Binary Logit"}, \code{"NBD"},
 \code{"Ordered Logit"}, and \code{"Multinomial Logit"}}
 
@@ -71,14 +96,14 @@ summary and model statistics. It is the default.
 \code{"ANOVA"} returns an ANOVA table.
 \code{"Detail"} returns a more traditional R output.
 \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
-\code{"Shapley regression"} returns a table with Shapley Importance scores.
+\code{"Shapley Regression"} returns a table with Shapley Importance scores.
 \code{"Effects Plot"} returns the effects plot per predictor.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}
 
 \item{m}{The number of imputed samples, if using multiple imputation.}
 
-\item{seed}{The random number seed used in imputation.}
+\item{seed}{The random number seed used in imputation and residual computations.}
 
 \item{statistical.assumptions}{A Statistical Assumptions object.}
 
@@ -116,37 +141,88 @@ See \code{\link{contrasts}} for more information.}
 \item{effects.format}{A list of items \code{max.label} (the maximum length of a factor label on the x-axis)
 and \code{y.title} (the title of the y-axis, defaults to outcome label).}
 
-\item{...}{Additional argments to be past to  \code{\link{lm}} or, if the
-data is weighted,  \code{\link[survey]{svyglm}}.}
+\item{outlier.prop.to.remove}{A single numeric value that determines the percentage of data points to remove from the
+analysis. The data points removed correspond to those in the proportion with the largest residuals.
+A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
+denote that a percentage between none and 50\% of the data points are removed.}
+
+\item{stacked.data.check}{Logical value to determine if the Regression should be the data and formula based off
+the \code{unstacked.data} argument by stacking the input and creating a formula based off attributes and provided
+labels in the data. More details are given in the argument details for \code{unstacked.data}}
+
+\item{unstacked.data}{A list with two elements that provide the Outcome and Predictors respectively for data that
+needs to be stacked. In particular, this is designed to work with input that is created with Q or Displayr which
+creates \code{data.frame}s with a particular structure. In particular, the list has two elements, \itemize{
+\item \code{Y} A \code{data.frame} with \code{m} columns that represent the \code{m} variables to be stacked.
+This \code{data.frame} can also contain an optional 'question' attribute to denote the overall name of this
+set variable
+\item \code{X} A \code{data.frame} where each column represents a column of a design matrix relevant to one of the
+\code{m} variables given in element \code{Y} above. So if the overall regression model has \code{p} predictors.
+Then this \code{data.frame} should contain \code{m * p} columns. The naming structure each column is comma
+separated of the form 'predictor, outcome' where 'predictor' denotes the predictor name in the regression design
+matrix and 'outcome' denotes the name of the variable in element \code{Y}. This format is required to ensure that
+the columns are appropriately matched and stacked. The function also accepts column names of the reverse order
+with 'outcome, predictor', so long as there isn't any ambiguity.}}
+
+\item{...}{Additional argments to be passed to  \code{\link{lm}} or, if the
+data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.}
 }
 \description{
-Generalized Regression.
+Computes output for seven different regression types.
+Those being linear, binary logistic, ordered logistic, binomial, poisson, quasi-poisson and
+multinomial. Output includes general coefficient estimates and importance analysis estimates
+with possibilities for handling missing data and interaction terms.
 }
 \details{
-"Imputation (replace missing values with estimates)". All selected
+In the case of Ordered Logistic regression, this function computes a proporional odds model using
+ the cumulative link (logistic). In the case of no weights, the \code{\link[MASS]{polr}} function is used.
+ In the case of a weighted regresion, the \code{\link[survey]{svyolr}} function is used.
+
+ "Imputation (replace missing values with estimates)". All selected
  outcome and predictor variables are included in the imputation, along with
  all \code{auxiliary.data}, excluding cases that are excluded via subset or
  have invalid weights, but including cases with missing values of the outcome variable.
  Then, cases with missing values in the outcome variable are excluded from
  the analysis (von Hippel 2007). See \code{\link[flipImputation]{Imputation}}.
+
+ Outlier removal is performed by computing residuals for the regression model and removing the largest residuals
+ from the dataset (outlier removal). The model is then refit on the reduced dataset after outliers are removed.
+ The residuals used in this process depend on the regression type. For a regression with a numeric response
+ (\code{type} is "Linear", "Poisson", "Quasi-Poisson" or  "NBD") in an unweighted regression, the studentised
+ deviance residuals are used (see Davison and Snell (1991) and \code{\link[stats]{rstudent}}). In the weighted case
+ of the numeric response, the Pearson residuals are used (see Davison and Snell (1991) and
+ \code{\link[stats]{residuals.glm}}). In the case of Binary and Ordinal data for both the unweighted and weighted
+ regression cases, the Surrogate residuals (SURE) are used (via the implementation in Greenwell, McCarthy and
+ Boehmke (2017) with their sure R package). This was based on the recent theoretical paper in Liu and Zhang (2018).
+ Currently "Multinomial Logit" is unsupported for automated outlier removal. Possible surrogate residual to be used
+ in a future version.
 }
 \references{
-von Hippel, Paul T. (2007). "Regression With Missing Y's: An
-  Improved Strategy for Analyzing Multiply Imputed Data." Sociological
-  Methodology 37:83-117.
+Davison, A. C. and Snell, E. J. (1991) Residuals and diagnostics. In: Statistical Theory and Modelling.
+  In Honour of Sir David Cox, FRS, eds. Hinkley, D. V., Reid, N. and Snell, E. J., Chapman & Hall.
 
-  White, H. (1980), "A heteroskedastic-consistent
-  covariance matrix estimator and a direct test of heteroskedasticity".
-  Econometrica, 48, 817-838.
-
-  Long, J. S. and Ervin, L. H. (2000). "Using
-  heteroscedasticity consistent standard errors in the linear regression
-  model". The American Statistician, 54(3): 217-224.
-
-  Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight",
-  Multivariate Behavioral Research, 35:1-19.
+  Greenwell, B., McCarthy, A. and Boehmke, B. (2017). sure: Surrogate Residuals for Ordinal and General
+  Regression Models. R package version 0.2.0. https://CRAN.R-project.org/package=sure
 
   Gromping, U. (2007). "Estimators of Relative Importance in Linear
   Regression Based on Variance Decomposition", The American Statistician,
   61, 139-147.
+
+  von Hippel, Paul T. 2007. "Regression With Missing Y's: An
+  Improved Strategy for Analyzing Multiply Imputed Data." Sociological
+  Methodology 37:83-117.
+
+  Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight",
+  Multivariate Behavioral Research, 35:1-19.
+
+  Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
+  standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
+
+  Lui, D. and Zhang, H. (2018). Residuals and Diagnostics for Ordinal Regression Models: A Surrogate Approach.
+  Journal of the American Statistical Association, 113:522, 845-854.
+
+  Lumley, T. (2004) Analysis of complex survey samples. Journal of Statistical Software 9(1): 1-19
+
+  White, H. (1980), A heteroskedastic-consistent  covariance matrix estimator
+  and a direct test of heteroskedasticity. Econometrica, 48, 817-838.
 }
