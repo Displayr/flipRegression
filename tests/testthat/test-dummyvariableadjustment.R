@@ -71,11 +71,11 @@ test_that("Coefficient estimates are the same ", {
 })
 
 test_that("Robust SE compatible with Dummy variable adjustment", {
-
-    expect_error(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
-                                                       missing = "Dummy variable adjustment",
-                                                       robust.se = TRUE),
-                 NA)
+    ill.conditioned.message <- "There is a technical problem with the parameter variance-covariance matrix"
+    expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
+                                                         missing = "Dummy variable adjustment",
+                                                         robust.se = TRUE),
+                   NA)
     expect_warning(print(robust.dummy.regression), "Unusual observations detected")
     # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
     missing.data <- data.frame(Y, X)
@@ -83,7 +83,7 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
     expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
-                   "There is a technical problem with the parameter variance-covariance matrix")
+                   ill.conditioned.message)
     expect_warning(print(robust.dummy.regression), "Unusual observations detected")
     # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
     # Expect issues with the variance-covariance matrix but it can still be computed.
@@ -93,7 +93,7 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
     expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
-                   "There is a technical problem with the parameter variance-covariance matrix")
+                   ill.conditioned.message)
     expect_warning(print(robust.dummy.regression), "Unusual observations detected")
     missing.data <- data.frame(Y, X)
     missing.data$X1[1] <- NA
@@ -101,8 +101,9 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
     expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
-                   "There is a technical problem with the parameter variance-covariance matrix")
+                   ill.conditioned.message)
     expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    # No warning when data is fine.
     missing.data <- data.frame(Y, X)
     missing.data$X1[c(1, 3)] <- NA
     expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,

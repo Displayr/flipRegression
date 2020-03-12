@@ -1078,18 +1078,19 @@ vcov.Regression <- function(object, robust.se = FALSE, ...)
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
-        # hc3 rescales the estimate of variance with the influence
-        # residual.adjusted = r_i^2/(1 - h.ii)^2
-        # Details in Long and Ervin
-        # If any h.ii = 1, then NaN will result (division by zero)
-        # Fall back to the df adjusted estimator in that case (hc1).
-        if (any(hatvalues(object$original) == 1))
-            robust.se <- "hc1"
-        v <- hccm(object$original, type = robust.se)
+        # Catch the case where dummy variables cause singularities in the robust.se calculation.
+        hat.values <- hatvalues(object$original)
+        dummy.variables <- grepDummyVars(names(object$original$coefficients))
+        if (any(hat.values == 1) && any(dummy.variables) && !robust.se %in% c("hc0", "hc1"))
+        {
+            v <- dummyHccmAdjust(object$original, robust.se, hat.values)
+        } else
+            v <- hccm(object$original, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
 }
 
+#' @importFrom car hccm
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
@@ -1102,14 +1103,14 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
-        # hc3 rescales the estimate of variance with the influence
-        # residual.adjusted = r_i^2/(1 - h.ii)^2
-        # Details in Long and Ervin
-        # If any h.ii = 1, then NaN will result (division by zero)
-        # Fall back to the df adjusted estimator in that case (hc1).
-        if (any(hatvalues(fit.reg) == 1))
-            robust.se <- "hc1"
-        v <- hccm(fit.reg, type = robust.se)
+        # Catch the case where dummy variables cause singularities in the robust.se calculation.
+        hat.values <- hatvalues(fit.reg)
+        dummy.variables <- grepDummyVars(names(fit.reg$coefficients))
+        if (any(hat.values == 1) && any(dummy.variables) && !robust.se %in% c("hc0", "hc1"))
+        {
+            v <- dummyHccmAdjust(fit.reg, robust.se, hat.values)
+        } else
+            v <- hccm(fit.reg, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
 }
@@ -1766,3 +1767,30 @@ extractDummyAdjustedCoefs <- function(coefficients, computed.means)
 
 extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
     sapply(strsplit(string, dummy.pattern), "[", 1)
+
+# This function should only be called when
+# 1. Robust.se is requested and the method is not hc0 or hc1
+# 2. There are hat values at 1 (causing a singularity)
+# 3. The dummy variable adjustment has been used.
+# Arguments required are
+# 1. fit.reg: The original R regression object
+# 2. robust.se: The hc method string options are ("hc2", "hc3" or "hc4")
+# 3. h: the numeric hat values for all n observations.
+#' @importFrom stats df.residual model.matrix residuals
+dummyHccmAdjust <- function(fit.reg, robust.se, h)
+{
+    # Setup the calculation like a standard call to hccm
+    # Don't need to consider missing data since missing data has been removed earlier.
+    V <- summary(fit.reg)$cov.unscaled
+    X <- model.matrix(fit.reg)
+    n <- nrow(X)
+    p <- ncol(X)
+    factor <- switch(robust.se, hc0 = 1, hc1 = df.res/n, hc2 = 1 - h,
+                     hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
+    e <- residuals(fit.reg)
+    df.res <- df.residual(fit.reg)
+    # Replace the singularities with compuatable values.
+    # Using the the hc1 calculation for those cases.
+    factor[h == 1] <- df.res/n
+    V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+}
