@@ -94,7 +94,7 @@ test_that("Relative importance", {
 f4 <- (1:nrow(bank)) %% 4
 test_that("Robust SE", {
     #expect_error(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, robust.se = T))
-    expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = f4, data = bank, robust.se = T)), NA)
+    expect_error(Regression(Overall ~ Fees + Interest, interaction = f4, data = bank, robust.se = T), NA)
 })
 
 test_that("Coefficients", {

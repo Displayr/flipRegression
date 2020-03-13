@@ -1,7 +1,9 @@
 context("Dummy variable adjustment")
 
 # Simulate correlated predictors
-X <- MASS::mvrnorm(n = 200, mu = rep(0, 3), Sigma = matrix(c(1, 0.2, 0.3, 0.2, 1, 0.3, 0.2, 0.2, 1), ncol = 3))
+X <- MASS::mvrnorm(n = 200, mu = rep(0, 3), Sigma = matrix(c(1, 0.2, 0.3,
+                                                             0.2, 1, 0.2,
+                                                             0.3, 0.2, 1), ncol = 3))
 beta <- c(0.4, 0.3, 0.25)
 r2 <- 0.30
 
