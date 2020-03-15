@@ -1081,7 +1081,7 @@ vcov2 <- function(fit.reg, robust.se = FALSE)
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
-        # Catch the case where dummy variables cause singularities in the robust.se calculation.
+        # Catch the case where singularities in the robust.se calculation.
         hat.values <- hatvalues(fit.reg)
         if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
             v <- hccmAdjust(fit.reg, robust.se, hat.values)
@@ -1131,9 +1131,10 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
             v.diag <- diag(v)
             n.similar.to.diag <- abs(sweep(v, 1, v.diag, "/"))
             high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
+            # Adjust appropriate parts of diagonal if possible
             if (any(high.r))
                 diag(v)[high.r] <- v.diag[high.r] * 1.01
-            else
+            else # Otherwise give overall adjustment if no offending terms found.
                 diag(v) <- diag(v) * 1.01
             v
         }, silent = TRUE
@@ -1751,7 +1752,6 @@ extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
 # This function should only be called when
 # 1. Robust.se is requested and the method is not hc0 or hc1
 # 2. There are hat values at 1 (causing a singularity)
-# 3. The dummy variable adjustment has been used.
 # Arguments required are
 # 1. fit.reg: The original R regression object
 # 2. robust.se: The hc method string options are ("hc2", "hc3" or "hc4")
