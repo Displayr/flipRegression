@@ -1062,14 +1062,16 @@ nobs.Regression <- function(object, ...)
 #' 2000). This parameter is ignored if weights are applied (as weights already
 #' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 #' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @param ... Additional arguments.
 #' @importFrom car hccm
 #' @importFrom stats vcov
 #' @export
-vcov.Regression <- function(object, robust.se = FALSE)
-    vcov2(object$original, robust.se)
+vcov.Regression <- function(object, robust.se = FALSE, ...)
+    vcov2(object$original, robust.se, ...)
+
 
 #' @importFrom car hccm
-vcov2 <- function(fit.reg, robust.se = FALSE)
+vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
     {
@@ -1102,11 +1104,12 @@ vcov2 <- function(fit.reg, robust.se = FALSE)
 #' 2000). This parameter is ignored if weights are applied (as weights already
 #' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 #' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
+#' @param ... Additional arguments.
 #' @importFrom car hccm
 #' @importFrom stats vcov
 #' @export
-vcov.FitRegression <- function(object, robust.se = FALSE)
-    vcov.Regression(object, robust.se)
+vcov.FitRegression <- function(object, robust.se = FALSE, ...)
+    vcov.Regression(object, robust.se, ...)
 
 #' FixVarianceCovarianceMatrix
 #'
@@ -1761,13 +1764,11 @@ hccmAdjust <- function(fit.reg, robust.se, h)
 {
     # Setup the calculation like a standard call to hccm
     V <- summary(fit.reg)$cov.unscaled
-    e <- na.omit(residuals(fit.reg))
-    removed <- attr(e, "na.action")
+    e <- residuals(fit.reg)
     df.res <- df.residual(fit.reg)
     n <- length(e)
-    if (!is.null(removed)) h <- h[-removed]
     aliased <- is.na(coef(fit.reg))
-    X <- model.matrix(fit.reg)
+    X <- model.matrix(fit.reg)[, !aliased]
     p <- ncol(X)
     # Replace the singularities with compuatable values.
     # Using the the hc1 calculation for those cases.
