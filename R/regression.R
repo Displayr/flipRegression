@@ -1067,22 +1067,10 @@ nobs.Regression <- function(object, ...)
 #' @importFrom stats vcov
 #' @export
 vcov.Regression <- function(object, robust.se = FALSE, ...)
-{
-    if (robust.se == FALSE)
-    {
-        v <- vcov(object$original)
-        if(!issvyglm(object))
-            return(v)
-    }
-    else
-    {
-        if (robust.se == TRUE)
-            robust.se <- "hc3"
-        v <- hccm(object$original, type = robust.se)
-    }
-    FixVarianceCovarianceMatrix(v)
-}
+    vcov2(object$original, robust.se, ...)
 
+
+#' @importFrom car hccm
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
@@ -1095,9 +1083,15 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
     {
         if (robust.se == TRUE)
             robust.se <- "hc3"
-        v <- hccm(fit.reg, type = robust.se)
+        # Catch the case where singularities in the robust.se calculation.
+        hat.values <- hatvalues(fit.reg)
+        if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
+            v <- hccmAdjust(fit.reg, robust.se, hat.values)
+        else
+            v <- hccm(fit.reg, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
+    v
 }
 
 
@@ -1115,9 +1109,7 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 #' @importFrom stats vcov
 #' @export
 vcov.FitRegression <- function(object, robust.se = FALSE, ...)
-{
-    vcov.Regression(object, robust.se)
-}
+    vcov.Regression(object, robust.se, ...)
 
 #' FixVarianceCovarianceMatrix
 #'
@@ -1127,11 +1119,13 @@ vcov.FitRegression <- function(object, robust.se = FALSE, ...)
 #' @details Sandwich and sandwich-like standard errors can result uninvertable
 #' covariance matrices (e.g., if a parameter represents a sub-group, and the sub-group has no
 #' residual variance). This function checks to see if there are any eigenvalues less than \code{min.eigenvalue},
-#' which defaults to 1e-12. If there are, an attempt is made to guess the  offending variances, and they are multiplied by 1.01.
+#' which defaults to 1e-12. If there are, an attempt is made to guess the offending variances, and they are multiplied by 1.01.
 #' @export
 FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
 {
-    wng <- "There is a technical problem with the parameter variance-covariance matrix. This is most likely due to either a problem or the appropriateness of the statistical model (e.g., using weights or robust standard errors where a sub-group in the analysis has no variation in its residuals, or lack of variation in one or more predictors."
+    wng <- paste0("This is most likely due to either a problem or the appropriateness of the statistical ",
+                  "model (e.g., using weights or robust standard errors where a sub-group in the analysis ",
+                  "has no variation in its residuals, or lack of variation in one or more predictors.)")
     v <- x
     v <- try(
         {
@@ -1140,14 +1134,19 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
             v.diag <- diag(v)
             n.similar.to.diag <- abs(sweep(v, 1, v.diag, "/"))
             high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
-            diag(v)[high.r] <- v.diag[high.r] * 1.01
+            # Adjust appropriate parts of diagonal if possible
+            if (any(high.r))
+                diag(v)[high.r] <- v.diag[high.r] * 1.01
+            else # Otherwise give overall adjustment if no offending terms found.
+                diag(v) <- diag(v) * 1.01
             v
         }, silent = TRUE
     )
     if (tryError(v))
-        stop(wng)
+        stop("There is a technical problem with the parameter variance-covariance matrix.", wng)
     else
-        warning(wng)
+        warning("There is a technical problem with the parameter variance-covariance matrix ",
+                "that has been corrected.", wng)
     v
 }
 
@@ -1752,3 +1751,28 @@ extractDummyAdjustedCoefs <- function(coefficients, computed.means)
 
 extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
     sapply(strsplit(string, dummy.pattern), "[", 1)
+
+# This function should only be called when
+# 1. Robust.se is requested and the method is not hc0 or hc1
+# 2. There are hat values at 1 (causing a singularity)
+# Arguments required are
+# 1. fit.reg: The original R regression object
+# 2. robust.se: The hc method string options are ("hc2", "hc3" or "hc4")
+# 3. h: the numeric hat values for all n observations.
+#' @importFrom stats df.residual model.matrix residuals coef
+hccmAdjust <- function(fit.reg, robust.se, h)
+{
+    # Setup the calculation like a standard call to hccm
+    V <- summary(fit.reg)$cov.unscaled
+    e <- residuals(fit.reg)
+    df.res <- df.residual(fit.reg)
+    n <- length(e)
+    aliased <- is.na(coef(fit.reg))
+    X <- model.matrix(fit.reg)[, !aliased]
+    p <- ncol(X)
+    # Replace the singularities with compuatable values.
+    # Using the the hc1 calculation for those cases.
+    factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
+    factor[h == 1] <- df.res/n
+    V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+}
