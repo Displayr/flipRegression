@@ -132,21 +132,19 @@ test_that("Test input error messages", {
     expect_error(Regression(), error.msg)
     # Test default incorrect input format
     error.msg <- paste0("'unstacked.data' needs to be a list with two elements, ",
-                        "'Y' containing the outcome variables and 'X' containing the predictor variables. ",
-                        "Outcome and predictor variables need to be variable sets that can be stacked. ",
-                        "The outcome variable should be a Binary - Multi, Nominal - Multi, Ordinal - Multi ",
-                        "or Numeric - Multi and The predictor variable should be a Binary - Grid or Numeric - Grid.")
+                        "'Y' containing a data.frame with the outcome variables and ",
+                        "'X' containing a data.frame with the predictor variables.")
     expect_error(Regression(stacked.data.check = TRUE, unstacked.data = NULL), error.msg)
-    error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables  have 2 observations",
-                        " while the provided predictor variables  have 3 observations. ",
+    error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables have 2 observations ",
+                        "while the provided predictor variables have 3 observations. ",
                         "Please input variables that have the same size.")
     # Test different sizes inputs
     expect_error(Regression(stacked.data.check = TRUE, unstacked.data = list(Y = data.frame(1:2),
                                                                                               X = data.frame(1:3))),
                  error.msg)
-    error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables ", sQuote('Brand Binary'),
-                        " have 2 observations while the provided predictor variables ", sQuote('Qualities Binary'),
-                        " have 1 observations. Please input variables that have the same size.")
+    error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables ",
+                        "have 2 observations while the provided predictor variables ",
+                        "have 1 observations. Please input variables that have the same size.")
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.multi.outcome,
                                                   X = binary.grid.cleaned[1, ])),
@@ -175,37 +173,39 @@ test_that("Test input error messages", {
                                                   X = binary.grid.cleaned)),
                  error.msg, fixed = TRUE)
     # Check outcome input appropriate
-    error.msg <- "Outcome variable needs to have the question type attribute to be processed for stacking"
     outcome.without.attributes <- numeric.multi.outcome[1:ncol(numeric.multi.outcome.cleaned)]
-    expect_error(Regression(stacked.data.check = TRUE,
-                            unstacked.data = list(Y = outcome.without.attributes,
-                                                  X = binary.grid.cleaned)),
-                 error.msg)
-    wrong.type <- numeric.multi.outcome
-    attr(wrong.type, "questiontype") <- "Text"
-    allowed.types <- paste0(sQuote(c('PickAny', 'PickOneMulti', 'NumberMulti')), collapse = ", ")
-    error.msg <- paste0("Outcome variable to be stacked needs to be either a ", allowed.types,
-                        " question type. Supplied outcome variable is ", sQuote("Text"))
-    expect_error(Regression(stacked.data.check = TRUE,
-                            unstacked.data = list(Y = wrong.type,
-                                                  X = binary.grid.cleaned)),
-                 error.msg)
+    expect_warning(Regression(stacked.data.check = TRUE,
+                              unstacked.data = list(Y = outcome.without.attributes,
+                                                    X = binary.grid.cleaned)),
+                   "The following variable(s) are colinear", fixed = TRUE)
     # Check Grid input appropriate
     error.msg <- "Grid Predictor variable set needs to have the question type attribute to be processed for stacking"
-    predictor.without.attributes <- numeric.grid[1:ncol(numeric.grid.cleaned)]
+    predictor.without.attributes <- numeric.grid.cleaned[1:ncol(numeric.grid.cleaned)]
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = numeric.multi.outcome,
                                                   X = predictor.without.attributes)),
-                 error.msg)
-    wrong.type <- numeric.grid
-    attr(wrong.type, "questiontype") <- "Text"
-    allowed.types <- paste0(sQuote(c('PickAnyGrid', 'NumberGrid')), collapse = ", ")
-    error.msg <- paste0("Grid Predictor variable set to be stacked needs to be either a ", allowed.types,
-                        " question type. Supplied variable is ", sQuote("Text"))
-    expect_error(Regression(stacked.data.check = TRUE,
-                            unstacked.data = list(Y = numeric.multi.outcome,
-                                                  X = wrong.type)),
-                 error.msg)
+                 NA)
+})
+
+test_that("check codeframe", {
+    code.frame <- list(V1 = 0, V2 = 1, V3 = 2)
+    expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
+                     c(V1 = FALSE, V2 = FALSE, V3 = FALSE))
+    code.frame <- list(V1 = 0, V2 = 1, V3 = 2, SUM = 0:2)
+    expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
+                     c(V1 = FALSE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+    code.frame <- list(V1 = 0, V2 = 1, V3 = 2, SUM = 0:2)
+    expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
+                     c(V1 = FALSE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+    code.frame <- list(V1 = 0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
+    expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
+                     c(V1 = FALSE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+    code.frame <- list(V1 = 0, Aggregate = 2:0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
+    expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
+                     c(V1 = FALSE, Aggregate = TRUE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+    code.frame <- list(Aggregate = 2:0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
+    expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
+                     c(Aggregate = TRUE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
 })
 
 # Test warnings for slight mismatches in data
@@ -215,8 +215,8 @@ test_that("Mismatch warnings", {
     extra.outcome$NET <- NULL
     extra.outcome$Amazon <- c(1, 0)
     extra.outcome$NET <- apply(extra.outcome, 1, function(x) as.numeric(any(as.logical(x))))
-    warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the Outcome variable set ",
-                          sQuote("Brand Binary"), " since these variables don't appear in the predictor variable set ",
+    warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the set of outcome variables in ",
+                          sQuote("Brand Binary"), " since they don't appear in the set of predictor variables in ",
                           sQuote("Qualities Binary"))
     expect_warning(output <- Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = extra.outcome,
@@ -228,8 +228,8 @@ test_that("Mismatch warnings", {
     extra.outcome$Walmart <- c(1, 0)
     extra.outcome$NET <- apply(extra.outcome, 1, function(x) as.numeric(any(as.logical(x))))
     warning.msg <- paste0("The variable(s): ", paste0(sQuote(c("Amazon", "Walmart")), collapse = ", "),
-                          " have been removed from the Outcome variable set ", sQuote("Brand Binary"),
-                          " since these variables don't appear in the predictor variable set ",
+                          " have been removed from the set of outcome variables in ", sQuote("Brand Binary"),
+                          " since they don't appear in the set of predictor variables in ",
                           sQuote("Qualities Binary"))
     expect_warning(output <- Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = extra.outcome,
@@ -246,8 +246,8 @@ test_that("Mismatch warnings", {
                                          `SUM, SUM` = c(40, 45)),
                               class = "data.frame", row.names = 1:2,
                               questiontype = "NumberGrid", question = "Qualities Numeric")
-    warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the Predictor variable set ",
-                          sQuote("Qualities Numeric"), " since these variables don't appear in the outcome variable set ",
+    warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the set of predictor variables in ",
+                          sQuote("Qualities Numeric"), " since they don't appear in the set of outcome variables in ",
                           sQuote("Brand Numeric"))
     expect_warning(output <- Regression(stacked.data.check = TRUE,
                                         unstacked.data = list(Y = numeric.multi.outcome,
@@ -310,17 +310,17 @@ test_that("Transpose and alignment correct", {
 # Test Data Reduction columns are removed successfully.
 test_that("Data Reduction for Multi and Grid inputs", {
     expect_identical(list(Y = binary.multi.outcome.cleaned, X = binary.grid.cleaned),
-                     flipRegression:::removeDataReductionColumns(list(Y = binary.multi.outcome,
-                                                                     X = binary.grid)))
+                     flipRegression:::removeDataReduction(list(Y = binary.multi.outcome,
+                                                               X = binary.grid)))
     expect_identical(list(Y = nominal.multi.outcome, X = numeric.grid.cleaned),
-                     flipRegression:::removeDataReductionColumns(list(Y = nominal.multi.outcome,
-                                                                     X = numeric.grid)))
+                     flipRegression:::removeDataReduction(list(Y = nominal.multi.outcome,
+                                                               X = numeric.grid)))
     expect_identical(list(Y = ordinal.multi.outcome, X = numeric.grid.cleaned),
-                     flipRegression:::removeDataReductionColumns(list(Y = ordinal.multi.outcome,
-                                                                     X = numeric.grid)))
+                     flipRegression:::removeDataReduction(list(Y = ordinal.multi.outcome,
+                                                               X = numeric.grid)))
     expect_identical(list(Y = numeric.multi.outcome.cleaned, X = numeric.grid.cleaned),
-                     flipRegression:::removeDataReductionColumns(list(Y = numeric.multi.outcome,
-                                                                     X = numeric.grid)))
+                     flipRegression:::removeDataReduction(list(Y = numeric.multi.outcome,
+                                                               X = numeric.grid)))
 })
 
 test_that("Valid stackable data converted", {
