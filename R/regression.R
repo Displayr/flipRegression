@@ -654,11 +654,13 @@ Regression <- function(formula = as.formula(NULL),
                 stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
                      "variables in ", output, ". Please remove the categorical predictors: ",
                      paste0(names(classes), collapse = ", "), " and re-run the analysis.")
-            .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
-            input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
-                                                         data = processed.data$estimation.data,
-                                                         update.string = " - ",
-                                                         warn = FALSE)$formula
+            if (any(grepDummyVars(names(result$original$coefficients))))
+            {
+                .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
+                input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
+                                                             data = processed.data$estimation.data,
+                                                             update.string = " - ")$formula
+            }
             result$formula <- input.formula
         }
 
@@ -1678,15 +1680,10 @@ updateStackedFormula <- function(data, formula)
 # The control to add or remove is via the update.string argument, " + " adds to the formulae
 # while " - " removes dummy variables from the formulae
 updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
-                                        update.string = " + ", warn = TRUE)
+                                        update.string = " + ")
 {
     if (!any(dummy.vars <- grepDummyVars(names(data))))
-    {
-        if (warn)
-            warning("'Dummy variable adjustment' selected to handle missing data ",
-                    "but no missing values appear in the predictors")
         return(list(formula = formula, formula.with.interaction = formula.with.interaction))
-    }
 
     dummy.var <- paste0(names(data)[dummy.vars], collapse = update.string)
     new.formula <- update(terms(formula, data = data), as.formula(paste0(". ~ .", update.string, dummy.var)))

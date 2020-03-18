@@ -115,3 +115,10 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
     expect_warning(print(robust.dummy.regression), "Unusual observations detected")
 })
 
+
+test_that("RIA and Shapley edge case", {
+    dat <- not.missing.data
+    dat[sample(c(TRUE, FALSE), size = nrow(dat), replace = TRUE, prob = c(1, 4)), -1] <- NA
+    expect_error(Regression(Y ~ X1 + X2 + X3, data = dat, type = "Linear", output = "Shapley Regression"),
+                 NA)
+})
