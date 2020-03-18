@@ -567,7 +567,19 @@ test_that("Check codeframe specific usage", {
                                                     stacked.data.check = TRUE))
     expect_true(outcome.warning.msg %in% y.wrong.warnings)
     expect_true(predictor.warning.msg %in% y.wrong.warnings)
-
+    # Check stacking handles commas effectively when codeframe available
+    unstacked.with.commas = technology.unstacked
+    names(unstacked.with.commas$X) <- sub("Good customer", "Good, customer", names(unstacked.with.commas$X))
+    names(attr(unstacked.with.commas$X, "secondarycodeframe")) <- sub("Good customer", "Good, customer",
+                                                                      names(attr(unstacked.with.commas$X,
+                                                                                 "secondarycodeframe")))
+    names(unstacked.with.commas$X) <- sub("Worth what you pay for", "Worth,what,you,pay,for",
+                                          names(unstacked.with.commas$X))
+    names(attr(unstacked.with.commas$X, "secondarycodeframe")) <- sub("Worth what you pay for", "Worth,what,you,pay,for",
+                                                                      names(attr(unstacked.with.commas$X,
+                                                                                 "secondarycodeframe")))
+    suppressWarnings(comma.out <- Regression(unstacked.data = technology.unstacked, stacked.data.check = TRUE))
+    expect_equal(comma.out$original$coefficients, tech.out$original$coefficients)
 })
 
 outputs <- c("Relative Importance Analysis", "Shapley Regression")
