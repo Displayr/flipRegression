@@ -85,6 +85,11 @@ binary.grid.cleaned <- structure(list(`Fun, Apple` = c(0, 1), `Fun, Microsoft` =
                                   class = "data.frame", row.names = 1:2,
                                   questiontype = "PickAnyGrid", question = "Qualities Binary")
 
+numeric.grid.commas <- structure(list(`Fun, Apple, Oranges & Grapes` = c(0, 12), `Fun, Microsoft` = c(11, 0),
+                                      `Innovative, Apple, Oranges & Grapes` = c(15, 9), `Innovative, Microsoft` = c(9, 19)),
+                                 class = "data.frame", row.names = 1:2,
+                                 questiontype = "NumberGrid", question = "Qualities Numeric")
+
 # Expected Stacked data
 
 binary.binary.stacked <-structure(list(Y = structure(c(0, 1, 1, 1), label = "Brand Binary"),
@@ -135,6 +140,13 @@ test_that("Test input error messages", {
                         "'Y' containing a data.frame with the outcome variables and ",
                         "'X' containing a data.frame with the predictor variables.")
     expect_error(Regression(stacked.data.check = TRUE, unstacked.data = NULL), error.msg)
+    error.msg <- paste0("Outcome variable to be stacked needs to be a data.frame. " ,
+                        "Please assign a data.frame to the \"Y\" element of the 'unstacked.data' argument.")
+    expect_error(Regression(stacked.data.check = TRUE, unstacked.data = list(X = 1:5, Y = 1:5)), error.msg)
+    error.msg <- paste0("Predictor variables to be stacked needs to be a data.frame. " ,
+                        "Please assign a data.frame to the \"X\" element of the 'unstacked.data' argument.")
+    expect_error(Regression(stacked.data.check = TRUE, unstacked.data = list(Y = data.frame(y1 = 1:5, y2 = 1:5),
+                                                                             X = 1:5)), error.msg)
     error.msg <- paste0("Size of variables doesn't agree, the provided outcome variables have 2 observations ",
                         "while the provided predictor variables have 3 observations. ",
                         "Please input variables that have the same size.")
@@ -185,6 +197,18 @@ test_that("Test input error messages", {
                             unstacked.data = list(Y = numeric.multi.outcome,
                                                   X = predictor.without.attributes)),
                  NA)
+    # Check error is thrown if grid data.frame has variable names with commas
+    ambig.names <- paste0(sQuote(c("Fun, Apple, Oranges & Grapes", "Innovative, Apple, Oranges & Grapes")),
+                          collapse = ", ")
+    error.msg <- paste0("The variable labels in the predictor grid should be comma separated to determine the columns ",
+                        "that belong to the appropriate outcome variable. This means that the variable labels cannot ",
+                        "use commas. Please remove the commas in the names in the predictor grid to continue ",
+                        "the analysis. The variable labels that are ambiguous and require fixing are: ",
+                        ambig.names)
+    expect_error(Regression(stacked.data.check = TRUE,
+                            unstacked.data = list(Y = numeric.multi.outcome,
+                                                  X = numeric.grid.commas)),
+                 )
 })
 
 test_that("check codeframe", {
@@ -223,7 +247,19 @@ test_that("Mismatch warnings", {
                                                               X = binary.grid),
                                         method = "model.frame"),
                    warning.msg, fixed = TRUE)
-    expect_identical(output, binary.binary.stacked)
+    # Check warning when question attributes don't exist
+    # Also it should include NET since it no question attributes exist, the NET could be a user predictor
+    # and not a data reduction
+    extra.outcome.without.attributes <- extra.outcome[1:ncol(extra.outcome)]
+    removed.vars <- paste0(sQuote(c("Amazon", "NET")), collapse = ", ")
+    warning.msg <- paste0("The variable(s): ", removed.vars, " have been removed from the set of outcome variables ",
+                          "since these variables don't appear in the set of predictor variables")
+    expect_warning(output <- Regression(stacked.data.check = TRUE,
+                                        unstacked.data = list(Y = extra.outcome.without.attributes,
+                                                              X = binary.grid),
+                                        method = "model.frame"),
+                   warning.msg, fixed = TRUE)
+    expect_equivalent(output, binary.binary.stacked)
     extra.outcome$NET <- NULL
     extra.outcome$Walmart <- c(1, 0)
     extra.outcome$NET <- apply(extra.outcome, 1, function(x) as.numeric(any(as.logical(x))))
@@ -254,6 +290,19 @@ test_that("Mismatch warnings", {
                                                               X = extra.numeric.grid),
                                         method = "model.frame"),
                    warning.msg, fixed = TRUE)
+    # Check message when variable set structure name not available, unavailable question name stripped off
+    # and data reduction appears.
+    extra.numeric.grid <- extra.numeric.grid[1:ncol(extra.numeric.grid)]
+    warning.msg <- paste0("The variable(s): ", paste0(sQuote(c("Amazon", "SUM")), collapse = ", "),
+                          " have been removed from the set of predictor variables since these variables ",
+                          "don't appear in the outcome variables.")
+    expect_warning(Regression(stacked.data.check = TRUE,
+                              unstacked.data = list(Y = numeric.multi.outcome,
+                                                    X = extra.numeric.grid),
+                              method = "model.frame"),
+                   warning.msg, fixed = TRUE)
+    # Check message when variable set structure name not available
+
     expect_identical(output, numeric.numeric.stacked)
     # Test warnings for ambiguous input
     warning.msg <- paste0("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
@@ -461,6 +510,65 @@ for (type in types)
                     expect_match(stackable.regression$sample.description, attr(subset.choices[[s]], "label"))
             })
 
+
+test_that("Check codeframe specific usage", {
+    expect_true("NET" %in% names(attr(technology.unstacked$X, "codeframe")))
+    expect_true("NET" %in% names(attr(technology.unstacked$X, "secondarycodeframe")))
+    expect_true(any(grepl("^NET, ", names(technology.unstacked$X))))
+    expect_true(any(grepl(", NET$", names(technology.unstacked$X))))
+    expect_false("NET" %in% names(attr(technology.unstacked$Y, "secondarycodeframe")))
+    cleaned.data <- flipRegression:::removeDataReduction(technology.unstacked)
+    expect_false("NET" %in% names(attr(cleaned.data$X, "codeframe")))
+    expect_false("NET" %in% names(attr(cleaned.data$X, "secondarycodeframe")))
+    expect_false(any(grepl("^NET, ", names(cleaned.data$X))))
+    expect_false(any(grepl(", NET$", names(cleaned.data$X))))
+    expect_false("NET" %in% names(attr(cleaned.data$Y, "secondarycodeframe")))
+    # Check Numeric Multi scenario
+    numeric.unstacked <- technology.unstacked
+    numeric.unstacked$Y <- suppressWarnings(AsNumeric(numeric.unstacked$Y, binary = FALSE))
+    numeric.unstacked$Y <- transform(numeric.unstacked$Y, SUM = rowSums(numeric.unstacked$Y))
+    attr(numeric.unstacked$Y, "question") <- "Brand"
+    # Numeric multi only has a codeframe for the column information
+    attr(numeric.unstacked$Y, "codeframe") <- attr(technology.unstacked$Y, "secondarycodeframe")
+    attr(numeric.unstacked$Y, "codeframe")[["SUM"]] <- 0:(length(attr(numeric.unstacked$Y, "codeframe")) - 1)
+    warning.msg <- paste0("The variable(s): ", sQuote("None of these"), " have been removed from the set of predictor ",
+                          "variables in ", sQuote("Qualities"), " since they don't appear in the set of outcome ",
+                          "variables in ", sQuote("Brand"))
+    expect_warning(tech.out <- Regression(unstacked.data = technology.unstacked, stacked.data.check = TRUE),
+                   warning.msg, fixed = TRUE)
+    expect_warning(numeric.out <- Regression(unstacked.data = numeric.unstacked, stacked.data.check = TRUE),
+                   warning.msg, fixed = TRUE)
+    expect_equivalent(tech.out$original$coef, numeric.out$original$coef)
+    # Check messages when column doesn't match
+    technology.unstacked.y.wrong <- technology.unstacked
+    names(technology.unstacked.y.wrong$Y)[1] <- "Amazon"
+    names(attr(technology.unstacked.y.wrong$Y, "secondarycodeframe"))[1] <- "Amazon"
+    outcome.warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the set of outcome ",
+                                  "variables in ", sQuote("Brand"), " since they don't appear in the set of predictor ",
+                                  "variables in ", sQuote("Qualities"))
+    predictor.warning.msg <- paste0("The variable(s): ", paste0(sQuote(c("Apple", "None of these")), collapse = ", "),
+                                    " have been removed from the set of predictor variables in ", sQuote("Qualities"),
+                                    " since they don't appear in the set of outcome variables in ", sQuote("Brand"))
+    y.wrong.warnings <- capture_warnings(Regression(unstacked.data = technology.unstacked.y.wrong,
+                                                    stacked.data.check = TRUE))
+    expect_true(outcome.warning.msg %in% y.wrong.warnings)
+    expect_true(predictor.warning.msg %in% y.wrong.warnings)
+    # Check same for numeric multi (uses codeframe instead of secondary codeframe)
+    numeric.y.wrong <- numeric.unstacked
+    names(numeric.y.wrong$Y)[1] <- "Amazon"
+    names(attr(numeric.y.wrong$Y, "codeframe"))[1] <- "Amazon"
+    outcome.warning.msg <- paste0("The variable(s): ", sQuote("Amazon"), " have been removed from the set of outcome ",
+                                  "variables in ", sQuote("Brand"), " since they don't appear in the set of predictor ",
+                                  "variables in ", sQuote("Qualities"))
+    predictor.warning.msg <- paste0("The variable(s): ", paste0(sQuote(c("Apple", "None of these")), collapse = ", "),
+                                    " have been removed from the set of predictor variables in ", sQuote("Qualities"),
+                                    " since they don't appear in the set of outcome variables in ", sQuote("Brand"))
+    y.wrong.warnings <- capture_warnings(Regression(unstacked.data = numeric.y.wrong,
+                                                    stacked.data.check = TRUE))
+    expect_true(outcome.warning.msg %in% y.wrong.warnings)
+    expect_true(predictor.warning.msg %in% y.wrong.warnings)
+
+})
 
 outputs <- c("Relative Importance Analysis", "Shapley Regression")
 # Test Relative importance output and Shapley, use subset for slight speed improvement

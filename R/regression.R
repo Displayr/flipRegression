@@ -1422,7 +1422,14 @@ removeDataReduction <- function(data)
     {
         reduction.columns <- flagCodeframeReduction(secondary.codeframe)
         data[["Y"]][reduction.columns] <- NULL
-    } else if (!is.null(attr(data[["Y"]], "questiontype")))
+        attr(data[["Y"]], "secondary.codeframe")[reduction.columns] <- NULL
+    } else if (!is.null(codeframe <- attr(data[["Y"]], "codeframe")))
+    {
+        reduction.columns <- flagCodeframeReduction(codeframe)
+        data[["Y"]][reduction.columns] <- NULL
+        attr(data[["Y"]], "codeframe")[reduction.columns] <- NULL
+
+    } else if(!is.null(attr(data[["Y"]], "questiontype")))
     {# If older Q user, check question type and remove NET or SUM (default reduction)
         reduction.columns <- names(data[["Y"]]) %in% c("NET", "SUM")
         data[["Y"]][reduction.columns] <- NULL
@@ -1468,7 +1475,7 @@ flagCodeframeReduction <- function(x)
     names(flags) <- names(x)
     lengths <- sapply(x, length)
     # Catch case where these is no reduction, all variables have the same number of coded values
-    if (all(lengths[-1] == lengths[1]))
+    if (length(lengths) == 1 || all(lengths[-1] == lengths[1]))
         return(flags)
     potential.reductions <- which(lengths == max(lengths))
     # get the unique vector of coding values for all the variables
@@ -1521,6 +1528,8 @@ validateDataForStacking <- function(data)
 }
 
 # The stacking requires names of the grid data.frame to be in the form predictor, outcome (comma separated)
+# If metadata available in the codeframe, the names are uniquely identified
+# If metadata is unavailable, no commas allowed in names to avoid ambiguity.
 validateNamesInGrid <- function(data)
 {
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
@@ -1587,7 +1596,7 @@ checkNumberObservations <- function(data)
 validGridPredictor <- function(data)
 {
     if (class(data) != "data.frame")
-        stop("Predictor variables to be stacked need to be a supplied with a data.frame. " ,
+        stop("Predictor variables to be stacked needs to be a data.frame. " ,
              "Please assign a data.frame to the \"X\" element of the 'unstacked.data' argument.")
 }
 
@@ -1601,11 +1610,16 @@ validateOutcomeVariables <- function(data, outcome.names, predictor.names)
         predictor.variable.set.name <- attr(data[["X"]], "question")
         if (is.null(outcome.variable.set.name) | is.null(predictor.variable.set.name))
             warning("The variable(s): ", removed.outcome.variables, " have been removed from the set of outcome ",
-                    "variables since these variables don't appear in the predictor variables.")
+                    "variables since these variables don't appear in the set of predictor variables.")
         else
             warning("The variable(s): ", removed.outcome.variables, " have been removed from the set of outcome ",
                     "variables in ", sQuote(outcome.variable.set.name), " since they don't appear in the set of ",
                     "predictor variables in ", sQuote(predictor.variable.set.name))
+        # Remove the name from the codeframe too,
+        if (!is.null(attr(data[["Y"]], "secondarycodeframe")))
+            attr(data[["Y"]], "secondarycodeframe")[missing.stack] <- NULL
+        else if (!is.null(attr(data[["Y"]], "codeframe")))
+            attr(data[["Y"]], "codeframe")[missing.stack] <- NULL
     }
     return(data[["Y"]])
 }
@@ -1626,6 +1640,9 @@ validatePredictorVariables <- function(data, outcome.names, predictor.names, uns
             warning("The variable(s): ", removed.predictor.variables, " have been removed from the set of predictor ",
                     "variables in ", sQuote(predictor.variable.set.name), " since they don't appear in the set of ",
                     "outcome variables in ", sQuote(outcome.variable.set.name))
+        # Remove the name from the codeframe too
+        if (!is.null(attr(data[["X"]], "codeframe")))
+            attr(data[["X"]], "codeframe")[unstackable.predictors] <- NULL
     }
     return(data[["X"]])
 }
@@ -1655,8 +1672,17 @@ stackData <- function(data)
 stackPredictors <- function(data, outcome.names)
 {
     question.label <- attr(data, "question")
-    stacked.data <- reshape(data, varying = names(data), sep = ", ",
-                            times = outcome.names, direction = "long")
+    if (!is.null(codeframe <- attr(data, "codeframe")) &&
+        !is.null(secondary.codeframe <- attr(data, "secondarycodeframe")))
+    {
+        variables.to.stack <- lapply(names(secondary.codeframe), function(x) paste0(x, ", ", names(codeframe)))
+        names(variables.to.stack) <- names(secondary.codeframe)
+        stacked.data <- reshape(data, varying = variables.to.stack, times = names(codeframe),
+                                v.names = names(secondary.codeframe), direction = "long")
+    }
+    else
+        stacked.data <- reshape(data, varying = names(data), sep = ", ",
+                                times = outcome.names, direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data, label = question.label)
     names(stacked.data) <- paste0("X", 1:ncol(stacked.data))
@@ -1709,6 +1735,13 @@ getGridNames <- function(data)
     } else
     {
         split.names <- strsplit(names(data), ", ")
+        splits <- sapply(split.names, length)
+        if (any(ambiguous.splits <- splits != 2))
+            stop("The variable labels in the predictor grid should be comma separated to determine the columns ",
+                 "that belong to the appropriate outcome variable. This means that the variable labels cannot ",
+                 "use commas. Please remove the commas in the names in the predictor grid to continue ",
+                 "the analysis. The variable labels that are ambiguous and require fixing are: ",
+                 paste0(sQuote(names(data)[ambiguous.splits]), collapse = ", "))
         outcome.names <- sapply(split.names, "[", 2)
         predictor.names <- sapply(split.names, "[", 1)
     }
@@ -1719,6 +1752,8 @@ getMultiOutcomeNames <- function(data)
 {
     if (!is.null(secondary.codeframe <- attr(data, "secondarycodeframe")))
         names(secondary.codeframe)
+    else if (!is.null(code.frame <- attr(data, "codeframe")))
+        names(code.frame)
     else
         names(data)
 }
