@@ -251,7 +251,7 @@ Regression <- function(formula = as.formula(NULL),
     if (stacked.data.check)
     {
         checkDataFeasibleForStacking(unstacked.data)
-        unstacked.data <- removeDataReductionColumns(unstacked.data)
+        unstacked.data <- removeDataReduction(unstacked.data)
         validated.unstacked.output <- validateDataForStacking(unstacked.data)
         unstacked.data <- validated.unstacked.output[["data"]]
         stacks <- validated.unstacked.output[["stacks"]]
@@ -1413,24 +1413,77 @@ findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type
     return(valid.data.indices)
 }
 
-removeDataReductionColumns <- function(data)
+# Removes the data reduction columns and the reduction in the secondary codeframe attribute
+removeDataReduction <- function(data)
 {
     # Remove the Data Reduction from the Response
-    # Remove the SUM column from the Number Multi
-    # PickAnyMulti doesn't have a DataReduction here.
-    y.question.type <- attr(data[["Y"]], "questiontype")
-    if (y.question.type %in% c("NumberMulti", "PickAny") && any(c("NET", "SUM") %in% names(data[["Y"]])))
-        data[["Y"]][ncol(data[["Y"]])] <- NULL
-    # Clean the DataReduction for the predictor variables
-    x.question.type <- attr(data[["X"]], "questiontype")
-    if (x.question.type %in% c("PickAnyGrid", "NumberGrid"))
+    # if codeframe is available, use it.
+    if (!is.null(secondary.codeframe <- attr(data[["Y"]], "secondarycodeframe")))
     {
-        data.reduction.string <- if(x.question.type == "PickAnyGrid") "NET" else "SUM"
-        grep.pattern <- paste0("(^", data.reduction.string, ", )|(, ", data.reduction.string,"$)")
-        data.reduction.columns <- grepl(grep.pattern, names(data$X))
-        data[["X"]][data.reduction.columns] <- NULL
+        reduction.columns <- flagCodeframeReduction(secondary.codeframe)
+        data[["Y"]][reduction.columns] <- NULL
+        attr(data[["Y"]], "secondary.codeframe")[reduction.columns] <- NULL
+    } else if (!is.null(codeframe <- attr(data[["Y"]], "codeframe")))
+    {
+        reduction.columns <- flagCodeframeReduction(codeframe)
+        data[["Y"]][reduction.columns] <- NULL
+        attr(data[["Y"]], "codeframe")[reduction.columns] <- NULL
+
+    } else if(!is.null(attr(data[["Y"]], "questiontype")))
+    {# If older Q user, check question type and remove NET or SUM (default reduction)
+        reduction.columns <- names(data[["Y"]]) %in% c("NET", "SUM")
+        data[["Y"]][reduction.columns] <- NULL
+    }
+
+    # Clean the DataReduction for the predictor variables
+    if (!is.null(question.type <- attr(data[["X"]], "questiontype")))
+    {
+        if (!all(c("codeframe", "secondarycodeframe") %in% names(attributes(data[["X"]]))))
+        { # Use the default reduction names if reduction cant be deduced
+            data.reduction.string <- if(question.type == "PickAnyGrid") "NET" else "SUM"
+            grep.pattern <- paste0("(^", data.reduction.string, ", )|(, ", data.reduction.string,"$)")
+            reduction.columns <- grepl(grep.pattern, names(data$X))
+        } else
+        { # Determine the data reduction columns from the codeframe and secondary codeframe
+            codeframe <- attr(data[["X"]], "codeframe")
+            secondary.codeframe <- attr(data[["X"]], "secondarycodeframe")
+            reduction.rows <- flagCodeframeReduction(codeframe)
+            reduction.columns <- flagCodeframeReduction(secondary.codeframe)
+            # Remove the data reduction from the codeframes for later use when determining the names
+            if (any(reduction.rows))
+                attr(data[["X"]], "codeframe")[reduction.rows] <- NULL
+            if (any(reduction.columns))
+                attr(data[["X"]], "secondarycodeframe")[reduction.columns] <- NULL
+            # Remap to the columns in the data.frame
+            reduction.columns <- apply(expand.grid(reduction.rows, reduction.columns), 1, any)
+        }
+        if (any(reduction.columns))
+            data[["X"]][reduction.columns] <- NULL
     }
     data
+}
+
+# Identify if there are any elements in a codeframe (or secondarycodeframe)
+# that are completely redundant data reductions.
+# This is achieved by looking at the longest list element in the codeframe and
+# checking that all the numeric indicies in the longest element exist
+# in other elements.
+# Input x is the codeframe attribute
+flagCodeframeReduction <- function(x)
+{
+    flags <- rep(FALSE, length(x))
+    names(flags) <- names(x)
+    lengths <- sapply(x, length)
+    # Catch case where these is no reduction, all variables have the same number of coded values
+    if (length(lengths) == 1 || all(lengths[-1] == lengths[1]))
+        return(flags)
+    potential.reductions <- which(lengths == max(lengths))
+    # get the unique vector of coding values for all the variables
+    variable.codings <- unique(unlist(x[-potential.reductions]))
+    is.reduction <- vapply(x[potential.reductions], function(x) all(variable.codings %in% x),
+                           FUN.VALUE = FALSE)
+    flags[potential.reductions] <- is.reduction
+    flags
 }
 
 # Checks to be coded
@@ -1445,13 +1498,10 @@ checkDataFeasibleForStacking <- function(data)
 checkListStructure <- function(data)
 {
     named.elements <- c("X", "Y") %in% names(data)
-    variable.types <- paste0(" The outcome variable should be a Binary - Multi, Nominal - Multi, ",
-                             "Ordinal - Multi or Numeric - Multi and",
-                             " The predictor variable should be a Binary - Grid or Numeric - Grid.")
     if ((is.null(data) || !(is.list(data) && all(named.elements))))
         stop("'unstacked.data' needs to be a list with two elements, ",
-             "'Y' containing the outcome variables and 'X' containing the predictor variables. ",
-             "Outcome and predictor variables need to be variable sets that can be stacked.", variable.types)
+             "'Y' containing a data.frame with the outcome variables and ",
+             "'X' containing a data.frame with the predictor variables.")
 }
 
 validateDataForStacking <- function(data)
@@ -1466,6 +1516,7 @@ validateDataForStacking <- function(data)
     # Remove any outcome variables that aren't seen in predictors and warn
     data[["Y"]] <- validateOutcomeVariables(data, outcome.names, predictor.names)
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
+
     # Remove any predictor variables that aren't seen in outcome variables and warn
     data[["X"]] <- validatePredictorVariables(data, outcome.names, predictor.names, unstacked.names)
     names.in.predictor.grid <- getGridNames(data[["X"]])
@@ -1477,10 +1528,15 @@ validateDataForStacking <- function(data)
 }
 
 # The stacking requires names of the grid data.frame to be in the form predictor, outcome (comma separated)
+# If metadata available in the codeframe, the names are uniquely identified
+# If metadata is unavailable, no commas allowed in names to avoid ambiguity.
 validateNamesInGrid <- function(data)
 {
-    outcome.names <- names(data[["Y"]])
-    outcome.variable.set.name <- sQuote(attr(data[["Y"]], "question"))
+    outcome.names <- getMultiOutcomeNames(data[["Y"]])
+    if (!is.null(outcome.question.name <- attr(data[["Y"]], "question")))
+        outcome.variable.set.name <- sQuote(outcome.question.name)
+    else
+        outcome.variable.set.name <- sQuote("Y")
     # Determine which dimension labels in the grid match the outcome.names
     # getGridNames extracts a list with two elements, the "a, b" parts of the grid names
     grid.names <- getGridNames(data[["X"]])
@@ -1522,41 +1578,26 @@ validateNamesInGrid <- function(data)
 
 validMultiOutcome <- function(data)
 {
-    allowed.types <- c("PickAny", "PickOneMulti", "NumberMulti")
-    if (is.null(attr(data, "questiontype")))
-        stop("Outcome variable needs to have the question type attribute to be processed for stacking")
-    if (!attr(data, "questiontype") %in% allowed.types)
-    {
-        allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
-        stop("Outcome variable to be stacked needs to be either a ", allowed.types, " question type.",
-             " Supplied outcome variable is ", sQuote(attr(data, "questiontype")))
-    }
-
+    if (class(data) != "data.frame")
+        stop("Outcome variable to be stacked needs to be a data.frame. " ,
+             "Please assign a data.frame to the \"Y\" element of the 'unstacked.data' argument.")
 }
 
 checkNumberObservations <- function(data)
 {
-    if (!diff(nrows <- sapply(data, NROW)) == 0)
+    if (!diff(unlist(nrows <- lapply(data, NROW))) == 0)
     {
-        y.label <- sQuote(attr(data[["Y"]], "question"))
-        x.label <- sQuote(attr(data[["X"]], "question"))
-        stop("Size of variables doesn't agree, the provided outcome variables ", y.label,
-             " have ", nrows[1], " observations while the provided predictor variables ", x.label, " have ",
-             nrows[2], " observations. Please input variables that have the same size.")
+        stop("Size of variables doesn't agree, the provided outcome variables have ", nrows[["Y"]],
+             " observations while the provided predictor variables have ", nrows[["X"]],
+             " observations. Please input variables that have the same size.")
     }
 }
 
 validGridPredictor <- function(data)
 {
-    allowed.types <- c("PickAnyGrid", "NumberGrid")
-    if (is.null(attr(data, "questiontype")))
-        stop("Grid Predictor variable set needs to have the question type attribute to be processed for stacking")
-    if (!attr(data, "questiontype") %in% allowed.types)
-    {
-        allowed.types <- paste0(sQuote(allowed.types), collapse = ", ")
-        stop("Grid Predictor variable set to be stacked needs to be either a ", allowed.types, " question type. ",
-             "Supplied variable is ", sQuote(attr(data, "questiontype")))
-    }
+    if (class(data) != "data.frame")
+        stop("Predictor variables to be stacked needs to be a data.frame. " ,
+             "Please assign a data.frame to the \"X\" element of the 'unstacked.data' argument.")
 }
 
 validateOutcomeVariables <- function(data, outcome.names, predictor.names)
@@ -1564,12 +1605,21 @@ validateOutcomeVariables <- function(data, outcome.names, predictor.names)
     if (any(missing.stack <- !outcome.names %in% predictor.names))
     {
         data[["Y"]][missing.stack] <- NULL
+        removed.outcome.variables <- paste0(sQuote(outcome.names[missing.stack]), collapse = ", ")
         outcome.variable.set.name <- attr(data[["Y"]], "question")
         predictor.variable.set.name <- attr(data[["X"]], "question")
-        removed.outcome.variables <- paste0(sQuote(outcome.names[missing.stack]), collapse = ", ")
-        warning("The variable(s): ", removed.outcome.variables, " have been removed from the Outcome variable set ",
-                sQuote(outcome.variable.set.name), " since these variables don't appear in the predictor variable set ",
-                sQuote(predictor.variable.set.name))
+        if (is.null(outcome.variable.set.name) | is.null(predictor.variable.set.name))
+            warning("The variable(s): ", removed.outcome.variables, " have been removed from the set of outcome ",
+                    "variables since these variables don't appear in the set of predictor variables.")
+        else
+            warning("The variable(s): ", removed.outcome.variables, " have been removed from the set of outcome ",
+                    "variables in ", sQuote(outcome.variable.set.name), " since they don't appear in the set of ",
+                    "predictor variables in ", sQuote(predictor.variable.set.name))
+        # Remove the name from the codeframe too,
+        if (!is.null(attr(data[["Y"]], "secondarycodeframe")))
+            attr(data[["Y"]], "secondarycodeframe")[missing.stack] <- NULL
+        else if (!is.null(attr(data[["Y"]], "codeframe")))
+            attr(data[["Y"]], "codeframe")[missing.stack] <- NULL
     }
     return(data[["Y"]])
 }
@@ -1583,9 +1633,16 @@ validatePredictorVariables <- function(data, outcome.names, predictor.names, uns
         removed.predictor.variables <- paste0(sQuote(unstackable.predictor.names), collapse = ", ")
         outcome.variable.set.name <- attr(data[["Y"]], "question")
         predictor.variable.set.name <- attr(data[["X"]], "question")
-        warning("The variable(s): ", removed.predictor.variables, " have been removed from the Predictor variable set ",
-                sQuote(predictor.variable.set.name), " since these variables don't appear in the outcome variable set ",
-                sQuote(outcome.variable.set.name))
+        if (is.null(outcome.variable.set.name) | is.null(predictor.variable.set.name))
+            warning("The variable(s): ", removed.predictor.variables, " have been removed from the set of predictor ",
+                    "variables since these variables don't appear in the outcome variables.")
+        else
+            warning("The variable(s): ", removed.predictor.variables, " have been removed from the set of predictor ",
+                    "variables in ", sQuote(predictor.variable.set.name), " since they don't appear in the set of ",
+                    "outcome variables in ", sQuote(outcome.variable.set.name))
+        # Remove the name from the codeframe too
+        if (!is.null(attr(data[["X"]], "codeframe")))
+            attr(data[["X"]], "codeframe")[unstackable.predictors] <- NULL
     }
     return(data[["X"]])
 }
@@ -1615,8 +1672,17 @@ stackData <- function(data)
 stackPredictors <- function(data, outcome.names)
 {
     question.label <- attr(data, "question")
-    stacked.data <- reshape(data, varying = names(data), sep = ", ",
-                            times = outcome.names, direction = "long")
+    if (!is.null(codeframe <- attr(data, "codeframe")) &&
+        !is.null(secondary.codeframe <- attr(data, "secondarycodeframe")))
+    {
+        variables.to.stack <- lapply(names(secondary.codeframe), function(x) paste0(x, ", ", names(codeframe)))
+        names(variables.to.stack) <- names(secondary.codeframe)
+        stacked.data <- reshape(data, varying = variables.to.stack, times = names(codeframe),
+                                v.names = names(secondary.codeframe), direction = "long")
+    }
+    else
+        stacked.data <- reshape(data, varying = names(data), sep = ", ",
+                                times = outcome.names, direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data, label = question.label)
     names(stacked.data) <- paste0("X", 1:ncol(stacked.data))
@@ -1626,7 +1692,8 @@ stackPredictors <- function(data, outcome.names)
 #' @importFrom stats reshape
 stackOutcome <- function(data)
 {
-    stacked.data <- reshape(data, varying = names(data), v.names = attr(data, "question"),
+    v.name <- if (!is.null(question.attr <- attr(data ,"question"))) question.attr else "Y"
+    stacked.data <- reshape(data, varying = names(data), v.names = v.name,
                             times = names(data), direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data)
@@ -1657,13 +1724,39 @@ removeReshapingHelperVariables <- function(data)
 # However, this is not required since it would be transposed in validateNamesInGrid
 getGridNames <- function(data)
 {
-    split.names <- strsplit(names(data), ", ")
-    outcome.names <- sapply(split.names, "[", 2)
-    predictor.names <- sapply(split.names, "[", 1)
+    if (all(c("codeframe", "secondarycodeframe") %in% names(attributes(data))))
+    {
+        outcome.names <- names(attr(data, "codeframe"))
+        m <- length(outcome.names)
+        predictor.names <- names(attr(data, "secondarycodeframe"))
+        p <- length(predictor.names)
+        predictor.names <- rep(predictor.names, each = m)
+        outcome.names <- rep(outcome.names, p)
+    } else
+    {
+        split.names <- strsplit(names(data), ", ")
+        splits <- sapply(split.names, length)
+        if (any(ambiguous.splits <- splits != 2))
+            stop("The variable labels in the predictor grid should be comma separated to determine the columns ",
+                 "that belong to the appropriate outcome variable. This means that the variable labels cannot ",
+                 "use commas. Please remove the commas in the names in the predictor grid to continue ",
+                 "the analysis. The variable labels that are ambiguous and require fixing are: ",
+                 paste0(sQuote(names(data)[ambiguous.splits]), collapse = ", "))
+        outcome.names <- sapply(split.names, "[", 2)
+        predictor.names <- sapply(split.names, "[", 1)
+    }
     list(predictor.names, outcome.names)
 }
 
-getMultiOutcomeNames <- function(data) names(data)
+getMultiOutcomeNames <- function(data)
+{
+    if (!is.null(secondary.codeframe <- attr(data, "secondarycodeframe")))
+        names(secondary.codeframe)
+    else if (!is.null(code.frame <- attr(data, "codeframe")))
+        names(code.frame)
+    else
+        names(data)
+}
 
 updateStackedFormula <- function(data, formula)
 {
