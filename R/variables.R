@@ -6,12 +6,15 @@ resid.Regression <- function(object, ...)
 }
 
 #' @importFrom flipTransformations UnclassIfNecessary
+#' @importFrom flipU IsRServer
 #' @importFrom stats residuals
 #' @export
 residuals.Regression <- function(object, type = "raw", ...)
 {
     notValidForPartial(object, "residuals")
     notValidForCrosstabInteraction(object, "residuals")
+    if (!is.null(object$stacked) && object$stacked && IsRServer())
+        stop("Saving residuals is currently not supported for stacked data.")
     if (type == "raw" & object$type %in% c("Ordered Logit", "Multinomial Logit", "Binary Logit"))
     {
         observed <- Observed(object)
@@ -49,11 +52,13 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 #' @export
 #' @importFrom stats predict.glm
 #' @importFrom flipData Observed CheckPredictionVariables
+#' @importFrom flipU IsRServer
 predict.Regression <- function(object, newdata = object$model, na.action = na.pass, ...)
 {
     if (object$test.interaction)
         stop("Cannot predict from regression model with Crosstab interaction.")
-
+    if (!is.null(object$stacked) && object$stacked && IsRServer())
+        stop("Saving predicted values is currently not supported for stacked data.")
     newdata <- CheckPredictionVariables(object, newdata)
     notValidForPartial(object, "predict")
     notValidForCrosstabInteraction(object, "predict")
@@ -104,9 +109,12 @@ coefNamesBeforeOmitting <- function(object)
 }
 
 #' @importFrom stats fitted
+#' @importFrom flipU IsRServer
 #' @export
 fitted.Regression <- function(object, ...)
 {
+    if (!is.null(object$stacked) && object$stacked && IsRServer())
+        stop("Saving fitted values is currently not supported for stacked data.")
     notValidForPartial(object, "fitted")
     notValidForCrosstabInteraction(object, "fitted")
     fitted.values <- fitted(object$original)
@@ -177,6 +185,7 @@ flipData::Probabilities
 #' @param ... Additional arguments (not used).
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Probabilities Observed
+#' @importFrom flipU IsRServer
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a regression model.
 #' @export
@@ -186,6 +195,8 @@ Probabilities.Regression <- function(object, ...)
     notValidForCrosstabInteraction(object, "probabilities")
     if (object$type == "Linear")
         stop("'probabilities' is not applicable to linear regression models.")
+    if (!is.null(object$stacked) && object$stacked && IsRServer())
+        stop("Saving probabilitiles is currently not supported for stacked data.")
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
         return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "probs")))
     if (object$type == "Binary Logit")
