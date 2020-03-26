@@ -80,7 +80,7 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
                    NA)
     # Due to the random input data, sometimes the print function will detect outliers (cooks distance)
     # and throw a warning. Other times it will not detect outliers and no warning. Code below captures
-    # any warnings and checks if there is a single warning or no warning.s
+    # any warnings and checks if there is a single warning or no warning.
     print.output <- capture_warnings(print(robust.dummy.regression))
     expect_true(length(print.output) == 0 || grepl("Unusual observations detected", print.output))
     # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
