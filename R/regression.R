@@ -250,53 +250,13 @@ Regression <- function(formula = as.formula(NULL),
     # Check if stackable data is input
     if (stacked.data.check)
     {
-        checkDataFeasibleForStacking(unstacked.data)
-        unstacked.data <- removeDataReduction(unstacked.data)
-        validated.unstacked.output <- validateDataForStacking(unstacked.data)
-        unstacked.data <- validated.unstacked.output[["data"]]
-        stacks <- validated.unstacked.output[["stacks"]]
-        data <- stackData(unstacked.data)
-        # Update interaction, subset and weights if necessary
-        # if interaction vector supplied
-        # it should be original n, needs to be stacked to n = nv where v is number oof outcome vars
-        if (!is.null(interaction))
-        {
-            if (length(interaction) != nrow(data))
-            {
-                old.interaction <- interaction
-                interaction <- rep(old.interaction, stacks)
-                interaction <- CopyAttributes(interaction, old.interaction)
-            }
-
-            # Update subset to be consistent with interaction
-            old.subset <- subset
-            subset.description <- Labels(subset)
-            tmp.sub <- !is.na(interaction)
-            if (is.null(subset) || length(subset) <= 1)
-            {
-                subset <- tmp.sub
-                attr(subset, "label") <- ""
-            } else
-            {
-                subset <- subset & tmp.sub
-                attr(subset, "label") <- subset.description
-            }
-        } else if (!is.null(subset) && length(subset) > 1)
-        {
-            old.subset <- subset
-            subset <- rep(old.subset, stacks)
-            subset <- CopyAttributes(subset, old.subset)
-        }
-        # Update weights
-        if (!is.null(weights) && length(weights) != nrow(data))
-        {
-            old.weights <- weights
-            weights <- rep(weights, stacks)
-            weights <- CopyAttributes(weights, old.weights)
-        }
-
-        # Update formula
-        formula <- input.formula <- updateStackedFormula(data, formula)
+        stacked.data.output <- processAndStackData(unstacked.data, formula, interaction, subset, weights)
+        # Update relevant terms
+        data <- stacked.data.output[["data"]]
+        formula <- input.formula <- stacked.data.output[["formula"]]
+        interaction <- stacked.data.output[["interaction"]]
+        subset <- stacked.data.output[["subset"]]
+        weights <- stacked.data.output[["weights"]]
     } else
         input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
 
@@ -496,6 +456,7 @@ Regression <- function(formula = as.formula(NULL),
             }
             final.model$model <- data
             final.model$weights <- weights
+            final.model$stacked <- stacked.data.check
             final.model <- setChartData(final.model, output)
             return(final.model)
         }
@@ -525,6 +486,7 @@ Regression <- function(formula = as.formula(NULL),
         {
             fit$subset <- row.names %in% rownames(.estimation.data)
             fit$sample.description <- processed.data$description
+            fit$stacked <- stacked.data.check
             return(fit)
         }
         original <- fit$original
@@ -709,7 +671,7 @@ Regression <- function(formula = as.formula(NULL),
                                               "and the model refitted;")
     }
     result <- setChartData(result, output)
-
+    result$stacked <- stacked.data.check
     return(result)
 }
 
@@ -1413,6 +1375,62 @@ findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type
     bound <- ceiling(n.model * (1 - outlier.prop.to.remove))
     valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
     return(valid.data.indices)
+}
+
+# Takes the input unstacked data, interaction, subset, weights and formula terms
+# Processes the unstacked data and stacks it.
+# If the stacking is successful, the interaction, subset, weights are also updated
+# to be the appropriate size
+processAndStackData <- function(unstacked.data, formula, interaction, subset, weights)
+{
+    checkDataFeasibleForStacking(unstacked.data)
+    unstacked.data <- removeDataReduction(unstacked.data)
+    validated.unstacked.output <- validateDataForStacking(unstacked.data)
+    unstacked.data <- validated.unstacked.output[["data"]]
+    stacks <- validated.unstacked.output[["stacks"]]
+    data <- stackData(unstacked.data)
+    # Update interaction, subset and weights if necessary
+    # if interaction vector supplied
+    # it should be original n, needs to be stacked to n = nv where v is number oof outcome vars
+    if (!is.null(interaction))
+    {
+        if (length(interaction) != nrow(data))
+        {
+            old.interaction <- interaction
+            interaction <- rep(old.interaction, stacks)
+            interaction <- CopyAttributes(interaction, old.interaction)
+        }
+
+        # Update subset to be consistent with interaction
+        old.subset <- subset
+        subset.description <- Labels(subset)
+        tmp.sub <- !is.na(interaction)
+        if (is.null(subset) || length(subset) <= 1)
+        {
+            subset <- tmp.sub
+            attr(subset, "label") <- ""
+        } else
+        {
+            subset <- subset & tmp.sub
+            attr(subset, "label") <- subset.description
+        }
+    } else if (!is.null(subset) && length(subset) > 1)
+    {
+        old.subset <- subset
+        subset <- rep(old.subset, stacks)
+        subset <- CopyAttributes(subset, old.subset)
+    }
+    # Update weights
+    if (!is.null(weights) && length(weights) != nrow(data))
+    {
+        old.weights <- weights
+        weights <- rep(weights, stacks)
+        weights <- CopyAttributes(weights, old.weights)
+    }
+
+    # Update formula
+    formula <- updateStackedFormula(data, formula)
+    list(data = data, formula = formula, interaction = interaction, subset = subset, weights = weights)
 }
 
 # Removes the data reduction columns and the reduction in the secondary codeframe attribute

@@ -644,3 +644,22 @@ test_that("Check categorical to numeric outcome warning", {
                         "analysis (e.g. by changing its structure). ",
                         "The variable Brand Nominal has been converted."))
 })
+
+
+test_that("Check auxiliary methods", {
+    stacked.regression <- suppressWarnings(Regression(type = "Linear", stacked.data.check = TRUE,
+                                                      unstacked.data = technology.unstacked))
+    stacked.binary.regression <- suppressWarnings(Regression(type = "Binary Logit", stacked.data.check = TRUE,
+                                                             unstacked.data = technology.unstacked))
+    # Check predict, residual and fitted value methods run without error
+    # (should only fail on Rserver due to dataset dimension mismatch)
+    expect_error(predicted <- predict(stacked.regression), NA)
+    expect_true(length(predicted) == 3926)
+    expect_error(stacked.residuals <- residuals(stacked.regression), NA)
+    expect_true(length(stacked.residuals) == 3926)
+    expect_error(stacked.fited <- fitted(stacked.regression), NA)
+    expect_true(length(stacked.fited) == 3926)
+    # Check probabilities doesn't fail
+    expect_error(stacked.probabilities <- flipData::Probabilities(stacked.binary.regression), NA)
+    expect_equal(dim(stacked.probabilities), c(3926, 2))
+})

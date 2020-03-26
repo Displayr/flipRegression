@@ -78,7 +78,11 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
                    NA)
-    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    # Due to the random input data, sometimes the print function will detect outliers (cooks distance)
+    # and throw a warning. Other times it will not detect outliers and no warning. Code below captures
+    # any warnings and checks if there is a single warning or no warning.
+    print.output <- capture_warnings(print(robust.dummy.regression))
+    expect_true(length(print.output) == 0 || grepl("Unusual observations detected", print.output))
     # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
     missing.data <- data.frame(Y, X)
     missing.data$X1[1] <- NA
@@ -86,7 +90,8 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
                    ill.conditioned.message)
-    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    print.output <- capture_warnings(print(robust.dummy.regression))
+    expect_true(length(print.output) == 0 || grepl("Unusual observations detected", print.output))
     # Fall back to the non-influence adjusted HCCM when the influence is not numerically viable.
     # Expect issues with the variance-covariance matrix but it can still be computed.
     missing.data <- data.frame(Y, X)
@@ -96,7 +101,8 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
                    ill.conditioned.message)
-    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    print.output <- capture_warnings(print(robust.dummy.regression))
+    expect_true(length(print.output) == 0 || grepl("Unusual observations detected", print.output))
     missing.data <- data.frame(Y, X)
     missing.data$X1[1] <- NA
     missing.data$X2[1:2] <- NA
@@ -104,7 +110,8 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
                    ill.conditioned.message)
-    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    print.output <- capture_warnings(print(robust.dummy.regression))
+    expect_true(length(print.output) == 0 || grepl("Unusual observations detected", print.output))
     # No warning when data is fine.
     missing.data <- data.frame(Y, X)
     missing.data$X1[c(1, 3)] <- NA
@@ -112,7 +119,8 @@ test_that("Robust SE compatible with Dummy variable adjustment", {
                                                          missing = "Dummy variable adjustment",
                                                          robust.se = TRUE),
                    NA)
-    expect_warning(print(robust.dummy.regression), "Unusual observations detected")
+    print.output <- capture_warnings(print(robust.dummy.regression))
+    expect_true(length(print.output) == 0 || grepl("Unusual observations detected", print.output))
 })
 
 
