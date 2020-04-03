@@ -86,7 +86,11 @@ of the following strings:
 the assumption of constant variance for linear models, using the HC3 modification of White's (1980) estimator
 (Long and Ervin, 2000). This parameter is ignored if weights are applied (as weights already
 employ a sandwich estimator). Other options are \code{FALSE} and \code{"FALSE"No}, which do the same
-thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.}
+thing, and \code{"hc0"}, \code{"hc1"}, \code{"hc2"}, \code{"hc4"}. A singularity can occur when a robust
+estimator is requested that depends on the influence (\code{"hc2"}, \code{"hc3"} or \code{"hc4"}) and
+at least one observation has a hat value of one. In that case, division by zero could occur and to avoid
+this the robust estimator is still computed but the observations with a singularity are adjusted
+with the degrees of freedom adjustment (\code{"hc1"}).}
 
 \item{method}{The method to be used; for fitting. This will only do something if
 method = "model.frame", which returns the model frame.}
