@@ -97,19 +97,19 @@
 #' @param stacked.data.check Logical value to determine if the Regression should be the data and formula based off
 #'   the \code{unstacked.data} argument by stacking the input and creating a formula based off attributes and provided
 #'   labels in the data. More details are given in the argument details for \code{unstacked.data}
-#' @param unstacked.data A list with two elements that provide the Outcome and Predictors respectively for data that
-#'   needs to be stacked. In particular, this is designed to work with input that is created with Q or Displayr which
-#'   creates \code{data.frame}s with a particular structure. In particular, the list has two elements, \itemize{
+#' @param unstacked.data A list with two elements that provide the outcome and predictor variables respectively for data
+#'   that needs to be stacked. In particular, this is designed to work best with input that is created with Q or
+#'   Displayr which contains  \code{data.frame}s with a particular structure. If the Q/Displayr \code{data.frame}s
+#'   are not available then simple \code{data.frame}s can be provided. In particular, a list is required with two
+#'   elements, \itemize{
 #'   \item \code{Y} A \code{data.frame} with \code{m} columns that represent the \code{m} variables to be stacked.
-#'   This \code{data.frame} can also contain an optional 'question' attribute to denote the overall name of this
-#'   set variable
 #'   \item \code{X} A \code{data.frame} where each column represents a column of a design matrix relevant to one of the
 #'   \code{m} variables given in element \code{Y} above. So if the overall regression model has \code{p} predictors.
-#'   Then this \code{data.frame} should contain \code{m * p} columns. The naming structure each column is comma
-#'   separated of the form 'predictor, outcome' where 'predictor' denotes the predictor name in the regression design
-#'   matrix and 'outcome' denotes the name of the variable in element \code{Y}. This format is required to ensure that
-#'   the columns are appropriately matched and stacked. The function also accepts column names of the reverse order
-#'   with 'outcome, predictor', so long as there isn't any ambiguity.}
+#'   Then this \code{data.frame} should contain \code{m * p} columns. In the absence of Q/Displayr metadata, the naming
+#'   structure each column is comma separated of the form 'predictor, outcome' where 'predictor' denotes the
+#'   predictor name in the regression design matrix and 'outcome' denotes the name of the variable in element \code{Y}.
+#'   This format is required to ensure that the columns are appropriately matched and stacked. The function also
+#'   accepts column names of the reverse order with 'outcome, predictor', so long as there isn't any ambiguity.}
 #' @param ... Additional argments to be passed to  \code{\link{lm}} or, if the
 #'  data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.
 #' @details In the case of Ordered Logistic regression, this function computes a proporional odds model using
