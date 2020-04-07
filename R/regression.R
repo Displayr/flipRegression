@@ -363,10 +363,7 @@ Regression <- function(formula = as.formula(NULL),
     else if (is.factor(outcome.variable))
     {
         WarningFactorToNumeric()
-        lbl <- attr(outcome.variable, "label")
-        outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
-        attr(outcome.variable, "label") <- lbl
-        data[, outcome.name] <- outcome.variable
+        data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
