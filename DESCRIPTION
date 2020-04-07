@@ -38,7 +38,7 @@ Remotes: Displayr/flipU,
     Displayr/flipData,
     Displayr/flipStandardCharts,
     Displayr/flipStatistics,
-    Displayr/flipTransformations,
+    Displayr/flipTransformations@DS-2702,
     Displayr/flipTables,    
     Displayr/rhtmlHeatmap
 LinkingTo: Rcpp (>= 0.12.15),
