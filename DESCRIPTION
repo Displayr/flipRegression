@@ -33,7 +33,7 @@ Suggests:
     flipExampleData,
     testthat,
     robustbase
-Remotes: Displayr/flipU,
+Remotes: Displayr/flipU@DS-2702,
     Displayr/flipFormat,
     Displayr/flipData,
     Displayr/flipStandardCharts,

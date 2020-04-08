@@ -28,6 +28,7 @@ r_github_packages:
   - Displayr/flipDevTools
   - Displayr/flipExampleData
   - Displayr/flipTransformations@DS-2702
+  - Displayr/flipU@DS-2702
 
 script:
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
