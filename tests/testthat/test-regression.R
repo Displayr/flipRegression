@@ -277,8 +277,18 @@ test_that("Error if too many dummy predictors",
                            "There are fewer observations.")
           })
 
+test_that("DS-2702: Outcome labels are preserved", {
+    bank$Overall <- as.factor(bank$Overall)
+    bank$Overall[is.na(bank$Overall)] <- 1 # previously label was lost for variables without missing values
+    attr(bank$Overall, "label") <- "lbl"
+    result <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                                          data = bank, show.labels = TRUE))
+    expect_equal(result$outcome.label, "lbl")
+})
+
 test_that("Ensure output size does not get too large (DS-2518)", {
               bank50 <- do.call("rbind", lapply(1:50, function(x) bank))
               result <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank50))
               expect_true(as.numeric(object.size(result)) < 10000000) # less than 10MB
           })
+

@@ -208,9 +208,16 @@ Davison, A. C. and Snell, E. J. (1991) Residuals and diagnostics. In: Statistica
   Greenwell, B., McCarthy, A. and Boehmke, B. (2017). sure: Surrogate Residuals for Ordinal and General
   Regression Models. R package version 0.2.0. https://CRAN.R-project.org/package=sure
 
+  Gromping, U. (2007). "Estimators of Relative Importance in Linear
+  Regression Based on Variance Decomposition", The American Statistician,
+  61, 139-147.
+
   von Hippel, Paul T. 2007. "Regression With Missing Y's: An
   Improved Strategy for Analyzing Multiply Imputed Data." Sociological
   Methodology 37:83-117.
+
+  Johnson, J.W. (2000). "A Heuristic Method for Estimating the Relative Weight",
+  Multivariate Behavioral Research, 35:1-19.
 
   Long, J. S. and Ervin, L. H. (2000). Using heteroscedasticity consistent
   standard errors in the linear regression  model. The American Statistician, 54(3): 217-224.
