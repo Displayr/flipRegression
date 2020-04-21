@@ -15,43 +15,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         if (!is.null(unusual))
             warning(unusual)
     }
-    # Testing to see if there is multicollinearity.
-    if (length(x$original$coefficients) > 2 & ncol(x$model) > 2 & x$type == "Linear" & x$missing != "Use partial data (pairwise correlations)")
-    {
-        vifs <- tryCatch(vif(x), error = function(e) NULL)
-        if (!is.null(vifs))
-        {
-            max.vif <- max(vifs)
-            if (!is.nan(max.vif) && max.vif >= 4)
-            {
-                pref <- if(x$type == "Linear") "" else "Generalized "
-                nms <- rownames(x$summary$coefficients)[-1]
-                dummy.vars <- grepDummyVars(nms)
-                if (any(dummy.vars))
-                {
-                    nms <- nms[!dummy.vars]
-                    dummy.vifs <- vifs[dummy.vars]
-                    if (any(dummy.vifs > 10))
-                        dummy.var.msg <- paste0("At least one of the dummy variable adjustment predictors for the ",
-                                                "missing data has a Variance Inflation Factor larger than 10. ")
-                    else if (any(dummy.vifs >= 4))
-                        dummy.var.msg <- paste0("At least one of the dummy variable adjustment predictors for the ",
-                                                "missing data has a Variance Inflation Factor larger than 4. ")
-                    else
-                        dummy.var.msg <- NULL
-                    vifs <- vifs[!dummy.vars]
-                } else
-                    dummy.var.msg <- NULL
-                VIFs <- paste0(nms,": ", FormatAsReal(vifs, 2), c(rep("; ", length(nms) - 1), ""), collapse = "")
-                regular.var.msg <- paste0("The ", pref, "Variance Inflation Factor of the coefficients are: ",
-                                          VIFs, ". ")
-                warning(paste0(regular.var.msg, dummy.var.msg,
-                               "A value of 4 or more indicates the confidence interval for the coefficient is ",
-                               "twice as wide as they would be for uncorrelated predictors. A value of 10 or more ",
-                               "indicates high multicollinearity."))
-            }
-        }
-    }
+    # Check for high correlations in predictors and warn if necessary
+    if (is.null(x$importance))
+        checkVIFAndWarn(x)
     #Testing to see if the variance is non-constant.
     partial <- x$missing == "Use partial data (pairwise correlations)"
     if (x$type == "Linear" & !partial & !weighted & x$robust.se == FALSE)
@@ -457,3 +423,77 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
 
 
 
+#' Computes and inspects the variance inflation factors (VIFs) and throws a warning if they are high
+#' @param x A Regression object
+#' @noRd
+checkVIFAndWarn <- function(x)
+{
+    n.coefs <- length(x$original$coefficients)
+    n.variables <- ncol(x$model)
+    if (n.coefs > 2 & n.variables > 2 & x$missing != "Use partial data (pairwise correlations)")
+    {
+        vifs <- tryCatch(vif(x), error = function(e) NULL)
+        if (!is.null(vifs))
+        {
+            # Check if the GVIF is used and square it
+            if (NCOL(vifs) == 3)
+            {
+                vifs <- vifs[, 3]^2
+                prefix <- "squared Generalized "
+            } else
+                prefix <- ""
+            # Check is the largest calculated VIF is large enough for a warning.
+            max.vif <- max(vifs)
+            if (!is.nan(max.vif) && max.vif >= 4)
+            {
+                vifs <- vifs[vifs >= 4]
+                # Helper function to create the VIF statements
+                .printVIFs <- function(x, prefix, regression.object, dummy = FALSE)
+                {
+                    if (regression.object$show.labels)
+                    {
+                        labels <- Labels(regression.object$model, names(x))
+                        extracted <- ExtractCommonPrefix(labels)
+                        if (!is.na(extracted$common.prefix))
+                          labels <- extracted$shortened.labels
+                        names(x) <- labels
+                    } else
+                        labels <- names(x)
+                    # Sort output by alphabetical labels
+                    x <- sort(x, decreasing = TRUE)
+                    printed.values <- paste0(names(x), " = ", FormatAsReal(x, 2), c(rep("; ", length(labels) - 1), ""),
+                                             collapse = "")
+
+                    paste0("A high ", prefix, "Variance Inflation Factor ",
+                           ifelse(dummy,
+                                  paste0("for the added dummy variable", ngettext(length(x), " is ", "s are "),
+                                         "observed in the coefficient"),
+                                  "is observed in the coefficient"),
+                           ngettext(length(x), " for ", "s "),
+                           printed.values, ". ")
+                }
+                dummy.vars <- grepDummyVars(names(vifs))
+                vifs.msg <- NULL
+                if (any(!dummy.vars))
+                    vifs.msg <- c(vifs.msg, .printVIFs(vifs[!dummy.vars], prefix, x))
+                if (any(dummy.vars))
+                {
+                    dummy.vifs <- vifs[dummy.vars]
+                    # Remove disambiguation string
+                    names(dummy.vifs) <- gsub(".dummy.var_GQ9KqD7YOf$", "", names(dummy.vifs))
+                    vifs.msg <- paste0(vifs.msg, .printVIFs(dummy.vifs, prefix, x, dummy = TRUE))
+                }
+                # Collate message with RIA suggestion and throw warning.
+                suggestion.for.ria <- paste0("Consider conducting a relative importance analysis by selecting the ",
+                                             "output to be Relative Importance Analysis.")
+                if (x$type == "Linear")
+                    suggestion.for.ria <- paste0(gsub("\\.$", "", suggestion.for.ria), " or Shapley Regression.")
+                explanation.msg <- paste0("A value of 4 or more indicates the confidence interval for the coefficient ",
+                                          "is twice as wide as they would be for uncorrelated predictors. A value of ",
+                                          "10 or more indicates high multicollinearity. ")
+                warning.msg <- paste0(vifs.msg, explanation.msg, suggestion.for.ria)
+                warning(warning.msg)
+            }
+        }
+    }
+}
