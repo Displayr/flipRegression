@@ -325,6 +325,9 @@ Regression <- function(formula = as.formula(NULL),
             attr(data[[i]], "label") <- paste0(labels[i], " (", names(data)[i], ")")
     }
 
+    if (output == "Jaccard Coefficient")
+        checkDataSuitableForJaccard(data, formula, show.labels)
+
     if (method == "model.frame")
         return(data)
     if (output == "Effects Plot") # allEffects fails if names have backticks and are not syntactic
