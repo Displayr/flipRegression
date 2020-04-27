@@ -35,7 +35,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
     }
     outcome.variable <- outcomeVariableFromModel(x)
-    if (length(unique(outcome.variable)) == 2 && x$type == "Linear")
+    if (length(unique(outcome.variable)) == 2 && x$type == "Linear" && x$output != "Jaccard Coefficient")
         warning(paste0("The outcome variable contains only two unique values. A Binary Logit may be
                        more appropriate."))
     else
@@ -94,9 +94,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         relevant.coefs <- !grepDummyVars(row.names(x$interaction$coefficients))
 
-        dt <- CrosstabInteractionTable(x$interaction$coefficients[relevant.coefs, ],
-                                       x$interaction$coef.tstat[relevant.coefs, ],
-                                       x$interaction$coef.pvalues[relevant.coefs, ],
+        dt <- CrosstabInteractionTable(x$interaction$coefficients[relevant.coefs, , drop = FALSE],
+                                       x$interaction$coef.tstat[relevant.coefs, , drop = FALSE],
+                                       x$interaction$coef.pvalues[relevant.coefs, , drop = FALSE],
                                        x$interaction$split.size,
                                        title = title,
                                        footer = caption,
@@ -113,7 +113,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             lbls <- extracted$shortened.labels
             title <- paste0(title, " by ", extracted$common.prefix)
         }
-        dt <- ImportanceTable(x$importance, lbls, title, footer = x$importance.footer)
+        dt <- ImportanceTable(x$importance, lbls, title, footer = x$importance.footer, output.type = x$output)
         print(dt)
     }
     else if (x$output == "R")
@@ -149,6 +149,20 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         EffectsPlot(x,
                     max.factor.label.length = x$effects.format$max.label,
                     y.axis.title = x$effects.format$y.axis)
+    }
+    else if (x$output == "Jaccard Coefficient")
+    {
+        jaccard.output <- x$jaccard.importance
+        labels <- extractVariableCoefficientNames(x)
+        title <- paste0("Jaccard Coefficient (", regressionType(x$type), "): ", x$outcome.label)
+        extracted <- ExtractCommonPrefix(labels)
+        if (!is.na(extracted$common.prefix))
+        {
+            labels <- extracted$shortened.labels
+            title <- paste0(title, " by ", extracted$common.prefix)
+        }
+        output.table <- ImportanceTable(jaccard.output, labels, title, footer = "", output.type = "Jaccard Coefficient")
+        print(output.table)
     }
     else
     {    # Pretty table.

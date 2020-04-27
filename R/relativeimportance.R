@@ -30,20 +30,10 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     if (type == "Multinomial Logit")
         stop("Relative importance analysis is not available for ", type)
 
-    # If necessary, filter the data to the outlier adjusted subset
-    if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
-    {
-        data.indices <- data[, "non.outlier.data_GQ9KqD7YOf"]
-        data <- data[data.indices, ]
-        if (!is.null(weights))
-            weights <- weights[data.indices]
-    }
-    # Protect against dot in formula with the non.outlier indicator variable
-    formula.terms <- terms.formula(formula, data = data)
-    if (any(non.outlier.in.data.frame <- attr(formula.terms, "term.labels") == "non.outlier.data_GQ9KqD7YOf"))
-        formula <- update.formula(formula, drop.terms(formula.terms,
-                                                      which(non.outlier.in.data.frame),
-                                                      keep.response = TRUE))
+    processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
+    data <- processed.data$data
+    weights <- processed.data$weights
+    formula <- processed.data$formula
 
     info <- extractRegressionInfo(formula, data, weights, type, signs,
                                   r.square, variable.names, robust.se,
@@ -242,4 +232,168 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
         }
     }
     list(signs = signs, r.square = r.square, variable.names = variable.names)
+}
+
+#' Function to find the correct subset omitting outliers, returns
+#' the appropriate subsetted data, updated formula (incase dot is used)
+#' @param formula The formula object to construct the regression
+#' @param data The estimation data used in the regression construction
+#' @param weights The optional numeric vector of non-negative weights
+#' @param outlier.prop.to.remove Single numeric value denoting the proportion of observations removed in
+#'  the automated outlier removal.
+#' @importFrom stats terms.formula update.formula
+#' @importFrom flipU OutcomeName
+#' @noRd
+subsetDataWeightsAndFormula <- function(formula, data, weights)
+{
+    # If necessary, filter the data to the outlier adjusted subset
+    if ("non.outlier.data_GQ9KqD7YOf" %in% names(data))
+    {
+        data.indices <- data[["non.outlier.data_GQ9KqD7YOf"]]
+        data <- data[data.indices, -which(names(data) == "non.outlier.data_GQ9KqD7YOf")]
+        if (!is.null(weights))
+            weights <- weights[data.indices]
+    }
+
+    # Protect against dot in formula with the non.outlier indicator variable
+    formula.terms <- terms.formula(formula, data = data)
+    predictor.names <- attr(formula.terms, "term.labels")
+    non.outlier.in.data.frame <- predictor.names == "non.outlier.data_GQ9KqD7YOf"
+    if (any(non.outlier.in.data.frame))
+    {
+        formula <- update.formula(formula, drop.terms(formula.terms,
+                                                      which(non.outlier.in.data.frame),
+                                                      keep.response = TRUE))
+        predictor.names <- predictor.names[!non.outlier.in.data.frame]
+    }
+    # subset data (removes interaction term from data and only extracts terms from formula)
+    outcome.name <- OutcomeName(formula, data)
+    data <- data[, c(outcome.name, predictor.names)]
+    return(list(formula = formula,
+                data = data,
+                weights = weights))
+}
+
+#' Computes the Jaccard Coefficients for the outcome variable against all the predictors
+#' used in the regression and returns those coefficients along with their relative importance
+#' and the outcome variable itself along with the data.frame of predictors
+#' @param formula The formula used in the Regression model
+#' @param data The data to compute the calculation on
+#' @param weights A numeric vector of weights
+#' @param variable.names Vector of names of the coefficients in the regression model
+#' @importFrom flipU OutcomeName
+#' @importFrom stats terms.formula
+#' @noRd
+computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.names)
+{
+    processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
+    relevant.data <- processed.data$data
+    weights <- processed.data$weights
+    formula <- processed.data$formula
+
+    outcome.name <- OutcomeName(formula, relevant.data)
+    outcome.variable <- relevant.data[[outcome.name]]
+    predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
+    predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
+    jaccard.coefficients <- vapply(predictor.variables, singleJaccardCoefficient,
+                                   numeric(1), y = outcome.variable)
+    names(jaccard.coefficients) <- variable.names
+    relative.importance <- prop.table(jaccard.coefficients) * 100
+    list(outcome.variable = outcome.variable,
+         coefficients = jaccard.coefficients,
+         relative.importance = relative.importance,
+         predictor.variables = predictor.variables,
+         weights = weights)
+}
+
+#' Compute the single Jaccard coefficient between x and y
+#' @param x The binary input variable x
+#' @param y The binary input variable y
+#' @param centered A logical to determine if the centered coefficient is returned.
+#'   If \code{TRUE}, then the estimate of the mean is subtracted off the jaccard coefficient.
+#' @noRd
+singleJaccardCoefficient <- function(x, y, centered = FALSE, weights = NULL) {
+    if (is.null(weights))
+        j <- sum(y & x, na.rm = TRUE)/sum(x | y, na.rm = TRUE)
+    else
+        j <- sum(weights[y & x], na.rm = TRUE)/sum(weights[x | y], na.rm = TRUE)
+    if (centered && is.null(weights))
+        j <- j - singleJaccardExpectation(x, y)
+    j
+}
+
+# Computes the expected value of the Jaccard coefficient between binary variables x and y
+singleJaccardExpectation <- function(x, y)
+{
+    px <- mean(x, na.rm = TRUE)
+    py <- mean(y, na.rm = TRUE)
+    px * py/(px + py - px * py)
+}
+
+#' @param x The formula used in the Regression model
+#' @param data The data to compute the calculation on
+#' @param weights A numeric vector of weights
+#' @param variable.names Logical vector to determine if variable names or labels should be used.
+#' @importFrom flipU OutcomeName
+#' @importFrom stats terms.formula
+#' @importFrom flipFormat Labels
+#' @noRd
+computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, variable.names)
+{
+    jaccard.coef.output <- computeJaccardCoefficients(formula, data, weights, variable.names)
+    # Extract the outcome binary variable, the data.frame of predictor binary variables
+    # the computed jaccard coefficients and the relative importance and possible weights
+    y <- jaccard.coef.output$outcome.variable
+    X <- jaccard.coef.output$predictor.variables
+    jaccard.coefs <- jaccard.coef.output$coefficients
+    names(jaccard.coefs) <- variable.names
+    relative.importance <- jaccard.coef.output$relative.importance
+    weights <- if(is.null(jaccard.coef.output$weights)) rep(1, length(y)) else CalibrateWeight(weights)
+    test.output <- lapply(X, jaccardTest, y = y, weights = weights)
+    pvalues <- vapply(test.output, "[[", numeric(1), "p.value")
+    standard.errors <- vapply(test.output, "[[", numeric(1), "standard.error")
+    names(pvalues) <- names(standard.errors) <- variable.names
+    sample.size <- vapply(X, function(x) sum(!is.na(x) & !is.na(y)), numeric(1))
+    list(importance = relative.importance,
+         raw.importance.score = jaccard.coefs,
+         standard.errors = standard.errors,
+         sample.size = sample.size,
+         p.values = pvalues)
+}
+
+#' Compute the single p-value using reasmpled binary variables x and y
+#' @param x A numeric vector of the binary predictor variable
+#' @param y A numeric vector of the binary outcome variable
+#' @param weights A numeric vector of non-negative weight values
+#' @importFrom survey svydesign svyratio degf
+#' @noRd
+jaccardTest <- function(x, y, weights)
+{
+    design <- svydesign(id = ~ 1,
+                        data = data.frame(numerator = as.integer(y & x),
+                                          denominator = as.integer(y | x)),
+                        weights = ~ weights)
+    ratio.estimation <- svyratio(~ numerator, ~ denominator, design, covmat = TRUE)
+    jaccard <- as.numeric(ratio.estimation$ratio)
+    df <- degf(design)
+    p <- mean(x, na.rm = TRUE)
+    q <- mean(y, na.rm = TRUE)
+    expected.jaccard <- p * q / (p + q - p * q)
+    # Catch case when estimated Jaccard coef == 1 (vectors identical)
+    if (jaccard != 0 && jaccard != 1)
+        standard.error <- sqrt(as.numeric(ratio.estimation$var))
+    else
+    { # Compute the second order Taylor expansion estimate of the variance
+        weight.factor <- sum(weights^2)/sum(weights)^2
+        multiplier <- (p + q - 2 * p * q)/(p * q * (p + q - p * q))
+        standard.error <- expected.jaccard* sqrt(weight.factor * multiplier)
+    }
+    t <- (jaccard - expected.jaccard) / standard.error
+    p <- 2 * pt(-abs(t), df)
+    list(jaccard = jaccard,
+         expected = expected.jaccard,
+         df = df,
+         standard.error = standard.error,
+         t = t,
+         p.value = p)
 }

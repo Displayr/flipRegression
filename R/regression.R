@@ -228,7 +228,8 @@ Regression <- function(formula = as.formula(NULL),
         else
             stop("Shapley requires Regression type to be Linear. Set the output to ",
                  "Relative Importance Analysis instead.")
-    }
+    } else if (output %in% c("Jaccard Coefficient", "Correlation"))
+        output
     else
         NULL
 
@@ -382,7 +383,7 @@ Regression <- function(formula = as.formula(NULL),
     {
         if (internal)
             stop("'internal' may not be selected with regressions based on correlation matrices.")
-        if (!is.null(importance))
+        if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
             stop("Relative importance analysis and Shapley Regression are not ",
                  "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
@@ -549,6 +550,7 @@ Regression <- function(formula = as.formula(NULL),
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
+    result$filtered.weights <- weights
     result$output <- output
     result$outlier.prop.to.remove <- outlier.prop.to.remove
     result$show.labels <- show.labels
@@ -606,7 +608,7 @@ Regression <- function(formula = as.formula(NULL),
         result$summary$coefficients[,4] <- pvalAdjust(result$summary$coefficients[,4], correction)
     }
 
-    if (!is.null(importance))
+    if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
     {
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
@@ -648,6 +650,14 @@ Regression <- function(formula = as.formula(NULL),
         if (importance == "Relative Importance Analysis")
             result$relative.importance <- result$importance
     }
+
+    if (output == "Jaccard Coefficient")
+    {
+        labels <- rownames(result$summary$coefficients)[-1]
+        result$jaccard.importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data, .weights, labels)
+    }
+
+
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                          formula.with.interaction, importance,

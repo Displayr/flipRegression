@@ -11,7 +11,7 @@ outcomeVariableFromModel <- function(Regression.object)
 #' @param formula The formula to extract the appropriate variables
 #' @param show.labels The logical to determine if the error message states names or labels
 #' @importFrom flipU OutcomeName OutcomeVariable
-#' @NoRd
+#' @noRd
 checkDataSuitableForJaccard <- function(data, formula, show.labels)
 {
     outcome.name <- OutcomeName(formula)
@@ -51,7 +51,7 @@ checkDataSuitableForJaccard <- function(data, formula, show.labels)
 #' @param show.labels The logical to distinguish between names and labels
 #' @param variable.type A character of either "outcome" or "predictor"
 #' @importFrom flipFormat Labels
-#' @NoRd
+#' @noRd
 variablesNotBinaryMessage <- function(dat, variable.names, show.labels, variable.type)
 {
     labels <- sQuote(Labels(dat, names.to.lookup = variable.names, show.name = !show.labels))
@@ -66,7 +66,7 @@ variablesNotBinaryMessage <- function(dat, variable.names, show.labels, variable
     paste0(variable.type, variable.msg, labels, binary.msg)
 }
 
-#' Returns TRUE or FALSE is input variable is binary or not binary respectively
+# Returns TRUE or FALSE is input variable is binary or not binary respectively
 checkVariableIsBinary <- function(x)
 {
     unique.values <- unique(x)
