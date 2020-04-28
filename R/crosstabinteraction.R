@@ -65,10 +65,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (!is.null(importance))
     {
-        if (result$output %in% c("Relative Importance Analysis", "Shapley Regression"))
-            importance.scores <- result$importance$importance
-        else if (result$output == "Jaccard Coefficient")
-            importance.scores <- result$jaccard.importance$importance
+        importance.scores <- result$importance$importance
         var.names <- if (result$type == "Ordered Logit")
             var.names[1:length(importance.scores)]
         else
@@ -105,7 +102,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                                                   result$robust.se, result$outlier.prop.to.remove, FALSE, correction, importance))
 
 
-            } else if (importance == "Jaccard Coefficient")
+            }
+            else if (importance == "Jaccard Coefficient")
             {
                 tmp.ri <- try(computeJaccardCoefficientOutput(result$formula,
                                                               RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
@@ -115,6 +113,16 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                                                                weights[-is.split], var.names), NA)
 
             }
+            else
+            {
+                tmp.ri <- try(computeCorrelationOutput(result$formula,
+                                                       RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
+                                                       weights[-is.split], var.names, result$missing), NA)
+                tmpC.ri <- try(computeCorrelationOutput(result$formula,
+                                                        RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
+                                                        weights[-is.split], var.names, result$missing), NA)
+            }
+
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
                 tmp.sign <- sign(tmp.ri$importance)

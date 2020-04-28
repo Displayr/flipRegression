@@ -296,7 +296,7 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
     predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
     jaccard.coefficients <- vapply(predictor.variables, singleJaccardCoefficient,
-                                   numeric(1), y = outcome.variable)
+                                   numeric(1), y = outcome.variable, weights = weights)
     names(jaccard.coefficients) <- variable.names
     relative.importance <- prop.table(jaccard.coefficients) * 100
     list(outcome.variable = outcome.variable,
@@ -317,7 +317,7 @@ singleJaccardCoefficient <- function(x, y, centered = FALSE, weights = NULL) {
         j <- sum(y & x, na.rm = TRUE)/sum(x | y, na.rm = TRUE)
     else
         j <- sum(weights[y & x], na.rm = TRUE)/sum(weights[x | y], na.rm = TRUE)
-    if (centered && is.null(weights))
+    if (centered)
         j <- j - singleJaccardExpectation(x, y)
     j
 }
@@ -330,13 +330,11 @@ singleJaccardExpectation <- function(x, y)
     px * py/(px + py - px * py)
 }
 
-#' @param x The formula used in the Regression model
+#' @param formula The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
 #' @param variable.names Logical vector to determine if variable names or labels should be used.
-#' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
-#' @importFrom flipFormat Labels
 #' @noRd
 computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, variable.names)
 {
@@ -354,6 +352,7 @@ computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, varia
     standard.errors <- vapply(test.output, "[[", numeric(1), "standard.error")
     names(pvalues) <- names(standard.errors) <- variable.names
     sample.size <- vapply(X, function(x) sum(!is.na(x) & !is.na(y)), numeric(1))
+    names(sample.size) <- variable.names
     list(importance = relative.importance,
          raw.importance.score = jaccard.coefs,
          standard.errors = standard.errors,
@@ -369,11 +368,11 @@ computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, varia
 #' @noRd
 jaccardTest <- function(x, y, weights)
 {
-    design <- svydesign(id = ~ 1,
+    design <- svydesign(ids = ~ 1,
                         data = data.frame(numerator = as.integer(y & x),
                                           denominator = as.integer(y | x)),
                         weights = ~ weights)
-    ratio.estimation <- svyratio(~ numerator, ~ denominator, design, covmat = TRUE)
+    ratio.estimation <- svyratio(~ numerator, ~ denominator, design, na.rm = TRUE)
     jaccard <- as.numeric(ratio.estimation$ratio)
     df <- degf(design)
     p <- mean(x, na.rm = TRUE)
@@ -396,4 +395,55 @@ jaccardTest <- function(x, y, weights)
          standard.error = standard.error,
          t = t,
          p.value = p)
+}
+
+#' @param x The formula used in the Regression model
+#' @param data The data to compute the calculation on
+#' @param weights A numeric vector of weights
+#' @param variable.names Logical vector to determine if variable names or labels should be used.
+#' @param missing Character string of the missing value technique to be applied.
+#' @importFrom flipU OutcomeName
+#' @importFrom stats terms.formula
+#' @importFrom flipStatistics CorrelationsWithSignificance
+#' @noRd
+computeCorrelationOutput <- function(formula, data = NULL, weights, variable.names, missing)
+{
+    processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
+    relevant.data <- processed.data$data
+    weights <- processed.data$weights
+    formula <- processed.data$formula
+
+    outcome.name <- OutcomeName(formula, relevant.data)
+    outcome.variable <- relevant.data[[outcome.name]]
+    predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
+    predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
+    pairwise.method <- missing == "Use partial data (pairwise correlations)"
+
+    weights <- if (is.null(weights)) rep(1, nrow(relevant.data)) else weights
+    correlation.output <- CorrelationsWithSignificance(relevant.data, weights)
+    indices <- match(predictor.names, colnames(correlation.output$cor), nomatch = 0)
+
+    correlation.coefs <- extractFirstRowMatrixToNumeric(correlation.output$cor, indices)
+    relative.importance <- 100 * prop.table(correlation.coefs)
+    statistics <- extractFirstRowMatrixToNumeric(correlation.output$t, indices)
+    std.errs <- extractFirstRowMatrixToNumeric(correlation.output$standard.errors, indices)
+    pvalues <- extractFirstRowMatrixToNumeric(correlation.output$p, indices)
+    sample.size <- vapply(predictor.variables, function(x, y) sum(!is.na(x) & !is.na(y)), numeric(1), y = outcome.variable)
+    list(importance = relative.importance,
+         raw.importance.score = correlation.coefs,
+         statistics = statistics,
+         standard.errors = std.errs,
+         sample.size = sample.size,
+         p.values = pvalues)
+}
+
+# Extracts the first row of a numeric matrix, the columns selected are
+# governed by the indices argument.
+extractFirstRowMatrixToNumeric <- function(mat, indices)
+{
+    x <- mat[1, indices, drop = FALSE]
+    names.x <- colnames(x)
+    x <- as.numeric(x)
+    names(x) <- names.x
+    x
 }

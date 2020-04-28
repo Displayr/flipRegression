@@ -7,6 +7,7 @@ outcomeVariableFromModel <- function(Regression.object)
 }
 
 #' Checks if the input data is suitable to create the Jaccard coefficient output
+#' by checking that it is a binary variable with only two values, 0 and 1.
 #' @param data The data.frame containing the data to be used in the Regression
 #' @param formula The formula to extract the appropriate variables
 #' @param show.labels The logical to determine if the error message states names or labels
@@ -69,6 +70,10 @@ variablesNotBinaryMessage <- function(dat, variable.names, show.labels, variable
 # Returns TRUE or FALSE is input variable is binary or not binary respectively
 checkVariableIsBinary <- function(x)
 {
+    # Remove any missing, in Regression this function should only be called
+    # after variable has been inspected for entirely missing data (avoids edge case here)
+    if (any(is.na(x)))
+        x <- x[!is.na(x)]
     unique.values <- unique(x)
     all(c(0, 1) %in% unique.values && length(unique.values) == 2)
 }

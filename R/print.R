@@ -150,10 +150,13 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                     max.factor.label.length = x$effects.format$max.label,
                     y.axis.title = x$effects.format$y.axis)
     }
-    else if (x$output == "Jaccard Coefficient")
+    else if (x$output %in% c("Jaccard Coefficient", "Correlation"))
     {
-        jaccard.output <- x$jaccard.importance
         labels <- extractVariableCoefficientNames(x)
+        if (x$output == "Jaccard Coefficient")
+            driver.analysis.output <- x$jaccard.importance
+        else
+            driver.analysis.output <- x$correlation.importance
         title <- paste0("Jaccard Coefficient (", regressionType(x$type), "): ", x$outcome.label)
         extracted <- ExtractCommonPrefix(labels)
         if (!is.na(extracted$common.prefix))
@@ -161,7 +164,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             labels <- extracted$shortened.labels
             title <- paste0(title, " by ", extracted$common.prefix)
         }
-        output.table <- ImportanceTable(jaccard.output, labels, title, footer = "", output.type = "Jaccard Coefficient")
+        output.table <- ImportanceTable(driver.analysis.output, labels, title, footer = "", output.type = x$output)
         print(output.table)
     }
     else

@@ -326,9 +326,6 @@ Regression <- function(formula = as.formula(NULL),
             attr(data[[i]], "label") <- paste0(labels[i], " (", names(data)[i], ")")
     }
 
-    if (output == "Jaccard Coefficient")
-        checkDataSuitableForJaccard(data, formula, show.labels)
-
     if (method == "model.frame")
         return(data)
     if (output == "Effects Plot") # allEffects fails if names have backticks and are not syntactic
@@ -357,6 +354,10 @@ Regression <- function(formula = as.formula(NULL),
         formula.with.interaction <- missing.variable.adjustment$formula.with.interaction
         input.formula <- missing.variable.adjustment$input.formula
     }
+    # Check data suitable for Jaccard after variables have been checked for all missing
+    if (output == "Jaccard Coefficient")
+        checkDataSuitableForJaccard(data, formula, show.labels)
+
     if (type == "Binary Logit")
     {
         data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
@@ -651,12 +652,19 @@ Regression <- function(formula = as.formula(NULL),
             result$relative.importance <- result$importance
     }
 
-    if (output == "Jaccard Coefficient")
+    if (output %in% c("Jaccard Coefficient", "Correlation"))
     {
         labels <- rownames(result$summary$coefficients)[-1]
-        result$jaccard.importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data, .weights, labels)
+        if (partial) # missing = "Use partial data (pairwise correlations)"
+        {
+            .estimation.data <- data
+            .weights <- weights
+        }
+        if (output == "Jaccard Coefficient")
+            result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data, .weights, labels)
+        else
+            result$importance <- computeCorrelationOutput(input.formula, .estimation.data, .weights, labels, missing)
     }
-
 
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
@@ -790,7 +798,8 @@ regressionFooter <- function(x)
 importanceFooter <- function(x)
 {
     footer <- x$sample.description
-    if (!x$test.interaction)
+    # Suppress the footer addition for the Jaccard and Correlation outputs
+    if (!x$test.interaction && !x$importance %in% c("Jaccard Coefficient", "Correlation"))
         footer <- paste0(footer, " R-squared: ", FormatAsReal(x$r.squared, 4), ";")
     footer <- paste0(footer, " multiple comparisons correction: ", x$correction, ";")
     footer
