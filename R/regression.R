@@ -661,9 +661,15 @@ Regression <- function(formula = as.formula(NULL),
             .weights <- weights
         }
         if (output == "Jaccard Coefficient")
+        {
             result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data, .weights, labels)
+            result$importance.type <- "Jaccard Coefficient"
+        }
         else
+        {
             result$importance <- computeCorrelationOutput(input.formula, .estimation.data, .weights, labels, missing)
+            result$importance.type <- "Correlation"
+        }
     }
 
     if (result$test.interaction)
