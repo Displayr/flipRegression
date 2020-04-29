@@ -424,7 +424,7 @@ computeCorrelationOutput <- function(formula, data = NULL, weights, variable.nam
     indices <- match(predictor.names, colnames(correlation.output$cor), nomatch = 0)
 
     correlation.coefs <- extractFirstRowMatrixToNumeric(correlation.output$cor, indices)
-    relative.importance <- 100 * prop.table(correlation.coefs)
+    relative.importance <- 100 * prop.table(abs(correlation.coefs))
     statistics <- extractFirstRowMatrixToNumeric(correlation.output$t, indices)
     std.errs <- extractFirstRowMatrixToNumeric(correlation.output$standard.errors, indices)
     pvalues <- extractFirstRowMatrixToNumeric(correlation.output$p, indices)
