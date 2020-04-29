@@ -34,10 +34,10 @@ Suggests:
     testthat,
     robustbase
 Remotes: Displayr/flipU,
-    Displayr/flipFormat,
+    Displayr/flipFormat@DS-2876,
     Displayr/flipData,
     Displayr/flipStandardCharts,
-    Displayr/flipStatistics,
+    Displayr/flipStatistics@DS-2876,
     Displayr/flipTransformations,
     Displayr/flipTables,    
     Displayr/rhtmlHeatmap
