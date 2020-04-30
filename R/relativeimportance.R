@@ -333,7 +333,7 @@ singleJaccardExpectation <- function(x, y)
 #' @param formula The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
-#' @param variable.names Logical vector to determine if variable names or labels should be used.
+#' @param variable.names Vector of names of the coefficients in the regression model
 #' @importFrom stats terms.formula
 #' @noRd
 computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, variable.names)
@@ -344,7 +344,6 @@ computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, varia
     y <- jaccard.coef.output$outcome.variable
     X <- jaccard.coef.output$predictor.variables
     jaccard.coefs <- jaccard.coef.output$coefficients
-    names(jaccard.coefs) <- variable.names
     relative.importance <- jaccard.coef.output$relative.importance
     weights <- if(is.null(jaccard.coef.output$weights)) rep(1, length(y)) else CalibrateWeight(weights)
     test.output <- lapply(X, jaccardTest, y = y, weights = weights)
