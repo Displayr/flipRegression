@@ -35,7 +35,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
     }
     outcome.variable <- outcomeVariableFromModel(x)
-    if (length(unique(outcome.variable)) == 2 && x$type == "Linear")
+    if (length(unique(outcome.variable)) == 2 && x$type == "Linear" && x$output != "Jaccard Coefficient")
         warning(paste0("The outcome variable contains only two unique values. A Binary Logit may be
                        more appropriate."))
     else
@@ -94,9 +94,9 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
         relevant.coefs <- !grepDummyVars(row.names(x$interaction$coefficients))
 
-        dt <- CrosstabInteractionTable(x$interaction$coefficients[relevant.coefs, ],
-                                       x$interaction$coef.tstat[relevant.coefs, ],
-                                       x$interaction$coef.pvalues[relevant.coefs, ],
+        dt <- CrosstabInteractionTable(x$interaction$coefficients[relevant.coefs, , drop = FALSE],
+                                       x$interaction$coef.tstat[relevant.coefs, , drop = FALSE],
+                                       x$interaction$coef.pvalues[relevant.coefs, , drop = FALSE],
                                        x$interaction$split.size,
                                        title = title,
                                        footer = caption,
@@ -113,7 +113,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             lbls <- extracted$shortened.labels
             title <- paste0(title, " by ", extracted$common.prefix)
         }
-        dt <- ImportanceTable(x$importance, lbls, title, footer = x$importance.footer)
+        dt <- ImportanceTable(x$importance, lbls, title, footer = x$importance.footer, output.type = x$output)
         print(dt)
     }
     else if (x$output == "R")

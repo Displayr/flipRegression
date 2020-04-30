@@ -1,7 +1,7 @@
 Package: flipRegression
 Type: Package
 Title: Estimates standard regression models
-Version: 1.2.4
+Version: 1.3.0
 Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
 Description: Regression models according to the flip Project conventions.
@@ -12,11 +12,11 @@ Depends: R (>= 3.5.0),
 Imports:
     car,
     effects,
-    flipFormat (>= 1.6.12),
+    flipFormat (>= 1.7.0),
     flipData (>= 1.2.5),
     flipTables (>= 2.0.0),
     flipStandardCharts,
-    flipStatistics,
+    flipStatistics (>= 1.0.1),
     flipTransformations (>= 1.6.10),
     flipU (>= 1.1.0),
     lmtest,
@@ -34,14 +34,14 @@ Suggests:
     testthat,
     robustbase
 Remotes: Displayr/flipU,
-    Displayr/flipFormat,
+    Displayr/flipFormat@DS-2876,
     Displayr/flipData,
     Displayr/flipStandardCharts,
-    Displayr/flipStatistics,
+    Displayr/flipStatistics@DS-2876,
     Displayr/flipTransformations,
     Displayr/flipTables,    
     Displayr/rhtmlHeatmap
 LinkingTo: Rcpp (>= 0.12.15),
            RcppEigen (>= 0.3.3.4.0)
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 Encoding: UTF-8

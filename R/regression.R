@@ -61,6 +61,11 @@
 #'   \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
 #'   \code{"Shapley Regression"} returns a table with Shapley Importance scores.
 #'   \code{"Effects Plot"} returns the effects plot per predictor.
+#'   \code{"Jaccard Coefficient"} returns the a relative importance table using the computed Jaccard
+#'     coefficient of the outcome variable against each predictor. The outcome and predictor variables need
+#'     to be binary variables for this output.
+#'   \coed{"Correlation"} returns a relative importance table using the Pearson correlation
+#'     of the outcome variable against each predictor.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if
 #'   method = "model.frame", which returns the model frame.
@@ -228,7 +233,8 @@ Regression <- function(formula = as.formula(NULL),
         else
             stop("Shapley requires Regression type to be Linear. Set the output to ",
                  "Relative Importance Analysis instead.")
-    }
+    } else if (output %in% c("Jaccard Coefficient", "Correlation"))
+        output
     else
         NULL
 
@@ -353,6 +359,10 @@ Regression <- function(formula = as.formula(NULL),
         formula.with.interaction <- missing.variable.adjustment$formula.with.interaction
         input.formula <- missing.variable.adjustment$input.formula
     }
+    # Check data suitable for Jaccard after variables have been checked for all missing
+    if (output == "Jaccard Coefficient")
+        checkDataSuitableForJaccard(data, formula, show.labels)
+
     if (type == "Binary Logit")
     {
         data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
@@ -379,7 +389,7 @@ Regression <- function(formula = as.formula(NULL),
     {
         if (internal)
             stop("'internal' may not be selected with regressions based on correlation matrices.")
-        if (!is.null(importance))
+        if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
             stop("Relative importance analysis and Shapley Regression are not ",
                  "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
@@ -546,6 +556,7 @@ Regression <- function(formula = as.formula(NULL),
     result$robust.se <- robust.se
     result$type <- type
     result$weights <- unfiltered.weights
+    result$filtered.weights <- weights
     result$output <- output
     result$outlier.prop.to.remove <- outlier.prop.to.remove
     result$show.labels <- show.labels
@@ -603,7 +614,7 @@ Regression <- function(formula = as.formula(NULL),
         result$summary$coefficients[,4] <- pvalAdjust(result$summary$coefficients[,4], correction)
     }
 
-    if (!is.null(importance))
+    if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
     {
         signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
         relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
@@ -645,6 +656,27 @@ Regression <- function(formula = as.formula(NULL),
         if (importance == "Relative Importance Analysis")
             result$relative.importance <- result$importance
     }
+
+    if (output %in% c("Jaccard Coefficient", "Correlation"))
+    {
+        labels <- rownames(result$summary$coefficients)[-1]
+        if (partial) # missing = "Use partial data (pairwise correlations)"
+        {
+            .estimation.data <- data
+            .weights <- weights
+        }
+        if (output == "Jaccard Coefficient")
+        {
+            result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data, .weights, labels)
+            result$importance.type <- "Jaccard Coefficient"
+        }
+        else
+        {
+            result$importance <- computeCorrelationOutput(input.formula, .estimation.data, .weights, labels, missing)
+            result$importance.type <- "Correlation"
+        }
+    }
+
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                          formula.with.interaction, importance,
@@ -777,7 +809,8 @@ regressionFooter <- function(x)
 importanceFooter <- function(x)
 {
     footer <- x$sample.description
-    if (!x$test.interaction)
+    # Suppress the footer addition for the Jaccard and Correlation outputs
+    if (!x$test.interaction && !x$importance %in% c("Jaccard Coefficient", "Correlation"))
         footer <- paste0(footer, " R-squared: ", FormatAsReal(x$r.squared, 4), ";")
     footer <- paste0(footer, " multiple comparisons correction: ", x$correction, ";")
     footer

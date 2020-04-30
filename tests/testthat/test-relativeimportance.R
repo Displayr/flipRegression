@@ -346,5 +346,224 @@ test_that("Dummy variable adjustment valid", {
                        NA)
         expect_warning(print(z), "Unusual observations detected")
     }
+})
 
+
+test_that("DS-2876: Jaccard Output", {
+    # Basic Jaccard Coefficient tests
+    set.seed(123)
+    n <- 10
+    x <- rbinom(n, size = 1, prob = 0.5)
+    y <- rbinom(n, size = 1, prob = 0.5)
+    weights <- w <- runif(n)
+    p.x <- mean(x); p.y <- mean(y)
+
+    computed.jaccard <- sum(x & y)/sum(x | y)
+    weighted.jaccard <- sum(w[x & y])/sum(w[x | y])
+    x.missing <- x; x.missing[5] <- NA; y.missing <- y; y.missing[6] <- NA
+    px.missing <- mean(x.missing, na.rm = TRUE); py.missing <- mean(y.missing, na.rm = TRUE);
+
+    # Computed Jaccard tests
+    computed.missing.jaccard <- sum(x.missing & y.missing, na.rm = TRUE)/sum(x.missing | y.missing, na.rm = TRUE)
+    expect_equal(flipRegression:::singleJaccardCoefficient(x, y), computed.jaccard)
+    expect_equal(flipRegression:::singleJaccardCoefficient(x.missing, y.missing), computed.missing.jaccard)
+    expect_equal(flipRegression:::singleJaccardCoefficient(x, y, weights = weights), weighted.jaccard)
+    # Expectation tests
+    computed.mean <- p.x * p.y/(p.x + p.y - p.x * p.y)
+    expect_equal(flipRegression:::singleJaccardExpectation(x, y), computed.mean)
+    centered.computed <- computed.jaccard - computed.mean
+    # Centered values tests
+    expect_equal(flipRegression:::singleJaccardCoefficient(x, y, centered = TRUE), centered.computed)
+    # Larger test
+    set.seed(12321)
+    n <- 100
+    X <- lapply(1:3, function(x) rbinom(n = n, size = 1, prob = 0.5))
+    X <- as.matrix(as.data.frame(X))
+    beta <- matrix(c(1, 4, 9, 2), ncol = 1)
+    # Expect X2 and Y to be the same value, hence small p-value
+    Y <- as.numeric(cbind(1, X) %*% beta >= 12)
+    dat <- data.frame(Y, X)
+    subset <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
+    weights <- runif(n)
+    names(dat) <- c("Y", paste0("X", 1:3))
+    new.names <- c("Super Y", "Oranges", "Apples", "Grapes")
+    # Create dataframe with label attributes for questions
+    dat.with.names <- as.data.frame(mapply(function(x, y) {
+        attr(x, "label") <- y
+        x
+    }, x = dat, y = new.names, SIMPLIFY = FALSE))
+    # Check Importance output correct
+    expect_error(model <- Regression(Y ~ X1 + X2 + X3, data = dat,
+                                     output = "Jaccard Coefficient", type = "Linear"),
+                 NA)
+    expect_error(weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, weights = weights,
+                                              output = "Jaccard Coefficient", type = "Linear"),
+                 NA)
+    expect_error(subsetted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, subset = subset,
+                                               output = "Jaccard Coefficient", type = "Linear"),
+                 NA)
+    expect_error(fancy.names.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.names, show.labels = TRUE,
+                                                 output = "Jaccard Coefficient", type = "Linear"),
+                 NA)
+    # Model output the same
+    expect_equal(model$importance, fancy.names.model$importance, check.attributes = FALSE)
+    # Names are used
+    expect_identical(names(fancy.names.model$importance$raw.importance.score), new.names[-1])
+
+    # Expect jaccard coefficients to be the same as computed manually
+    expect_equal(model$importance$raw.importance,
+                 vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]]))
+    # Relative importance values computed correctly
+    expect_equal(model$importance$importance, 100 * prop.table(model$importance$raw.importance.score))
+    # Check weights applied to coefficients
+    expect_equal(weighted.model$importance$raw.importance,
+                 vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]], weights = CalibrateWeight(weights)))
+    # subsetted model has correct coefficients
+    expect_equal(subsetted.model$importance$raw.importance.score,
+                 vapply(dat[subset, -1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]][subset]))
+    # Expect p-values to be significant when predictor used in regression
+    expect_equal(model$importance$p.values, c(X1 = 0.074807, X2 = 0, X3 = 0.000411), tolerance = 1e-6)
+    # Expect p-values to be insignificant when predictor not used
+    set.seed(12321)
+    insig.dat <- as.data.frame(lapply(rep(100, 4), rbinom, size = 1, prob = 0.5))
+    names(insig.dat) <- c("Y", paste0("X", 1:3))
+    expect_error(insig.model <- Regression(Y ~ ., data = insig.dat, output = "Jaccard Coefficient"), NA)
+    expect_true(all(insig.model$importance$p.values > 0.05))
+    expect_equal(insig.model$importance$p.values, c(X1 = 0.594830988348535, X2 = 0.62906440688862, X3 = 0.249175392296114))
+    expect_equal(model$importance$p.values, c(X1 = 0.074807, X2 = 0, X3 = 0.000411), tolerance = 1e-6)
+    # Missing data tests (see above Jaccard computations and the following)
+    dat.with.missing <- dat
+    dat.with.missing[1, 2] <- NA
+    expect_error(Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                            output = "Jaccard Coefficient", missing = "Error if missing data"),
+                 "The data contains missing values. Change the 'missing' option to run the analysis.", fixed = TRUE)
+    expect_error(excluded.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                                                      output = "Jaccard Coefficient", missing = "Exclude cases with missing data"), NA)
+    expect_equal(excluded.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n - 1, X3 = n - 1))
+    expect_error(partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                                                     output = "Jaccard Coefficient", missing = "Use partial data (pairwise correlations)"), NA)
+    expect_equal(partial.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n, X3 = n))
+    dat.with.missing <- as.data.frame(lapply(dat, function(x) {
+       x[sample(c(TRUE, FALSE), size = length(x), replace = TRUE)] <- NA
+       x
+    }))
+    expect_error(Regression(Y ~ X1 + X2 + X3, data = dat.with.missing, missing = "Error if missing data"),
+                 "The data contains missing values. Change the 'missing' option to run the analysis.", fixed = TRUE)
+    # Check predict method works with missing data
+    expect_error(predictions <- predict(excluded.missing.model), NA)
+    expect_true(sum(is.na(predictions)) == 1)
+    expect_error(predictions <- predict(partial.missing.model),
+                 "'predict' not available when 'missing' = Use partial data (pairwise correlations)",
+                 fixed = TRUE)
+    # Check model works with interaction
+    dat.with.interaction <- dat
+    dat.with.interaction$int <- factor(sample(LETTERS[1:3], size = n, replace = TRUE))
+    expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
+                                         interaction = int, output = "Jaccard Coefficient"),
+                 NA)
+    # Check interaction with missing values is handled
+    dat.with.missing.interaction <- dat.with.interaction
+    missing.int <- dat.with.interaction$int
+    missing.int[sample(c(TRUE, FALSE), size = nrow(dat.with.missing.interaction), replace = TRUE, prob = c(1, 5))] <- NA
+    dat.with.missing.interaction$int <- missing.int
+    expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing.interaction,
+                                         interaction = int, output = "Jaccard Coefficient"),
+                 NA)
+})
+
+test_that("DS-2876: Correlation Output", {
+    # Output is computed using the flipStatistics::CorrelationsWithSignificance function
+    set.seed(12321)
+    n <- 100
+    X <- lapply(1:3, function(x) rnorm(n = n))
+    X <- as.matrix(as.data.frame(X))
+    beta <- matrix(c(1, 4, 9, 2), ncol = 1)
+    # Expect X2 and Y to be the same value, hence small p-value
+    Y <- cbind(1, X) %*% beta + rnorm(n)
+    dat <- data.frame(Y, X)
+    subset <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
+    weights <- runif(n)
+    names(dat) <- c("Y", paste0("X", 1:3))
+    new.names <- c("Super Y", "Oranges", "Apples", "Grapes")
+    # Create dataframe with label attributes for questions
+    dat.with.names <- as.data.frame(mapply(function(x, y) {
+        attr(x, "label") <- y
+        x
+    }, x = dat, y = new.names, SIMPLIFY = FALSE))
+    # Check Importance output correct
+    expect_error(model <- Regression(Y ~ X1 + X2 + X3, data = dat,
+                                     output = "Correlation", type = "Linear"),
+                 NA)
+    expect_error(weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, weights = weights,
+                                              output = "Correlation", type = "Linear"),
+                 NA)
+    expect_error(subsetted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, subset = subset,
+                                               output = "Correlation", type = "Linear"),
+                 NA)
+    expect_error(sub.and.weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, subset = subset, weights = weights,
+                                                      output = "Correlation", type = "Linear"),
+                 NA)
+
+    basic.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat, weights = rep(1, n), spearman = FALSE)
+    subsetted.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat[subset, ], weights = rep(1, sum(subset)), spearman = FALSE)
+    weighted.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat, weights = weights, spearman = FALSE)
+    sub.and.weighted.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat[subset, ], weights = weights[subset], spearman = FALSE)
+    # Expect Correlation output to be the same as computed manually using the helper function above
+    expect_equal(model$importance$raw.importance, basic.correlation.output$cor[-1, 1])
+    # Relative importance values computed correctly
+    expect_equal(model$importance$importance, 100 * prop.table(model$importance$raw.importance.score))
+    # Check weights, subsets and both applied to coefficients
+    expect_equal(weighted.model$importance$raw.importance, weighted.correlation.output$cor[-1, 1])
+    expect_equal(subsetted.model$importance$raw.importance.score, subsetted.correlation.output$cor[-1, 1])
+    expect_equal(sub.and.weighted.model$importance$raw.importance.score, sub.and.weighted.correlation.output$cor[-1, 1])
+    # Check p-values are consistent
+    expect_equal(model$importance$p.values, basic.correlation.output$p[-1, 1])
+    expect_equal(weighted.model$importance$p.values, weighted.correlation.output$p[-1, 1])
+    expect_equal(subsetted.model$importance$p.values, subsetted.correlation.output$p[-1, 1])
+    expect_equal(sub.and.weighted.model$importance$p.values, sub.and.weighted.correlation.output$p[-1, 1])
+    # Expect p-values to be insignificant when predictor not used
+    set.seed(12321)
+    insig.dat <- as.data.frame(lapply(rep(100, 4), rnorm))
+    names(insig.dat) <- c("Y", paste0("X", 1:3))
+    expect_error(insig.model <- Regression(Y ~ ., data = insig.dat, output = "Correlation"), NA)
+    expect_true(all(insig.model$importance$p.values > 0.05))
+    expect_equal(insig.model$importance$p.values, c(X1 = 0.809554824521213, X2 = 0.0616307880261012, X3 = 0.22312934720278))
+    # Missing data tests
+    dat.with.missing <- dat
+    dat.with.missing[1, 2] <- NA
+    expect_error(Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                            output = "Correlation", missing = "Error if missing data"),
+                 "The data contains missing values. Change the 'missing' option to run the analysis.", fixed = TRUE)
+    expect_error(excluded.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                                                      output = "Correlation", missing = "Exclude cases with missing data"), NA)
+    expect_equal(excluded.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n - 1, X3 = n - 1))
+    expect_error(partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                                                     output = "Correlation", missing = "Use partial data (pairwise correlations)"), NA)
+    expect_equal(partial.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n, X3 = n))
+    dat.with.missing <- as.data.frame(lapply(dat, function(x) {
+        x[sample(c(TRUE, FALSE), size = length(x), replace = TRUE)] <- NA
+        x
+    }))
+    expect_error(Regression(Y ~ X1 + X2 + X3, data = dat.with.missing, missing = "Error if missing data"),
+                 "The data contains missing values. Change the 'missing' option to run the analysis.", fixed = TRUE)
+    # Check predict method works with missing data
+    expect_error(predictions <- predict(excluded.missing.model), NA)
+    expect_true(sum(is.na(predictions)) == 1)
+    expect_error(predictions <- predict(partial.missing.model),
+                 "'predict' not available when 'missing' = Use partial data (pairwise correlations)",
+                 fixed = TRUE)
+    # Check model works with interaction
+    dat.with.interaction <- dat
+    dat.with.interaction$int <- factor(sample(LETTERS[1:3], size = n, replace = TRUE))
+    expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
+                                         interaction = int, output = "Correlation"),
+                 NA)
+    # Check interaction with missing values is handled
+    dat.with.missing.interaction <- dat.with.interaction
+    missing.int <- dat.with.interaction$int
+    missing.int[sample(c(TRUE, FALSE), size = nrow(dat.with.missing.interaction), replace = TRUE, prob = c(1, 5))] <- NA
+    dat.with.missing.interaction$int <- missing.int
+    expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing.interaction,
+                                         interaction = int, output = "Correlation"),
+                 NA)
 })

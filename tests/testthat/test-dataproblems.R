@@ -44,3 +44,59 @@ test_that("Infinity in data", {
                  fixed = TRUE)
 
 })
+
+test_that("DS-2876: Jaccard coefficients not suitable", {
+    # Outcome not suitable
+    set.seed(12321)
+    Y <- rnorm(100)
+    X <- lapply(1:3, function(x) rbinom(10, size = 1, prob = 0.5))
+    badX <- lapply(1:3, function(x) rnorm(10))
+    data <- data.frame(Y, X, badX)
+    names(data) <- c("Y", paste0("X", 1:3), paste0("badX", 1:3))
+    error.prefix <- paste0("Both the outcome and predictor variable need to be binary variables ",
+                           "(only take the values zero or one). The ")
+    plural.error.prefix <- paste0("Both the outcome and predictor variables need to be binary variables ",
+                                  "(only take the values zero or one). The ")
+    outcome.warning <- paste0("outcome variable ", sQuote("Y"), " is not a binary variable")
+    error.suffix <- paste0(", please change the variable to a binary variable if you wish to ",
+                           "create output with the Jaccard coefficients.")
+    plural.error.suffix <- paste0(", please change the variables to binary variables if you wish to ",
+                                  "create output with the Jaccard coefficients.")
+    expect_error(Regression(Y ~ X1, data = data, output = "Jaccard Coefficient"),
+                 paste0(error.prefix, outcome.warning, error.suffix),
+                 fixed = TRUE)
+    expect_error(Regression(Y ~ badX1, data = data, output = "Jaccard Coefficient"),
+                 paste0(error.prefix, outcome.warning, " and predictor variable ", sQuote("badX1"),
+                        " is not a binary variable", plural.error.suffix),
+                 fixed = TRUE)
+    expect_error(Regression(Y ~ X1 + badX1, data = data, output = "Jaccard Coefficient"),
+                 paste0(plural.error.prefix, outcome.warning, " and predictor variable ", sQuote("badX1"),
+                        " is not a binary variable", plural.error.suffix),
+                 fixed = TRUE)
+    expect_error(Regression(Y ~ X1 + badX1 + badX2, data = data, output = "Jaccard Coefficient"),
+                 paste0(plural.error.prefix, outcome.warning, " and predictor variables ", sQuote("badX1"),
+                        " and ", sQuote("badX2"), " are not binary variables", plural.error.suffix), fixed = TRUE)
+    expect_error(Regression(Y ~ X1 + badX1 + badX2 + badX3, data = data, output = "Jaccard Coefficient"),
+                 paste0(plural.error.prefix, outcome.warning, " and predictor variables ", sQuote("badX1"), ", ",
+                        sQuote("badX2"), " and ", sQuote("badX3"), " are not binary variables", plural.error.suffix), fixed = TRUE)
+    # Outcome and predictors is ok.
+    data$Y <- rbinom(nrow(data), size = 1, prob = 0.5)
+    expect_error(Regression(Y ~ X1, data = data, output = "Jaccard Coefficient"), NA)
+    # Good but bad predictors throw errors
+    expect_error(Regression(Y ~ badX1, data = data, output = "Jaccard Coefficient"),
+                 paste0(error.prefix, "predictor variable ", sQuote("badX1"),
+                        " is not a binary variable", error.suffix), fixed = TRUE)
+    expect_error(Regression(Y ~ X1 + badX1, data = data, output = "Jaccard Coefficient"),
+                 paste0(plural.error.prefix, "predictor variable ", sQuote("badX1"),
+                        " is not a binary variable", error.suffix), fixed = TRUE)
+    expect_error(Regression(Y ~ X1 + badX1 + badX2, data = data, output = "Jaccard Coefficient"),
+                 paste0(plural.error.prefix, "predictor variables ", sQuote("badX1"),
+                        " and ", sQuote("badX2"), " are not binary variables", plural.error.suffix), fixed = TRUE)
+    expect_error(Regression(Y ~ X1 + badX1 + badX2 + badX3, data = data, output = "Jaccard Coefficient"),
+                 paste0(plural.error.prefix, "predictor variables ", sQuote("badX1"), ", ",
+                        sQuote("badX2"), " and ", sQuote("badX3"), " are not binary variables", plural.error.suffix), fixed = TRUE)
+    # Handles interaction terms.
+    data$int <- factor(rep(LETTERS[1:4], 25))
+    expect_error(Regression(Y ~ X1, interaction = int, data = data, output = "Jaccard Coefficient"), NA)
+
+})
