@@ -75,7 +75,7 @@ checkVariableIsBinary <- function(x)
     if (any(is.na(x)))
         x <- x[!is.na(x)]
     unique.values <- unique(x)
-    all(c(0, 1) %in% unique.values && length(unique.values) == 2)
+    all(c(0, 1) %in% unique.values) && length(unique.values) == 2
 }
 
 
