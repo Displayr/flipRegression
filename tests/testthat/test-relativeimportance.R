@@ -413,8 +413,10 @@ test_that("DS-2876: Jaccard Output", {
     # Expect jaccard coefficients to be the same as computed manually
     expect_equal(model$importance$raw.importance,
                  vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]]))
-    # Relative importance values computed correctly
-    expect_equal(model$importance$importance, 100 * prop.table(model$importance$raw.importance.score))
+    # Relative importance values computed correctly as the relative sizes of the t-statistics
+    tests <- lapply(dat[-1], flipRegression:::jaccardTest, y = dat[[1]], weights = rep(1, nrow(dat)))
+    t.stats <- vapply(tests, "[[", numeric(1), "t")
+    expect_equal(model$importance$importance, 100 * prop.table(t.stats))
     # Check weights applied to coefficients
     expect_equal(weighted.model$importance$raw.importance,
                  vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]], weights = CalibrateWeight(weights)))

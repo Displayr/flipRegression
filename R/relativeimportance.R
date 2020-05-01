@@ -298,10 +298,8 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
     jaccard.coefficients <- vapply(predictor.variables, singleJaccardCoefficient,
                                    numeric(1), y = outcome.variable, weights = weights)
     names(jaccard.coefficients) <- variable.names
-    relative.importance <- prop.table(jaccard.coefficients) * 100
     list(outcome.variable = outcome.variable,
          coefficients = jaccard.coefficients,
-         relative.importance = relative.importance,
          predictor.variables = predictor.variables,
          weights = weights)
 }
@@ -344,9 +342,10 @@ computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, varia
     y <- jaccard.coef.output$outcome.variable
     X <- jaccard.coef.output$predictor.variables
     jaccard.coefs <- jaccard.coef.output$coefficients
-    relative.importance <- jaccard.coef.output$relative.importance
     weights <- if(is.null(jaccard.coef.output$weights)) rep(1, length(y)) else CalibrateWeight(weights)
     test.output <- lapply(X, jaccardTest, y = y, weights = weights)
+    test.statistics <- vapply(test.output, "[[", numeric(1), "t")
+    relative.importance <- 100 * prop.table(abs(test.statistics))
     pvalues <- vapply(test.output, "[[", numeric(1), "p.value")
     standard.errors <- vapply(test.output, "[[", numeric(1), "standard.error")
     names(pvalues) <- names(standard.errors) <- variable.names
