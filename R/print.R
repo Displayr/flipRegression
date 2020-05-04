@@ -114,7 +114,10 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     else if (!is.null(x$importance))
     {
         lbls <- extractVariableCoefficientNames(x)
-        title <- paste0(x$importance.type ," (", regressionType(x$type), "): ", x$outcome.label)
+        if (!x$output %in% c("Jaccard Coefficient", "Correlation"))
+            title <- paste0(x$importance.type ," (", regressionType(x$type), "): ", x$outcome.label)
+        else
+            title <- paste0(x$importance.type ,": ", x$outcome.label)
         extracted <- ExtractCommonPrefix(lbls)
         if (!is.na(extracted$common.prefix))
         {
