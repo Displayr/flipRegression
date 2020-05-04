@@ -670,12 +670,14 @@ Regression <- function(formula = as.formula(NULL),
             result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data,
                                                                  .weights, labels, correction)
             result$importance.type <- "Jaccard Coefficient"
+            result$relative.importance <- result$importance
         }
         else
         {
             result$importance <- computeCorrelationOutput(input.formula, .estimation.data,
                                                           .weights, labels, missing, correction)
             result$importance.type <- "Correlation"
+            result$relative.importance <- result$importance
         }
     }
 

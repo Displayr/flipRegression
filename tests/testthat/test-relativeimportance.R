@@ -409,6 +409,8 @@ test_that("DS-2876: Jaccard Output", {
     expect_error(fancy.names.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.names, show.labels = TRUE,
                                                  output = "Jaccard Coefficient", type = "Linear"),
                  NA)
+    # Check relative importance element exists
+    expect_identical(model$importance, model$relative.importance)
     # Model output the same
     expect_equal(model$importance, fancy.names.model$importance, check.attributes = FALSE)
     # Names are used
@@ -516,6 +518,8 @@ test_that("DS-2876: Correlation Output", {
     expect_error(sub.and.weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, subset = subset, weights = weights,
                                                       output = "Correlation", type = "Linear"),
                  NA)
+    # Check relative importance element exists
+    expect_identical(model$importance, model$relative.importance)
 
     basic.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat, weights = rep(1, n), spearman = FALSE)
     subsetted.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat[subset, ], weights = rep(1, sum(subset)), spearman = FALSE)
