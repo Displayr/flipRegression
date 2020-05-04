@@ -420,11 +420,12 @@ computeCorrelationOutput <- function(formula, data = NULL, weights, variable.nam
     outcome.variable <- relevant.data[[outcome.name]]
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
     predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
+    colnames(relevant.data) <- c(outcome.name, variable.names)
     pairwise.method <- missing == "Use partial data (pairwise correlations)"
 
     weights <- if (is.null(weights)) rep(1, nrow(relevant.data)) else weights
     correlation.output <- CorrelationsWithSignificance(relevant.data, weights)
-    indices <- match(predictor.names, colnames(correlation.output$cor), nomatch = 0)
+    indices <- match(variable.names, colnames(correlation.output$cor), nomatch = 0)
 
     correlation.coefs <- extractFirstRowMatrixToNumeric(correlation.output$cor, indices)
     relative.importance <- 100 * prop.table(abs(correlation.coefs))

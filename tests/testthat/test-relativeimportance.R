@@ -387,11 +387,16 @@ test_that("DS-2876: Jaccard Output", {
     weights <- runif(n)
     names(dat) <- c("Y", paste0("X", 1:3))
     new.names <- c("Super Y", "Oranges", "Apples", "Grapes")
+    names.with.prefix <- paste0("Q4:", new.names)
     # Create dataframe with label attributes for questions
     dat.with.names <- as.data.frame(mapply(function(x, y) {
         attr(x, "label") <- y
         x
     }, x = dat, y = new.names, SIMPLIFY = FALSE))
+    dat.with.prefix.names <- as.data.frame(mapply(function(x, y) {
+        attr(x, "label") <- y
+        x
+    }, x = dat, y = names.with.prefix, SIMPLIFY = FALSE))
     # Check Importance output correct
     expect_error(model <- Regression(Y ~ X1 + X2 + X3, data = dat,
                                      output = "Jaccard Coefficient", type = "Linear"),
@@ -409,6 +414,9 @@ test_that("DS-2876: Jaccard Output", {
     expect_error(fancy.names.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.names, show.labels = TRUE,
                                                  output = "Jaccard Coefficient", type = "Linear"),
                  NA)
+    expect_error(prefix.fancy.names.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.prefix.names, show.labels = TRUE,
+                                                        output = "Jaccard Coefficient", type = "Linear"),
+                 NA)
     # Check relative importance element exists
     expect_identical(model$importance, model$relative.importance)
     # Model output the same
@@ -416,6 +424,9 @@ test_that("DS-2876: Jaccard Output", {
     # Names are used
     expect_identical(names(fancy.names.model$importance$raw.importance), new.names[-1])
     expect_identical(names(fancy.names.model$importance$importance), new.names[-1])
+    # Prefix is removed
+    expect_identical(names(prefix.fancy.names.model$importance$raw.importance), new.names[-1])
+    expect_identical(names(prefix.fancy.names.model$importance$importance), new.names[-1])
     # Expect jaccard coefficients to be the same as computed manually
     expect_equal(model$importance$raw.importance,
                  vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]]))
@@ -496,11 +507,16 @@ test_that("DS-2876: Correlation Output", {
     weights <- runif(n)
     names(dat) <- c("Y", paste0("X", 1:3))
     new.names <- c("Super Y", "Oranges", "Apples", "Grapes")
+    names.with.prefix <- paste0("Q4:", new.names)
     # Create dataframe with label attributes for questions
     dat.with.names <- as.data.frame(mapply(function(x, y) {
         attr(x, "label") <- y
         x
     }, x = dat, y = new.names, SIMPLIFY = FALSE))
+    dat.with.prefix.names <- as.data.frame(mapply(function(x, y) {
+        attr(x, "label") <- y
+        x
+    }, x = dat, y = names.with.prefix, SIMPLIFY = FALSE))
     # Check Importance output correct
     expect_error(model <- Regression(Y ~ X1 + X2 + X3, data = dat,
                                      output = "Correlation", type = "Linear"),
@@ -518,9 +534,23 @@ test_that("DS-2876: Correlation Output", {
     expect_error(sub.and.weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, subset = subset, weights = weights,
                                                       output = "Correlation", type = "Linear"),
                  NA)
+    expect_error(fancy.names.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.names, show.labels = TRUE,
+                                                 output = "Correlation", type = "Linear"),
+                 NA)
+    expect_error(prefix.fancy.names.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.prefix.names, show.labels = TRUE,
+                                                        output = "Correlation", type = "Linear"),
+                 NA)
     # Check relative importance element exists
     expect_identical(model$importance, model$relative.importance)
-
+    # Model output the same
+    expect_equal(model$importance, fancy.names.model$importance, check.attributes = FALSE)
+    # Names are used
+    expect_identical(names(fancy.names.model$importance$raw.importance), new.names[-1])
+    expect_identical(names(fancy.names.model$importance$importance), new.names[-1])
+    # Prefix is removed
+    expect_identical(names(prefix.fancy.names.model$importance$raw.importance), new.names[-1])
+    expect_identical(names(prefix.fancy.names.model$importance$importance), new.names[-1])
+    # Check caclulated values agree with dependency
     basic.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat, weights = rep(1, n), spearman = FALSE)
     subsetted.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat[subset, ], weights = rep(1, sum(subset)), spearman = FALSE)
     weighted.correlation.output <- flipStatistics::CorrelationsWithSignificance(dat, weights = weights, spearman = FALSE)

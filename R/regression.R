@@ -660,6 +660,9 @@ Regression <- function(formula = as.formula(NULL),
     if (output %in% c("Jaccard Coefficient", "Correlation"))
     {
         labels <- rownames(result$summary$coefficients)[-1]
+        extracted <- ExtractCommonPrefix(labels)
+        if (!is.na(extracted$common.prefix))
+            labels <- extracted$shortened.labels
         if (partial) # missing = "Use partial data (pairwise correlations)"
         {
             .estimation.data <- data
