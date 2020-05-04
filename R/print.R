@@ -9,7 +9,10 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
 {
     weighted <- !is.null(x$weights)
     # Checking for unusual observations.
-    if (x$type != "Ordered Logit" & x$type != "Multinomial Logit" & x$missing != "Use partial data (pairwise correlations)")
+    type.relevant.for.outliers <- x$type != "Ordered Logit" && x$type != "Multinomial Logit"
+    partial <- x$missing == "Use partial data (pairwise correlations)"
+    output.not.jaccard.or.correlation <- !x$output %in% c("Jaccard Coefficient", "Correlation")
+    if (type.relevant.for.outliers && !partial && output.not.jaccard.or.correlation)
     {
         capture.output(unusual <- UnusualObservations(x))
         if (!is.null(unusual))
@@ -19,8 +22,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     if (is.null(x$importance))
         checkVIFAndWarn(x)
     #Testing to see if the variance is non-constant.
-    partial <- x$missing == "Use partial data (pairwise correlations)"
-    if (x$type == "Linear" & !partial & !weighted & x$robust.se == FALSE)
+    if (x$type == "Linear" && !partial && !weighted && x$robust.se == FALSE && output.not.jaccard.or.correlation)
     {
         bp.test <- ncvTest(x)#BreuschPagan(x$original)
         if (bp.test$p <= 0.05)
@@ -35,13 +37,19 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         }
     }
     outcome.variable <- outcomeVariableFromModel(x)
-    if (length(unique(outcome.variable)) == 2 && x$type == "Linear" && x$output != "Jaccard Coefficient")
-        warning(paste0("The outcome variable contains only two unique values. A Binary Logit may be
-                       more appropriate."))
-    else
+    if (output.not.jaccard.or.correlation)
     {
-        if (x$type == "Linear" & IsCount(outcome.variable) && x$output != "Jaccard Coefficient")
-            warning(paste0("The outcome variable appears to contain categories (i.e., the values are non-negative integers). A limited dependent variable regression may be more appropriate (e.g., Ordered Logit for ordered categories, Multinomial Logit for unordered categories, Quasi-Poisson Regression for counts)."))
+        if (length(unique(outcome.variable)) == 2 && x$type == "Linear")
+            warning(paste0("The outcome variable contains only two unique values. A Binary Logit may be
+                         more appropriate."))
+        else
+        {
+            if (x$type == "Linear" & IsCount(outcome.variable) && x$output != "Jaccard Coefficient")
+                warning(paste0("The outcome variable appears to contain categories (i.e., the values are ",
+                               "non-negative integers). A limited dependent variable regression may be ",
+                               "more appropriate (e.g., Ordered Logit for ordered categories, Multinomial ",
+                               "Logit for unordered categories, Quasi-Poisson Regression for counts)."))
+        }
     }
     # # Creating a nicely formatted text description of the model.
     # aic <- if(partial) NA else AIC(x)
