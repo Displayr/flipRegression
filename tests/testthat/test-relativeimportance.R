@@ -396,6 +396,10 @@ test_that("DS-2876: Jaccard Output", {
     expect_error(model <- Regression(Y ~ X1 + X2 + X3, data = dat,
                                      output = "Jaccard Coefficient", type = "Linear"),
                  NA)
+    expect_error(corrected.model <- Regression(Y ~ X1 + X2 + X3, data = dat,
+                                               output = "Jaccard Coefficient", type = "Linear",
+                                               correction = "False Discovery Rate"),
+                 NA)
     expect_error(weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, weights = weights,
                                               output = "Jaccard Coefficient", type = "Linear"),
                  NA)
@@ -408,8 +412,8 @@ test_that("DS-2876: Jaccard Output", {
     # Model output the same
     expect_equal(model$importance, fancy.names.model$importance, check.attributes = FALSE)
     # Names are used
-    expect_identical(names(fancy.names.model$importance$raw.importance.score), new.names[-1])
-
+    expect_identical(names(fancy.names.model$importance$raw.importance), new.names[-1])
+    expect_identical(names(fancy.names.model$importance$importance), new.names[-1])
     # Expect jaccard coefficients to be the same as computed manually
     expect_equal(model$importance$raw.importance,
                  vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]]))
@@ -421,10 +425,13 @@ test_that("DS-2876: Jaccard Output", {
     expect_equal(weighted.model$importance$raw.importance,
                  vapply(dat[-1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]], weights = CalibrateWeight(weights)))
     # subsetted model has correct coefficients
-    expect_equal(subsetted.model$importance$raw.importance.score,
+    expect_equal(subsetted.model$importance$raw.importance,
                  vapply(dat[subset, -1], flipRegression:::singleJaccardCoefficient, numeric(1), y = dat[[1]][subset]))
     # Expect p-values to be significant when predictor used in regression
     expect_equal(model$importance$p.values, c(X1 = 0.074807, X2 = 0, X3 = 0.000411), tolerance = 1e-6)
+    expect_equal(corrected.model$importance$p.values, flipRegression:::pvalAdjust(c(X1 = 0.074807, X2 = 0, X3 = 0.000411),
+                                                                                  "False Discovery Rate"),
+                 tolerance = 1e-6, check.attributes = FALSE)
     # Expect p-values to be insignificant when predictor not used
     set.seed(12321)
     insig.dat <- as.data.frame(lapply(rep(100, 4), rbinom, size = 1, prob = 0.5))
@@ -496,6 +503,10 @@ test_that("DS-2876: Correlation Output", {
     expect_error(model <- Regression(Y ~ X1 + X2 + X3, data = dat,
                                      output = "Correlation", type = "Linear"),
                  NA)
+    expect_error(corrected.model <- Regression(Y ~ X1 + X2 + X3, data = dat,
+                                               output = "Correlation", type = "Linear",
+                                               correction = "False Discovery Rate"),
+                 NA)
     expect_error(weighted.model <- Regression(Y ~ X1 + X2 + X3, data = dat, weights = weights,
                                               output = "Correlation", type = "Linear"),
                  NA)
@@ -513,16 +524,17 @@ test_that("DS-2876: Correlation Output", {
     # Expect Correlation output to be the same as computed manually using the helper function above
     expect_equal(model$importance$raw.importance, basic.correlation.output$cor[-1, 1])
     # Relative importance values computed correctly
-    expect_equal(model$importance$importance, 100 * prop.table(model$importance$raw.importance.score))
+    expect_equal(model$importance$importance, 100 * prop.table(model$importance$raw.importance))
     # Check weights, subsets and both applied to coefficients
     expect_equal(weighted.model$importance$raw.importance, weighted.correlation.output$cor[-1, 1])
-    expect_equal(subsetted.model$importance$raw.importance.score, subsetted.correlation.output$cor[-1, 1])
-    expect_equal(sub.and.weighted.model$importance$raw.importance.score, sub.and.weighted.correlation.output$cor[-1, 1])
+    expect_equal(subsetted.model$importance$raw.importance, subsetted.correlation.output$cor[-1, 1])
+    expect_equal(sub.and.weighted.model$importance$raw.importance, sub.and.weighted.correlation.output$cor[-1, 1])
     # Check p-values are consistent
     expect_equal(model$importance$p.values, basic.correlation.output$p[-1, 1])
     expect_equal(weighted.model$importance$p.values, weighted.correlation.output$p[-1, 1])
     expect_equal(subsetted.model$importance$p.values, subsetted.correlation.output$p[-1, 1])
     expect_equal(sub.and.weighted.model$importance$p.values, sub.and.weighted.correlation.output$p[-1, 1])
+    expect_equal(corrected.model$importance$p.values, flipRegression:::pvalAdjust(basic.correlation.output$p[-1, 1], "False Discovery Rate"))
     # Expect p-values to be insignificant when predictor not used
     set.seed(12321)
     insig.dat <- as.data.frame(lapply(rep(100, 4), rnorm))
