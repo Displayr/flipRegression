@@ -107,20 +107,20 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             {
                 tmp.ri <- try(computeJaccardCoefficientOutput(result$formula,
                                                               RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
-                                                              weights[-is.split], var.names), NA)
+                                                              weights[-is.split], var.names, correction), NA)
                 tmpC.ri <- try(computeJaccardCoefficientOutput(result$formula,
                                                                RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
-                                                               weights[-is.split], var.names), NA)
+                                                               weights[-is.split], var.names, correction), NA)
 
             }
             else
             {
                 tmp.ri <- try(computeCorrelationOutput(result$formula,
                                                        RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
-                                                       weights[-is.split], var.names, result$missing), NA)
+                                                       weights[-is.split], var.names, result$missing, correction), NA)
                 tmpC.ri <- try(computeCorrelationOutput(result$formula,
                                                         RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
-                                                        weights[-is.split], var.names, result$missing), NA)
+                                                        weights[-is.split], var.names, result$missing, correction), NA)
             }
 
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))

@@ -660,6 +660,9 @@ Regression <- function(formula = as.formula(NULL),
     if (output %in% c("Jaccard Coefficient", "Correlation"))
     {
         labels <- rownames(result$summary$coefficients)[-1]
+        extracted <- ExtractCommonPrefix(labels)
+        if (!is.na(extracted$common.prefix))
+            labels <- extracted$shortened.labels
         if (partial) # missing = "Use partial data (pairwise correlations)"
         {
             .estimation.data <- data
@@ -667,13 +670,17 @@ Regression <- function(formula = as.formula(NULL),
         }
         if (output == "Jaccard Coefficient")
         {
-            result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data, .weights, labels)
+            result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data,
+                                                                 .weights, labels, correction)
             result$importance.type <- "Jaccard Coefficient"
+            result$relative.importance <- result$importance
         }
         else
         {
-            result$importance <- computeCorrelationOutput(input.formula, .estimation.data, .weights, labels, missing)
+            result$importance <- computeCorrelationOutput(input.formula, .estimation.data,
+                                                          .weights, labels, missing, correction)
             result$importance.type <- "Correlation"
+            result$relative.importance <- result$importance
         }
     }
 
@@ -1268,7 +1275,9 @@ setChartData <- function(result, output)
                       dt
                   }
                   else if (output %in% c("Relative Importance Analysis",
-                                         "Shapley Regression"))
+                                         "Shapley Regression",
+                                         "Jaccard Coefficient",
+                                         "Correlation"))
                   {
                       importance <- result$importance
                       df <- data.frame(importance$importance,

@@ -295,6 +295,7 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
     outcome.variable <- relevant.data[[outcome.name]]
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
     predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
+    names(predictor.variables) <- variable.names
     jaccard.coefficients <- vapply(predictor.variables, singleJaccardCoefficient,
                                    numeric(1), y = outcome.variable, weights = weights)
     names(jaccard.coefficients) <- variable.names
@@ -332,9 +333,10 @@ singleJaccardExpectation <- function(x, y)
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
 #' @param variable.names Vector of names of the coefficients in the regression model
+#' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom stats terms.formula
 #' @noRd
-computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, variable.names)
+computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, variable.names, correction)
 {
     jaccard.coef.output <- computeJaccardCoefficients(formula, data, weights, variable.names)
     # Extract the outcome binary variable, the data.frame of predictor binary variables
@@ -347,13 +349,15 @@ computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, varia
     test.statistics <- vapply(test.output, "[[", numeric(1), "t")
     relative.importance <- 100 * prop.table(abs(test.statistics))
     pvalues <- vapply(test.output, "[[", numeric(1), "p.value")
+    pvalues <- pvalAdjust(pvalues, correction)
     standard.errors <- vapply(test.output, "[[", numeric(1), "standard.error")
     names(pvalues) <- names(standard.errors) <- variable.names
     sample.size <- vapply(X, function(x) sum(!is.na(x) & !is.na(y)), numeric(1))
     names(sample.size) <- variable.names
     list(importance = relative.importance,
-         raw.importance.score = jaccard.coefs,
+         raw.importance = jaccard.coefs,
          standard.errors = standard.errors,
+         statistics = test.statistics,
          sample.size = sample.size,
          p.values = pvalues)
 }
@@ -400,11 +404,12 @@ jaccardTest <- function(x, y, weights)
 #' @param weights A numeric vector of weights
 #' @param variable.names Logical vector to determine if variable names or labels should be used.
 #' @param missing Character string of the missing value technique to be applied.
+#' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
 #' @importFrom flipStatistics CorrelationsWithSignificance
 #' @noRd
-computeCorrelationOutput <- function(formula, data = NULL, weights, variable.names, missing)
+computeCorrelationOutput <- function(formula, data = NULL, weights, variable.names, missing, correction)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
     relevant.data <- processed.data$data
@@ -415,20 +420,22 @@ computeCorrelationOutput <- function(formula, data = NULL, weights, variable.nam
     outcome.variable <- relevant.data[[outcome.name]]
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
     predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
+    colnames(relevant.data) <- c(outcome.name, variable.names)
     pairwise.method <- missing == "Use partial data (pairwise correlations)"
 
     weights <- if (is.null(weights)) rep(1, nrow(relevant.data)) else weights
     correlation.output <- CorrelationsWithSignificance(relevant.data, weights)
-    indices <- match(predictor.names, colnames(correlation.output$cor), nomatch = 0)
+    indices <- match(variable.names, colnames(correlation.output$cor), nomatch = 0)
 
     correlation.coefs <- extractFirstRowMatrixToNumeric(correlation.output$cor, indices)
     relative.importance <- 100 * prop.table(abs(correlation.coefs))
     statistics <- extractFirstRowMatrixToNumeric(correlation.output$t, indices)
     std.errs <- extractFirstRowMatrixToNumeric(correlation.output$standard.errors, indices)
     pvalues <- extractFirstRowMatrixToNumeric(correlation.output$p, indices)
+    pvalues <- pvalAdjust(pvalues, correction)
     sample.size <- vapply(predictor.variables, function(x, y) sum(!is.na(x) & !is.na(y)), numeric(1), y = outcome.variable)
     list(importance = relative.importance,
-         raw.importance.score = correlation.coefs,
+         raw.importance = correlation.coefs,
          statistics = statistics,
          standard.errors = std.errs,
          sample.size = sample.size,
