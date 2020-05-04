@@ -44,6 +44,35 @@ checkDataSuitableForJaccard <- function(data, formula, show.labels)
              "need to be binary variables (only take the values zero or one). The ", outcome.string,
              both.not, predictor.string, general.statement)
     }
+    # From here variables appear binary (non-missing values are 0 or 1)
+    # Check if any variables have no variation (all zeros or all ones) and throw warning
+    outcome.no.variation <- checkBinaryVariableNoVariation(outcome.variable)
+    predictors.no.variation <- vapply(predictor.variables, checkBinaryVariableNoVariation, FALSE)
+    if (outcome.no.variation || predictors.no.variation)
+    {
+        if (outcome.no.variation)
+            outcome.string <- variablesNotBinaryMessage(data, outcome.name, show.labels, "outcome")
+        else
+            outcome.string <- NULL
+        if (any(predictors.no.variation))
+            predictor.string <- variablesNotBinaryMessage(data, predictor.names[predictors.no.variation],
+                                                          show.labels, "predictor")
+        else
+            predictor.string <- NULL
+        # Check if both predictors and outcome have no variation
+        both.not <- ifelse(outcome.no.variation && any(predictors.no.variation), " and ", "")
+        # General statement
+        n.variables <- sum(c(outcome.no.variation, predictors.no.variation))
+        no.variation.msg <- ngettext(n.variables,
+                                     ", it is constant ", ", the variables are constant ")
+        general.statement <- paste0(no.variation.msg, "with no variation (all values in the variable are zero ",
+                                    "or all values in the variable are one). Consider if ",
+                                    ngettext(n.variables, "this variable is " , "these variables are "),
+                                    "appropriate and remove if necessary.")
+        warning("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
+                "should be binary variables. However, the ", outcome.string,
+                both.not, predictor.string, general.statement)
+    }
 }
 
 #' Helper function to extract the names in a consistent manner and paste together predictor names nicely.
@@ -75,7 +104,17 @@ checkVariableIsBinary <- function(x)
     if (any(is.na(x)))
         x <- x[!is.na(x)]
     unique.values <- unique(x)
-    all(c(0, 1) %in% unique.values) && length(unique.values) == 2
+    all(unique.values %in% c(0, 1))
 }
 
-
+#' Checks if input variable x has variation and is not a constant 0 or 1
+#' @param x A binary variable, a vector with values either, 0, 1 or NA.
+#' @return Logical TRUE if constant with no variation seen. FALSE if binary.
+#' @noRd
+checkBinaryVariableNoVariation <- function(x)
+{
+    missing.x <- is.na(x)
+    if (any(missing.x))
+        x <- x[!missing.x]
+    length(unique(x)) == 1
+}
