@@ -101,24 +101,24 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
 
     # Check warnings thrown for data with no variation.
     data$Y1 <- 1
-    warning.prefix <- "Both the outcome and predictor variables should be binary variables. However, the "
+    error.prefix <- "Both the outcome and predictor variables should be binary variables. However, the "
     single.constant <- paste0(", it is constant with no variation (all values in the ",
                               "variable are zero or all values in the variable are one). ")
     many.constant <- paste0(", the variables are constant with no variation (all values in the ",
                             "variable are zero or all values in the variable are one). ")
-    single.warning.suffix <- "Consider if this variable is appropriate and remove if necessary."
-    many.warning.suffix <- "Consider if these variables are appropriate and remove if necessary."
-    expect_warning(Regression(Y1 ~ X1 + X2, data = data, output = "Jaccard Coefficient"),
-                   paste0(warning.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
-                          single.constant, single.warning.suffix), fixed = TRUE)
-    data$X10 <- 0
+    single.error.suffix <- "Consider if this variable is appropriate and remove if necessary."
+    many.error.suffix <- "Consider if these variables are appropriate and remove if necessary."
+    expect_error(Regression(Y1 ~ X1 + X2, data = data, output = "Jaccard Coefficient"),
+                 paste0(error.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
+                        single.constant, single.error.suffix), fixed = TRUE)
+    data$X10 <- 1
     data$X21 <- 1
-    expect_warning(Regression(Y1 ~ X10 + X2, data = data, output = "Jaccard Coefficient"),
-                   paste0(warning.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
-                          " and predictor variable ", sQuote("X10"), " is not a binary variable",
-                          many.constant, many.warning.suffix), fixed = TRUE)
-    expect_warning(Regression(Y1 ~ X10 + X2 + X21, data = data, output = "Jaccard Coefficient"),
-                   paste0(warning.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
-                          " and predictor variables ", sQuote("X10"), " and ", sQuote("X21"), " are not binary variables",
-                          many.constant, many.warning.suffix), fixed = TRUE)
+    expect_error(Regression(Y1 ~ X10 + X2, data = data, output = "Jaccard Coefficient"),
+                 paste0(error.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
+                        " and predictor variable ", sQuote("X10"), " is not a binary variable",
+                        many.constant, many.error.suffix), fixed = TRUE)
+    expect_error(Regression(Y1 ~ X10 + X2 + X21, data = data, output = "Jaccard Coefficient"),
+                 paste0(error.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
+                        " and predictor variables ", sQuote("X10"), " and ", sQuote("X21"), " are not binary variables",
+                        many.constant, many.error.suffix), fixed = TRUE)
 })

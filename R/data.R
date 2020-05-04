@@ -45,7 +45,7 @@ checkDataSuitableForJaccard <- function(data, formula, show.labels)
              both.not, predictor.string, general.statement)
     }
     # From here variables appear binary (non-missing values are 0 or 1)
-    # Check if any variables have no variation (all zeros or all ones) and throw warning
+    # Check if any variables have no variation (all zeros or all ones) and throw error
     outcome.no.variation <- checkBinaryVariableNoVariation(outcome.variable)
     predictors.no.variation <- vapply(predictor.variables, checkBinaryVariableNoVariation, FALSE)
     if (outcome.no.variation || predictors.no.variation)
@@ -69,9 +69,9 @@ checkDataSuitableForJaccard <- function(data, formula, show.labels)
                                     "or all values in the variable are one). Consider if ",
                                     ngettext(n.variables, "this variable is " , "these variables are "),
                                     "appropriate and remove if necessary.")
-        warning("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
-                "should be binary variables. However, the ", outcome.string,
-                both.not, predictor.string, general.statement)
+        stop("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
+             "should be binary variables. However, the ", outcome.string,
+             both.not, predictor.string, general.statement)
     }
 }
 
