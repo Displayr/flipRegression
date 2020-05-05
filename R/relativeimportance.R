@@ -284,11 +284,12 @@ subsetDataWeightsAndFormula <- function(formula, data, weights)
 #' @param formula The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
-#' @param variable.names Vector of names of the coefficients in the regression model
+#' @param variable.names Vector of names of the coefficients in the regression model. Defaults to NA for
+#'   comptability with crosstab interaction code that can predictor data could be excluded when filtered.
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
 #' @noRd
-computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.names)
+computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.names = NA)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
     relevant.data <- processed.data$data
@@ -299,7 +300,10 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
     outcome.variable <- relevant.data[[outcome.name]]
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
     predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
-    names(predictor.variables) <- variable.names
+    if (!any(is.na(variable.names)))
+        names(predictor.variables) <- variable.names
+    else
+        variable.names <- names(predictor.variables)
     jaccard.coefficients <- vapply(predictor.variables, singleJaccardCoefficient,
                                    numeric(1), y = outcome.variable, weights = weights)
     names(jaccard.coefficients) <- variable.names
@@ -336,11 +340,12 @@ singleJaccardExpectation <- function(x, y)
 #' @param formula The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
-#' @param variable.names Vector of names of the coefficients in the regression model
+#' @param variable.names Vector of names of the coefficients in the regression model. Defaults to NA for
+#'   comptability with crosstab interaction code that can predictor data could be excluded when filtered.
 #' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom stats terms.formula
 #' @noRd
-computeJaccardImportance <- function(formula, data = NULL, weights, variable.names, correction)
+computeJaccardImportance <- function(formula, data = NULL, weights, variable.names = NA, correction)
 {
     jaccard.coef.output <- computeJaccardCoefficients(formula, data, weights, variable.names)
     # Extract the outcome binary variable, the data.frame of predictor binary variables
@@ -406,7 +411,8 @@ jaccardTest <- function(x, y, weights)
 #' @param x The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
-#' @param variable.names Logical vector to determine if variable names or labels should be used.
+#' @param variable.names Vector of names of the coefficients in the regression model. Defaults to NA for
+#'   comptability with crosstab interaction code that can predictor data could be excluded when filtered.
 #' @param missing Character string of the missing value technique to be applied.
 #' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom flipU OutcomeName
@@ -424,7 +430,10 @@ computeCorrelationImportance <- function(formula, data = NULL, weights, variable
     outcome.variable <- relevant.data[[outcome.name]]
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
     predictor.variables <- relevant.data[, predictor.names, drop = FALSE]
-    colnames(relevant.data) <- c(outcome.name, variable.names)
+    if (!any(is.na(variable.names)))
+        colnames(relevant.data) <- c(outcome.name, variable.names)
+    else
+        variable.names <- colnames(predictor.variables)
     pairwise.method <- missing == "Use partial data (pairwise correlations)"
 
     weights <- if (is.null(weights)) rep(1, nrow(relevant.data)) else weights
