@@ -17,11 +17,13 @@ checkDataSuitableForJaccard <- function(data, formula, show.labels)
 {
     outcome.name <- OutcomeName(formula)
     outcome.variable <- data[[outcome.name]]
-    outcome.is.binary <- checkVariableIsBinary(outcome.variable)
+    outcome.check <- checkVariableIsBinary(outcome.variable)
+    outcome.is.binary <- outcome.check$is.binary
     # Check predictors are binary too
     predictor.names <- attr(terms.formula(formula, data = data), "term.labels")
     predictor.variables <- data[which(names(data) %in% predictor.names)]
-    predictors.are.binary <- vapply(predictor.variables, checkVariableIsBinary, FALSE)
+    predictor.checks <- lapply(predictor.variables, checkVariableIsBinary)
+    predictors.are.binary <- vapply(predictor.checks, "[[", FALSE, "is.binary")
     if (!outcome.is.binary || any(!predictors.are.binary))
     { # Throw error and explain why
         if (!outcome.is.binary)
@@ -46,8 +48,8 @@ checkDataSuitableForJaccard <- function(data, formula, show.labels)
     }
     # From here variables appear binary (non-missing values are 0 or 1)
     # Check if any variables have no variation (all zeros or all ones) and throw error
-    outcome.no.variation <- checkBinaryVariableNoVariation(outcome.variable)
-    predictors.no.variation <- vapply(predictor.variables, checkBinaryVariableNoVariation, FALSE)
+    outcome.no.variation <- checkBinaryVariableNoVariation(outcome.check)
+    predictors.no.variation <- vapply(predictor.checks, checkBinaryVariableNoVariation, FALSE)
     if (outcome.no.variation || predictors.no.variation)
     {
         if (outcome.no.variation)
@@ -104,17 +106,20 @@ checkVariableIsBinary <- function(x)
     if (any(is.na(x)))
         x <- x[!is.na(x)]
     unique.values <- unique(x)
-    all(unique.values %in% c(0, 1))
+    is.binary <- all(unique.values %in% c(0, 1))
+    list(is.binary = is.binary, unique.values = unique.values)
 }
 
 #' Checks if input variable x has variation and is not a constant 0 or 1
-#' @param x A binary variable, a vector with values either, 0, 1 or NA.
+#' @param x Output list generated from \code{checkVariableIsBinary} above.
 #' @return Logical TRUE if constant with no variation seen. FALSE if binary.
 #' @noRd
 checkBinaryVariableNoVariation <- function(x)
 {
+    # Inspect the unique values
+    x <- x$unique.values
     missing.x <- is.na(x)
     if (any(missing.x))
         x <- x[!missing.x]
-    length(unique(x)) == 1
+    length(x) == 1
 }
