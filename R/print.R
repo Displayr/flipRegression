@@ -70,7 +70,10 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         add.regression <- x$type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD")
         title <- if (!is.null(x$interaction$importance))
         {
-            paste0(x$importance.type, " (", regressionType(x$type), "): ", x$outcome.label)
+            if (x$output %in% c("Jaccard Coefficient", "Correlation"))
+                paste0(x$importance.type, ": ", x$outcome.label)
+            else
+                paste0(x$importance.type, " (", regressionType(x$type), "): ", x$outcome.label)
         }
         else
             paste0(regressionType(x$type), ": ", x$outcome.label)
