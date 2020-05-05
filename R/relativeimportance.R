@@ -1,6 +1,6 @@
 estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                robust.se = FALSE, outlier.prop.to.remove, show.warnings = TRUE, correction,
-                               importance, ...)
+                               importance, missing, ...)
 {
     if (!is.null(weights))
         robust.se <- FALSE
@@ -11,6 +11,10 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
     else if (importance == "Shapley Regression")
         computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se, outlier.prop.to.remove,
                                  show.warnings, correction, ...)
+    else if (importance == "Jaccard Coefficient")
+        computeJaccardImportance(formula, data, weights, variable.names, correction, ...)
+    else if (importance == "Correlation")
+        computeCorrelationImportance(formula, data, weights, variable.names, missing, correction, ...)
     else
         stop("Importance type not handled: ", importance)
 }
@@ -336,7 +340,7 @@ singleJaccardExpectation <- function(x, y)
 #' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom stats terms.formula
 #' @noRd
-computeJaccardCoefficientOutput <- function(formula, data = NULL, weights, variable.names, correction)
+computeJaccardImportance <- function(formula, data = NULL, weights, variable.names, correction)
 {
     jaccard.coef.output <- computeJaccardCoefficients(formula, data, weights, variable.names)
     # Extract the outcome binary variable, the data.frame of predictor binary variables
@@ -409,7 +413,7 @@ jaccardTest <- function(x, y, weights)
 #' @importFrom stats terms.formula
 #' @importFrom flipStatistics CorrelationsWithSignificance
 #' @noRd
-computeCorrelationOutput <- function(formula, data = NULL, weights, variable.names, missing, correction)
+computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, missing, correction)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
     relevant.data <- processed.data$data

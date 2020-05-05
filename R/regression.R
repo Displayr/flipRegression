@@ -614,9 +614,9 @@ Regression <- function(formula = as.formula(NULL),
         result$summary$coefficients[,4] <- pvalAdjust(result$summary$coefficients[,4], correction)
     }
 
-    if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
+    if (!is.null(importance))
     {
-        signs <- if (importance.absolute) 1 else sign(extractVariableCoefficients(result$original, type))
+        signs <- if (importance.absolute || partial) 1 else sign(extractVariableCoefficients(result$original, type))
         relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
         labels <- rownames(result$summary$coefficients)[relevant.coefs]
         if (result$type == "Ordered Logit")
@@ -627,6 +627,11 @@ Regression <- function(formula = as.formula(NULL),
                 labels <- labels[1:result$n.predictors]
         } else
             labels <- labels[-1]
+        # Remove prefix if possible
+        extracted.labels <- ExtractCommonPrefix(labels)
+        if (!is.na(extracted.labels$common.prefix))
+            labels <- extracted.labels$shortened.labels
+
         if (missing == "Dummy variable adjustment")
         {
             # Update the formula silently (don't throw a warning)
@@ -647,41 +652,17 @@ Regression <- function(formula = as.formula(NULL),
             }
             result$formula <- input.formula
         }
-
-        result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
-                                                type, signs, result$r.squared,
-                                                labels, robust.se, outlier.prop.to.remove,
-                                                !recursive.call, correction, importance, ...)
-        result$importance.type <- importance
-        if (importance == "Relative Importance Analysis")
-            result$relative.importance <- result$importance
-    }
-
-    if (output %in% c("Jaccard Coefficient", "Correlation"))
-    {
-        labels <- rownames(result$summary$coefficients)[-1]
-        extracted <- ExtractCommonPrefix(labels)
-        if (!is.na(extracted$common.prefix))
-            labels <- extracted$shortened.labels
-        if (partial) # missing = "Use partial data (pairwise correlations)"
+        if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation output
         {
             .estimation.data <- data
             .weights <- weights
         }
-        if (output == "Jaccard Coefficient")
-        {
-            result$importance <- computeJaccardCoefficientOutput(input.formula, .estimation.data,
-                                                                 .weights, labels, correction)
-            result$importance.type <- "Jaccard Coefficient"
-            result$relative.importance <- result$importance
-        }
-        else
-        {
-            result$importance <- computeCorrelationOutput(input.formula, .estimation.data,
-                                                          .weights, labels, missing, correction)
-            result$importance.type <- "Correlation"
-            result$relative.importance <- result$importance
-        }
+        result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
+                                                type, signs, result$r.squared,
+                                                labels, robust.se, outlier.prop.to.remove,
+                                                !recursive.call, correction, importance, missing, ...)
+        result$importance.type <- importance
+        result$relative.importance <- result$importance
     }
 
     if (result$test.interaction)
