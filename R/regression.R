@@ -544,7 +544,10 @@ Regression <- function(formula = as.formula(NULL),
         result$sample.description <- processed.data$description
         result$estimation.data <- .estimation.data
     }
-    class(result) <- "Regression"
+    class(result) <- if (type == "Linear")
+        c("Regression", "LinearRegression")
+    else
+        "Regression"
     result$correction <- correction
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
