@@ -544,10 +544,14 @@ Regression <- function(formula = as.formula(NULL),
         result$sample.description <- processed.data$description
         result$estimation.data <- .estimation.data
     }
-    class(result) <- if (type == "Linear")
-        c("Regression", "LinearRegression")
-    else
-        "Regression"
+    class(result) <- c("Regression", switch(type,
+        "Linear" = "LinearRegression",
+        "Binary Logit" = "BinaryLogitRegression",
+        "Ordered Logit" = "OrderedLogitRegression",
+        "Multinomial Logit" = "MultinomialLogitRegression",
+        "Poisson" = "PoissonRegression",
+        "Quasi-Poisson" = "QuasiPoissonRegression",
+        "NBD" = "NBDRegression"))
     result$correction <- correction
     result$formula <- input.formula
     # Inserting the coefficients from the partial data.
