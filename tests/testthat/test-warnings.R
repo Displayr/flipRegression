@@ -228,3 +228,22 @@ test_that("DS-2826: Warnings for VIFs are improved and appropriate", {
                           "Importance Analysis or Shapley Regression."),
                    fixed = TRUE)
 })
+
+test_that("DS-2826: Check VIFs are handled properly", {
+    # Check and catch aliased predictors.
+    set.seed(123)
+    x  <- rnorm(10)
+    y <- z <- rnorm(10)
+    # Aliased predictors in regressions are computed and print without issue
+    expect_warning(aliased.mod <- Regression(x ~ y + z),
+                   "The following variable(s) are colinear with other variables and no coefficients have been estimated: z",
+                   fixed = TRUE)
+    expect_error(print(aliased.mod), NA)
+    # Check the alias check is used as well as the predictor count checks (see car::vif)
+    u <- w <- rnorm(10)
+    expect_warning(aliased.mod <- Regression(x ~ u + w + y + z),
+                   "The following variable(s) are colinear with other variables and no coefficients have been estimated: w, z",
+                   fixed = TRUE)
+    expect_error(print(aliased.mod), NA)
+})
+

@@ -24,7 +24,7 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
           expect_error(suppressWarnings(Regression(o2 ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = TRUE,  weights = wgt, type = type)), NA)
           # weight, filter
           expect_error(z <- suppressWarnings(Regression(o2 ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, type = type)), NA)
-          expect_error(capture.output(suppressWarnings(print(z))),NA)
+          expect_error(suppressWarnings(print(z)),NA)
       })
 
 
@@ -95,4 +95,10 @@ test_that("Duplicated labels",
             missing = "Multiple imputation")))
 })
 
-
+test_that("Simple linear regression without intercept prints without error", {
+    set.seed(123)
+    y <- rnorm(10)
+    x <- rnorm(10)
+    expect_error(z <- Regression(y ~ -1 + x), NA)
+    expect_error(print(z), NA)
+})

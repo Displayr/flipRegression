@@ -203,7 +203,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         {
             lbls <- rownames(coefs)
             ind <- if (x$type != "Ordered Logit")
-                2:length(lbls)
+                min(length(lbls), 2):length(lbls)
             else
                 1:(length(lbls) - length(x$summary$lev) + 1)
             res <- ExtractCommonPrefix(lbls[ind])
@@ -439,14 +439,22 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
 
 #' Computes and inspects the variance inflation factors (VIFs) and throws a warning if they are high
 #' @param x A Regression object
+#' @importFrom flipU InterceptExceptions
 #' @noRd
 checkVIFAndWarn <- function(x)
 {
-    n.coefs <- length(x$original$coefficients)
+    n.coefs <- length(x$original$coef) # partial match to coef needed since partial regression doesnt have coefficients element, only coef
     n.variables <- ncol(x$model)
-    if (n.coefs > 2 & n.variables > 2 & x$missing != "Use partial data (pairwise correlations)")
+    # Check enough predictor variables available for VIF, also check no predictors are aliased
+    # Safe to do this since aliased predictors checked and if so, warning thrown during Regression creation
+    if (n.coefs > 2 && n.variables > 2 && x$missing != "Use partial data (pairwise correlations)" && !any(x$summary$aliased))
     {
-        vifs <- tryCatch(vif(x), error = function(e) NULL)
+        invalid.model.for.vifs <- x$type == "Ordered Logit" || x$type == "Multinomial Logit"
+        vifs <- InterceptExceptions(vif(x),
+                                    error = function(e) {
+                                        if (!(e$message == "'vif' is not computed for models of this type or class." && invalid.model.for.vifs))
+                                              warning('Variance Inflation Factors (VIFs) could not be computed for this model: ', e$message)
+                                    })
         if (!is.null(vifs))
         {
             # Check if the GVIF is used and square it
@@ -458,7 +466,7 @@ checkVIFAndWarn <- function(x)
                 prefix <- ""
             # Check is the largest calculated VIF is large enough for a warning.
             max.vif <- max(vifs)
-            if (!is.nan(max.vif) && max.vif >= 4)
+            if (max.vif >= 4)
             {
                 vifs <- vifs[vifs >= 4]
                 # Helper function to create the VIF statements
@@ -510,4 +518,5 @@ checkVIFAndWarn <- function(x)
             }
         }
     }
+    return(invisible())
 }
