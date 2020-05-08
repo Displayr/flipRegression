@@ -659,10 +659,11 @@ Regression <- function(formula = as.formula(NULL),
             }
             result$formula <- input.formula
         }
-        if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation output
+        if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
         {
+            result$subset <- subset
             result$estimation.data <- .estimation.data <- data[subset, , drop = FALSE]
-            .weights <- weights
+            .weights <- weights[subset]
         }
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,

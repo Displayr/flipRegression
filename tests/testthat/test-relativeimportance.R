@@ -617,6 +617,11 @@ test_that("DS-2876: Correlation Output", {
                                                 subset = subset,
                                                 interaction = int, output = "Correlation"),
                  NA)
+    expect_error(subset.weight.int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
+                                                       subset = subset, weights = weights,
+                                                       interaction = int, output = "Correlation",
+                                                       missing = "Use partial data (pairwise correlations)"),
+                 NA)
     # Check interaction with missing values is handled
     dat.with.missing.interaction <- dat.with.interaction
     missing.int <- dat.with.interaction$int
