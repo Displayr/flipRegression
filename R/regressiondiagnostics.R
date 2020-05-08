@@ -10,7 +10,7 @@
 #' @export
 GrandMean <- function(model)
 {
-    if (inhreits(model, "FitRegression"))
+    if (inherits(model, "FitRegression"))
     {
         y <- Observed.FitRegression(model)
         w <- model$weights
