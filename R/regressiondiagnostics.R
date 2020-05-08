@@ -10,7 +10,7 @@
 #' @export
 GrandMean <- function(model)
 {
-    if (class(model) == "FitRegression")
+    if (inhreits(model, "FitRegression"))
     {
         y <- Observed.FitRegression(model)
         w <- model$weights
