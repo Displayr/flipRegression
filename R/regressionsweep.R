@@ -64,6 +64,9 @@ LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL
         cor(y.and.x, use = "pairwise.complete.obs")
     # Checking data
     CheckForPositiveVariance(y.and.x)
+    # pysch function isCorrelation doesnt take into account Machine epsilon precision of diagonal
+    # terms, does a check max(x) <= 1, which will be violated if any diagonal element is 1 + 1e-16
+    diag(cors) <- 1
     CheckCorrelationMatrix(cors)
     CheckForLinearDependence(cors)
     # Doing the computation.
