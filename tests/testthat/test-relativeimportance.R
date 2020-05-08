@@ -579,6 +579,7 @@ test_that("DS-2876: Correlation Output", {
     # Missing data tests
     dat.with.missing <- dat
     dat.with.missing[1, 2] <- NA
+    subset <- rep(c(TRUE, FALSE), c(90,  10))
     expect_error(Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
                             output = "Correlation", missing = "Error if missing data"),
                  "The data contains missing values. Change the 'missing' option to run the analysis.", fixed = TRUE)
@@ -587,6 +588,12 @@ test_that("DS-2876: Correlation Output", {
     expect_equal(excluded.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n - 1, X3 = n - 1))
     expect_error(partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
                                                      output = "Correlation", missing = "Use partial data (pairwise correlations)"), NA)
+    expect_error(subset.partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing, subset = subset,
+                                                             output = "Correlation", missing = "Use partial data (pairwise correlations)"), NA)
+    expect_error(weighted.subset.partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+                                                                     subset = subset, weights = weights,
+                                                                     output = "Correlation",
+                                                                     missing = "Use partial data (pairwise correlations)"), NA)
     expect_equal(partial.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n, X3 = n))
     dat.with.missing <- as.data.frame(lapply(dat, function(x) {
         x[sample(c(TRUE, FALSE), size = length(x), replace = TRUE)] <- NA
@@ -606,6 +613,10 @@ test_that("DS-2876: Correlation Output", {
     expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
                                          interaction = int, output = "Correlation"),
                  NA)
+    expect_error(subset.int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
+                                                subset = subset,
+                                                interaction = int, output = "Correlation"),
+                 NA)
     # Check interaction with missing values is handled
     dat.with.missing.interaction <- dat.with.interaction
     missing.int <- dat.with.interaction$int
@@ -613,5 +624,13 @@ test_that("DS-2876: Correlation Output", {
     dat.with.missing.interaction$int <- missing.int
     expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing.interaction,
                                          interaction = int, output = "Correlation"),
+                 NA)
+    expect_error(int.model.with.partial.data <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing.interaction,
+                                                           interaction = int, output = "Correlation",
+                                                           missing = "Use partial data (pairwise correlations)"),
+                 NA)
+    expect_error(sub.int.model.with.partial.data <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing.interaction,
+                                                           interaction = int, output = "Correlation", subset = subset,
+                                                           missing = "Use partial data (pairwise correlations)"),
                  NA)
 })

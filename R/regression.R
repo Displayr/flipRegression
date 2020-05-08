@@ -661,7 +661,7 @@ Regression <- function(formula = as.formula(NULL),
         }
         if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation output
         {
-            .estimation.data <- data
+            result$estimation.data <- .estimation.data <- data[subset, , drop = FALSE]
             .weights <- weights
         }
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
