@@ -245,5 +245,20 @@ test_that("DS-2826: Check VIFs are handled properly", {
                    "The following variable(s) are colinear with other variables and no coefficients have been estimated: w, z",
                    fixed = TRUE)
     expect_error(print(aliased.mod), NA)
+    # Check NaN scenarios are handled
+    data(phone, package = "flipExampleData")
+    phone.weights <- phone$q26
+    phone.weights[phone.weights == 99] <- 0
+    phone.weights[is.na(phone.weights)] <- 0
+    phone$Q5_1 <- as.numeric(phone$Q5_1) - 1
+    phone$Q5_2 <- as.numeric(phone$Q5_2) - 1
+    phone.subset <- phone$q35 == 'male'
+    phone.subset[is.na(phone.subset)] <- FALSE
+    expect_warning(nan.mod <- Regression(q28 ~ q31 + Q5_1 + Q5_2, data = phone,
+                                         subset = phone.subset, weights = phone.weights, interaction = q2))
+    nan.caught.warning <- paste0("Possible multicollinearity detected in the data. Consider conducting a relative ",
+                                 "importance analysis by selecting the output to be Relative Importance Analysis or ",
+                                 "Shapley Regression.")
+    expect_warning(checkVIFAndWarn(nan.mod), nan.caught.warning, fixed = TRUE)
 })
 

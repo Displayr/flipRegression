@@ -64,7 +64,7 @@
 #'   \code{"Jaccard Coefficient"} returns the a relative importance table using the computed Jaccard
 #'     coefficient of the outcome variable against each predictor. The outcome and predictor variables need
 #'     to be binary variables for this output.
-#'   \coed{"Correlation"} returns a relative importance table using the Pearson correlation
+#'   \code{"Correlation"} returns a relative importance table using the Pearson correlation
 #'     of the outcome variable against each predictor.
 #' @param detail This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.
 #' @param method The method to be used; for fitting. This will only do something if

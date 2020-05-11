@@ -101,7 +101,12 @@ summary and model statistics. It is the default.
 \code{"Detail"} returns a more traditional R output.
 \code{"Relative Importance Analysis"} returns a table with Relative Importance scores.
 \code{"Shapley Regression"} returns a table with Shapley Importance scores.
-\code{"Effects Plot"} returns the effects plot per predictor.}
+\code{"Effects Plot"} returns the effects plot per predictor.
+\code{"Jaccard Coefficient"} returns the a relative importance table using the computed Jaccard
+  coefficient of the outcome variable against each predictor. The outcome and predictor variables need
+  to be binary variables for this output.
+\code{"Correlation"} returns a relative importance table using the Pearson correlation
+  of the outcome variable against each predictor.}
 
 \item{detail}{This is a deprecated function. If \code{TRUE}, \code{output} is set to \code{R}.}
 

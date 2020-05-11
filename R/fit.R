@@ -63,7 +63,6 @@ GoodnessOfFit.default = function(object, digits = max(3L, getOption("digits") - 
 #' @param value The computed goodness-of-fit.
 #' @param description Text elements used to construct the print statment.
 #' @param call The original call used to create the object for which goodness-of-fit is being computed.
-#' @param ... Additional arguments affecting the goodness-of-fit displayed.
 #' @return A \code{\link{list}} with components
 #' @return value The computed goodness-of-fit.
 #' @return description Text elements used to construct the print statment.

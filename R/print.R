@@ -451,10 +451,26 @@ checkVIFAndWarn <- function(x)
     {
         invalid.model.for.vifs <- x$type == "Ordered Logit" || x$type == "Multinomial Logit"
         vifs <- InterceptExceptions(vif(x),
-                                    error = function(e) {
+                                    error.handler = function(e) {
                                         if (!(e$message == "'vif' is not computed for models of this type or class." && invalid.model.for.vifs))
                                               warning('Variance Inflation Factors (VIFs) could not be computed for this model: ', e$message)
                                     })
+        # Prepare suggestion of RIA for warning scenarios
+        suggestion.for.ria <- paste0("Consider conducting a relative importance analysis by selecting the ",
+                                     "output to be Relative Importance Analysis.")
+        if (x$type == "Linear")
+          suggestion.for.ria <- paste0(gsub("\\.$", "", suggestion.for.ria), " or Shapley Regression.")
+        # Throw warning about possible multi-collinearity in the case of NaN observed in vifs
+        # vifs computed using a ratio calculation. NaNs will be thrown if the numerator and denominator are zero or
+        # if the vif is negative (due to numerical instability near zero) and is later square-rooted in vif.
+        # Throw general warning since it is difficult to determine where the possible collinearity is evident.
+        if (any(is.nan(vifs)) || any(vifs < 0))
+        {
+            warning("Possible multicollinearity detected in the data. ", suggestion.for.ria)
+            vifs <- NULL
+        }
+
+
         if (!is.null(vifs))
         {
             # Check if the GVIF is used and square it
@@ -505,11 +521,7 @@ checkVIFAndWarn <- function(x)
                     names(dummy.vifs) <- gsub(".dummy.var_GQ9KqD7YOf$", "", names(dummy.vifs))
                     vifs.msg <- paste0(vifs.msg, .printVIFs(dummy.vifs, prefix, x, dummy = TRUE))
                 }
-                # Collate message with RIA suggestion and throw warning.
-                suggestion.for.ria <- paste0("Consider conducting a relative importance analysis by selecting the ",
-                                             "output to be Relative Importance Analysis.")
-                if (x$type == "Linear")
-                    suggestion.for.ria <- paste0(gsub("\\.$", "", suggestion.for.ria), " or Shapley Regression.")
+                # Collate message and throw warning.
                 explanation.msg <- paste0("A value of 4 or more indicates the confidence interval for the coefficient ",
                                           "is twice as wide as they would be for uncorrelated predictors. A value of ",
                                           "10 or more indicates high multicollinearity. ")

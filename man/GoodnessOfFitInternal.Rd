@@ -14,8 +14,6 @@ GoodnessOfFitInternal(value, description, call)
 \item{description}{Text elements used to construct the print statment.}
 
 \item{call}{The original call used to create the object for which goodness-of-fit is being computed.}
-
-\item{...}{Additional arguments affecting the goodness-of-fit displayed.}
 }
 \value{
 A \code{\link{list}} with components
