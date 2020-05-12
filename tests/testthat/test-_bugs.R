@@ -102,3 +102,19 @@ test_that("Simple linear regression without intercept prints without error", {
     expect_error(z <- Regression(y ~ -1 + x), NA)
     expect_error(print(z), NA)
 })
+
+test_that("DS-2919: Check error handling of polr and svyolr", {
+    data(cola, package = "flipExampleData")
+    data(bank, package = "flipExampleData")
+    # Test regular ordered logit via polr gives informative error
+    outcome.levels <- paste0(sQuote(levels(cola$Q2)), collapse = " and ")
+    expect_error(suppressWarnings(Regression(Q2 ~ Q3, data = cola, type = "Ordered Logit")),
+                 paste0("Fitting an Ordered Logit model requires the outcome variable to have three or more levels. ",
+                        "The outcome variable here has two levels: ", outcome.levels, ". ",
+                        "Consider using a Binary Logit model instead."))
+    cola$only.one.level <- rep("Blueberry", nrow(cola))
+    expect_error(suppressWarnings(Regression(only.one.level ~ Q3, data = cola, type = "Ordered Logit")),
+                 paste0("Fitting an Ordered Logit model requires the outcome variable to have three or more levels. ",
+                        "The outcome variable here has only one level: ", sQuote("Blueberry"),
+                        ". A Regression model cannot be computed when the outcome variable has no variation."))
+})
