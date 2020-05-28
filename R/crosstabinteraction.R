@@ -59,7 +59,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         {
             res$anova.fstat <- atmp[2,5]
             res$anova.dev <- atmp[2,4]
-            res$anova.df1 <- -diff(atmp[,1])
+            res$anova.df1 <- -diff(as.numeric(atmp[,1]))
             res$anova.df2 <- atmp[2,1]
         }
     }

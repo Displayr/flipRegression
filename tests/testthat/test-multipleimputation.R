@@ -2306,3 +2306,6 @@ test_that("Multiple imputation with larger example",
     expect_warning(Regression(Churn_cat~OnlineSecurity_cat + OnlineBackup_cat, type = "Binary Logit", data = df, missing = "Multiple imputation"))})
 
 
+test_that("R4.0. update", {
+    expect_warning(Regression(Overall~Fees+Interest+Phone, data=bank, interaction = ATM, type = "NBD", missing = "Multiple imputation"))
+})
