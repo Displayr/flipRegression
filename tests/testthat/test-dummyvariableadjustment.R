@@ -130,3 +130,13 @@ test_that("RIA and Shapley edge case", {
     expect_error(Regression(Y ~ X1 + X2 + X3, data = dat, type = "Linear", output = "Shapley Regression"),
                  NA)
 })
+
+test_that("DS-2952: Dummy variable adjustment and Ordered Logit printable in RIA", {
+    data("bank", package = "flipExampleData")
+    expect_error(model <- Regression(Overall ~ Fees, data = bank,
+                                     missing = "Dummy variable adjustment",
+                                     type = "Ordered Logit",
+                                     output = "Relative Importance Analysis"),
+                 NA)
+    expect_error(print(model), NA)
+})
