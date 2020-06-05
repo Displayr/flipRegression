@@ -182,6 +182,9 @@ flipData::Probabilities
 #' \code{Probabilities.Regression}
 #'
 #' @param object A model of some kind.
+#' @param newdata A
+#' @param newdata Optionally, a data frame including the variables used to fit the model.
+#'     If omitted, \code{object$model} is used after any filtering.
 #' @param ... Additional arguments (not used).
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Probabilities Observed
@@ -189,19 +192,21 @@ flipData::Probabilities
 #' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
 #' of class membership from a regression model.
 #' @export
-Probabilities.Regression <- function(object, ...)
+Probabilities.Regression <- function(object, newdata, ...)
 {
     notValidForPartial(object, "probabilities")
     notValidForCrosstabInteraction(object, "probabilities")
+    if (missing(newdata) || is.null(newdata))
+        newdata <- object$model
     if (object$type == "Linear")
         stop("'probabilities' is not applicable to linear regression models.")
     if (isTRUE(object$stacked) && IsRServer())
         stop("Saving probabilitiles is currently not supported for stacked data.")
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
-        return(suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "probs")))
+        return(suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "probs")))
     if (object$type == "Binary Logit")
     {
-        probs <- suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "response"))
+        probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "response"))
         probs <- cbind(1 - probs, probs)
         colnames(probs) <- levels(Observed(object))
         return(probs)
@@ -209,7 +214,7 @@ Probabilities.Regression <- function(object, ...)
     xs <- 0:max(Observed(object), na.rm = TRUE)
     if (object$type == "Poisson")
     {
-        log.lambdas <- suppressWarnings(predict(object$original, newdata = object$model, na.action = na.pass, type = "link"))
+        log.lambdas <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "link"))
         lambdas <- exp(log.lambdas)
         return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
     }

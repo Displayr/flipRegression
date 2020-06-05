@@ -12,6 +12,10 @@ test_that("Probabilities",{
 
 test_that("Probabilities",{
     expect_equal(sum(Probabilities(z)[, 1]), as.numeric(table(y)[2]))
+
+    pp <- Probabilities(z, data.frame(x=(1:5)/10))
+    expect_equal(dim(pp), c(5, 2))
+    expect_equal(rowSums(pp), rep(1, 5), check.attributes = FALSE)
 })
 
 test_that("Observed with .",{

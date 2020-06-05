@@ -4,10 +4,13 @@
 \alias{Probabilities.Regression}
 \title{\code{Probabilities.Regression}}
 \usage{
-\method{Probabilities}{Regression}(object, ...)
+\method{Probabilities}{Regression}(object, newdata, ...)
 }
 \arguments{
 \item{object}{A model of some kind.}
+
+\item{newdata}{Optionally, a data frame including the variables used to fit the model.
+If omitted, \code{object$model} is used after any filtering.}
 
 \item{...}{Additional arguments (not used).}
 }
