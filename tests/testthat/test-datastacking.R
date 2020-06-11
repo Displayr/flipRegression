@@ -164,22 +164,22 @@ test_that("Test input error messages", {
     # Test completely mismatched variables (no outcome labels match predictor labels)
     binary.mismatch.outcome <- binary.multi.outcome
     names(binary.mismatch.outcome)[1:2] <- c("Google", "Amazon")
-    error.msg <- paste0("It is not possible to stack these variables since none of the outcome variable names match ",
-                        "the variable names in the predictor variables. The outcome variable set ",
-                        sQuote("Brand Binary"), " has names: ", paste0(sQuote(c("Google", "Amazon")), collapse = ", "),
-                        " which don't appear in the names of the grid predictor variable set structure")
+    error.msg <- paste0("It is not possible to stack these variables since none of the outcome variable labels match ",
+                        "the variable labels in the predictor variables. The outcome variables ",
+                        sQuote("Brand Binary"), " have labels: ", paste0(sQuote(c("Google", "Amazon")), collapse = ", "),
+                        " which don't appear in the labels of the grid of predictor variables.")
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.mismatch.outcome,
                                                   X = binary.grid.cleaned)),
                  error.msg, fixed = TRUE)
     binary.mismatch.outcome <- binary.multi.outcome
     names(binary.mismatch.outcome)[1:2] <- c("Fun", "Microsoft")
-    error.msg <- paste0("Ambiguous names in the grid predictors need to be reconciled before stacking can occur. ",
-                        "The outcome variable ", sQuote("Brand Binary"), " has names: ",
-                        paste0(sQuote(c("Fun", "Microsoft")), collapse = ", "), " and these names appear in both ",
-                        "dimensions of the grid predictor input variable set. Please rename the names ",
-                        "in eithe the outcome variable set or grid predictor variable set to stack the variables ",
-                        "and proceed")
+    error.msg <- paste0("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
+                        "The outcome variable ", sQuote("Brand Binary"), " has labels: ",
+                        paste0(sQuote(c("Fun", "Microsoft")), collapse = ", "), " and these labels appear in both ",
+                        "dimensions of the grid predictor variables. Please rename the labels ",
+                        "in either the outcome variables or grid predictor variables to stack the variables ",
+                        "and proceed.")
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.mismatch.outcome,
                                                   X = binary.grid.cleaned)),
@@ -191,7 +191,6 @@ test_that("Test input error messages", {
                                                     X = binary.grid.cleaned)),
                    "The following variable(s) are colinear", fixed = TRUE)
     # Check Grid input appropriate
-    error.msg <- "Grid Predictor variable set needs to have the question type attribute to be processed for stacking"
     predictor.without.attributes <- numeric.grid.cleaned[1:ncol(numeric.grid.cleaned)]
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = numeric.multi.outcome,
@@ -305,30 +304,17 @@ test_that("Mismatch warnings", {
 
     expect_identical(output, numeric.numeric.stacked)
     # Test warnings for ambiguous input
-    warning.msg <- paste0("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
-                          "The outcome variable ", sQuote("Brand Numeric"), " has names: ",
-                          paste0(sQuote(c("Apple", "Microsoft")), collapse = ", "), " and these names appear ",
-                          "in both dimensions of the grid predictor input variable set. Please rename the ",
-                          "names in eithe the outcome variable set or grid predictor variable set to ",
-                          "stack the variables and proceed.")
-    expect_warning(ambiguous.output.1 <- Regression(stacked.data.check = TRUE,
-                                                    unstacked.data = list(Y = numeric.multi.outcome,
-                                                                          X = ambiguous.numeric.grid),
-                                                    method = "model.frame"),
-                   warning.msg, fixed = TRUE)
-    warning.msg <- paste0("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
-                          "The outcome variable ", sQuote("Brand Numeric"), " has names: ",
-                          paste0(sQuote(c("Apple", "Microsoft")), collapse = ", "), " and these names appear ",
-                          "in both dimensions of the grid predictor input variable set. Please rename the ",
-                          "names in eithe the outcome variable set or grid predictor variable set to ",
-                          "stack the variables and proceed.")
-    expect_warning(ambiguous.output.2 <- Regression(stacked.data.check = TRUE,
-                                                    unstacked.data = list(Y = numeric.multi.outcome,
-                                                                          X = transposed.ambiguous.numeric.grid),
-                                                    method = "model.frame"),
-                   warning.msg, fixed = TRUE)
-    # Expect transposed output to be the same (i.e. transpose occurs)
-    expect_identical(ambiguous.output.1, ambiguous.output.2)
+    error.msg <- paste0("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
+                        "The outcome variable ", sQuote("Brand Numeric"), " has labels: ",
+                        paste0(sQuote(c("Apple", "Microsoft")), collapse = ", "), " and these labels appear ",
+                        "in both dimensions of the grid predictor variables. Please rename the ",
+                        "labels in either the outcome variables or grid predictor variables to ",
+                        "stack the variables and proceed.")
+    expect_error(ambiguous.output.1 <- Regression(stacked.data.check = TRUE,
+                                                  unstacked.data = list(Y = numeric.multi.outcome,
+                                                                        X = ambiguous.numeric.grid),
+                                                  method = "model.frame"),
+                 error.msg, fixed = TRUE)
 })
 
 test_that("Transpose and alignment correct", {
@@ -341,7 +327,7 @@ test_that("Transpose and alignment correct", {
                                 unstacked.data = list(Y = numeric.multi.outcome,
                                                       X = numeric.grid),
                                 method = "model.frame"))
-    # Check alignement
+    # Check alignment
     original.data.frame <- Regression(formula(NULL), stacked.data.check = TRUE,
                                       unstacked.data = list(Y = larger.numeric.multi.outcome,
                                                             X = larger.numeric.grid),
