@@ -464,6 +464,23 @@ stacked.random.filter <- rep(random.subset, n.outcomes)
 attr(stacked.random.filter, "label") <- "A Filter"
 stacked.weight.choices <- list(NULL, stacked.random.weights)
 stacked.subset.choices <- list(NULL, stacked.random.filter)
+
+# DS-2964 Create data that has the structure swapped (codeframe, secondarycodeframe, cols and reduction)
+unstacked.codeframe.swap <- technology.unstacked
+tmp <- attr(unstacked.codeframe.swap$X, "codeframe")
+attr(unstacked.codeframe.swap$X, "codeframe") <- attr(unstacked.codeframe.swap$X, "secondarycodeframe")
+attr(unstacked.codeframe.swap$X, "secondarycodeframe") <- tmp
+# Swap the order of the comma separated labels in the grid (X) component
+grid.labels <- strsplit(names(unstacked.codeframe.swap$X), split = ", ", fixed = TRUE)
+names(unstacked.codeframe.swap$X) <- vapply(grid.labels, function(x) paste0(rev(x), collapse = ", "),
+                                            character(1))
+# Reorder columns themselves to be consistent with grid structure
+outcomes.with.NET <- names(attr(unstacked.codeframe.swap$X, "secondarycodeframe"))
+column.indices <- unlist(lapply(outcomes.with.NET, function(x) grep(paste0("^", x), names(unstacked.codeframe.swap$X))))
+new.grid <- unstacked.codeframe.swap$X[column.indices]
+new.grid <- flipU::CopyAttributes(new.grid, unstacked.codeframe.swap$X)
+unstacked.codeframe.swap$X <- new.grid
+
 for (type in types)
     for (s in seq_along(subset.choices))
         for (w in seq_along(weight.choices))
@@ -472,10 +489,12 @@ for (type in types)
                              ", subset = ", if (s == 2) "Random" else "NULL"), {
                 mod.technology.stacked <- technology.stacked
                 mod.technology.unstacked <- technology.unstacked
+                mod.technology.unstacked.swap <- unstacked.codeframe.swap
                 if (type %in% count.types)
                 {
                     mod.technology.stacked$Q3 <- stacked.count
                     mod.technology.unstacked$Y <- count.Y
+                    mod.technology.unstacked.swap$Y <- count.Y
                 }
                 stacked.regression <- suppressWarnings(Regression(stacked.formula, type = type,
                                                                   output = "Summary",
@@ -487,8 +506,15 @@ for (type in types)
                                                                     subset = subset.choices[[s]],
                                                                     weights = weight.choices[[w]],
                                                                     unstacked.data = mod.technology.unstacked))
+                stackable.regression.swap <- suppressWarnings(Regression(type = type, stacked.data.check = TRUE,
+                                                                         output = "Summary",
+                                                                         subset = subset.choices[[s]],
+                                                                         weights = weight.choices[[w]],
+                                                                         unstacked.data = mod.technology.unstacked.swap))
                 expect_equal(unname(stacked.regression$coef),
                              unname(stackable.regression$coef))
+                expect_equal(unname(stacked.regression$coef),
+                             unname(stackable.regression.swap$coef))
                 # Check meta data in weights and filters exists
                 if (!is.null(weight.choices[[w]]))
                     expect_match(stackable.regression$sample.description, attr(weight.choices[[w]], "label"))
