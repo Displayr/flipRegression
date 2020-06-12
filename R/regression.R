@@ -1720,9 +1720,19 @@ validatePredictorVariables <- function(data, outcome.names, predictor.names, uns
             warning("The variable(s): ", removed.predictor.variables, " have been removed from the set of predictor ",
                     "variables in ", sQuote(predictor.variable.set.name), " since they don't appear in the set of ",
                     "outcome variables in ", sQuote(outcome.variable.set.name))
+
         # Remove the name from the codeframe too
         if (!is.null(attr(data[["X"]], "codeframe")))
-            attr(data[["X"]], "codeframe")[unstackable.predictors] <- NULL
+        {
+            # Determine if the outcome labels are stored in codeframe or secondarycodeframe
+            codeframe.names <- names(attr(data[["X"]], "codeframe"))
+            correct.codeframe <- if (any(predictor.names %in% codeframe.names))
+                                    "codeframe"
+                                 else
+                                    "secondarycodeframe"
+            attr(data[["X"]], correct.codeframe)[unstackable.predictors] <- NULL
+        }
+
     }
     return(data[["X"]])
 }
