@@ -164,22 +164,22 @@ test_that("Test input error messages", {
     # Test completely mismatched variables (no outcome labels match predictor labels)
     binary.mismatch.outcome <- binary.multi.outcome
     names(binary.mismatch.outcome)[1:2] <- c("Google", "Amazon")
-    error.msg <- paste0("It is not possible to stack these variables since none of the outcome variable names match ",
-                        "the variable names in the predictor variables. The outcome variable set ",
-                        sQuote("Brand Binary"), " has names: ", paste0(sQuote(c("Google", "Amazon")), collapse = ", "),
-                        " which don't appear in the names of the grid predictor variable set structure")
+    error.msg <- paste0("It is not possible to stack these variables since none of the outcome variable labels match ",
+                        "the variable labels in the predictor variables. The outcome variables ",
+                        sQuote("Brand Binary"), " have labels: ", paste0(sQuote(c("Google", "Amazon")), collapse = ", "),
+                        " which don't appear in the labels of the grid of predictor variables.")
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.mismatch.outcome,
                                                   X = binary.grid.cleaned)),
                  error.msg, fixed = TRUE)
     binary.mismatch.outcome <- binary.multi.outcome
     names(binary.mismatch.outcome)[1:2] <- c("Fun", "Microsoft")
-    error.msg <- paste0("Ambiguous names in the grid predictors need to be reconciled before stacking can occur. ",
-                        "The outcome variable ", sQuote("Brand Binary"), " has names: ",
-                        paste0(sQuote(c("Fun", "Microsoft")), collapse = ", "), " and these names appear in both ",
-                        "dimensions of the grid predictor input variable set. Please rename the names ",
-                        "in eithe the outcome variable set or grid predictor variable set to stack the variables ",
-                        "and proceed")
+    error.msg <- paste0("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
+                        "The outcome variable ", sQuote("Brand Binary"), " has labels: ",
+                        paste0(sQuote(c("Fun", "Microsoft")), collapse = ", "), " and these labels appear in both ",
+                        "dimensions of the grid predictor variables. Please rename the labels ",
+                        "in either the outcome variables or grid predictor variables to stack the variables ",
+                        "and proceed.")
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = binary.mismatch.outcome,
                                                   X = binary.grid.cleaned)),
@@ -191,7 +191,6 @@ test_that("Test input error messages", {
                                                     X = binary.grid.cleaned)),
                    "The following variable(s) are colinear", fixed = TRUE)
     # Check Grid input appropriate
-    error.msg <- "Grid Predictor variable set needs to have the question type attribute to be processed for stacking"
     predictor.without.attributes <- numeric.grid.cleaned[1:ncol(numeric.grid.cleaned)]
     expect_error(Regression(stacked.data.check = TRUE,
                             unstacked.data = list(Y = numeric.multi.outcome,
@@ -305,30 +304,17 @@ test_that("Mismatch warnings", {
 
     expect_identical(output, numeric.numeric.stacked)
     # Test warnings for ambiguous input
-    warning.msg <- paste0("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
-                          "The outcome variable ", sQuote("Brand Numeric"), " has names: ",
-                          paste0(sQuote(c("Apple", "Microsoft")), collapse = ", "), " and these names appear ",
-                          "in both dimensions of the grid predictor input variable set. Please rename the ",
-                          "names in eithe the outcome variable set or grid predictor variable set to ",
-                          "stack the variables and proceed.")
-    expect_warning(ambiguous.output.1 <- Regression(stacked.data.check = TRUE,
-                                                    unstacked.data = list(Y = numeric.multi.outcome,
-                                                                          X = ambiguous.numeric.grid),
-                                                    method = "model.frame"),
-                   warning.msg, fixed = TRUE)
-    warning.msg <- paste0("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
-                          "The outcome variable ", sQuote("Brand Numeric"), " has names: ",
-                          paste0(sQuote(c("Apple", "Microsoft")), collapse = ", "), " and these names appear ",
-                          "in both dimensions of the grid predictor input variable set. Please rename the ",
-                          "names in eithe the outcome variable set or grid predictor variable set to ",
-                          "stack the variables and proceed.")
-    expect_warning(ambiguous.output.2 <- Regression(stacked.data.check = TRUE,
-                                                    unstacked.data = list(Y = numeric.multi.outcome,
-                                                                          X = transposed.ambiguous.numeric.grid),
-                                                    method = "model.frame"),
-                   warning.msg, fixed = TRUE)
-    # Expect transposed output to be the same (i.e. transpose occurs)
-    expect_identical(ambiguous.output.1, ambiguous.output.2)
+    error.msg <- paste0("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
+                        "The outcome variable ", sQuote("Brand Numeric"), " has labels: ",
+                        paste0(sQuote(c("Apple", "Microsoft")), collapse = ", "), " and these labels appear ",
+                        "in both dimensions of the grid predictor variables. Please rename the ",
+                        "labels in either the outcome variables or grid predictor variables to ",
+                        "stack the variables and proceed.")
+    expect_error(ambiguous.output.1 <- Regression(stacked.data.check = TRUE,
+                                                  unstacked.data = list(Y = numeric.multi.outcome,
+                                                                        X = ambiguous.numeric.grid),
+                                                  method = "model.frame"),
+                 error.msg, fixed = TRUE)
 })
 
 test_that("Transpose and alignment correct", {
@@ -341,7 +327,7 @@ test_that("Transpose and alignment correct", {
                                 unstacked.data = list(Y = numeric.multi.outcome,
                                                       X = numeric.grid),
                                 method = "model.frame"))
-    # Check alignement
+    # Check alignment
     original.data.frame <- Regression(formula(NULL), stacked.data.check = TRUE,
                                       unstacked.data = list(Y = larger.numeric.multi.outcome,
                                                             X = larger.numeric.grid),
@@ -478,6 +464,23 @@ stacked.random.filter <- rep(random.subset, n.outcomes)
 attr(stacked.random.filter, "label") <- "A Filter"
 stacked.weight.choices <- list(NULL, stacked.random.weights)
 stacked.subset.choices <- list(NULL, stacked.random.filter)
+
+# DS-2964 Create data that has the structure swapped (codeframe, secondarycodeframe, cols and reduction)
+unstacked.codeframe.swap <- technology.unstacked
+tmp <- attr(unstacked.codeframe.swap$X, "codeframe")
+attr(unstacked.codeframe.swap$X, "codeframe") <- attr(unstacked.codeframe.swap$X, "secondarycodeframe")
+attr(unstacked.codeframe.swap$X, "secondarycodeframe") <- tmp
+# Swap the order of the comma separated labels in the grid (X) component
+grid.labels <- strsplit(names(unstacked.codeframe.swap$X), split = ", ", fixed = TRUE)
+names(unstacked.codeframe.swap$X) <- vapply(grid.labels, function(x) paste0(rev(x), collapse = ", "),
+                                            character(1))
+# Reorder columns themselves to be consistent with grid structure
+outcomes.with.NET <- names(attr(unstacked.codeframe.swap$X, "secondarycodeframe"))
+column.indices <- unlist(lapply(outcomes.with.NET, function(x) grep(paste0("^", x), names(unstacked.codeframe.swap$X))))
+new.grid <- unstacked.codeframe.swap$X[column.indices]
+new.grid <- flipU::CopyAttributes(new.grid, unstacked.codeframe.swap$X)
+unstacked.codeframe.swap$X <- new.grid
+
 for (type in types)
     for (s in seq_along(subset.choices))
         for (w in seq_along(weight.choices))
@@ -486,10 +489,12 @@ for (type in types)
                              ", subset = ", if (s == 2) "Random" else "NULL"), {
                 mod.technology.stacked <- technology.stacked
                 mod.technology.unstacked <- technology.unstacked
+                mod.technology.unstacked.swap <- unstacked.codeframe.swap
                 if (type %in% count.types)
                 {
                     mod.technology.stacked$Q3 <- stacked.count
                     mod.technology.unstacked$Y <- count.Y
+                    mod.technology.unstacked.swap$Y <- count.Y
                 }
                 stacked.regression <- suppressWarnings(Regression(stacked.formula, type = type,
                                                                   output = "Summary",
@@ -501,8 +506,15 @@ for (type in types)
                                                                     subset = subset.choices[[s]],
                                                                     weights = weight.choices[[w]],
                                                                     unstacked.data = mod.technology.unstacked))
+                stackable.regression.swap <- suppressWarnings(Regression(type = type, stacked.data.check = TRUE,
+                                                                         output = "Summary",
+                                                                         subset = subset.choices[[s]],
+                                                                         weights = weight.choices[[w]],
+                                                                         unstacked.data = mod.technology.unstacked.swap))
                 expect_equal(unname(stacked.regression$coef),
                              unname(stackable.regression$coef))
+                expect_equal(unname(stacked.regression$coef),
+                             unname(stackable.regression.swap$coef))
                 # Check meta data in weights and filters exists
                 if (!is.null(weight.choices[[w]]))
                     expect_match(stackable.regression$sample.description, attr(weight.choices[[w]], "label"))
@@ -568,7 +580,7 @@ test_that("Check codeframe specific usage", {
     expect_true(outcome.warning.msg %in% y.wrong.warnings)
     expect_true(predictor.warning.msg %in% y.wrong.warnings)
     # Check stacking handles commas effectively when codeframe available
-    unstacked.with.commas = technology.unstacked
+    unstacked.with.commas <- technology.unstacked
     names(unstacked.with.commas$X) <- sub("Good customer", "Good, customer", names(unstacked.with.commas$X))
     names(attr(unstacked.with.commas$X, "secondarycodeframe")) <- sub("Good customer", "Good, customer",
                                                                       names(attr(unstacked.with.commas$X,
@@ -578,7 +590,7 @@ test_that("Check codeframe specific usage", {
     names(attr(unstacked.with.commas$X, "secondarycodeframe")) <- sub("Worth what you pay for", "Worth,what,you,pay,for",
                                                                       names(attr(unstacked.with.commas$X,
                                                                                  "secondarycodeframe")))
-    suppressWarnings(comma.out <- Regression(unstacked.data = technology.unstacked, stacked.data.check = TRUE))
+    suppressWarnings(comma.out <- Regression(unstacked.data = unstacked.with.commas, stacked.data.check = TRUE))
     expect_equal(comma.out$original$coefficients, tech.out$original$coefficients)
 })
 

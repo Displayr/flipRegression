@@ -1590,19 +1590,27 @@ validateDataForStacking <- function(data)
     data[["X"]] <- validateNamesInGrid(data)
     names.in.predictor.grid <- getGridNames(data[["X"]])
 
-    unstacked.names <- names.in.predictor.grid[[2]]
-    predictor.names <- unique(unstacked.names)
+    outcome.names.in.grid.elements <- vapply(names.in.predictor.grid, function(x) {
+        any(outcome.names %in% x)
+        }, logical(1))
+    outcome.names.in.grid <- names.in.predictor.grid[[which(outcome.names.in.grid.elements)]]
+    unique.outcome.names.in.grid <- unique(outcome.names.in.grid)
     # Remove any outcome variables that aren't seen in predictors and warn
-    data[["Y"]] <- validateOutcomeVariables(data, outcome.names, predictor.names)
+    data[["Y"]] <- validateOutcomeVariables(data, outcome.names, unique.outcome.names.in.grid)
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
 
     # Remove any predictor variables that aren't seen in outcome variables and warn
-    data[["X"]] <- validatePredictorVariables(data, outcome.names, predictor.names, unstacked.names)
+    data[["X"]] <- validatePredictorVariables(data, outcome.names,
+                                              unique.outcome.names.in.grid,
+                                              outcome.names.in.grid)
     names.in.predictor.grid <- getGridNames(data[["X"]])
-    unstacked.names <- names.in.predictor.grid[[2]]
-    predictor.names <- unique(unstacked.names)
+    outcome.names.in.grid.elements <- vapply(names.in.predictor.grid, function(x) {
+        any(outcome.names %in% x)
+    }, logical(1))
+    outcome.names.in.grid <- names.in.predictor.grid[[which(outcome.names.in.grid.elements)]]
+    unique.outcome.names.in.grid <- unique(outcome.names.in.grid)
     # Ensure columns align before stacking
-    data[["Y"]] <- checkStackAlignment(data, outcome.names, predictor.names)
+    data[["Y"]] <- checkStackAlignment(data, outcome.names, unique.outcome.names.in.grid)
     return(list(data = data, stacks = ncol(data[["Y"]])))
 }
 
@@ -1621,36 +1629,29 @@ validateNamesInGrid <- function(data)
     grid.names <- getGridNames(data[["X"]])
     # Check if any labels match
     matches <- lapply(grid.names, function(x) outcome.names %in% x)
-    any.matches <- sapply(matches, any)
+    any.matches <- vapply(matches, any, logical(1))
     # No labels match at all, error since there is nothing to align for stacking
     if (all(!any.matches))
-        stop("It is not possible to stack these variables since none of the outcome variable names ",
-             "match the variable names in the predictor variables. The outcome variable set ",
-             outcome.variable.set.name, " has names: ", paste0(sQuote(outcome.names), collapse = ", "),
-             " which don't appear in the names of the grid predictor variable set structure")
-    # Check if is a clear match (no clash of predictor names with outcome names)
-    # If necessary, 'transpose' the grid labels, i.e. outcome, predictor labels changed to predictor, outcome
+        stop("It is not possible to stack these variables since none of the outcome variable labels ",
+             "match the variable labels in the predictor variables. The outcome variables ",
+             outcome.variable.set.name, " have labels: ", paste0(sQuote(outcome.names), collapse = ", "),
+             " which don't appear in the labels of the grid of predictor variables.")
+    # Check if is a clear match (no clash of predictor names with outcome names) and no codeframe available,
+    # then 'transpose' the grid labels, i.e. outcome, predictor labels changed to predictor, outcome
     dimensions.matching <- sum(any.matches)
-    if (dimensions.matching == 1 && any.matches[1])
+    if (dimensions.matching == 1 && any.matches[1] && is.null(attr(data[["X"]], "codeframe")))
         names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
-    # In ambiguous case, if one dimension seems to match perfectly then pick that one.
+    # Throw error for ambiguous cases, i.e. outcome labels appear in both grid label dimensions.
     if (dimensions.matching == 2)
     {
-        perfect.matches <- sapply(matches, all)
-        matched.outcomes <- outcome.names[unique(unlist(sapply(matches, which)))]
-        ambiguous.message <- paste0("The outcome variable ", outcome.variable.set.name, " has names: ",
-                                    paste0(sQuote(matched.outcomes), collapse = ", "), " and these names appear ",
-                                    "in both dimensions of the grid predictor input variable set. Please rename the ",
-                                    "names in eithe the outcome variable set or grid predictor variable set to ",
+        matched.outcomes <- outcome.names[unique(unlist(lapply(matches, which)))]
+        ambiguous.message <- paste0("The outcome variable ", outcome.variable.set.name, " has labels: ",
+                                    paste0(sQuote(matched.outcomes), collapse = ", "), " and these labels appear ",
+                                    "in both dimensions of the grid predictor variables. Please rename the ",
+                                    "labels in either the outcome variables or grid predictor variables to ",
                                     "stack the variables and proceed.")
-        if (!any(perfect.matches))
-            stop("Ambiguous names in the grid predictors need to be reconciled before stacking can occur. ",
-                 ambiguous.message)
-        else
-            warning("Ambiguous names between the outcome variable set and in the grid predictors variable set. ",
-                    ambiguous.message)
-        if (perfect.matches[1])
-            names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
+        stop("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
+             ambiguous.message)
     }
     return(data[["X"]])
 }
@@ -1719,9 +1720,19 @@ validatePredictorVariables <- function(data, outcome.names, predictor.names, uns
             warning("The variable(s): ", removed.predictor.variables, " have been removed from the set of predictor ",
                     "variables in ", sQuote(predictor.variable.set.name), " since they don't appear in the set of ",
                     "outcome variables in ", sQuote(outcome.variable.set.name))
+
         # Remove the name from the codeframe too
         if (!is.null(attr(data[["X"]], "codeframe")))
-            attr(data[["X"]], "codeframe")[unstackable.predictors] <- NULL
+        {
+            # Determine if the outcome labels are stored in codeframe or secondarycodeframe
+            codeframe.names <- names(attr(data[["X"]], "codeframe"))
+            correct.codeframe <- if (any(predictor.names %in% codeframe.names))
+                                    "codeframe"
+                                 else
+                                    "secondarycodeframe"
+            attr(data[["X"]], correct.codeframe)[unstackable.predictors] <- NULL
+        }
+
     }
     return(data[["X"]])
 }
@@ -1741,8 +1752,9 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
 
 stackData <- function(data)
 {
+    outcome.names <- getMultiOutcomeNames(data[["Y"]])
     stacked.outcome <- stackOutcome(data[["Y"]])
-    stacked.predictors <- stackPredictors(data[["X"]], names(data[["Y"]]))
+    stacked.predictors <- stackPredictors(data[["X"]], outcome.names)
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
     return(stacked.data)
 }
@@ -1754,10 +1766,19 @@ stackPredictors <- function(data, outcome.names)
     if (!is.null(codeframe <- attr(data, "codeframe")) &&
         !is.null(secondary.codeframe <- attr(data, "secondarycodeframe")))
     {
-        variables.to.stack <- lapply(names(secondary.codeframe), function(x) paste0(x, ", ", names(codeframe)))
-        names(variables.to.stack) <- names(secondary.codeframe)
-        stacked.data <- reshape(data, varying = variables.to.stack, times = names(codeframe),
-                                v.names = names(secondary.codeframe), direction = "long")
+        if (any(outcome.names %in% names(codeframe)))
+        {
+            predictor.names <- names(secondary.codeframe)
+            variables.to.stack <- lapply(predictor.names, function(x) paste0(x, ", ", outcome.names))
+            names(variables.to.stack) <- predictor.names
+        } else
+        {
+            predictor.names <- names(codeframe)
+            variables.to.stack <- lapply(predictor.names, function(x) paste0(outcome.names, ", ", x))
+            names(variables.to.stack) <- predictor.names
+        }
+        stacked.data <- reshape(data, varying = variables.to.stack, times = outcome.names, sep = ",",
+                                v.names = predictor.names, direction = "long")
     }
     else
         stacked.data <- reshape(data, varying = names(data), sep = ", ",
@@ -1797,10 +1818,13 @@ removeReshapingHelperVariables <- function(data)
     data
 }
 
-# Return the name of the predictors and their associated matched response values
-# Usually outcome names are given as the second comma separate value
-# and preditor names would be the first (Displayr and Q convention)
-# However, this is not required since it would be transposed in validateNamesInGrid
+# Return the names of the predictors and their associated matched response values
+# It assumes that outcome names are given as the second comma separate value
+# and predictor names would be the first or alternatively
+# it assumes that the codeframe has the outcome names and secondarycodeframe has
+# the predictor names.
+# If this is incorrect, then it will be corrected or matched in either
+# validateNamesInGrid or validateDataForStacking
 getGridNames <- function(data)
 {
     if (all(c("codeframe", "secondarycodeframe") %in% names(attributes(data))))
