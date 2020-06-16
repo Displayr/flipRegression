@@ -1744,6 +1744,10 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
     {
         new.column.order <- match(outcome.names, predictor.names)
         tmp <- data[["Y"]]
+        if (!is.null(attr(tmp, "secondarycodeframe")))
+            attr(tmp, "secondarycodeframe") <- attr(tmp, "secondarycodeframe")[new.column.order]
+        else if (!is.null(attr(tmp, "codeframe")))
+            attr(tmp, "codeframe") <- attr(tmp, "codeframe")[new.column.order]
         data[["Y"]] <- data[["Y"]][new.column.order]
         data[["Y"]] <- CopyAttributes(data[["Y"]], tmp)
     }
