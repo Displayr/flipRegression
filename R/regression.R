@@ -1757,10 +1757,10 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
 stackData <- function(data)
 {
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
-    stacked.outcome <- stackOutcome(data[["Y"]])
+    stacked.outcome <- stackOutcome(data[["Y"]], outcome.names)
     stacked.predictors <- stackPredictors(data[["X"]], outcome.names)
     if (!all(row.names(stacked.outcome) == row.names(stacked.predictors)))
-        stop("Stacked variables were not aligned properly. Contact support for further help")
+        stop("Stacked variables are not aligned properly. Contact support for further help.")
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
     return(stacked.data)
 }
@@ -1796,11 +1796,11 @@ stackPredictors <- function(data, outcome.names)
 }
 
 #' @importFrom stats reshape
-stackOutcome <- function(data)
+stackOutcome <- function(data, outcome.names)
 {
     v.name <- if (!is.null(question.attr <- attr(data ,"question"))) question.attr else "Y"
     stacked.data <- reshape(data, varying = names(data), v.names = v.name,
-                            times = names(data), direction = "long")
+                            times = outcome.names, direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data)
     names(stacked.data) <- "Y"
