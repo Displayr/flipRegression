@@ -1759,6 +1759,8 @@ stackData <- function(data)
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
     stacked.outcome <- stackOutcome(data[["Y"]])
     stacked.predictors <- stackPredictors(data[["X"]], outcome.names)
+    if (!all(row.names(stacked.outcome) == row.names(stacked.predictors)))
+        stop("Stacked variables were not aligned properly. Contact support for further help")
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
     return(stacked.data)
 }
