@@ -1742,7 +1742,7 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
 {
     if (!identical(outcome.names, predictor.names))
     {
-        new.column.order <- match(outcome.names, predictor.names)
+        new.column.order <- match(predictor.names, outcome.names)
         tmp <- data[["Y"]]
         if (!is.null(attr(tmp, "secondarycodeframe")))
             attr(tmp, "secondarycodeframe") <- attr(tmp, "secondarycodeframe")[new.column.order]
@@ -1842,7 +1842,7 @@ getGridNames <- function(data)
     } else
     {
         split.names <- strsplit(names(data), ", ")
-        splits <- sapply(split.names, length)
+        splits <- vapply(split.names, length, numeric(1))
         if (any(ambiguous.splits <- splits != 2))
             stop("The variable labels in the predictor grid should be comma separated to determine the columns ",
                  "that belong to the appropriate outcome variable. This means that the variable labels cannot ",
