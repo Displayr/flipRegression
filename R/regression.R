@@ -1742,8 +1742,12 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
 {
     if (!identical(outcome.names, predictor.names))
     {
-        new.column.order <- match(outcome.names, predictor.names)
+        new.column.order <- match(predictor.names, outcome.names)
         tmp <- data[["Y"]]
+        if (!is.null(attr(tmp, "secondarycodeframe")))
+            attr(tmp, "secondarycodeframe") <- attr(tmp, "secondarycodeframe")[new.column.order]
+        else if (!is.null(attr(tmp, "codeframe")))
+            attr(tmp, "codeframe") <- attr(tmp, "codeframe")[new.column.order]
         data[["Y"]] <- data[["Y"]][new.column.order]
         data[["Y"]] <- CopyAttributes(data[["Y"]], tmp)
     }
@@ -1753,8 +1757,10 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
 stackData <- function(data)
 {
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
-    stacked.outcome <- stackOutcome(data[["Y"]])
+    stacked.outcome <- stackOutcome(data[["Y"]], outcome.names)
     stacked.predictors <- stackPredictors(data[["X"]], outcome.names)
+    if (!all(row.names(stacked.outcome) == row.names(stacked.predictors)))
+        stop("Stacked variables are not aligned properly. Contact support for further help.")
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
     return(stacked.data)
 }
@@ -1790,11 +1796,11 @@ stackPredictors <- function(data, outcome.names)
 }
 
 #' @importFrom stats reshape
-stackOutcome <- function(data)
+stackOutcome <- function(data, outcome.names)
 {
     v.name <- if (!is.null(question.attr <- attr(data ,"question"))) question.attr else "Y"
     stacked.data <- reshape(data, varying = names(data), v.names = v.name,
-                            times = names(data), direction = "long")
+                            times = outcome.names, direction = "long")
     stacked.data <- removeReshapingHelperVariables(stacked.data)
     stacked.data <- addLabelAttribute(stacked.data)
     names(stacked.data) <- "Y"
@@ -1838,7 +1844,7 @@ getGridNames <- function(data)
     } else
     {
         split.names <- strsplit(names(data), ", ")
-        splits <- sapply(split.names, length)
+        splits <- vapply(split.names, length, numeric(1))
         if (any(ambiguous.splits <- splits != 2))
             stop("The variable labels in the predictor grid should be comma separated to determine the columns ",
                  "that belong to the appropriate outcome variable. This means that the variable labels cannot ",

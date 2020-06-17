@@ -675,3 +675,28 @@ test_that("Check auxiliary methods", {
     expect_error(stacked.probabilities <- flipData::Probabilities(stacked.binary.regression), NA)
     expect_equal(dim(stacked.probabilities), c(3926, 2))
 })
+
+test_that("DS-2694: Ensure data stacking occurs properly", {
+    # Create new order in Grid
+    unstacked <- technology.unstacked
+    new.ordering <- c("Yahoo", "Microsoft", "Dell", "Panasonic", "Sony", "IBM", "Samsung",
+                      "Google", "LG", "Intel", "Nokia", "Apple", "Hewlett-Packard")
+    new.alignment <- match(new.ordering, names(unstacked$Y))
+    unstacked$Y <- unstacked$Y[new.alignment]
+    unstacked$Y <- CopyAttributes(unstacked$Y, technology.unstacked$Y)
+    names(attr(unstacked$Y, "secondarycodeframe")) <- new.ordering
+    outcome.names <- new.ordering
+    expect_equal(names(unstacked$Y), new.ordering)
+    outcome.names.in.grid <- names(attr(unstacked$X, "codeframe"))
+    expect_setequal(names(unstacked$Y), intersect(outcome.names.in.grid, outcome.names))
+    expect_false(all(names(unstacked$Y) == intersect(outcome.names.in.grid, outcome.names)))
+    # Remove datareduction and other variables
+    unstacked.data <- removeDataReduction(unstacked)
+    expect_warning(unstacked <- validateDataForStacking(unstacked.data),
+                   "have been removed from the set of predictor variables in")
+    # Check data aligned properly
+    expect_equal(names(unstacked$data$Y), names(attr(unstacked$data$X, "codeframe")))
+    expect_equal(names(unstacked$data$Y), names(attr(unstacked$data$Y, "secondarycodeframe")))
+    # Ensure alignment check passes
+    expect_error(flipRegression:::stackData(unstacked$data), NA)
+})
