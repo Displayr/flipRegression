@@ -7,7 +7,7 @@
 \method{Probabilities}{Regression}(object, newdata, ...)
 }
 \arguments{
-\item{object}{A model of some kind.}
+\item{object}{A \code{Regression} object.}
 
 \item{newdata}{Optionally, a data frame including the variables used to fit the model.
 If omitted, \code{object$model} is used after any filtering.}

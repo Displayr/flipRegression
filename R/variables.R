@@ -181,8 +181,7 @@ flipData::Probabilities
 
 #' \code{Probabilities.Regression}
 #'
-#' @param object A model of some kind.
-#' @param newdata A
+#' @param object A \code{Regression} object.
 #' @param newdata Optionally, a data frame including the variables used to fit the model.
 #'     If omitted, \code{object$model} is used after any filtering.
 #' @param ... Additional arguments (not used).
