@@ -1072,7 +1072,7 @@ nobs.Regression <- function(object, ...)
 vcov.Regression <- function(object, robust.se = FALSE, ...)
     vcov2(object$original, robust.se, ...)
 
-
+#' @importFrom car hccm
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
@@ -1089,8 +1089,10 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
         hat.values <- hatvalues(fit.reg)
         if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
             v <- hccmAdjust(fit.reg, robust.se, hat.values)
-        else
+        else if (length(fit.reg$coefficients) == 1) # hccm fails with one predictor
             v <- hccmFixed(fit.reg, type = robust.se)
+        else
+            v <- hccm(fit.reg, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
     v
