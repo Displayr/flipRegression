@@ -1067,14 +1067,12 @@ nobs.Regression <- function(object, ...)
 #' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 #' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param ... Additional arguments.
-#' @importFrom car hccm
 #' @importFrom stats vcov
 #' @export
 vcov.Regression <- function(object, robust.se = FALSE, ...)
     vcov2(object$original, robust.se, ...)
 
 
-#' @importFrom car hccm
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
@@ -1092,7 +1090,7 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
         if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
             v <- hccmAdjust(fit.reg, robust.se, hat.values)
         else
-            v <- hccm(fit.reg, type = robust.se)
+            v <- hccmFixed(fit.reg, type = robust.se)
     }
     FixVarianceCovarianceMatrix(v)
     v
@@ -1109,7 +1107,6 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 #' employ a sandwich estimator). Other options are \code{FALSE}, \code{"hc0"},
 #' \code{"hc1"}, \code{"hc2"}, \code{"hc4"}.
 #' @param ... Additional arguments.
-#' @importFrom car hccm
 #' @importFrom stats vcov
 #' @export
 vcov.FitRegression <- function(object, robust.se = FALSE, ...)
@@ -1965,11 +1962,45 @@ hccmAdjust <- function(fit.reg, robust.se, h)
     df.res <- df.residual(fit.reg)
     n <- length(e)
     aliased <- is.na(coef(fit.reg))
-    X <- model.matrix(fit.reg)[, !aliased]
+    X <- model.matrix(fit.reg)[, !aliased, drop = FALSE]
     p <- ncol(X)
     # Replace the singularities with compuatable values.
     # Using the the hc1 calculation for those cases.
     factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     factor[h == 1] <- df.res/n
+    V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+}
+
+# This is a copy of car:::hccm.lm except with drop = FALSE added to the
+# model matrix indexing so that it works with models with a single predictor
+#' @importFrom stats na.omit weights
+hccmFixed <- function(model, type = c("hc3", "hc0", "hc1", "hc2", "hc4"),
+                      singular.ok = TRUE, ...)
+{
+    e <- na.omit(residuals(model))
+    removed <- attr(e, "na.action")
+    wts <- if (is.null(weights(model)))
+        1
+    else weights(model)
+    type <- match.arg(type)
+    if (any(aliased <- is.na(coef(model))) && !singular.ok)
+        stop("there are aliased coefficients in the model")
+    sumry <- summary(model, corr = FALSE)
+    s2 <- sumry$sigma^2
+    V <- sumry$cov.unscaled
+    if (type == FALSE)
+        return(s2 * V)
+    h <- hatvalues(model)
+    if (!is.null(removed)) {
+        wts <- wts[-removed]
+        h <- h[-removed]
+    }
+    X <- model.matrix(model)[, !aliased, drop = FALSE]
+    df.res <- df.residual(model)
+    n <- length(e)
+    e <- wts * e
+    p <- ncol(X)
+    factor <- switch(type, hc0 = 1, hc1 = df.res/n, hc2 = 1 -
+                         h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
 }
