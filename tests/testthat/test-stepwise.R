@@ -59,3 +59,10 @@ test_that("Regression + Stepwise with . in formula",
     out <- suppressWarnings(Stepwise(fit))
     expect_false("x3" %in% names(out$model$model))
 })
+
+test_that("Forward stepwise with robust standard errors (DS-2978)", {
+    linear.model <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
+                                                data = bank, type = "Linear",
+                                                robust.se = TRUE))
+    expect_error(Stepwise(linear.model, direction = "Forward"), NA)
+})

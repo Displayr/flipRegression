@@ -11,7 +11,7 @@
 #' @export
 Stepwise <- function(object, output = "Final", direction = "Backward", always.include = NULL, steps = 1000)
 {
-    if (class(object) != "Regression")
+    if (!inherits(object, "Regression"))
         stop("Invalid regression model object supplied.")
 
     if (object$test.interaction)
