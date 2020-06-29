@@ -1999,7 +1999,7 @@ aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, pr
     {
         groups <- lapply(1:n.groups, function(x) paste0("Group ", x, " (", groups[[x]], ")"))
         groups <- unlist(groups)
-        group.msg <- paste0(paste0(groups[1:(n.groups - 1)], collapse = ""), " and ", groups[n.groups])
+        group.msg <- paste0(paste0(groups[1:(n.groups - 1)], collapse = ", "), " and ", groups[n.groups])
         warning.msg <- paste0("Some groups of predictors have the exactly the same cases with ",
                               "missing values and consequently, only a single dummy variable was ",
                               "used to adjust the data for each group. ", group.msg, ". The dummy ",
@@ -2008,11 +2008,10 @@ aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, pr
     } else
     {
         group <- unlist(groups, use.names = FALSE)
-        warning.msg <- paste0("The following group of predictors have the exactly the same cases ",
-                              "with missing values and consequently, only a single dummy variable ",
-                              "was used to adjust the data: ", group, ". The dummy variables would ",
-                              "be aliased if each predictor in this group had its own dummy ",
-                              "variable.")
+        warning.msg <- paste0("The ", group, " predictors have exactly the same cases with missing ",
+                              "values and consequently, only a single dummy variable was used to ",
+                              "adjust the data for these predictors. The dummy variables would be ",
+                              "aliased if each predictor in this group had its own dummy variable.")
     }
     warning(warning.msg)
 }
