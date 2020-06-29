@@ -35,7 +35,7 @@ Suggests:
     robustbase
 Remotes: Displayr/flipU,
     Displayr/flipFormat,
-    Displayr/flipData,
+    Displayr/flipData@DS-2986,
     Displayr/flipStandardCharts,
     Displayr/flipStatistics,
     Displayr/flipTransformations,
