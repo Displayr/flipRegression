@@ -201,7 +201,7 @@ test_that("DS-2986: Aliased Dummy variables", {
                    fixed = TRUE)
     expect_warning(Regression(Y ~ X1 + X2 + X3 + X4, data = two.groups.aliased,
                               missing = "Dummy variable adjustment"),
-                   paste0("Some groups of predictors have the exactly the same cases with missing ",
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
                           "values and consequently, only a single dummy variable was used to ",
                           "adjust the data for each group. Group 1 (X1; X2) and Group 2 (X3; X4). ",
                           "The dummy variables would be aliased if each predictor in each group ",
@@ -212,7 +212,7 @@ test_that("DS-2986: Aliased Dummy variables", {
     attr(labelled.two.groups$X3, "label") <- "Oranges"
     expect_warning(Regression(Y ~ X1 + X2 + X3 + X4, data = labelled.two.groups, show.labels = TRUE,
                               missing = "Dummy variable adjustment"),
-                   paste0("Some groups of predictors have the exactly the same cases with missing ",
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
                           "values and consequently, only a single dummy variable was used to ",
                           "adjust the data for each group. Group 1 (Apples; X2) and Group 2 ",
                           "(Oranges; X4). The dummy variables would be aliased if each predictor ",
@@ -220,7 +220,7 @@ test_that("DS-2986: Aliased Dummy variables", {
                    fixed = TRUE)
     expect_warning(Regression(Y ~ X1 + X2 + X3 + X4 + X5 + X6, data = three.groups.aliased,
                               missing = "Dummy variable adjustment"),
-                   paste0("Some groups of predictors have the exactly the same cases with missing ",
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
                           "values and consequently, only a single dummy variable was used to ",
                           "adjust the data for each group. Group 1 (X1; X2), Group 2 (X3; X4) and ",
                           "Group 3 (X5; X6). The dummy variables would be aliased if each ",
@@ -232,7 +232,7 @@ test_that("DS-2986: Aliased Dummy variables", {
     attr(labelled.three.groups$X5, "label") <- "Grapes"
     expect_warning(Regression(Y ~ X1 + X2 + X3 + X4 + X5 + X6, data = labelled.three.groups,
                               show.labels = TRUE, missing = "Dummy variable adjustment"),
-                   paste0("Some groups of predictors have the exactly the same cases with missing ",
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
                           "values and consequently, only a single dummy variable was used to ",
                           "adjust the data for each group. Group 1 (Apples; X2), Group 2 (Oranges; ",
                           "X4) and Group 3 (Grapes; X6). The dummy variables would be aliased if ",
