@@ -481,17 +481,28 @@ Regression <- function(formula = as.formula(NULL),
             final.model <- setChartData(final.model, output)
             return(final.model)
         }
+        unfiltered.weights <- processed.data$unfiltered.weights
+        .estimation.data <- processed.data$estimation.data
 
         if (missing == "Dummy variable adjustment")
         {
+            # Check for aliased dummy variables
+            dummy.variables <- names(.estimation.data)[grepDummyVars(names(.estimation.data))]
+            predictor.names <- names(.estimation.data)[-which(names(.estimation.data) == outcome.name)]
+            mapping.variables <- lapply(dummy.variables,
+                                        function(x) attr(.estimation.data[[x]], "predictors.matching.dummy"))
+            names(mapping.variables) <- dummy.variables
+            aliased.dummy.vars <- vapply(mapping.variables, function(x) length(x) > 1, logical(1))
+            if (any(aliased.dummy.vars))
+                aliasedDummyVariableWarning(data, mapping.variables, show.labels, predictor.names)
+            # Update formula to include dummy variables
             new.formulae <- updateDummyVariableFormulae(input.formula, formula.with.interaction,
                                                         data = processed.data$estimation.data)
             input.formula <- new.formulae$formula
             formula.with.interaction <- new.formulae$formula.with.interaction
         }
 
-        unfiltered.weights <- processed.data$unfiltered.weights
-        .estimation.data <- processed.data$estimation.data
+
 
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
@@ -652,7 +663,7 @@ Regression <- function(formula = as.formula(NULL),
                      paste0(names(classes), collapse = ", "), " and re-run the analysis.")
             if (any(grepDummyVars(names(result$original$coefficients))))
             {
-                .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, interaction.name = interaction.name)
+                .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, show.labels)
                 input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
                                                              data = processed.data$estimation.data,
                                                              update.string = " - ")$formula
@@ -1896,8 +1907,14 @@ updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
 
 grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
 
+# Function to impute the missing values in original data to give the equivalent regression
+# coefficients to those generated in the dummy adjusted model.
+# Requires the original data, the fitted model to access the regression coefficients along with the
+# design matrix from the estimation.data and the show.labels logical value in case any warnings
+# are to be reported if the missing values caused aliased dummy predictors.
+#' @importFrom flipFormat Labels
 #' @importFrom stats terms.formula
-adjustDataMissingDummy <- function(data, model, estimation.data, interaction.name = "NULL")
+adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
 {
     model.formula <- formula(model)
     formula.terms <- terms(model.formula)
@@ -1911,8 +1928,30 @@ adjustDataMissingDummy <- function(data, model, estimation.data, interaction.nam
     data.for.means <- data[which(names(data) %in% predictor.names)]
     means.from.data <- lapply(data.for.means, function(x) {
         if (is.numeric(x)) mean(x, na.rm = TRUE) else NULL})
-    missing.replacements <- extractDummyAdjustedCoefs(model$coefficients, means.from.data)
-    missing.numeric <- sapply(names(missing.replacements), function(x) is.numeric(design.data[[x]]))
+    # Check if any aliasing of dummy variables has occurred, first extract mapping
+    dummy.variables <- names(estimation.data)[grepDummyVars(names(estimation.data))]
+    mapping.variables <- lapply(dummy.variables,
+                                function(x) attr(estimation.data[[x]], "predictors.matching.dummy"))
+    names(mapping.variables) <- dummy.variables
+    # dummy variables were aliased if mapping points to more than one original variable
+    aliased <- vapply(mapping.variables, function(x) length(x) > 1, logical(1))
+    if (any(aliased))
+    {
+        mapping.variables <- mapping.variables[aliased]
+        extra.coefs <- lapply(names(mapping.variables),
+                              function(x) {
+                                  vars <- mapping.variables[[x]][-1] # 1st element is redundant
+                                  y <- rep(model$coefficients[[x]], length(vars))
+                                  names(y) <- paste0(vars, ".dummy.var_GQ9KqD7YOf")
+                                  y
+                              })
+        model.coefs <- c(model$coefficients, unlist(extra.coefs))
+    } else
+        model.coefs <- model$coefficients
+    missing.replacements <- extractDummyAdjustedCoefs(model.coefs, means.from.data)
+    missing.numeric <- vapply(names(missing.replacements),
+                              function(x) is.numeric(design.data[[x]]),
+                              logical(1))
     for (pred.name in names(missing.numeric)[which(missing.numeric)])
     {
         x.col <- design.data[[pred.name]]
@@ -1927,6 +1966,54 @@ adjustDataMissingDummy <- function(data, model, estimation.data, interaction.nam
     new.data[["non.outlier.data_GQ9KqD7YOf"]] <- estimation.data[["non.outlier.data_GQ9KqD7YOf"]]
     new.data <- CopyAttributes(new.data, data)
     return(new.data)
+}
+
+# Gives an informative message to the user if there are any aliased dummy variables
+# data is the entire regression dataset with attributes if provided.
+# mapping.variables is the list showing the mapping from the dummy variables to the group of
+# predictors
+# show.labels is the logical used to print either names or labels in warning
+# predictor.names is the character vector of all predictor names used in data
+#' @importFrom flipFormat Labels ExtractCommonPrefix
+aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, predictor.names)
+{
+    all.mapped.variables <- unlist(mapping.variables, use.names = FALSE)
+    if (show.labels)
+    {
+        # Look up names from the full predictor set of names to ensure appropriate truncation
+        predictor.names <- predictor.names[!grepDummyVars(predictor.names)]
+        lbls <- Labels(data, names.to.lookup = predictor.names)
+        names(lbls) <- predictor.names
+        extracted <- ExtractCommonPrefix(lbls)
+        if (!is.na(extracted$common.prefix))
+            lbls <- extracted$shortened.labels
+        lbls <- lbls[names(lbls) %in% all.mapped.variables]
+    } else
+    { # Otherwise just use the names and retain the
+        lbls <- all.mapped.variables
+        names(lbls) <- all.mapped.variables
+    }
+    n.groups <- length(mapping.variables)
+    groups <- lapply(mapping.variables, function(x) paste0(lbls[x], collapse = "; "))
+    if (n.groups > 1)
+    {
+        groups <- lapply(1:n.groups, function(x) paste0("Group ", x, " (", groups[[x]], ")"))
+        groups <- unlist(groups)
+        group.msg <- paste0(paste0(groups[1:(n.groups - 1)], collapse = ", "), " and ", groups[n.groups])
+        warning.msg <- paste0("Some groups of predictors have exactly the same cases with ",
+                              "missing values and consequently, only a single dummy variable was ",
+                              "used to adjust the data for each group. ", group.msg, ". The dummy ",
+                              "variables would be aliased if each predictor in each group had ",
+                              "its own dummy variable.")
+    } else
+    {
+        group <- unlist(groups, use.names = FALSE)
+        warning.msg <- paste0("The ", group, " predictors have exactly the same cases with missing ",
+                              "values and consequently, only a single dummy variable was used to ",
+                              "adjust the data for these predictors. The dummy variables would be ",
+                              "aliased if each predictor in this group had its own dummy variable.")
+    }
+    warning(warning.msg)
 }
 
 extractDummyAdjustedCoefs <- function(coefficients, computed.means)

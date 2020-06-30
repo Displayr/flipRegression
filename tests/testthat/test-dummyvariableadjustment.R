@@ -140,3 +140,102 @@ test_that("DS-2952: Dummy variable adjustment and Ordered Logit printable in RIA
                  NA)
     expect_error(print(model), NA)
 })
+
+test_that("DS-2986: Aliased Dummy variables", {
+    X <- MASS::mvrnorm(n = 200, mu = rep(0, 6), Sigma = matrix(c(1, 0.2, 0.3, 0.2, 0.3, 0.4,
+                                                                 0.2, 1, 0.2, 0.3, 0.4, 0.5,
+                                                                 0.3, 0.2, 1, 0.4, 0.5, 0.2,
+                                                                 0.2, 0.3, 0.4, 1, 0.2, 0.3,
+                                                                 0.3, 0.4, 0.5, 0.2, 1, 0.1,
+                                                                 0.4, 0.5, 0.2, 0.3, 0.1, 1), ncol = 6))
+    beta <- c(0.4, 0.3, 0.25, 0.3, 0.2, 0.1)
+    r2 <- 0.30
+
+    Y <- X %*% beta + rnorm(n = 200)
+
+    not.missing.data <- data.frame(Y, X)
+    common.indices <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+    one.group.aliased <- data.frame(lapply(1:ncol(not.missing.data), function(x) {
+        y <- not.missing.data[[x]]
+        if (x %in% 2:3) # Ignore Y and last X
+            y[common.indices] <- NA
+        y
+    }))
+    second.common <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+    two.groups.aliased <- data.frame(lapply(1:ncol(not.missing.data), function(x) {
+        y <- not.missing.data[[x]]
+        if (x %in% 2:3) # Ignore Y and last X
+            y[common.indices] <- NA
+        else if (x %in% 4:5)
+            y[second.common] <- NA
+        y
+    }))
+    third.common <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+    three.groups.aliased <- data.frame(lapply(1:ncol(not.missing.data), function(x) {
+        y <- not.missing.data[[x]]
+        if (x %in% 2:3) # Ignore Y and last X
+            y[common.indices] <- NA
+        else if (x %in% 4:5)
+            y[second.common] <- NA
+        else if (x %in% 6:7)
+            y[third.common] <- NA
+        y
+    }))
+    names(one.group.aliased) <- names(two.groups.aliased) <- names(three.groups.aliased) <- names(not.missing.data)
+    expect_warning(Regression(Y ~ X1 + X2 + X3, data = one.group.aliased,
+                              missing = "Dummy variable adjustment"),
+                   paste0("The X1; X2 predictors have exactly the same cases with missing values ",
+                          "and consequently, only a single dummy variable was used to adjust the ",
+                          "data for these predictors. The dummy variables would be aliased if ",
+                          "each predictor in this group had its own dummy variable."),
+                   fixed = TRUE)
+    labelled.one.group <- one.group.aliased
+    attr(labelled.one.group$X1, "label") <- "Apples"
+    attr(labelled.one.group$X2, "label") <- "Oranges"
+    expect_warning(Regression(Y ~ X1 + X2 + X3, data = labelled.one.group, show.labels = TRUE,
+                              missing = "Dummy variable adjustment"),
+                   paste0("The Apples; Oranges predictors have exactly the same cases with missing values ",
+                          "and consequently, only a single dummy variable was used to adjust the ",
+                          "data for these predictors. The dummy variables would be aliased if ",
+                          "each predictor in this group had its own dummy variable."),
+                   fixed = TRUE)
+    expect_warning(Regression(Y ~ X1 + X2 + X3 + X4, data = two.groups.aliased,
+                              missing = "Dummy variable adjustment"),
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
+                          "values and consequently, only a single dummy variable was used to ",
+                          "adjust the data for each group. Group 1 (X1; X2) and Group 2 (X3; X4). ",
+                          "The dummy variables would be aliased if each predictor in each group ",
+                          "had its own dummy variable."),
+                   fixed = TRUE)
+    labelled.two.groups <- two.groups.aliased
+    attr(labelled.two.groups$X1, "label") <- "Apples"
+    attr(labelled.two.groups$X3, "label") <- "Oranges"
+    expect_warning(Regression(Y ~ X1 + X2 + X3 + X4, data = labelled.two.groups, show.labels = TRUE,
+                              missing = "Dummy variable adjustment"),
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
+                          "values and consequently, only a single dummy variable was used to ",
+                          "adjust the data for each group. Group 1 (Apples; X2) and Group 2 ",
+                          "(Oranges; X4). The dummy variables would be aliased if each predictor ",
+                          "in each group had its own dummy variable."),
+                   fixed = TRUE)
+    expect_warning(Regression(Y ~ X1 + X2 + X3 + X4 + X5 + X6, data = three.groups.aliased,
+                              missing = "Dummy variable adjustment"),
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
+                          "values and consequently, only a single dummy variable was used to ",
+                          "adjust the data for each group. Group 1 (X1; X2), Group 2 (X3; X4) and ",
+                          "Group 3 (X5; X6). The dummy variables would be aliased if each ",
+                          "predictor in each group had its own dummy variable."),
+                   fixed = TRUE)
+    labelled.three.groups <- three.groups.aliased
+    attr(labelled.three.groups$X1, "label") <- "Apples"
+    attr(labelled.three.groups$X3, "label") <- "Oranges"
+    attr(labelled.three.groups$X5, "label") <- "Grapes"
+    expect_warning(Regression(Y ~ X1 + X2 + X3 + X4 + X5 + X6, data = labelled.three.groups,
+                              show.labels = TRUE, missing = "Dummy variable adjustment"),
+                   paste0("Some groups of predictors have exactly the same cases with missing ",
+                          "values and consequently, only a single dummy variable was used to ",
+                          "adjust the data for each group. Group 1 (Apples; X2), Group 2 (Oranges; ",
+                          "X4) and Group 3 (Grapes; X6). The dummy variables would be aliased if ",
+                          "each predictor in each group had its own dummy variable."),
+                   fixed = TRUE)
+})
