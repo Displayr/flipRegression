@@ -1590,16 +1590,31 @@ flagCodeframeReduction <- function(x)
 {
     flags <- rep(FALSE, length(x))
     names(flags) <- names(x)
-    lengths <- sapply(x, length)
-    # Catch case where these is no reduction, all variables have the same number of coded values
-    if (length(lengths) == 1 || all(lengths[-1] == lengths[1]))
-        return(flags)
-    potential.reductions <- which(lengths == max(lengths))
-    # get the unique vector of coding values for all the variables
-    variable.codings <- unique(unlist(x[-potential.reductions]))
-    is.reduction <- vapply(x[potential.reductions], function(x) all(variable.codings %in% x),
-                           FUN.VALUE = FALSE)
-    flags[potential.reductions] <- is.reduction
+    # Check if there are any duplicated variables and flag them for removal
+    # unname incase the user renames the duplicated variable
+    if (any(duplicated.vars <- duplicated(unname(x))))
+        flags[duplicated.vars] <- TRUE
+    # Check the remaining non duplicates
+    non.duplicated <- x[!duplicated.vars]
+    lengths <- vapply(non.duplicated, length, numeric(1))
+    # Inspect possible NETs after duplicated vars are removed
+    possible.nets <- lengths > 1
+    if (any(possible.nets))
+    {
+        possible.redundant.nets <- which(possible.nets)
+        # Order by decreasing size and remove one-by-one to handle supersets.
+        net.sizes <- sort(lengths[possible.redundant.nets], decreasing = TRUE)
+        for (net in names(net.sizes))
+        {
+            # Remove current net candidate from search list
+            reduced.codeframe <- non.duplicated[-which(names(non.duplicated) == net)]
+            if (any(non.duplicated[[net]] %in% unlist(reduced.codeframe)))
+            { # Update flags and remove from original list
+                flags[which(names(flags) == net)] <- TRUE
+                non.duplicated[net] <- NULL
+            }
+        }
+    }
     flags
 }
 
