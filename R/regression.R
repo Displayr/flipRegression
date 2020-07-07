@@ -494,7 +494,7 @@ Regression <- function(formula = as.formula(NULL),
             names(mapping.variables) <- dummy.variables
             aliased.dummy.vars <- vapply(mapping.variables, function(x) length(x) > 1, logical(1))
             if (any(aliased.dummy.vars))
-                aliasedDummyVariableWarning(data, mapping.variables, show.labels, predictor.names)
+                aliasedDummyVariableWarning(data, mapping.variables[aliased.dummy.vars], show.labels, predictor.names)
             # Update formula to include dummy variables
             new.formulae <- updateDummyVariableFormulae(input.formula, formula.with.interaction,
                                                         data = processed.data$estimation.data)

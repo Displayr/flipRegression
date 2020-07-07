@@ -162,6 +162,9 @@ test_that("DS-2986: Aliased Dummy variables", {
         y
     }))
     second.common <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+    # Ensure simulated values are different
+    while(identical(second.common, common.indices))
+        second.comoon <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
     two.groups.aliased <- data.frame(lapply(1:ncol(not.missing.data), function(x) {
         y <- not.missing.data[[x]]
         if (x %in% 2:3) # Ignore Y and last X
@@ -171,6 +174,9 @@ test_that("DS-2986: Aliased Dummy variables", {
         y
     }))
     third.common <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
+    # Ensure simulated values are different
+    while(identical(third.common, common.indices) || identical(third.common, second.common))
+        third.common <- sample(c(TRUE, FALSE), size = nrow(X), replace = TRUE, prob = c(1, 4))
     three.groups.aliased <- data.frame(lapply(1:ncol(not.missing.data), function(x) {
         y <- not.missing.data[[x]]
         if (x %in% 2:3) # Ignore Y and last X
@@ -237,5 +243,22 @@ test_that("DS-2986: Aliased Dummy variables", {
                           "adjust the data for each group. Group 1 (Apples; X2), Group 2 (Oranges; ",
                           "X4) and Group 3 (Grapes; X6). The dummy variables would be aliased if ",
                           "each predictor in each group had its own dummy variable."),
+                   fixed = TRUE)
+    mix.aliased <- data.frame(lapply(1:ncol(not.missing.data), function(x) {
+        y <- not.missing.data[[x]]
+        if (x %in% 2:3) # Create a single group
+            y[common.indices] <- NA
+        else if (x %in% 4) # Create a single dummy variable not in the group
+            y[second.common] <- NA
+        y
+    }))
+    # Test that single lone non-aliased dummy is not captured when group of aliased dummys exist
+    names(mix.aliased) <- names(one.group.aliased)
+    expect_warning(Regression(Y ~ X1 + X2 + X3, data = mix.aliased, show.labels = TRUE,
+                              missing = "Dummy variable adjustment"),
+                   paste0("The X1; X2 predictors have exactly the same cases with missing values ",
+                          "and consequently, only a single dummy variable was used to adjust the ",
+                          "data for these predictors. The dummy variables would be aliased if ",
+                          "each predictor in this group had its own dummy variable."),
                    fixed = TRUE)
 })
