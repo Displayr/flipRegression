@@ -635,21 +635,6 @@ Regression <- function(formula = as.formula(NULL),
     if (!is.null(importance))
     {
         signs <- if (importance.absolute || partial) 1 else sign(extractVariableCoefficients(result$original, type))
-        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
-        labels <- rownames(result$summary$coefficients)[relevant.coefs]
-        if (result$type == "Ordered Logit")
-        {
-            if (missing == "Dummy variable adjustment")
-                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
-            else
-                labels <- labels[1:result$n.predictors]
-        } else
-            labels <- labels[-1]
-        # Remove prefix if possible
-        extracted.labels <- ExtractCommonPrefix(labels)
-        if (!is.na(extracted.labels$common.prefix))
-            labels <- extracted.labels$shortened.labels
-
         if (missing == "Dummy variable adjustment")
         {
             # Update the formula silently (don't throw a warning)
@@ -670,6 +655,26 @@ Regression <- function(formula = as.formula(NULL),
             }
             result$formula <- input.formula
         }
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        labels <- rownames(result$summary$coefficients)[relevant.coefs]
+        if (result$type == "Ordered Logit")
+        {
+            if (missing == "Dummy variable adjustment")
+                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
+            else
+                labels <- labels[1:result$n.predictors]
+        } else if (output %in% c("Jaccard Coefficient", "Correlation"))
+        {
+            labels <- attr(terms.formula(input.formula, data = data), "term.labels")
+            labels <- labels[!grepDummyVars(labels)]
+            if (show.labels)
+                labels <- Labels(data, labels)
+        } else
+            labels <- labels[-1]
+        # Remove prefix if possible
+        extracted.labels <- ExtractCommonPrefix(labels)
+        if (!is.na(extracted.labels$common.prefix))
+            labels <- extracted.labels$shortened.labels
         if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
         {
             result$subset <- subset

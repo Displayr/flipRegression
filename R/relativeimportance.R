@@ -250,6 +250,7 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
 #'  the automated outlier removal.
 #' @importFrom stats terms.formula update.formula
 #' @importFrom flipU OutcomeName
+#' @importFrom flipU CopyAttributes
 #' @noRd
 subsetDataWeightsAndFormula <- function(formula, data, weights)
 {
@@ -257,7 +258,7 @@ subsetDataWeightsAndFormula <- function(formula, data, weights)
     if ("non.outlier.data_GQ9KqD7YOf" %in% names(data))
     {
         data.indices <- data[["non.outlier.data_GQ9KqD7YOf"]]
-        data <- data[data.indices, -which(names(data) == "non.outlier.data_GQ9KqD7YOf")]
+        data <- CopyAttributes(data[data.indices, -which(names(data) == "non.outlier.data_GQ9KqD7YOf")], data)
         if (!is.null(weights))
             weights <- weights[data.indices]
     }
@@ -419,14 +420,13 @@ jaccardTest <- function(x, y, weights)
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
 #' @importFrom flipStatistics CorrelationsWithSignificance
-#' @importFrom flipTransformations OrderedToNumeric
+#' @importFrom flipTransformations AsDataFrame
 #' @noRd
 computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, correction)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
-    relevant.data <- processed.data$data
-    relevant.data <- as.data.frame(lapply(relevant.data, function(x) if (is.factor(x)) OrderedToNumeric(x) else x),
-                                   check.names = FALSE)
+    relevant.data <- AsDataFrame(processed.data$data, use.names = TRUE, categorical.as.binary = FALSE)
+    names(relevant.data) <- names(processed.data$data)
     weights <- processed.data$weights
     formula <- processed.data$formula
 

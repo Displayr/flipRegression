@@ -638,4 +638,22 @@ test_that("DS-2876: Correlation Output", {
                                                            interaction = int, output = "Correlation", subset = subset,
                                                            missing = "Use partial data (pairwise correlations)"),
                  NA)
+    # Check categorical variables are coerced to numeric in Correlation outputs
+    dat.with.categ <- dat
+    dat.with.categ$X4 <- factor(sample(1:10, replace = TRUE, size = nrow(dat)))
+    expect_warning(categ.pred <- Regression(Y ~ X1 + X2 + X3 + X4, data = dat.with.categ,
+                                            type = "Linear", output = "Correlation"),
+                   "The variable X4 has been converted\\.$", perl = TRUE)
+    # Computed importance uses factor coerced to numeric
+    dat.categ.to.numeric <- lapply(dat.with.categ, unclass)
+    expected.cor <- vapply(dat.categ.to.numeric[-1], function(x) cor(x, dat.categ.to.numeric[[1L]]), numeric(1))
+    expect_equal(categ.pred$importance$raw.importance, expected.cor)
+    categ.pred$importance$raw.importance
+    # Labels shown in warning during conversion
+    dat.with.fancy.categ <- dat.with.categ
+    attr(dat.with.fancy.categ$X4, "label") <- "Some factor"
+    expect_warning(Regression(Y ~ X1 + X2 + X3 + X4, data = dat.with.fancy.categ,
+                              type = "Linear", output = "Correlation"),
+                   "The variable Some factor \\(X4\\) has been converted\\.$", perl = TRUE)
 })
+
