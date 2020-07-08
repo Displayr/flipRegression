@@ -419,11 +419,14 @@ jaccardTest <- function(x, y, weights)
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
 #' @importFrom flipStatistics CorrelationsWithSignificance
+#' @importFrom flipTransformations OrderedToNumeric
 #' @noRd
-computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, missing, correction)
+computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, correction)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
     relevant.data <- processed.data$data
+    relevant.data <- as.data.frame(lapply(relevant.data, function(x) if (is.factor(x)) OrderedToNumeric(x) else x),
+                                   check.names = FALSE)
     weights <- processed.data$weights
     formula <- processed.data$formula
 
