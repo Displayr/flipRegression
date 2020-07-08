@@ -733,15 +733,24 @@ Regression <- function(formula = as.formula(NULL),
         {
             # Update the formula silently (don't throw a warning)
             signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
-            classes <- sapply(data, class)
-            if (!is.null(interaction) && interaction.name %in% names(classes))
-                classes <- classes[-which(names(classes) == interaction.name)]
-            if (any(classes == "factor"))
-                stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
-                     "variables in ", output, ". Please remove the categorical predictors: ",
-                     paste0(names(classes), collapse = ", "), " and re-run the analysis.")
-            if (any(grepDummyVars(names(result$original$coefficients))))
-            {
+            # The data only needs to be adjusted and the formula updated for the RIA if dummy variable
+            # adjustment was used
+            dummy.predictors <- grepDummyVars(names(result$original$coefficients))
+            if (any(dummy.predictors))
+            { # First check if any predictors with dummy vars are factors and throw error since RIA cannot be conducted
+                preds.with.dummy <- extractDummyNames(names(result$original$coefficients)[dummy.predictors])
+                factor.preds <- vapply(data[-which(names(data) == outcome.name)],
+                                       inherits, what = "factor", logical(1))
+                if (!is.null(interaction) && interaction.name %in% names(factor.preds))
+                    factor.preds <- factor.preds[-which(names(factor.preds) == interaction.name)]
+                if (any(factor.preds) && any(names(which(factor.preds)) %in% preds.with.dummy))
+                {
+                    factor.preds <- names(which(factor.preds))
+                    factor.names <- if (show.labels) Labels(data, factor.preds) else factor.preds
+                    stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
+                         "variables in ", output, ". Please remove the categorical predictors: ",
+                         paste0(sQuote(factor.names, q = FALSE), collapse = ", "), " and re-run the analysis.")
+                } # Otherwise, conduct the imputation type step in the data and update formula, removing dummy vars
                 .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, show.labels)
                 input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
                                                              data = processed.data$estimation.data,
@@ -1290,24 +1299,12 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
         regular.aliased <- aliased[!grepDummyVars(names.aliased)]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
                                   " coefficients have been estimated: ",
-                                  paste(alias.vars[regular.aliased], collapse = ", "))
-        dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
-
-        # If no dummy variables in the aliasing, report all aliased.
-        # Otherwise only report the dummy variable scenario if a regular variable is also aliased
-        # i.e. silently have aliased dummy variables.
+                                  paste(sQuote(alias.vars[regular.aliased], q = FALSE), collapse = ", "))
         if (any(regular.aliased))
             warning(regular.warning)
-        if (any(dummy.aliased))
-        {
-            dummy.aliased.variables <- extractDummyNames(names.aliased[dummy.aliased])
-            dummy.warning <- paste0("The following dummy variable adjustment variable(s) are colinear ",
-                                    "with other variables and no dummy variables have been estimated: ",
-                                    alias.vars[dummy.aliased],
-                                    "A different missing value technique might be more suitable.")
-            warning(regular.warning)
-        }
+        return(regular.aliased)
     }
+    aliased
 }
 
 #' @importFrom stats model.frame model.matrix model.response

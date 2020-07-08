@@ -105,7 +105,7 @@ test_that("Removed aliased predictors",
               y <- z <- rnorm(100)
 
               expect_warning(Regression(x ~ y + z),
-                             "The following variable(s) are colinear with other variables and no coefficients have been estimated: z",
+                             "The following variable(s) are colinear with other variables and no coefficients have been estimated: 'z'",
                              fixed = TRUE)
           })
 
@@ -236,13 +236,13 @@ test_that("DS-2826: Check VIFs are handled properly", {
     y <- z <- rnorm(10)
     # Aliased predictors in regressions are computed and print without issue
     expect_warning(aliased.mod <- Regression(x ~ y + z),
-                   "The following variable(s) are colinear with other variables and no coefficients have been estimated: z",
+                   "The following variable(s) are colinear with other variables and no coefficients have been estimated: 'z'",
                    fixed = TRUE)
     expect_error(print(aliased.mod), NA)
     # Check the alias check is used as well as the predictor count checks (see car::vif)
     u <- w <- rnorm(10)
     expect_warning(aliased.mod <- Regression(x ~ u + w + y + z),
-                   "The following variable(s) are colinear with other variables and no coefficients have been estimated: w, z",
+                   "The following variable(s) are colinear with other variables and no coefficients have been estimated: 'w', 'z'",
                    fixed = TRUE)
     expect_error(print(aliased.mod), NA)
     # Check NaN scenarios are handled
