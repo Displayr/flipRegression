@@ -674,3 +674,40 @@ test_that("DS-2876: Correlation Output", {
                    "The variable Some factor \\(X4\\) has been converted\\.$", perl = TRUE)
 })
 
+test_that("Check error message when Categorical predictors used in RIA", {
+    data(bank, package = "flipExampleData")
+    # Expect no error if numeric predictors used
+    expect_error(Regression(Overall ~ Fees + Interest, data = bank,
+                            output = "Relative Importance Analysis",
+                            missing = "Dummy variable adjustment"),
+                 NA)
+    # Expect error if factor or ordered factor used
+    bank$Interest <- factor(bank$Interest)
+    expect_error(Regression(Overall ~ Fees + Interest, data = bank,
+                            output = "Relative Importance Analysis",
+                            missing = "Dummy variable adjustment"),
+                 paste0("Dummy variable adjustment method for missing data is not supported for categorical ",
+                        "predictor variables in Relative Importance Analysis. Please remove the categorical ",
+                        "predictors: 'Interest' and re-run the analysis"), fixed = TRUE)
+    attr(bank$Interest, "label") <- "Interest charged by the bank"
+    expect_error(Regression(Overall ~ Fees + Interest, data = bank,
+                            output = "Relative Importance Analysis",
+                            missing = "Dummy variable adjustment",
+                            show.labels = TRUE),
+                 paste0("Dummy variable adjustment method for missing data is not supported for categorical ",
+                        "predictor variables in Relative Importance Analysis. Please remove the categorical ",
+                        "predictors: 'Interest charged by the bank' and re-run the analysis"), fixed = TRUE)
+    bank2 <- bank[complete.cases(bank), ]
+    # Should not error but throw a warning when complete cases are used (dummy variable adjustment redundant)
+    expect_warning(Regression(Overall ~ Fees + Interest, data = bank2,
+                              output = "Relative Importance Analysis",
+                              missing = "Dummy variable adjustment"),
+                   "The following variables have been treated as categorical: Interest", fixed = TRUE)
+    # Should not throw error if factor used but not dummy adjusted.
+    bank2 <- bank
+    bank2 <- bank2[!is.na(bank2$Interest), ]
+    expect_warning(Regression(Overall ~ Fees + Interest, data = bank2,
+                              output = "Relative Importance Analysis",
+                              missing = "Dummy variable adjustment"),
+                   "The following variables have been treated as categorical: Interest", fixed = TRUE)
+})
