@@ -1,6 +1,6 @@
 estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                robust.se = FALSE, outlier.prop.to.remove, show.warnings = TRUE, correction,
-                               importance, missing, ...)
+                               importance, ...)
 {
     if (!is.null(weights))
         robust.se <- FALSE
@@ -14,7 +14,7 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
     else if (importance == "Jaccard Coefficient")
         computeJaccardImportance(formula, data, weights, variable.names, correction, ...)
     else if (importance == "Correlation")
-        computeCorrelationImportance(formula, data, weights, variable.names, missing, correction, ...)
+        computeCorrelationImportance(formula, data, weights, variable.names, correction, ...)
     else
         stop("Importance type not handled: ", importance)
 }
@@ -414,9 +414,7 @@ jaccardTest <- function(x, y, weights)
 #' @param x The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
-#' @param variable.names Vector of names of the coefficients in the regression model. Defaults to NA for
-#'   comptability with crosstab interaction code that can predictor data could be excluded when filtered.
-#' @param missing Character string of the missing value technique to be applied.
+#' @param variable.names Vector of names of the coefficients in the regression model.
 #' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
@@ -437,7 +435,6 @@ computeCorrelationImportance <- function(formula, data = NULL, weights, variable
         colnames(relevant.data) <- c(outcome.name, variable.names)
     else
         variable.names <- colnames(predictor.variables)
-    pairwise.method <- missing == "Use partial data (pairwise correlations)"
 
     weights <- if (is.null(weights)) rep(1, nrow(relevant.data)) else weights
     correlation.output <- CorrelationsWithSignificance(relevant.data, weights)

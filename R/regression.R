@@ -679,7 +679,7 @@ Regression <- function(formula = as.formula(NULL),
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,
-                                                !recursive.call, correction, importance, missing, ...)
+                                                !recursive.call, correction, importance, ...)
         result$importance.type <- importance
         result$relative.importance <- result$importance
     }
