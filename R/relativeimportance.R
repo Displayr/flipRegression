@@ -449,7 +449,7 @@ computeCorrelationImportance <- function(formula, data = NULL, weights, variable
     std.errs <- extractFirstRowMatrixToNumeric(correlation.output$standard.errors, indices)
     pvalues <- extractFirstRowMatrixToNumeric(correlation.output$p, indices)
     pvalues <- pvalAdjust(pvalues, correction)
-    sample.size <- vapply(predictor.variables, function(x, y) sum(!is.na(x) & !is.na(y)), numeric(1), y = outcome.variable)
+    sample.size <- vapply(relevant.data[indices], function(x, y) sum(!is.na(x) & !is.na(y)), numeric(1), y = outcome.variable)
     list(importance = relative.importance,
          raw.importance = correlation.coefs,
          statistics = statistics,
