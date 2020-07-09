@@ -362,7 +362,23 @@ Regression <- function(formula = as.formula(NULL),
 
     if (type == "Binary Logit" || output == "Jaccard Coefficient")
     {
-        data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
+        if (type == "Binary Logit")
+            data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
+        else
+        {
+            InterceptExceptions(data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data),
+                                warning.handler = function(w) {
+                                    if (w$message == "The Outcome variable needs to contain two or more categories. It does not.")
+                                        stop("The Outcome variable needs to be a binary variable. It is not. ",
+                                             "It is constant with no variation (all values in the variable are the same). ",
+                                             "Please replace the outcome variable with a binary variable.")
+                                    else
+                                        warning(w$message)
+                                })
+            # Convert it to numeric binary, 0,1, if required.
+            if (is.factor(data[[outcome.name]]))
+                data[[outcome.name]] <- unclass(data[[outcome.name]]) - 1
+        }
         outcome.variable <- data[[outcome.name]]
     }
     else if (type == "Ordered Logit")
@@ -376,10 +392,6 @@ Regression <- function(formula = as.formula(NULL),
         WarningFactorToNumeric()
         data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
-    # Check data suitable for Jaccard after variables have been checked for all missing
-    if (output == "Jaccard Coefficient")
-        checkDataSuitableForJaccard(data, formula, show.labels)
-
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
     if (robust.se != FALSE & (partial | missing == "Multiple imputation"))
@@ -664,7 +676,7 @@ Regression <- function(formula = as.formula(NULL),
                 labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
             else
                 labels <- labels[1:result$n.predictors]
-        } else if (output %in% c("Jaccard Coefficient", "Correlation"))
+        } else if (output == "Correlation")
         {
             labels <- attr(terms.formula(input.formula, data = data), "term.labels")
             labels <- labels[!grepDummyVars(labels)]
@@ -682,6 +694,17 @@ Regression <- function(formula = as.formula(NULL),
             result$estimation.data <- .estimation.data <- data[subset, , drop = FALSE]
             .weights <- weights[subset]
         }
+        # Process the data suitable for Jaccard coefficient analysis
+        if (output == "Jaccard Coefficient")
+        {
+            jaccard.processed <- processDataSuitableForJaccard(.estimation.data, input.formula,
+                                                               interaction.name, show.labels)
+            .estimation.data <- jaccard.processed$data
+            input.formula <- jaccard.processed$formula
+            formula.with.interaction <- jaccard.processed$formula.with.interaction
+            labels <- result$labels <- jaccard.processed$labels
+        }
+
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,

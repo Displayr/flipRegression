@@ -116,12 +116,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     }
     else if (!is.null(x$importance))
     {
-        if (x$output %in% c("Jaccard Coefficient", "Correlation"))
+        if (x$output == "Correlation")
         {
             lbls <- attr(terms.formula(x$formula), "term.labels")
             if (x$show.labels)
                 lbls <- Labels(x$model, lbls)
-        } else
+        } else if (x$output == "Jaccard Coefficient")
+            lbls <- x$labels
+        else
             lbls <- extractVariableCoefficientNames(x)
         if (!x$output %in% c("Jaccard Coefficient", "Correlation"))
             title <- paste0(x$importance.type ," (", regressionType(x$type), "): ", x$outcome.label)
