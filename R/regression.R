@@ -359,11 +359,8 @@ Regression <- function(formula = as.formula(NULL),
         formula.with.interaction <- missing.variable.adjustment$formula.with.interaction
         input.formula <- missing.variable.adjustment$input.formula
     }
-    # Check data suitable for Jaccard after variables have been checked for all missing
-    if (output == "Jaccard Coefficient")
-        checkDataSuitableForJaccard(data, formula, show.labels)
 
-    if (type == "Binary Logit")
+    if (type == "Binary Logit" || output == "Jaccard Coefficient")
     {
         data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
         outcome.variable <- data[[outcome.name]]
@@ -379,6 +376,10 @@ Regression <- function(formula = as.formula(NULL),
         WarningFactorToNumeric()
         data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
+    # Check data suitable for Jaccard after variables have been checked for all missing
+    if (output == "Jaccard Coefficient")
+        checkDataSuitableForJaccard(data, formula, show.labels)
+
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
     if (robust.se != FALSE & (partial | missing == "Multiple imputation"))
