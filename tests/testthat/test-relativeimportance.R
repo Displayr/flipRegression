@@ -491,6 +491,23 @@ test_that("DS-2876: Jaccard Output", {
     expect_error(int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing.interaction,
                                          interaction = int, output = "Jaccard Coefficient"),
                  NA)
+    # Allow categorical outcome variables for Jaccard
+    dat$Y <- factor(sample(LETTERS[1:2], size = nrow(dat), replace = TRUE))
+    dat$Y3 <- factor(sample(LETTERS[1:3], size = nrow(dat), replace = TRUE))
+    # Allow categorical variable with two levels
+    expect_error(category.2 <- Regression(Y ~ X1 + X2, data = dat, output = "Jaccard Coefficient"), NA)
+    # Check the output equivalent where outcome is numeric binary
+    dat$Yb <- unclass(dat$Y) - 1
+    expect_error(num.binary <- Regression(Yb ~ X1 + X2, data = dat, output = "Jaccard Coefficient"), NA)
+    expect_identical(category.2$importance, num.binary$importance)
+    # Check the outcome variable is dichotomized into a numeric binary variable
+    expect_warning(dichot <- Regression(Y3 ~ X1 + X2, data = dat, output = "Jaccard Coefficient"),
+                   "Y3 has been dichotimized into <= A & >= B", fixed = TRUE)
+    expect_setequal(dichot$model$Y3, c(0, 1))
+    # Check output equivalent to numeric binary outcome
+    dat$Yb <- as.numeric(dat$Y3 %in% LETTERS[2:3])
+    expect_error(num.binary <- Regression(Yb ~ X1 + X2, data = dat, output = "Jaccard Coefficient"), NA)
+    expect_identical(dichot$importance, num.binary$importance)
 })
 
 test_that("DS-2876: Correlation Output", {
