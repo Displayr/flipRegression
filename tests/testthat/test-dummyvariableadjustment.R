@@ -190,8 +190,8 @@ test_that("DS-2986: Aliased Dummy variables", {
     names(one.group.aliased) <- names(two.groups.aliased) <- names(three.groups.aliased) <- names(not.missing.data)
     expect_warning(Regression(Y ~ X1 + X2 + X3, data = one.group.aliased,
                               missing = "Dummy variable adjustment"),
-                   paste0("The X1; X2 predictors have exactly the same cases with missing values ",
-                          "and consequently, only a single dummy variable was used to adjust the ",
+                   paste0("The predictor variables: (X1; X2) have exactly the same cases with missing values. ",
+                          "Consequently, only a single dummy variable was used to adjust the ",
                           "data for these predictors. The dummy variables would be aliased if ",
                           "each predictor in this group had its own dummy variable."),
                    fixed = TRUE)
@@ -200,8 +200,8 @@ test_that("DS-2986: Aliased Dummy variables", {
     attr(labelled.one.group$X2, "label") <- "Oranges"
     expect_warning(Regression(Y ~ X1 + X2 + X3, data = labelled.one.group, show.labels = TRUE,
                               missing = "Dummy variable adjustment"),
-                   paste0("The Apples; Oranges predictors have exactly the same cases with missing values ",
-                          "and consequently, only a single dummy variable was used to adjust the ",
+                   paste0("The predictor variables: (Apples; Oranges) have exactly the same cases with missing values. ",
+                          "Consequently, only a single dummy variable was used to adjust the ",
                           "data for these predictors. The dummy variables would be aliased if ",
                           "each predictor in this group had its own dummy variable."),
                    fixed = TRUE)
@@ -256,8 +256,8 @@ test_that("DS-2986: Aliased Dummy variables", {
     names(mix.aliased) <- names(one.group.aliased)
     expect_warning(Regression(Y ~ X1 + X2 + X3, data = mix.aliased, show.labels = TRUE,
                               missing = "Dummy variable adjustment"),
-                   paste0("The X1; X2 predictors have exactly the same cases with missing values ",
-                          "and consequently, only a single dummy variable was used to adjust the ",
+                   paste0("The predictor variables: (X1; X2) have exactly the same cases with missing values. ",
+                          "Consequently, only a single dummy variable was used to adjust the ",
                           "data for these predictors. The dummy variables would be aliased if ",
                           "each predictor in this group had its own dummy variable."),
                    fixed = TRUE)

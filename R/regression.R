@@ -2008,8 +2008,8 @@ aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, pr
     } else
     {
         group <- unlist(groups, use.names = FALSE)
-        warning.msg <- paste0("The ", group, " predictors have exactly the same cases with missing ",
-                              "values and consequently, only a single dummy variable was used to ",
+        warning.msg <- paste0("The predictor variables: (", group, ") have exactly the same cases ",
+                              "with missing values. Consequently, only a single dummy variable was used to ",
                               "adjust the data for these predictors. The dummy variables would be ",
                               "aliased if each predictor in this group had its own dummy variable.")
     }
