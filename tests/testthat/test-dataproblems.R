@@ -153,10 +153,57 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
                  paste0(error.prefix, "outcome variable ", sQuote("Y1"), " is not a binary variable",
                         " and predictor variables ", sQuote("X10"), " and ", sQuote("X21"), " are not binary variables",
                         many.constant, many.error.suffix), fixed = TRUE)
-    # Check binary categorical variable handled
-    data$binary.cat <- factor(sample(LETTERS[1:2], size = nrow(data), replace = TRUE))
-    flipRegression::processDataSuitableForJaccard(Y ~ X1 + binary.cat,
-                                                  data = subset(data, select = c("Y", "X1", "binary.cat")))
+    # Check binary categorical variable handled and converted to numeric binary
+    binary.cat <- factor(sample(LETTERS[1:2], size = nrow(data), replace = TRUE))
+    data$binary.cat <- binary.cat
+    binary.splits <- lapply(1:nlevels(data$binary.cat), function(x) as.numeric(data$binary.cat == levels(binary.cat)[x]))
+    output.dat <- data.frame(cbind(data[names(data) %in% c("Y", "X1")], binary.splits))
+    names(output.dat) <- c("Y", "X1", "binary.cat.1", "binary.cat.2")
+    attr(output.dat$binary.cat.1, "label") <- "binary.cat: A"
+    attr(output.dat$binary.cat.2, "label") <- "binary.cat: B"
+    input.dat <- subset(data, select = c("Y", "X1", "binary.cat"))
+    expected.output.list <- list(data = output.dat,
+                                 formula = Y ~ X1 + binary.cat.1 + binary.cat.2,
+                                 formula.with.interaction = Y ~ X1 + binary.cat.1 + binary.cat.2,
+                                 labels = c("X1", "binary.cat.1", "binary.cat.2"))
+    expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1 + binary.cat,
+                                                                data = input.dat),
+                 expected.output.list)
+    # Check categorical variables with more than two levels handled and converted to numeric binary
+    cat <- factor(sample(LETTERS[1:3], size = nrow(data), replace = TRUE))
+    data$cat <- cat
+    binary.splits <- lapply(1:nlevels(data$cat), function(x) as.numeric(data$cat == levels(cat)[x]))
+    output.dat <- data.frame(cbind(data[names(data) %in% c("Y", "X1")], binary.splits))
+    names(output.dat) <- c("Y", "X1", "cat.1", "cat.2", "cat.3")
+    attr(output.dat$cat.1, "label") <- "cat: A"
+    attr(output.dat$cat.2, "label") <- "cat: B"
+    attr(output.dat$cat.3, "label") <- "cat: C"
+    input.dat <- subset(data, select = c("Y", "X1", "cat"))
+    expected.output.list <- list(data = output.dat,
+                                 formula = Y ~ X1 + cat.1 + cat.2 + cat.3,
+                                 formula.with.interaction = Y ~ X1 + cat.1 + cat.2 + cat.3,
+                                 labels = c("X1", "cat.1", "cat.2", "cat.3"))
+
+    expect_equal(flipRegression::processDataSuitableForJaccard(Y ~ X1 + cat,
+                                                               data = input.dat),
+                 expected.output.list)
+    # Check ordinal factors are split into binary numeric variables
+    ordered <- factor(sample(LETTERS[1:3], size = nrow(data), replace = TRUE), ordered = TRUE)
+    data$ordered <- ordered
+    binary.splits <- lapply(1:nlevels(data$ordered), function(x) as.numeric(data$ordered == levels(ordered)[x]))
+    output.dat <- data.frame(cbind(data[names(data) %in% c("Y", "X1")], binary.splits))
+    names(output.dat) <- c("Y", "X1", "ordered.1", "ordered.2", "ordered.3")
+    attr(output.dat$ordered.1, "label") <- "ordered: A"
+    attr(output.dat$ordered.2, "label") <- "ordered: B"
+    attr(output.dat$ordered.3, "label") <- "ordered: C"
+    input.dat <- subset(data, select = c("Y", "X1", "ordered"))
+    expected.output.list <- list(data = output.dat,
+                                 formula = Y ~ X1 + ordered.1 + ordered.2 + ordered.3,
+                                 formula.with.interaction = Y ~ X1 + ordered.1 + ordered.2 + ordered.3,
+                                 labels = c("X1", "ordered.1", "ordered.2", "ordered.3"))
+    expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X2 + ordered,
+                                                                data = input.dat),
+                expected.output.list)
     # Allow categorical outcome variables for Jaccard
     data$Y <- factor(sample(LETTERS[1:2], size = nrow(data), replace = TRUE))
     data$Y3 <- factor(sample(LETTERS[1:3], size = nrow(data), replace = TRUE))

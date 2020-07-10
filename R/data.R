@@ -40,6 +40,14 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
     categorical.predictors <- is.categorical & !outcome.or.interaction
     if (any(categorical.predictors))
     {
+        # Change ordered factors to factors, otherwise it won't be split into binary numeric,
+        # only numeric with ordered values for each level instead of separate binary values
+        # for each level
+        data[categorical.predictors] <- lapply(data[categorical.predictors],
+                                               function(x) {
+                                                   class(x) <- "factor"
+                                                   x
+                                               })
         # Append binary variables to replace categorical predictors
         data <- cbind(data, AsDataFrame(data[categorical.predictors],
                                         use.names = TRUE,
