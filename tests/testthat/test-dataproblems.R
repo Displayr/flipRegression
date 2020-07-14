@@ -204,4 +204,22 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X2 + ordered,
                                                                 data = input.dat),
                 expected.output.list)
+    # Check order of binary transformed categorical variables is preserved
+    input.dat <- subset(data, select = c("Y", "int", "X1", "cat", "X2", "ordered", "X3"))
+    expect_error(output <- flipRegression:::processDataSuitableForJaccard(data = input.dat,
+                                                                          formula = Y ~ int + X1 + cat + X2 + ordered + X3,
+                                                                          interaction.name = "NULL"),
+                 NA)
+    expect_equal(names(output$data), c("Y", paste0("int.", 1:4), "X1",
+                                       paste0("cat.", 1:3), "X2",
+                                       paste0("ordered.", 1:3), "X3"))
+    # Same test with input data in different order to the formula
+    input.data <- subset(data, select = c("Y", paste0("X", 1:3), "int", "cat", "ordered"))
+    expect_error(output <- Regression(Y ~ int + X1 + cat + X2 + ordered + X3, data = input.data,
+                                      output = "Jaccard Coefficient"),
+                 NA)
+    names(output$estimation.data)
+    expect_equal(names(output$estimation.data), c("Y", paste0("int.", 1:4), "X1",
+                                                  paste0("cat.", 1:3), "X2",
+                                                  paste0("ordered.", 1:3), "X3", "non.outlier.data_GQ9KqD7YOf"))
 })

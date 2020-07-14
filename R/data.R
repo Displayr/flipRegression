@@ -48,10 +48,13 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
                                                    class(x) <- "factor"
                                                    x
                                                })
-        # Append binary variables to replace categorical predictors
-        data <- cbind(data, AsDataFrame(data[categorical.predictors],
-                                        use.names = TRUE,
-                                        categorical.as.binary = TRUE))
+        # Append (insert) binary variables to replace categorical predictors
+        for(cat.var in names(which(categorical.predictors)))
+            data <- append(data,
+                           AsDataFrame(data[names(data) == cat.var], use.names = TRUE, categorical.as.binary = TRUE),
+                           after = which(names(data) == cat.var))
+        # Restore the data.frame
+        data <- data.frame(data, check.names = FALSE)
         # Remove the old categorical predictors
         data[names(which(categorical.predictors))] <- NULL
     }

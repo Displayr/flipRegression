@@ -699,7 +699,7 @@ Regression <- function(formula = as.formula(NULL),
         {
             jaccard.processed <- processDataSuitableForJaccard(.estimation.data, input.formula,
                                                                interaction.name, show.labels)
-            .estimation.data <- jaccard.processed$data
+            result$estimation.data <- .estimation.data <- jaccard.processed$data
             input.formula <- jaccard.processed$formula
             formula.with.interaction <- jaccard.processed$formula.with.interaction
             labels <- result$labels <- jaccard.processed$labels
