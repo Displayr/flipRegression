@@ -125,12 +125,8 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
     if (interaction.name != "NULL")
         predictor.names <- predictor.names[predictor.names != interaction.name]
     if (show.labels)
-    {
         labels <- Labels(data, names.to.lookup = predictor.names)
-        extracted.labels <- ExtractCommonPrefix(labels)
-        if (!is.na(extracted.labels$common.prefix))
-            labels <- extracted.labels$shortened.labels
-    } else
+    else
         labels <- predictor.names
     return(list(data = data,
                 formula = formulae$formula,

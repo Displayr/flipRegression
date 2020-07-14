@@ -691,7 +691,7 @@ Regression <- function(formula = as.formula(NULL),
         if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
         {
             result$subset <- subset
-            result$estimation.data <- .estimation.data <- data[subset, , drop = FALSE]
+            result$estimation.data <- .estimation.data <- CopyAttributes(data[subset, , drop = FALSE], data)
             .weights <- weights[subset]
         }
         # Process the data suitable for Jaccard coefficient analysis
