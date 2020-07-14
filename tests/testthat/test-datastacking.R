@@ -222,10 +222,12 @@ test_that("check codeframe", {
                      c(V1 = FALSE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
     code.frame <- list(V1 = 0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
     expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
-                     c(V1 = FALSE, V2 = TRUE, V3 = FALSE, SUM = TRUE))
+                     structure(c(V1 = FALSE, V2 = TRUE, V3 = FALSE, SUM = TRUE),
+                               nets = "V2"))
     code.frame <- list(V1 = 0, Aggregate = 2:0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
     expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
-                     c(V1 = FALSE, Aggregate = TRUE, V2 = TRUE, V3 = FALSE, SUM = TRUE))
+                     structure(c(V1 = FALSE, Aggregate = TRUE, V2 = TRUE, V3 = FALSE, SUM = TRUE),
+                               nets = "V2"))
     code.frame <- list(Aggregate = 2:0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
     expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
                      c(Aggregate = TRUE, V2 = TRUE, V3 = FALSE, SUM = TRUE))
@@ -768,182 +770,174 @@ test_that("DS-2694: Ensure NET and duplicated variables are removed", {
                                                 transposed = FALSE, class = "data.frame"))
     expect_identical(flipRegression:::removeDataReduction(list(Y = Y, X = X)),
                      expected.reduced.data)
-    # Nominal - Multi
-    nom.multi <- structure(list(`Coca-Cola` = structure(c(2L, 2L, 2L, 2L, 2L),
-                                                        .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                        class = "factor"),
-                                `Diet Coke` = structure(c(4L, 4L, 4L, 4L, 4L),
-                                                        .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                        class = "factor"),
-                                `Coke Zero` = structure(c(2L, 2L, 2L, 2L, 2L),
-                                                        .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                        class = "factor"),
-                                Pepsi = structure(c(3L, 3L, 3L, 3L, 3L),
-                                                  .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                  class = "factor"),
-                                `Diet Pepsi` = structure(c(1L, 1L, 1L, 1L, 1L),
-                                                         .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                         class = "factor"),
-                                `Pepsi Max` = structure(c(4L, 4L, 4L, 4L, 4L),
-                                                        .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                        class = "factor")),
-                           questiontype = "PickOneMulti", question = "Brand attitude",
-                           dataset = "Cola Tracking - January to December.sav",
-                           codeframe = list(Hate = -2, Dislike = -1, `Hate + Dislike` = c(-2, -1),
-                                            `Neither like nor dislike` = 0, `Love + Like` = c(1, 2),
-                                            NET = c(-2, -1, 0, 1, 2)),
-                           secondarycodeframe = list(`Coca-Cola` = 0L, `Diet Coke` = 1L, `Coke Zero` = 2L, Pepsi = 3L, `Diet Pepsi` = 4L, `Pepsi Max` = 5L),
-                           transposed = FALSE, row.names = 1:5,
-                           class = "data.frame")
-    expected.nom.codeframe <- c(Hate = FALSE, Dislike = FALSE, `Hate + Dislike` = TRUE,
-                                `Neither like nor dislike` = FALSE, `Love + Like` = FALSE, NET = TRUE)
-    expect_identical(flipRegression:::flagCodeframeReduction(attr(nom.multi, "codeframe")),
-                     expected.nom.codeframe)
-    expected.nom.secondary <- rep(FALSE, 6)
-    names(expected.nom.secondary) <- names(nom.multi)
-    expect_identical(flipRegression:::flagCodeframeReduction(attr(nom.multi, "secondarycodeframe")),
-                     expected.nom.secondary)
-    binary.grid <- structure(list(`Feminine, Coke` = c(0, 0, 0, 0, 0),
-                                  `Feminine, Diet Coke` = c(1, 1, 1, 1, 1),
-                                  `Feminine, Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Feminine, Diet Coke + Coke Zero` = c(1, 1, 1, 1, 1),
-                                  `Feminine, Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Feminine, Coke + Diet Coke + Coke Zero + Pepsi` = c(1, 1, 1, 1, 1),
-                                  `Feminine, Pepsi Max` = c(0, 0, 0, 0, 0),
-                                  `Feminine, NET` = c(1, 1, 1, 1, 1),
-                                  `Health-conscious, Coke` = c(0, 0, 0, 0, 0),
-                                  `Health-conscious, Diet Coke` = c(1, 1, 1, 1, 1),
-                                  `Health-conscious, Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Health-conscious, Diet Coke + Coke Zero` = c(1, 1, 1, 1, 1),
-                                  `Health-conscious, Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Health-conscious, Coke + Diet Coke + Coke Zero + Pepsi` = c(1, 1, 1, 1, 1),
-                                  `Health-conscious, Pepsi Max` = c(0, 0, 0, 0, 0),
-                                  `Health-conscious, NET` = c(1, 1, 1, 1, 1),
-                                  `Feminine + Health-conscious, Coke` = c(0, 0, 0, 0, 0),
-                                  `Feminine + Health-conscious, Diet Coke` = c(1, 1, 1, 1, 1),
-                                  `Feminine + Health-conscious, Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Feminine + Health-conscious, Diet Coke + Coke Zero` = c(1, 1, 1, 1, 1),
-                                  `Feminine + Health-conscious, Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Feminine + Health-conscious, Coke + Diet Coke + Coke Zero + Pepsi` = c(1, 1, 1, 1, 1),
-                                  `Feminine + Health-conscious, Pepsi Max` = c(0, 0, 0, 0, 0),
-                                  `Feminine + Health-conscious, NET` = c(1, 1, 1, 1, 1),
-                                  `Innocent, Coke` = c(0, 0, 0, 0, 0), `Innocent, Diet Coke` = c(0, 0, 0, 0, 0),
-                                  `Innocent, Coke Zero` = c(0, 0, 0, 0, 0), `Innocent, Diet Coke + Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Innocent, Pepsi` = c(0, 0, 0, 0, 0), `Innocent, Coke + Diet Coke + Coke Zero + Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Innocent, Pepsi Max` = c(0, 0, 0, 0, 0), `Innocent, NET` = c(1, 1, 1, 1, 1),
-                                  `Older, Coke` = c(1, 1, 1, 1, 1), `Older, Diet Coke` = c(0, 0, 0, 0, 0),
-                                  `Older, Coke Zero` = c(0, 0, 0, 0, 0), `Older, Diet Coke + Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Older, Pepsi` = c(1, 1, 1, 1, 1), `Older, Coke + Diet Coke + Coke Zero + Pepsi` = c(1, 1, 1, 1, 1),
-                                  `Older, Pepsi Max` = c(0, 0, 0, 0, 0), `Older, NET` = c(1, 1, 1, 1, 1),
-                                  `Open to new experiences, Coke` = c(0, 0, 0, 0, 0),
-                                  `Open to new experiences, Diet Coke` = c(0, 0, 0, 0, 0),
-                                  `Open to new experiences, Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Open to new experiences, Diet Coke + Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Open to new experiences, Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Open to new experiences, Coke + Diet Coke + Coke Zero + Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Open to new experiences, Pepsi Max` = c(1, 1, 1, 1, 1),
-                                  `Open to new experiences, NET` = c(1, 1, 1, 1, 1),
-                                  `Rebellious + Sleepy + Traditional, Coke` = c(1, 1, 1, 1, 1),
-                                  `Rebellious + Sleepy + Traditional, Diet Coke` = c(0, 0, 0, 0, 0),
-                                  `Rebellious + Sleepy + Traditional, Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Rebellious + Sleepy + Traditional, Diet Coke + Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `Rebellious + Sleepy + Traditional, Pepsi` = c(1, 1, 1, 1, 1),
-                                  `Rebellious + Sleepy + Traditional, Coke + Diet Coke + Coke Zero + Pepsi` = c(1, 1, 1, 1, 1),
-                                  `Rebellious + Sleepy + Traditional, Pepsi Max` = c(1, 1, 1, 1, 1),
-                                  `Rebellious + Sleepy + Traditional, NET` = c(1, 1, 1, 1, 1),
-                                  `Weight-conscious, Coke` = c(0, 0, 0, 0, 0), `Weight-conscious, Diet Coke` = c(0, 0, 0, 0, 0),
-                                  `Weight-conscious, Coke Zero` = c(0, 0, 0, 0, 0), `Weight-conscious,
-                                  Diet Coke + Coke Zero` = c(0, 0, 0, 0, 0), `Weight-conscious, Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Weight-conscious, Coke + Diet Coke + Coke Zero + Pepsi` = c(0, 0, 0, 0, 0),
-                                  `Weight-conscious, Pepsi Max` = c(0, 0, 0, 0, 0),
-                                  `Weight-conscious, NET` = c(1, 1, 1, 1, 1), `NET, Coke` = c(1, 1, 1, 1, 1),
-                                  `NET, Diet Coke` = c(1, 1, 1, 1, 1), `NET, Coke Zero` = c(0, 0, 0, 0, 0),
-                                  `NET, Diet Coke + Coke Zero` = c(1, 1, 1, 1, 1),
-                                  `NET, Pepsi` = c(1, 1, 1, 1, 1),
-                                  `NET, Coke + Diet Coke + Coke Zero + Pepsi` = c(1, 1, 1, 1, 1),
-                                  `NET, Pepsi Max` = c(1, 1, 1, 1, 1),
-                                  `NET, NET` = c(1, 1, 1, 1, 1)),
-                             questiontype = "PickAnyGrid", question = "q5",
-                             dataset = "Cola Tracking - January to December.sav",
-                             values = c(No = 0, Yes = 1),
-                             codeframe = list(Coke = 0L, `Diet Coke` = 1L,`Coke Zero` = 2L,
-                                              `Diet Coke + Coke Zero` = 1:2, Pepsi = 3L,
-                                              `Coke + Diet Coke + Coke Zero + Pepsi` = 0:3,
-                                              `Pepsi Max` = 5L, NET = 0:6),
-                             secondarycodeframe = list(Feminine = 0L, `Health-conscious` = 1L,
-                                                       `Feminine + Health-conscious` = 0:1,
-                                                       Innocent = 2L, Older = 3L,
-                                                       `Open to new experiences` = 4L,
-                                                       `Rebellious + Sleepy + Traditional` = 5:7,
-                                                       `Weight-conscious` = 8L, NET = 0:8),
-                             transposed = FALSE, row.names = 1:5, class = "data.frame")
-    expected.flag.codeframe <- c(Coke = FALSE, `Diet Coke` = FALSE, `Coke Zero` = FALSE,
-                                 `Diet Coke + Coke Zero` = TRUE, Pepsi = FALSE,
-                                 `Coke + Diet Coke + Coke Zero + Pepsi` = TRUE, `Pepsi Max` = FALSE,
-                                 NET = TRUE)
-    expect_identical(flipRegression:::flagCodeframeReduction(attr(binary.grid, "codeframe")),
-                     expected.flag.codeframe)
-    expected.flag.secondary <- c(Feminine = FALSE, `Health-conscious` = FALSE, `Feminine + Health-conscious` = TRUE,
-                                 Innocent = FALSE, Older = FALSE, `Open to new experiences` = FALSE,
-                                 `Rebellious + Sleepy + Traditional` = FALSE, `Weight-conscious` = FALSE,
-                                 NET = TRUE)
-    expect_identical(flipRegression:::flagCodeframeReduction(attr(binary.grid, "secondarycodeframe")),
-                     expected.flag.secondary)
-    # Check reduced data correct
-    expected.list <- list(Y = structure(list(`Coca-Cola` = structure(rep(2, 5),
-                                                                     .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                                     class = "factor"),
-                                             `Diet Coke` = structure(rep(4, 5), .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                                     class = "factor"),
-                                             `Coke Zero` = structure(rep(2, 5), .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                                     class = "factor"),
-                                             Pepsi = structure(rep(3, 5),
-                                                               .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                               class = "factor"),
-                                             `Diet Pepsi` = structure(rep(1, 5),
-                                                                      .Label = c("Hate", "Dislike", "Neither like nor dislike","Love + Like"),
-                                                                      class = "factor"),
-                                             `Pepsi Max` = structure(rep(4, 5),
-                                                                     .Label = c("Hate", "Dislike", "Neither like nor dislike", "Love + Like"),
-                                                                     class = "factor")),
-                                        questiontype = "PickOneMulti", question = "Brand attitude", dataset = "Cola Tracking - January to December.sav",
-                                        codeframe = list(Hate = -2, Dislike = -1, `Hate + Dislike` = c(-2, -1), `Neither like nor dislike` = 0,
-                                                         `Love + Like` = c(1, 2), NET = c(-2, -1, 0, 1, 2)),
-                                        secondarycodeframe = list(`Coca-Cola` = 0L, `Diet Coke` = 1L, `Coke Zero` = 2L, Pepsi = 3L, `Diet Pepsi` = 4L, `Pepsi Max` = 5L),
-                                        transposed = FALSE, row.names = 1:5,
-                                        class = "data.frame"),
-                          X = structure(list(`Feminine, Coke` = c(0, 0, 0, 0, 0),
-                                             `Feminine, Diet Coke` = c(1, 1, 1, 1, 1),
-                                             `Feminine, Coke Zero` = c(0, 0, 0, 0, 0),
-                                             `Feminine, Pepsi` = c(0, 0, 0, 0, 0),
-                                             `Feminine, Pepsi Max` = c(0,0, 0, 0, 0),
-                                             `Health-conscious, Coke` = c(0, 0, 0, 0, 0),
-                                             `Health-conscious, Diet Coke` = c(1, 1, 1, 1, 1),
-                                             `Health-conscious, Coke Zero` = c(0, 0, 0, 0, 0),
-                                             `Health-conscious, Pepsi` = c(0, 0, 0, 0, 0),
-                                             `Health-conscious, Pepsi Max` = c(0, 0, 0, 0, 0),
-                                             `Innocent, Coke` = c(0, 0, 0, 0, 0), `Innocent, Diet Coke` = c(0, 0, 0, 0, 0),
-                                             `Innocent, Coke Zero` = c(0, 0, 0, 0, 0), `Innocent, Pepsi` = c(0, 0, 0, 0, 0),
-                                             `Innocent, Pepsi Max` = c(0, 0, 0, 0, 0), `Older, Coke` = c(1, 1, 1, 1, 1),
-                                             `Older, Diet Coke` = c(0, 0, 0, 0, 0), `Older, Coke Zero` = c(0, 0, 0, 0, 0),
-                                             `Older, Pepsi` = c(1, 1, 1, 1, 1), `Older, Pepsi Max` = c(0, 0, 0, 0, 0),
-                                             `Open to new experiences, Coke` = c(0, 0, 0, 0, 0),
-                                             `Open to new experiences, Diet Coke` = c(0, 0, 0, 0, 0),
-                                             `Open to new experiences, Coke Zero` = c(0, 0, 0, 0, 0),
-                                             `Open to new experiences, Pepsi` = c(0, 0, 0, 0, 0 ),
-                                             `Open to new experiences, Pepsi Max` = c(1, 1, 1, 1, 1 ),
-                                             `Rebellious + Sleepy + Traditional, Coke` = c(1, 1, 1, 1, 1),
-                                             `Rebellious + Sleepy + Traditional, Diet Coke` = c(0, 0, 0, 0, 0),
-                                             `Rebellious + Sleepy + Traditional, Coke Zero` = c(0, 0, 0, 0, 0),
-                                             `Rebellious + Sleepy + Traditional, Pepsi` = c(1, 1, 1, 1, 1),
-                                             `Rebellious + Sleepy + Traditional, Pepsi Max` = c(1, 1, 1, 1, 1),
-                                             `Weight-conscious, Coke` = c(0, 0, 0, 0, 0),
-                                             `Weight-conscious, Diet Coke` = c(0, 0, 0, 0, 0),
-                                             `Weight-conscious, Coke Zero` = c(0, 0, 0, 0, 0),
-                                             `Weight-conscious, Pepsi` = c(0, 0, 0, 0, 0), `Weight-conscious, Pepsi Max` = c(0, 0, 0, 0, 0)), questiontype = "PickAnyGrid", question = "q5", dataset = "Cola Tracking - January to December.sav",
-                                        codeframe = list(Coke = 0L, `Diet Coke` = 1L, `Coke Zero` = 2L, Pepsi = 3L, `Pepsi Max` = 5L),
-                                        secondarycodeframe = list(Feminine = 0L, `Health-conscious` = 1L, Innocent = 2L, Older = 3L, `Open to new experiences` = 4L, `Rebellious + Sleepy + Traditional` = 5:7, `Weight-conscious` = 8L),
-                                        transposed = FALSE, row.names = c(NA, 5L), values = c(No = 0, Yes = 1), class = "data.frame"))
-        expect_identical(flipRegression:::removeDataReduction(list(Y = nom.multi, X = binary.grid)),
-                         expected.list)
+    # Check grid with a merge, a partial NET (hidden and non-hidden codes)
+    modified.binary.grid <- structure(list(`Beautiful + Carefree, Coke + Diet Coke` = c(1, 1),
+                                           `Beautiful + Carefree, Coke Zero` = c(1, 1),
+                                           `Beautiful + Carefree, Pepsi` = c(0, 0),
+                                           `Beautiful + Carefree, Coke Zero + Pepsi` = c(1, 1),
+                                           `Beautiful + Carefree, Diet Pepsi` = c(0, 1),
+                                           `Beautiful + Carefree, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Beautiful + Carefree, NET` = c(1, 1),
+                                           `Charming, Coke + Diet Coke` = c(0, 0),
+                                           `Charming, Coke Zero` = c(1, 0),
+                                           `Charming, Pepsi` = c(0, 0),
+                                           `Charming, Coke Zero + Pepsi` = c(1, 0),
+                                           `Charming, Diet Pepsi` = c(0, 1),
+                                           `Charming, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Charming, NET` = c(1, 1),
+                                           `Confident, Coke + Diet Coke` = c(0, 1),
+                                           `Confident, Coke Zero` = c(0, 0),
+                                           `Confident, Pepsi` = c(0, 1),
+                                           `Confident, Coke Zero + Pepsi` = c(0, 1),
+                                           `Confident, Diet Pepsi` = c(0, 0),
+                                           `Confident, Diet Pepsi + Pepsi Max` = c(1, 1),
+                                           `Confident, NET` = c(1, 1),
+                                           `Charming + Confident, Coke + Diet Coke` = c(0, 1),
+                                           `Charming + Confident, Coke Zero` = c(1, 0),
+                                           `Charming + Confident, Pepsi` = c(0, 1),
+                                           `Charming + Confident, Coke Zero + Pepsi` = c(1, 1),
+                                           `Charming + Confident, Diet Pepsi` = c(0, 1),
+                                           `Charming + Confident, Diet Pepsi + Pepsi Max` = c(1, 1),
+                                           `Charming + Confident, NET` = c(1, 1),
+                                           `Down-to-earth, Coke + Diet Coke` = c(1, 0),
+                                           `Down-to-earth, Coke Zero` = c(0, 1),
+                                           `Down-to-earth, Pepsi` = c(0, 0),
+                                           `Down-to-earth, Coke Zero + Pepsi` = c(0, 1),
+                                           `Down-to-earth, Diet Pepsi` = c(0, 0),
+                                           `Down-to-earth, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Down-to-earth, NET` = c(1, 1),
+                                           `Down-to-earth + Feminine, Coke + Diet Coke` = c(1, 1),
+                                           `Down-to-earth + Feminine, Coke Zero` = c(0, 1),
+                                           `Down-to-earth + Feminine, Pepsi` = c(0, 0),
+                                           `Down-to-earth + Feminine, Coke Zero + Pepsi` = c(0, 1),
+                                           `Down-to-earth + Feminine, Diet Pepsi` = c(0, 1),
+                                           `Down-to-earth + Feminine, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Down-to-earth + Feminine, NET` = c(1, 1),
+                                           `NET, Coke + Diet Coke` = c(1, 1),
+                                           `NET, Coke Zero` = c(1, 1),
+                                           `NET, Pepsi` = c(0, 1),
+                                           `NET, Coke Zero + Pepsi` = c(1, 1),
+                                           `NET, Diet Pepsi` = c(0, 1),
+                                           `NET, Diet Pepsi + Pepsi Max` = c(1, 1),
+                                           `NET, NET` = c(1, 1)),
+                                      questiontype = "PickAnyGrid", question = "Q5 with merge + nets",
+                                      codeframe = list(`Coke + Diet Coke` = 0:1,
+                                                       `Coke Zero` = 2L, Pepsi = 3L,
+                                                       `Coke Zero + Pepsi` = 2:3,
+                                                       `Diet Pepsi` = 4L,
+                                                       `Diet Pepsi + Pepsi Max` = 4:5,
+                                                       NET = 0:6),
+                                      secondarycodeframe = list(`Beautiful + Carefree` = 0:1,
+                                                                Charming = 2L, Confident = 3L,
+                                                                `Charming + Confident` = 2:3,
+                                                                `Down-to-earth` = 4L,
+                                                                `Down-to-earth + Feminine` = 4:5,
+                                                                NET = 0:5), row.names = 1:2, class = "data.frame")
+    expected.X.flag.codeframe <- structure(c(`Coke + Diet Coke` = FALSE,
+                                             `Coke Zero` = FALSE,
+                                             Pepsi = FALSE,
+                                             `Coke Zero + Pepsi` = TRUE, # Redundant NET
+                                             `Diet Pepsi` = FALSE,
+                                             `Diet Pepsi + Pepsi Max` = TRUE, # Remove partial net
+                                             NET = TRUE), # Remove complete NET
+                                           nets = "Diet Pepsi + Pepsi Max") # attribute for warning
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(modified.binary.grid, "codeframe")),
+                     expected.X.flag.codeframe)
+    expected.X.flag.secondary <- structure(c(`Beautiful + Carefree` = FALSE,
+                                             Charming = FALSE,
+                                             Confident = FALSE,
+                                             `Charming + Confident` = TRUE, # redundant net removed
+                                             `Down-to-earth` = FALSE,
+                                             `Down-to-earth + Feminine` = TRUE, # partial net removed
+                                             NET = TRUE), # complete net removed
+                                           nets = "Down-to-earth + Feminine") # attribute for warning
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(modified.binary.grid, "secondarycodeframe")),
+                     expected.X.flag.secondary)
+    # Check multi outcome variable with merge and partial NET
+    modified.numeric.multi <- structure(list(`Apple + Microsoft` = c(16, 16), IBM = c(6, 6),
+                                             Google = c(10, 8), `Google + Intel` = c(16, 13),
+                                             `Hewlett-Packard` = c(8, 6),
+                                             Sony = c(6, 6), Dell = c(9, 6),
+                                             `Sony + Dell` = c(15, 12),
+                                             SUM = c(94, 84)),
+                                        questiontype = "NumberMulti", question = "Brand Numeric",
+                                        codeframe = list(`Apple + Microsoft` = 0:1,
+                                                         IBM = 2L, Google = 3L,
+                                                         `Google + Intel` = 3:4,
+                                                         `Hewlett-Packard` = 5L,
+                                                         Sony = 6L, Dell = 7L,
+                                                         `Sony + Dell` = 6:7,
+                                                         SUM = 0:12),
+                                        row.names = 1:2, class = "data.frame")
+    expected.Y.flag.codeframe <- structure(c(`Apple + Microsoft` = FALSE,
+                                             IBM = FALSE,
+                                             Google = FALSE,
+                                             `Google + Intel` = TRUE, # partial NET removed
+                                             `Hewlett-Packard` = FALSE,
+                                             Sony = FALSE,
+                                             Dell = FALSE,
+                                             `Sony + Dell` = TRUE, # Redundant NET removed
+                                             SUM = TRUE), # Complete NET removed
+                                           nets = "Google + Intel") # attribute for warning
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(modified.numeric.multi, "codeframe")),
+                     expected.Y.flag.codeframe)
+    # Check correct output
+    expect_warning(expected.data.list <- flipRegression:::removeDataReduction(list(Y = modified.numeric.multi,
+                                                                                   X = modified.binary.grid)),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Outcome and Predictor variables have NETs: ('Google + Intel'; 'Diet Pepsi + Pepsi Max'; ",
+                          "'Down-to-earth + Feminine'), with both hidden and observed codes. Consequently, these NETs ",
+                          "and their hidden codes were not used in the analysis. If you wish any NET like this or its ",
+                          "hidden code to be used in the analysis then please modify the Outcome or Predictor variables ",
+                          "via the Table view options appropriately."),
+                   fixed = TRUE)
+    # Check all appropriate columns removed
+    Y.output <- expected.data.list$Y
+    X.output <- expected.data.list$X
+    included.Y <- names(which(!expected.Y.flag.codeframe))
+    excluded.Y <- names(which(expected.Y.flag.codeframe))
+    expect_true(all(included.Y %in% colnames(Y.output)))
+    expect_true(!any(excluded.Y %in% colnames(Y.output)))
+    included.X.code <- names(which(!expected.X.flag.codeframe))
+    excluded.X.code <- names(which(expected.X.flag.codeframe))
+    included.X.seccode <- names(which(!expected.X.flag.secondary))
+    excluded.X.seccode <- names(which(expected.X.flag.secondary))
+    true.column.beginning <- gsub("+", "\\+", paste0(paste0("^", included.X.seccode), collapse = "|"), fixed = TRUE)
+    expect_true(all(grepl(true.column.beginning, colnames(X.output))))
+    false.column.beginning <- gsub("+", "\\+", paste0(paste0("^", excluded.X.seccode), collapse = "|"), fixed = TRUE)
+    expect_true(!any(grepl(false.column.beginning, colnames(X.output))))
+    true.column.end <- gsub("+", "\\+", paste0(paste0(included.X.code, "$"), collapse = "|"), fixed = TRUE)
+    expect_true(all(grepl(true.column.end, colnames(X.output))))
+    false.column.end <- gsub("+", "\\+", paste0(paste0(excluded.X.code, "$"), collapse = "|"), fixed = TRUE)
+    expect_true(!any(grepl(false.column.end, colnames(X.output))))
+
+    # Expect warnings thrown appropriately
+    # Single NET for a single affected variable set
+    reduction.list <- list(nets = "A + B", variable.type = "Outcome")
+    expect_warning(throwCodeReductionWarning(reduction.list),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Outcome variables have a NET, 'A + B', with both hidden and observed codes. ",
+                          "Consequently, this NET and its hidden codes were not used in the analysis. If you ",
+                          "wish any NET like this or its hidden code to be used in the analysis then please ",
+                          "modify the Outcome variables via the Table view options appropriately."),
+                   fixed = TRUE)
+    # More than one NET across two variable sets
+    reduction.list <- list(nets = c("Fruits", "Vegetables"), variable.type = c("Outcome", "Predictor"))
+    expect_warning(throwCodeReductionWarning(reduction.list),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Outcome and Predictor variables have NETs: ('Fruits'; 'Vegetables'), with both ",
+                          "hidden and observed codes. Consequently, these NETs and their hidden codes were not ",
+                          "used in the analysis. If you wish any NET like this or its hidden code to be used in ",
+                          "the analysis then please modify the Outcome or Predictor variables via the Table view ",
+                          "options appropriately."),
+                   fixed = TRUE)
+    # Multiple NETs in one variable set
+    reduction.list <- list(nets = c("Fruits", "Vegetables"), variable.type = "Predictor")
+    expect_warning(throwCodeReductionWarning(reduction.list),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Predictor variables have NETs: ('Fruits'; 'Vegetables'), with both hidden and ",
+                          "observed codes. Consequently, these NETs and their hidden codes were not used in the ",
+                          "analysis. If you wish any NET like this or its hidden code to be used in the analysis ",
+                          "then please modify the Predictor variables via the Table view options appropriately."),
+                   fixed = TRUE)
 })
