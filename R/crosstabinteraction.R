@@ -94,11 +94,11 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             tmp.ri <- try(estimateImportance(result$formula,
                                              RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
                                              weights[is.split], result$type, signs, NA, NA, result$robust.se,
-                                             result$outlier.prop.to.remove, FALSE, correction, importance, missing))
+                                             result$outlier.prop.to.remove, FALSE, correction, importance))
             tmpC.ri <- try(estimateImportance(result$formula,
                                               RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
                                               weights[-is.split], result$type, signs, NA, NA, result$robust.se,
-                                              result$outlier.prop.to.remove, FALSE, correction, importance, missing))
+                                              result$outlier.prop.to.remove, FALSE, correction, importance))
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
                 tmp.sign <- sign(tmp.ri$importance)

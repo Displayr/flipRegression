@@ -1,6 +1,6 @@
 estimateImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                robust.se = FALSE, outlier.prop.to.remove, show.warnings = TRUE, correction,
-                               importance, missing, ...)
+                               importance, ...)
 {
     if (!is.null(weights))
         robust.se <- FALSE
@@ -14,7 +14,7 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
     else if (importance == "Jaccard Coefficient")
         computeJaccardImportance(formula, data, weights, variable.names, correction, ...)
     else if (importance == "Correlation")
-        computeCorrelationImportance(formula, data, weights, variable.names, missing, correction, ...)
+        computeCorrelationImportance(formula, data, weights, variable.names, correction, ...)
     else
         stop("Importance type not handled: ", importance)
 }
@@ -250,6 +250,7 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
 #'  the automated outlier removal.
 #' @importFrom stats terms.formula update.formula
 #' @importFrom flipU OutcomeName
+#' @importFrom flipU CopyAttributes
 #' @noRd
 subsetDataWeightsAndFormula <- function(formula, data, weights)
 {
@@ -257,7 +258,7 @@ subsetDataWeightsAndFormula <- function(formula, data, weights)
     if ("non.outlier.data_GQ9KqD7YOf" %in% names(data))
     {
         data.indices <- data[["non.outlier.data_GQ9KqD7YOf"]]
-        data <- data[data.indices, -which(names(data) == "non.outlier.data_GQ9KqD7YOf")]
+        data <- CopyAttributes(data[data.indices, -which(names(data) == "non.outlier.data_GQ9KqD7YOf")], data)
         if (!is.null(weights))
             weights <- weights[data.indices]
     }
@@ -414,18 +415,18 @@ jaccardTest <- function(x, y, weights)
 #' @param x The formula used in the Regression model
 #' @param data The data to compute the calculation on
 #' @param weights A numeric vector of weights
-#' @param variable.names Vector of names of the coefficients in the regression model. Defaults to NA for
-#'   comptability with crosstab interaction code that can predictor data could be excluded when filtered.
-#' @param missing Character string of the missing value technique to be applied.
+#' @param variable.names Vector of names of the coefficients in the regression model.
 #' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
 #' @importFrom flipStatistics CorrelationsWithSignificance
+#' @importFrom flipTransformations AsDataFrame
 #' @noRd
-computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, missing, correction)
+computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, correction)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
-    relevant.data <- processed.data$data
+    relevant.data <- AsDataFrame(processed.data$data, use.names = TRUE, categorical.as.binary = FALSE)
+    names(relevant.data) <- names(processed.data$data)
     weights <- processed.data$weights
     formula <- processed.data$formula
 
@@ -437,7 +438,6 @@ computeCorrelationImportance <- function(formula, data = NULL, weights, variable
         colnames(relevant.data) <- c(outcome.name, variable.names)
     else
         variable.names <- colnames(predictor.variables)
-    pairwise.method <- missing == "Use partial data (pairwise correlations)"
 
     weights <- if (is.null(weights)) rep(1, nrow(relevant.data)) else weights
     correlation.output <- CorrelationsWithSignificance(relevant.data, weights)
@@ -449,7 +449,7 @@ computeCorrelationImportance <- function(formula, data = NULL, weights, variable
     std.errs <- extractFirstRowMatrixToNumeric(correlation.output$standard.errors, indices)
     pvalues <- extractFirstRowMatrixToNumeric(correlation.output$p, indices)
     pvalues <- pvalAdjust(pvalues, correction)
-    sample.size <- vapply(predictor.variables, function(x, y) sum(!is.na(x) & !is.na(y)), numeric(1), y = outcome.variable)
+    sample.size <- vapply(relevant.data[indices], function(x, y) sum(!is.na(x) & !is.na(y)), numeric(1), y = outcome.variable)
     list(importance = relative.importance,
          raw.importance = correlation.coefs,
          statistics = statistics,
