@@ -698,7 +698,7 @@ Regression <- function(formula = as.formula(NULL),
             result$estimation.data <- .estimation.data <- jaccard.processed$data
             input.formula <- jaccard.processed$formula
             formula.with.interaction <- jaccard.processed$formula.with.interaction
-            result$labels <- jaccard.processed$labels
+            labels <- result$labels <- jaccard.processed$labels
         }
         # Remove prefix if possible
         extracted.labels <- ExtractCommonPrefix(labels)
