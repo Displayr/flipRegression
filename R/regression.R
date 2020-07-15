@@ -684,10 +684,6 @@ Regression <- function(formula = as.formula(NULL),
                 labels <- Labels(data, labels)
         } else
             labels <- labels[-1]
-        # Remove prefix if possible
-        extracted.labels <- ExtractCommonPrefix(labels)
-        if (!is.na(extracted.labels$common.prefix))
-            labels <- extracted.labels$shortened.labels
         if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
         {
             result$subset <- subset
@@ -702,9 +698,12 @@ Regression <- function(formula = as.formula(NULL),
             result$estimation.data <- .estimation.data <- jaccard.processed$data
             input.formula <- jaccard.processed$formula
             formula.with.interaction <- jaccard.processed$formula.with.interaction
-            labels <- result$labels <- jaccard.processed$labels
+            result$labels <- jaccard.processed$labels
         }
-
+        # Remove prefix if possible
+        extracted.labels <- ExtractCommonPrefix(labels)
+        if (!is.na(extracted.labels$common.prefix))
+            labels <- extracted.labels$shortened.labels
         result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,
