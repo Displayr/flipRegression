@@ -1530,22 +1530,25 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     list(data = data, formula = formula, interaction = interaction, subset = subset, weights = weights)
 }
 
-# Removes the data reduction columns and the reduction in the secondary codeframe attribute
+# Removes the data reduction columns and the reduction via the codeframe attribute, if available
+# Also warn the user if necessary for NETs with both hidden and visible codes.
+# Input is expected to be a list with two elements, Y, the outcome variable dataset and element X,
+# containing the Predictor variable dataset
 removeDataReduction <- function(data)
 {
-    # Remove the Data Reduction from the Response
-    # if codeframe is available, use it.
-    if (!is.null(secondary.codeframe <- attr(data[["Y"]], "secondarycodeframe")))
-    {
-        reduction.columns <- flagCodeframeReduction(secondary.codeframe)
-        data[["Y"]][reduction.columns] <- NULL
-        attr(data[["Y"]], "secondary.codeframe")[reduction.columns] <- NULL
-    } else if (!is.null(codeframe <- attr(data[["Y"]], "codeframe")))
+    # This list keeps track of the metadata for the warning
+    reduction.list <- list(nets = NULL, variable.type = NULL)
+
+    # Inspect the outcome multi first
+    secondary.codeframe <- attr(data[["Y"]], "secondarycodeframe")
+    codeframe <- attr(data[["Y"]], "codeframe")
+    if (is.null(secondary.codeframe) && !is.null(codeframe))
     {
         reduction.columns <- flagCodeframeReduction(codeframe)
         data[["Y"]][reduction.columns] <- NULL
         attr(data[["Y"]], "codeframe")[reduction.columns] <- NULL
-
+        reduction.list[['nets']] <- attr(reduction.columns, "nets")
+        reduction.list[['variable.type']] <- "Outcome"
     } else if(!is.null(attr(data[["Y"]], "questiontype")))
     {# If older Q user, check question type and remove NET or SUM (default reduction)
         reduction.columns <- names(data[["Y"]]) %in% c("NET", "SUM")
@@ -1566,6 +1569,12 @@ removeDataReduction <- function(data)
             secondary.codeframe <- attr(data[["X"]], "secondarycodeframe")
             reduction.rows <- flagCodeframeReduction(codeframe)
             reduction.columns <- flagCodeframeReduction(secondary.codeframe)
+            if (!is.null(attr(reduction.rows, "net")) || !is.null(attr(reduction.columns, "net")))
+            { # Retain the metadata
+                reduction.list[['nets']] <- c(reduction.list[['nets']],
+                                             c(attr(reduction.rows, "nets"), attr(reduction.columns, "nets")))
+                reduction.list[['variable.type']] <- c(reduction.list[['variable.type']], "Predictor")
+            }
             # Remove the data reduction from the codeframes for later use when determining the names
             if (any(reduction.rows))
                 attr(data[["X"]], "codeframe")[reduction.rows] <- NULL
@@ -1577,6 +1586,9 @@ removeDataReduction <- function(data)
         if (any(reduction.columns))
             data[["X"]][reduction.columns] <- NULL
     }
+    # Warn the user if necessary
+    if (!is.null(reduction.list[['nets']]))
+        throwCodeReductionWarning(reduction.list)
     data
 }
 
@@ -1590,16 +1602,52 @@ flagCodeframeReduction <- function(x)
 {
     flags <- rep(FALSE, length(x))
     names(flags) <- names(x)
-    lengths <- sapply(x, length)
-    # Catch case where these is no reduction, all variables have the same number of coded values
-    if (length(lengths) == 1 || all(lengths[-1] == lengths[1]))
-        return(flags)
-    potential.reductions <- which(lengths == max(lengths))
-    # get the unique vector of coding values for all the variables
-    variable.codings <- unique(unlist(x[-potential.reductions]))
-    is.reduction <- vapply(x[potential.reductions], function(x) all(variable.codings %in% x),
-                           FUN.VALUE = FALSE)
-    flags[potential.reductions] <- is.reduction
+    # Check if there are any duplicated variables and flag them for removal
+    # unname incase the user renames the duplicated variable
+    if (any(duplicated.vars <- duplicated(unname(x))))
+        flags[duplicated.vars] <- TRUE
+    # Check the remaining non duplicates
+    non.duplicated <- x[!duplicated.vars]
+    lengths <- vapply(non.duplicated, length, numeric(1))
+    # Inspect possible NETs after duplicated vars are removed
+    possible.nets <- lengths > 1
+    if (any(possible.nets))
+    {
+        removed.vals <- list() # Keep track of values that have been removed.
+        complete.reduction <- list() # Keep track of nets that are complete data reductions.
+        possible.redundant.nets <- which(possible.nets)
+        # Order by decreasing size and remove one-by-one to handle supersets.
+        net.sizes <- sort(lengths[possible.redundant.nets], decreasing = TRUE)
+        for (net in names(net.sizes))
+        {
+            # Remove current net candidate from search list
+            reduced.codeframe <- non.duplicated[-which(names(non.duplicated) == net)]
+            if (any(non.duplicated[[net]] %in% unlist(reduced.codeframe)))
+            { # Update flags and remove from original list
+                flags[which(names(flags) == net)] <- TRUE
+                removed.vals[[net]] <- non.duplicated[[net]]
+                complete.reduction[[net]] <- all(unlist(reduced.codeframe) %in% non.duplicated[[net]])
+                non.duplicated[net] <- NULL
+            }
+        }
+        # If there are some nets to be removed, check the codes and warn if necessary (NET not mutually exclusive or complete)
+        if (length(removed.vals) != 0)
+        {
+            # Check if there are any codes in the removed constructed nets that are not observed anywhere else
+            unobserved.codes <- lapply(removed.vals, function(x) {
+                y <- !x %in% unlist(reduced.codeframe)
+                names(y) <- x
+                y
+            })
+            # Only worry about nets that have unobserved codes and are not a complete reduction (complete NET or SUM)
+            unobserved.in.nets <- vapply(unobserved.codes, any, logical(1)) & !vapply(complete.reduction, any, logical(1))
+            # Add the metadata to the return logical vector for a simpler warning message.
+            if (any(unobserved.in.nets))
+            { # Reverse the the order of identified NETs with unobserved codes to show smaller NET groups first.
+                attr(flags, "nets")  <- rev(names(which(unobserved.in.nets)))
+            }
+        }
+    }
     flags
 }
 
@@ -1910,6 +1958,35 @@ updateStackedFormula <- function(data, formula)
     new.formula <- as.formula(paste0("Y ~ ", paste0("X", 1:(ncol(data) - 1), collapse = " + ")),
                               env = environment(formula))
     return(new.formula)
+}
+
+#' Throw warning to the user that there are some codes used in a data reduction that are not seen
+#' elsewhere in the codeframe, e.g. a NET has code A and B and the code A is seen in the codeframe
+#' but the code B is not seen elsewhere in the codeframe. So removing the data reduction will lose
+#' the information about code B.
+#' @param reduction.list List that contains two elements, \itemize{
+#'  \item nets Character vector of net(s) that exhibit this situation
+#'  \item variable.type Character vector stating the variable set structure that this applies to.
+#' e.g. The predictor grid or outcome variables. Could be a single element or vector with two elements
+#' if both outcome and predictor grids are affected.
+#' }
+#' @noRd
+throwCodeReductionWarning <- function(reduction.list)
+{
+    nets <- reduction.list[["nets"]]
+    variable.type <- reduction.list[["variable.type"]]
+    net.name.txt <- paste0(sQuote(nets, q = FALSE))
+    if (length(nets) > 1)
+        net.name.txt <- paste0(": (", paste0(net.name.txt, collapse = "; "), ")")
+    net.txt <- ngettext(length(nets), "a NET, ", "NETs")
+    variable.type.and <- paste0(paste0(variable.type, collapse = " and "), " variables")
+    variable.type.or <- paste0(paste0(variable.type, collapse = " or "), " variables")
+    net.txt.2 <- ngettext(length(nets), "this NET and its hidden", "these NETs and their hidden")
+    warning("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+            "The ", variable.type.and, " have ", net.txt, net.name.txt, ", with both hidden and observed codes. ",
+            "Consequently, ", net.txt.2, " codes were not used in the analysis. If you wish any NET ",
+            "like this or its hidden code to be used in the analysis then please modify the ",
+            variable.type.or, " via the Table view options appropriately.")
 }
 
 # Updates a formula and optionally a formula with interaction

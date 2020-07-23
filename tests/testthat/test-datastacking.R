@@ -222,13 +222,15 @@ test_that("check codeframe", {
                      c(V1 = FALSE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
     code.frame <- list(V1 = 0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
     expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
-                     c(V1 = FALSE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+                     structure(c(V1 = FALSE, V2 = TRUE, V3 = FALSE, SUM = TRUE),
+                               nets = "V2"))
     code.frame <- list(V1 = 0, Aggregate = 2:0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
     expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
-                     c(V1 = FALSE, Aggregate = TRUE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+                     structure(c(V1 = FALSE, Aggregate = TRUE, V2 = TRUE, V3 = FALSE, SUM = TRUE),
+                               nets = "V2"))
     code.frame <- list(Aggregate = 2:0, V2 = c(1, 2), V3 = 2, SUM = 0:2)
     expect_identical(flipRegression:::flagCodeframeReduction(code.frame),
-                     c(Aggregate = TRUE, V2 = FALSE, V3 = FALSE, SUM = TRUE))
+                     c(Aggregate = TRUE, V2 = TRUE, V3 = FALSE, SUM = TRUE))
 })
 
 # Test warnings for slight mismatches in data
@@ -699,4 +701,243 @@ test_that("DS-2694: Ensure data stacking occurs properly", {
     expect_equal(names(unstacked$data$Y), names(attr(unstacked$data$Y, "secondarycodeframe")))
     # Ensure alignment check passes
     expect_error(flipRegression:::stackData(unstacked$data), NA)
+})
+
+test_that("DS-2694: Ensure NET and duplicated variables are removed", {
+    # Ensure duplicated variables are removed (aliased variables)
+    # Start on numeric-multi
+    Y <- structure(list(`Out A` = c(1.36, -0.23, -0.16),
+                        `Out B` = c(1.59, 0.05, 0.11),
+                        `Out C` = c(0.3, -0.37, 0.5),
+                        `Out D` = c(1.36, -0.23, -0.16),
+                        `Out E` = c(1.59, 0.05, 0.11),
+                        `Out F` = c(0.3, -0.37, 0.5),
+                        SUM = c(3.25, -0.55, 0.45)),
+                   row.names = c(NA, 3L), questiontype = "NumberMulti", question = "Y",
+                   dataset = "Fake data",
+                   codeframe = list(`Out A` = 0L, `Out B` = 1L, `Out C` = 2L, `Out D` = 0L,
+                                    `Out E` = 1L, `Out F` = 2L, SUM = 0:2),
+                   transposed = FALSE, class = "data.frame")
+    expected.flags <- c(rep(c(FALSE, TRUE), c(3, 4)))
+    names(expected.flags) <- c(paste0("Out ", LETTERS[1:6]), "SUM")
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(Y, "codeframe")),
+                     expected.flags)
+    # Numeric - grid with duplicates
+    X <- structure(list(`1, B` = c(1.36, -0.23, -0.16), `1, A` = c(1.36, -0.23, -0.16), `1, A` = c(1.36, -0.23, -0.16),
+                        `1, SUM` = c(2.72, -0.46, -0.33),
+                        `1, B` = c(1.36, -0.23, -0.16), `1, A` = c(1.36, -0.23, -0.16), `1, A` = c(1.36, -0.23, -0.16),
+                        `1, SUM` = c(2.72, -0.46, -0.33),
+                        `2, B` = c(1.59, 0.05, 0.11), `2, A` = c(1.59, 0.05, 0.11), `2, A` = c(1.59, 0.05, 0.11),
+                        `2, SUM` = c(3.17, 0.1, 0.22),
+                        `2, B` = c(1.59, 0.05, 0.11), `2, A` = c(1.59, 0.05, 0.11),  `2, A` = c(1.59, 0.05, 0.11),
+                        `2, SUM` = c(3.17, 0.1, 0.22),
+                        `3, B` = c(0.3, -0.37, 0.5), `3, A` = c(0.3, -0.37, 0.5),  `3, A` = c(0.3, -0.37, 0.5),
+                        `3, SUM` = c(0.61, -0.74, 1.01),
+                        `SUM, B` = c(3.25, -0.55, 0.45), `SUM, A` = c(3.25, -0.55, 0.45), `SUM, A` = c(3.25, -0.55, 0.45),
+                        `SUM, SUM` = c(6.5, -1.1, 0.89)),
+                   row.names = c(NA, 3L), questiontype = "NumberGrid", question = "X", dataset = "Fake data",
+                   codeframe = list(B = 0L, A = 1L, A = 1L, SUM = 0:1),
+                   secondarycodeframe = list(`1` = 0L, `1` = 0L, `2` = 1L, `2` = 1L, `3` = 2L, SUM = 0:2),
+                   transposed = FALSE, class = "data.frame")
+    expected.flags.codeframe <- rep(c(FALSE, TRUE), c(2, 2))
+    names(expected.flags.codeframe) <- c("B", "A", "A", "SUM")
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(X, "codeframe")),
+                     expected.flags.codeframe)
+    expected.flags.secondary.codeframe <- rep(c(FALSE, TRUE), c(2, 2))
+    names(expected.flags.codeframe) <- c("B", "A", "A", "SUM")
+    expected.flags.secondary.codeframe <- rep(c(FALSE, TRUE), 3)
+    names(expected.flags.secondary.codeframe) <- c(1, 1, 2, 2, 3, "SUM")
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(X, "secondarycodeframe")),
+                     expected.flags.secondary.codeframe)
+    # Expected filtered data with duplicates removed
+    expected.reduced.data <- list(Y = structure(list(`Out A` = c(1.36, -0.23, -0.16),
+                                                     `Out B` = c(1.59, 0.05, 0.11),
+                                                     `Out C` = c(0.3, -0.37, 0.5)),
+                                                row.names = c(NA, 3L), questiontype = "NumberMulti",
+                                                question = "Y", dataset = "Fake data",
+                                                codeframe = list(`Out A` = 0L, `Out B` = 1L, `Out C` = 2L),
+                                                transposed = FALSE, class = "data.frame"),
+                                  X = structure(list(`1, B` = c(1.36, -0.23, -0.16),
+                                                     `1, A` = c(1.36, -0.23, -0.16),
+                                                     `2, B` = c(1.59, 0.05, 0.11),
+                                                     `2, A` = c(1.59, 0.05, 0.11),
+                                                     `3, B` = c(0.3, -0.37, 0.5),
+                                                     `3, A` = c(0.3, -0.37, 0.5)),
+                                                row.names = c(NA, 3L), questiontype = "NumberGrid",
+                                                question = "X", dataset = "Fake data",
+                                                codeframe = list(B = 0L, A = 1L),
+                                                secondarycodeframe = list(`1` = 0L, `2` = 1L, `3` = 2L),
+                                                transposed = FALSE, class = "data.frame"))
+    expect_identical(flipRegression:::removeDataReduction(list(Y = Y, X = X)),
+                     expected.reduced.data)
+    # Check grid with a merge, a partial NET (hidden and non-hidden codes)
+    modified.binary.grid <- structure(list(`Beautiful + Carefree, Coke + Diet Coke` = c(1, 1),
+                                           `Beautiful + Carefree, Coke Zero` = c(1, 1),
+                                           `Beautiful + Carefree, Pepsi` = c(0, 0),
+                                           `Beautiful + Carefree, Coke Zero + Pepsi` = c(1, 1),
+                                           `Beautiful + Carefree, Diet Pepsi` = c(0, 1),
+                                           `Beautiful + Carefree, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Beautiful + Carefree, NET` = c(1, 1),
+                                           `Charming, Coke + Diet Coke` = c(0, 0),
+                                           `Charming, Coke Zero` = c(1, 0),
+                                           `Charming, Pepsi` = c(0, 0),
+                                           `Charming, Coke Zero + Pepsi` = c(1, 0),
+                                           `Charming, Diet Pepsi` = c(0, 1),
+                                           `Charming, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Charming, NET` = c(1, 1),
+                                           `Confident, Coke + Diet Coke` = c(0, 1),
+                                           `Confident, Coke Zero` = c(0, 0),
+                                           `Confident, Pepsi` = c(0, 1),
+                                           `Confident, Coke Zero + Pepsi` = c(0, 1),
+                                           `Confident, Diet Pepsi` = c(0, 0),
+                                           `Confident, Diet Pepsi + Pepsi Max` = c(1, 1),
+                                           `Confident, NET` = c(1, 1),
+                                           `Charming + Confident, Coke + Diet Coke` = c(0, 1),
+                                           `Charming + Confident, Coke Zero` = c(1, 0),
+                                           `Charming + Confident, Pepsi` = c(0, 1),
+                                           `Charming + Confident, Coke Zero + Pepsi` = c(1, 1),
+                                           `Charming + Confident, Diet Pepsi` = c(0, 1),
+                                           `Charming + Confident, Diet Pepsi + Pepsi Max` = c(1, 1),
+                                           `Charming + Confident, NET` = c(1, 1),
+                                           `Down-to-earth, Coke + Diet Coke` = c(1, 0),
+                                           `Down-to-earth, Coke Zero` = c(0, 1),
+                                           `Down-to-earth, Pepsi` = c(0, 0),
+                                           `Down-to-earth, Coke Zero + Pepsi` = c(0, 1),
+                                           `Down-to-earth, Diet Pepsi` = c(0, 0),
+                                           `Down-to-earth, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Down-to-earth, NET` = c(1, 1),
+                                           `Down-to-earth + Feminine, Coke + Diet Coke` = c(1, 1),
+                                           `Down-to-earth + Feminine, Coke Zero` = c(0, 1),
+                                           `Down-to-earth + Feminine, Pepsi` = c(0, 0),
+                                           `Down-to-earth + Feminine, Coke Zero + Pepsi` = c(0, 1),
+                                           `Down-to-earth + Feminine, Diet Pepsi` = c(0, 1),
+                                           `Down-to-earth + Feminine, Diet Pepsi + Pepsi Max` = c(0, 1),
+                                           `Down-to-earth + Feminine, NET` = c(1, 1),
+                                           `NET, Coke + Diet Coke` = c(1, 1),
+                                           `NET, Coke Zero` = c(1, 1),
+                                           `NET, Pepsi` = c(0, 1),
+                                           `NET, Coke Zero + Pepsi` = c(1, 1),
+                                           `NET, Diet Pepsi` = c(0, 1),
+                                           `NET, Diet Pepsi + Pepsi Max` = c(1, 1),
+                                           `NET, NET` = c(1, 1)),
+                                      questiontype = "PickAnyGrid", question = "Q5 with merge + nets",
+                                      codeframe = list(`Coke + Diet Coke` = 0:1,
+                                                       `Coke Zero` = 2L, Pepsi = 3L,
+                                                       `Coke Zero + Pepsi` = 2:3,
+                                                       `Diet Pepsi` = 4L,
+                                                       `Diet Pepsi + Pepsi Max` = 4:5,
+                                                       NET = 0:6),
+                                      secondarycodeframe = list(`Beautiful + Carefree` = 0:1,
+                                                                Charming = 2L, Confident = 3L,
+                                                                `Charming + Confident` = 2:3,
+                                                                `Down-to-earth` = 4L,
+                                                                `Down-to-earth + Feminine` = 4:5,
+                                                                NET = 0:5), row.names = 1:2, class = "data.frame")
+    expected.X.flag.codeframe <- structure(c(`Coke + Diet Coke` = FALSE,
+                                             `Coke Zero` = FALSE,
+                                             Pepsi = FALSE,
+                                             `Coke Zero + Pepsi` = TRUE, # Redundant NET
+                                             `Diet Pepsi` = FALSE,
+                                             `Diet Pepsi + Pepsi Max` = TRUE, # Remove partial net
+                                             NET = TRUE), # Remove complete NET
+                                           nets = "Diet Pepsi + Pepsi Max") # attribute for warning
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(modified.binary.grid, "codeframe")),
+                     expected.X.flag.codeframe)
+    expected.X.flag.secondary <- structure(c(`Beautiful + Carefree` = FALSE,
+                                             Charming = FALSE,
+                                             Confident = FALSE,
+                                             `Charming + Confident` = TRUE, # redundant net removed
+                                             `Down-to-earth` = FALSE,
+                                             `Down-to-earth + Feminine` = TRUE, # partial net removed
+                                             NET = TRUE), # complete net removed
+                                           nets = "Down-to-earth + Feminine") # attribute for warning
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(modified.binary.grid, "secondarycodeframe")),
+                     expected.X.flag.secondary)
+    # Check multi outcome variable with merge and partial NET
+    modified.numeric.multi <- structure(list(`Apple + Microsoft` = c(16, 16), IBM = c(6, 6),
+                                             Google = c(10, 8), `Google + Intel` = c(16, 13),
+                                             `Hewlett-Packard` = c(8, 6),
+                                             Sony = c(6, 6), Dell = c(9, 6),
+                                             `Sony + Dell` = c(15, 12),
+                                             SUM = c(94, 84)),
+                                        questiontype = "NumberMulti", question = "Brand Numeric",
+                                        codeframe = list(`Apple + Microsoft` = 0:1,
+                                                         IBM = 2L, Google = 3L,
+                                                         `Google + Intel` = 3:4,
+                                                         `Hewlett-Packard` = 5L,
+                                                         Sony = 6L, Dell = 7L,
+                                                         `Sony + Dell` = 6:7,
+                                                         SUM = 0:12),
+                                        row.names = 1:2, class = "data.frame")
+    expected.Y.flag.codeframe <- structure(c(`Apple + Microsoft` = FALSE,
+                                             IBM = FALSE,
+                                             Google = FALSE,
+                                             `Google + Intel` = TRUE, # partial NET removed
+                                             `Hewlett-Packard` = FALSE,
+                                             Sony = FALSE,
+                                             Dell = FALSE,
+                                             `Sony + Dell` = TRUE, # Redundant NET removed
+                                             SUM = TRUE), # Complete NET removed
+                                           nets = "Google + Intel") # attribute for warning
+    expect_identical(flipRegression:::flagCodeframeReduction(attr(modified.numeric.multi, "codeframe")),
+                     expected.Y.flag.codeframe)
+    # Check correct output
+    expect_warning(expected.data.list <- flipRegression:::removeDataReduction(list(Y = modified.numeric.multi,
+                                                                                   X = modified.binary.grid)),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Outcome and Predictor variables have NETs: ('Google + Intel'; 'Diet Pepsi + Pepsi Max'; ",
+                          "'Down-to-earth + Feminine'), with both hidden and observed codes. Consequently, these NETs ",
+                          "and their hidden codes were not used in the analysis. If you wish any NET like this or its ",
+                          "hidden code to be used in the analysis then please modify the Outcome or Predictor variables ",
+                          "via the Table view options appropriately."),
+                   fixed = TRUE)
+    # Check all appropriate columns removed
+    Y.output <- expected.data.list$Y
+    X.output <- expected.data.list$X
+    included.Y <- names(which(!expected.Y.flag.codeframe))
+    excluded.Y <- names(which(expected.Y.flag.codeframe))
+    expect_true(all(included.Y %in% colnames(Y.output)))
+    expect_true(!any(excluded.Y %in% colnames(Y.output)))
+    included.X.code <- names(which(!expected.X.flag.codeframe))
+    excluded.X.code <- names(which(expected.X.flag.codeframe))
+    included.X.seccode <- names(which(!expected.X.flag.secondary))
+    excluded.X.seccode <- names(which(expected.X.flag.secondary))
+    true.column.beginning <- gsub("+", "\\+", paste0(paste0("^", included.X.seccode), collapse = "|"), fixed = TRUE)
+    expect_true(all(grepl(true.column.beginning, colnames(X.output))))
+    false.column.beginning <- gsub("+", "\\+", paste0(paste0("^", excluded.X.seccode), collapse = "|"), fixed = TRUE)
+    expect_true(!any(grepl(false.column.beginning, colnames(X.output))))
+    true.column.end <- gsub("+", "\\+", paste0(paste0(included.X.code, "$"), collapse = "|"), fixed = TRUE)
+    expect_true(all(grepl(true.column.end, colnames(X.output))))
+    false.column.end <- gsub("+", "\\+", paste0(paste0(excluded.X.code, "$"), collapse = "|"), fixed = TRUE)
+    expect_true(!any(grepl(false.column.end, colnames(X.output))))
+
+    # Expect warnings thrown appropriately
+    # Single NET for a single affected variable set
+    reduction.list <- list(nets = "A + B", variable.type = "Outcome")
+    expect_warning(throwCodeReductionWarning(reduction.list),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Outcome variables have a NET, 'A + B', with both hidden and observed codes. ",
+                          "Consequently, this NET and its hidden codes were not used in the analysis. If you ",
+                          "wish any NET like this or its hidden code to be used in the analysis then please ",
+                          "modify the Outcome variables via the Table view options appropriately."),
+                   fixed = TRUE)
+    # More than one NET across two variable sets
+    reduction.list <- list(nets = c("Fruits", "Vegetables"), variable.type = c("Outcome", "Predictor"))
+    expect_warning(throwCodeReductionWarning(reduction.list),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Outcome and Predictor variables have NETs: ('Fruits'; 'Vegetables'), with both ",
+                          "hidden and observed codes. Consequently, these NETs and their hidden codes were not ",
+                          "used in the analysis. If you wish any NET like this or its hidden code to be used in ",
+                          "the analysis then please modify the Outcome or Predictor variables via the Table view ",
+                          "options appropriately."),
+                   fixed = TRUE)
+    # Multiple NETs in one variable set
+    reduction.list <- list(nets = c("Fruits", "Vegetables"), variable.type = "Predictor")
+    expect_warning(throwCodeReductionWarning(reduction.list),
+                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
+                          "The Predictor variables have NETs: ('Fruits'; 'Vegetables'), with both hidden and ",
+                          "observed codes. Consequently, these NETs and their hidden codes were not used in the ",
+                          "analysis. If you wish any NET like this or its hidden code to be used in the analysis ",
+                          "then please modify the Predictor variables via the Table view options appropriately."),
+                   fixed = TRUE)
 })
