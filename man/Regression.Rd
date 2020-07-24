@@ -160,21 +160,87 @@ the \code{unstacked.data} argument by stacking the input and creating a formula 
 labels in the data. More details are given in the argument details for \code{unstacked.data}}
 
 \item{unstacked.data}{A list with two elements that provide the outcome and predictor variables respectively for data
-that needs to be stacked. In particular, this is designed to work best with input that is created with Q or
-Displayr which contains  \code{data.frame}s with a particular structure. If the Q/Displayr \code{data.frame}s
-are not available then simple \code{data.frame}s can be provided. In particular, a list is required with two
-elements, \itemize{
-\item \code{Y} A \code{data.frame} with \code{m} columns that represent the \code{m} variables to be stacked.
-\item \code{X} A \code{data.frame} where each column represents a column of a design matrix relevant to one of the
-\code{m} variables given in element \code{Y} above. So if the overall regression model has \code{p} predictors.
-Then this \code{data.frame} should contain \code{m * p} columns. In the absence of Q/Displayr metadata, the naming
-structure each column is comma separated of the form 'predictor, outcome' where 'predictor' denotes the
-predictor name in the regression design matrix and 'outcome' denotes the name of the variable in element \code{Y}.
-This format is required to ensure that the columns are appropriately matched and stacked. The function also
-accepts column names of the reverse order with 'outcome, predictor', so long as there isn't any ambiguity.}}
+that needs to be stacked. See details section for more information.}
 
 \item{...}{Additional argments to be passed to  \code{\link{lm}} or, if the
 data is weighted,  \code{\link[survey]{svyglm}} or \code{\link[survey]{svyolr}}.}
+}
+\value{
+Generally, a list of class \code{Regression}. The exception being when \code{method = 'model.frame'}
+ is a specified input argument. In that case, a \code{data.frame} is returned which returns only the \code{data}
+ element from the \code{Regression} return list.
+ The \code{Regression} return list contains the fitted regression object and other statistical outputs.
+ These include elements \itemize{
+ \item \code{robust.se} A logical specifying if robust standard error calculations were performed.
+ \item \code{type} A character string specifying the Regression type (matches the input argument)
+ \item \code{weights} A numeric vector of weights applied in the regression
+ \item \code{output} A character vector specifying the output type specified in the input argument.
+  Could be the table type or a separate analysis (see input argument for more details).
+ \item \code{outlier.prop.to.remove} A numeric value specifying the proportion of outliers removed in the analysis.
+ \item \code{show.labels} A logical value specifying if variable labels were used (\code{TRUE}) or variable names (\code{FALSE})
+ \item \code{test.interaction} A logical value specifying if an interaction test was assessed in the output.
+ \item \code{effects.format} A list containing input for the the relevant X and Y values for an effects plot output.
+ \item \code{original} The initial standard R regression output (possibly refitted with outliers removed)
+ \item \code{sample.description} A character string describing the regression and its inputs and outputs for
+ printing in a footer of the output table.
+ \item \code{summary} A \code{summary} of the \code{original} regression object above tidied up.
+ \item \code{design} The survey design object accompanying any survey weighted regression (computed using the input \code{weights})
+ \item \code{subset} The logical vector specifying which observations were filtered into the regression.
+ \item \code{n.predictors} An integer specifying the number of predictors (not including the intercept) in the regression.
+ \item \code{n.observations} An integer specifying the number of observations used in the regression after outliers are removed.
+ \item \code{estimation.data} A \code{data.frame} containing the regression design matrix.
+ This design matrix takes into account the subset, missing data options.
+  \item \code{correction} A character string specifying the multiple comparisons correction used (see input arguments)
+ \item \code{formula} A \code{formula} object for the regression model (before interaction term added)
+ \item \code{model} A single \code{data.frame} of the input data with both predictors and outcome variable, possibly stacked
+  and including imputed values or interaction term if applicable.
+ \item \code{outcome.name} A character string of the outcome variable name as used in the formula.
+ \item \code{outcome.label} A character string of the outcome variable label or
+ name with possible back ticks removed if labels are not requested.
+ \item \code{terms} A \code{terms} object from the \code{original} output element.
+ \item \code{coef} The computed coefficients from the \code{original} output element.
+ \item \code{r.squared} The \code{original} output element R squared (or equivalent)
+ \item \code{z.statistics} Computed z-statistics from the set of coefficients in a Mulitnomial Logit model
+ \item \code{p.values} Computed p-values for the z-statistics above
+ \item \code{importance} A list of output relevant when the selected output is either a \code{"Relative Importance Analysis"},
+ \code{"Shapley Regression"}, \code{"Jaccard Coefficient"} or \code{"Correlation"}. This list has elements
+ \itemize{
+     \item \code{raw.importance} The raw importance scores (regression coefficients, jaccard coefficients or correlations)
+     \item \code{importance} The raw importance scores scaled to 0-100% for interpretative purposes.
+     \item \code{standard.errors} The computed standard errors for the raw importance scores.
+     \item \code{statistics} The computed standardised statistics of the raw importance scores
+     \item \code{statistic.name} Character showing either the t or z statistic being used.
+     \item \code{p.values} The vector of p-values for the relevant statistics computed above.
+   }
+ \item \code{importance.type} Character string specifying the type of Importance analysis requested
+ \item \code{relative.importance} A copy of the \code{importance} output, kept for legacy purposes.
+ \item \code{interaction} A list containing the regression analysis with an interaction term. The list has elements
+ \itemize{
+      \item \code{label} Character string of the variable label of the interaction variable.
+      \item \code{split.size} Numeric vector of counts of each level of the interaction variable and a total NET count.
+      \item \code{pvalue} p-value of overall test of significance of the Regression using a call to \code{stats::anova}
+      \item \code{original.r2} Either the R squared for linear regression or
+      proportion of deviance in model without interaction
+      \item \code{full.r2} Either the R squared for linear regression or
+      proportion of deviance in model with interaction
+      \item \code{fit} Regression model with interaction
+      \item \code{net.coef} Vector of regression coefficients or importance.scores
+      \item \code{importance} The importance list of the Regression without interaction if applicable, \code{NULL} otherwise.
+      \item \code{anova.output} The anova output for the Regression output without interaction.
+      \item \code{anova.test} Character string of the Overall test of significance used (F or Chis-square)
+      \item \code{coef.pvalues} Matrix of pvalues for the coefficients or importance scores used at each interaction level
+      \item \code{coef.tstat} Matrix of statistics for the coefficients or importance scores used at each interaction level
+      \item \code{coefficients} Matrix of coefficients or raw.importance scores used at each interaction level
+   }
+   \item \code{anova} Essentially is the return output of \code{\link[car]{Anova}} with relevant metadata added.
+   This element only added when the input argument \code{output = 'ANOVA'} or \code{'Effects plot'}.
+   \item \code{footer} Character string of the footer to appear in the output table
+   \item \code{importance.footer} Character string of the footer to appear in the output table of an importance analysis
+   \item \code{stacked} Logical element to specify if the data was stacked (\code{TRUE}) or not (\code{FALSE})
+ }
+ The \code{Regression} list also has a \code{'ChartData'} attribute that is used when exporting to XLS files.
+ The contents of this attribute is a \code{data.frame} that gives the equivalent information and structure of the
+ the formattable table output htmlwidget.
 }
 \description{
 Computes output for seven different regression types.
@@ -183,9 +249,9 @@ multinomial. Output includes general coefficient estimates and importance analys
 with possibilities for handling missing data and interaction terms.
 }
 \details{
-In the case of Ordered Logistic regression, this function computes a proporional odds model using
+In the case of Ordered Logistic regression, this function computes a proportional odds model using
  the cumulative link (logistic). In the case of no weights, the \code{\link[MASS]{polr}} function is used.
- In the case of a weighted regresion, the \code{\link[survey]{svyolr}} function is used.
+ In the case of a weighted regression, the \code{\link[survey]{svyolr}} function is used.
 
  "Imputation (replace missing values with estimates)". All selected
  outcome and predictor variables are included in the imputation, along with
@@ -205,6 +271,24 @@ In the case of Ordered Logistic regression, this function computes a proporional
  Boehmke (2017) with their sure R package). This was based on the recent theoretical paper in Liu and Zhang (2018).
  Currently "Multinomial Logit" is unsupported for automated outlier removal. Possible surrogate residual to be used
  in a future version.
+
+ In the case of stacking using the \code{unstacked.data} argument, it is designed to work best with input that is
+ created with Q or Displayr which contains  \code{data.frame}s with a particular structure. If the Q/Displayr
+ \code{data.frame}s are not available then simple \code{data.frame}s can be provided. In particular, a list is
+ required with two elements, \itemize{
+  \item \code{Y} A \code{data.frame} with \code{m} columns that represent the \code{m} variables to be stacked.
+  \item \code{X} A \code{data.frame} where each column represents a column of a design matrix relevant to one of the
+  \code{m} variables given in element \code{Y} above. So if the overall regression model has \code{p} predictors.
+  Then this \code{data.frame} should contain \code{m * p} columns. In the absence of Q/Displayr metadata, the naming
+  structure each column is comma separated of the form 'predictor, outcome' where 'predictor' denotes the
+  predictor name in the regression design matrix and 'outcome' denotes the name of the variable in element \code{Y}.
+  This format is required to ensure that the columns are appropriately matched and stacked. The function also
+  accepts column names of the reverse order with 'outcome, predictor', so long as there isn't any ambiguity.
+  In the absense of Q/Displayr meta data, the identification split is attempted via an assumed single comma separator
+  }
+  Also, when using Q/Displayr, some columns in the \code{data.frame} for the  \code{unstacked.data} argument will contain
+  data reductions or NETs based off the codeframe and assigned codes to each NET. During the stacking process a NET is
+  removed from analysis unless it is entirely comprised of codes that are not observed elsewhere in the \code{data.frame}
 }
 \references{
 Davison, A. C. and Snell, E. J. (1991) Residuals and diagnostics. In: Statistical Theory and Modelling.
