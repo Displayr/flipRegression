@@ -2062,11 +2062,12 @@ throwCodeReductionWarning <- function(reduction.list)
     net.txt <- ngettext(length(nets), "a NET, ", "NETs")
     variable.type.and <- paste0(paste0(variable.type, collapse = " and "), " variables")
     variable.type.or <- paste0(paste0(variable.type, collapse = " or "), " variables")
-    net.txt.2 <- ngettext(length(nets), "this NET and its hidden", "these NETs and their hidden")
-    warning("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
-            "The ", variable.type.and, " have ", net.txt, net.name.txt, ", with both hidden and observed codes. ",
-            "Consequently, ", net.txt.2, " codes were not used in the analysis. If you wish any NET ",
-            "like this or its hidden code to be used in the analysis then please modify the ",
+    net.txt.2 <- ngettext(length(nets), "this NET was", "these NETs were")
+    net.txt.3 <- ngettext(length(nets), "this NET", "any of these NETs")
+    warning("NETs are removed from this analysis unless all their source values are mutually exclusive ",
+            "to other codes. The ", variable.type.and, " have ", net.txt, net.name.txt, " that contains ",
+            "source values that partially overlap with other codes. Consequently, ", net.txt.2, " not used in ",
+            "the analysis. If you wish ", net.txt.3, " to be used in the analysis then please modify the ",
             variable.type.or, " via the Table view options appropriately.")
 }
 

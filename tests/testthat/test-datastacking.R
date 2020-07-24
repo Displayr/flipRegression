@@ -884,12 +884,13 @@ test_that("DS-2694: Ensure NET and duplicated variables are removed", {
     # Check correct output
     expect_warning(expected.data.list <- flipRegression:::removeDataReduction(list(Y = modified.numeric.multi,
                                                                                    X = modified.binary.grid)),
-                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
-                          "The Outcome and Predictor variables have NETs: ('Google + Intel'; 'Diet Pepsi + Pepsi Max'; ",
-                          "'Down-to-earth + Feminine'), with both hidden and observed codes. Consequently, these NETs ",
-                          "and their hidden codes were not used in the analysis. If you wish any NET like this or its ",
-                          "hidden code to be used in the analysis then please modify the Outcome or Predictor variables ",
-                          "via the Table view options appropriately."),
+                   paste0("NETs are removed from this analysis unless all their source values are mutually ",
+                          "exclusive to other codes. The Outcome and Predictor variables have NETs: ",
+                          "('Google + Intel'; 'Diet Pepsi + Pepsi Max'; 'Down-to-earth + Feminine') that ",
+                          "contains source values that partially overlap with other codes. Consequently, ",
+                          "these NETs were not used in the analysis. If you wish any of these NETs to be used ",
+                          "in the analysis then please modify the Outcome or Predictor variables via the Table ",
+                          "view options appropriately."),
                    fixed = TRUE)
     # Check all appropriate columns removed
     Y.output <- expected.data.list$Y
@@ -915,29 +916,28 @@ test_that("DS-2694: Ensure NET and duplicated variables are removed", {
     # Single NET for a single affected variable set
     reduction.list <- list(nets = "A + B", variable.type = "Outcome")
     expect_warning(throwCodeReductionWarning(reduction.list),
-                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
-                          "The Outcome variables have a NET, 'A + B', with both hidden and observed codes. ",
-                          "Consequently, this NET and its hidden codes were not used in the analysis. If you ",
-                          "wish any NET like this or its hidden code to be used in the analysis then please ",
-                          "modify the Outcome variables via the Table view options appropriately."),
+                   paste0("NETs are removed from this analysis unless all their source values are mutually exclusive ",
+                          "to other codes. The Outcome variables have a NET, 'A + B' that contains source values that ",
+                          "partially overlap with other codes. Consequently, this NET was not used in the analysis. ",
+                          "If you wish this NET to be used in the analysis then please modify the Outcome variables ",
+                          "via the Table view options appropriately."),
                    fixed = TRUE)
     # More than one NET across two variable sets
     reduction.list <- list(nets = c("Fruits", "Vegetables"), variable.type = c("Outcome", "Predictor"))
     expect_warning(throwCodeReductionWarning(reduction.list),
-                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
-                          "The Outcome and Predictor variables have NETs: ('Fruits'; 'Vegetables'), with both ",
-                          "hidden and observed codes. Consequently, these NETs and their hidden codes were not ",
-                          "used in the analysis. If you wish any NET like this or its hidden code to be used in ",
-                          "the analysis then please modify the Outcome or Predictor variables via the Table view ",
-                          "options appropriately."),
+                   paste0("NETs are removed from this analysis unless all their source values are mutually exclusive ",
+                          "to other codes. The Outcome and Predictor variables have NETs: ('Fruits'; 'Vegetables') ",
+                          "that contains source values that partially overlap with other codes. Consequently, these ",
+                          "NETs were not used in the analysis. If you wish any of these NETs to be used in the analysis ",
+                          "then please modify the Outcome or Predictor variables via the Table view options appropriately."),
                    fixed = TRUE)
     # Multiple NETs in one variable set
     reduction.list <- list(nets = c("Fruits", "Vegetables"), variable.type = "Predictor")
     expect_warning(throwCodeReductionWarning(reduction.list),
-                   paste0("NETs are removed from this analysis unless all their codes are not observed elsewhere. ",
-                          "The Predictor variables have NETs: ('Fruits'; 'Vegetables'), with both hidden and ",
-                          "observed codes. Consequently, these NETs and their hidden codes were not used in the ",
-                          "analysis. If you wish any NET like this or its hidden code to be used in the analysis ",
-                          "then please modify the Predictor variables via the Table view options appropriately."),
+                   paste0("NETs are removed from this analysis unless all their source values are mutually exclusive to ",
+                          "other codes. The Predictor variables have NETs: ('Fruits'; 'Vegetables') that contains source ",
+                          "values that partially overlap with other codes. Consequently, these NETs were not used in the ",
+                          "analysis. If you wish any of these NETs to be used in the analysis then please modify the ",
+                          "Predictor variables via the Table view options appropriately."),
                    fixed = TRUE)
 })
