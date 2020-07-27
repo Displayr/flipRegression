@@ -300,3 +300,25 @@ test_that("DS-2978: hccm fails with a single predictor", {
     # If this line stops failing, please replace hccmFixed with car::hccm
     expect_error(car::hccm(lm(y ~ x - 1)), "dim\\(X\\) must have a positive length")
 })
+
+test_that("Output contains the right class for extension buttons", {
+    # NOTE: if any of the tests below fail due to class names changing, ALL
+    #       extension buttons in the wiki that refer to this class name should
+    #       be updated with the new class name.
+
+    types <- c("Linear", "Binary Logit", "Ordered Logit", "Multinomial Logit",
+               "Poisson", "Quasi-Poisson", "NBD")
+
+    classes <- c("LinearRegression", "BinaryLogitRegression",
+                 "OrderedLogitRegression", "MultinomialLogitRegression",
+                 "PoissonRegression", "QuasiPoissonRegression",
+                 "NBDRegression")
+
+    for (i in seq_along(types))
+    {
+        result <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone +
+                                                Branch + Online + ATM,
+                                              data = bank, type = types[i]))
+        expect_true(inherits(result, c("Regression", classes[i])))
+    }
+})
