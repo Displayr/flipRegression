@@ -218,7 +218,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     expect_error(output <- Regression(Y ~ int + X1 + cat + X2 + ordered + X3, data = input.data,
                                       output = "Jaccard Coefficient"),
                  NA)
-    names(output$estimation.data)
     expect_equal(names(output$estimation.data), c("Y", paste0("int.", 1:4), "X1",
                                                   paste0("cat.", 1:3), "X2",
                                                   paste0("ordered.", 1:3), "X3", "non.outlier.data_GQ9KqD7YOf"))

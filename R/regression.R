@@ -687,25 +687,28 @@ Regression <- function(formula = as.formula(NULL),
     # Replacing the variables with their labels
     result$outcome.name <- outcome.name
     result$outcome.label <- RemoveBackticks(outcome.name)
+    # Retain raw variable names for later use
+    if (type == "Multinomial Logit")
+        nms <- colnames(result$summary$coefficients)
+    else
+        nms <- rownames(result$summary$coefficients)
+    # Add fancy labels to summary table if requested
     if (show.labels)
     {
         if (type == "Multinomial Logit")
-        {
-            nms <- colnames(result$summary$coefficients)
             colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, nms)
-        }
         else
-        {
-            nms <- rownames(result$summary$coefficients)
             rownames(result$summary$coefficients) <- Labels(data, nms)
-        }
         label <- Labels(outcome.variable)
         if (!is.null(label))
             result$outcome.label <- label
     }
     if (!recursive.call)
-        aliasedPredictorWarning(result$summary$aliased,
-                                if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
+        aliased.preds <- aliasedPredictorWarning(result$summary$aliased,
+                                                 if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
+    else
+        aliased.preds <- suppressWarnings(aliasedPredictorWarning(result$summary$aliased,
+                                                                  if (show.labels) Labels(data, names(result$summary$aliased)) else NULL))
 
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
@@ -758,15 +761,38 @@ Regression <- function(formula = as.formula(NULL),
             }
             result$formula <- input.formula
         }
-        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
+        {
+            result$subset <- subset
+            result$estimation.data <- .estimation.data <- CopyAttributes(data[subset, , drop = FALSE], data)
+            .weights <- weights[subset]
+        }
+        # Remove aliased predictors if necessary (pairwise importance is conducted in Jaccard and Correlation)
+        # labels are already adjusted since they are determined from the summary table.
+        aliased.variables <- NULL
+        importance.formula <- input.formula
+        aliased.processed <- determineAliasedAndMapping(input.formula, .estimation.data, result$outcome.name)
+        # Only need to remove aliased predictors if not Jaccard or Correlation output
+        # In those cases, the importance measures are computed pairwise and not affected.
+        adjust.for.aliased <- !output %in% c("Jaccard Coefficient", "Correlation") && !is.null(aliased.processed$aliased.variables)
+        if (adjust.for.aliased)
+        {
+            signs <- filterAliased(signs, aliased.processed, by.names = TRUE)
+            importance.formula <- updateFormulaForImportanceAnalysis(aliased.processed$predictors.to.remove,
+                                                                     input.formula, data)
+            not.aliased <- filterAliased(nms, aliased.processed, remove = FALSE)
+        } else
+        {
+            not.aliased <- rep(TRUE, length(nms))
+            names(not.aliased) <- nms
+        }
+
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients)) & not.aliased
+        names(relevant.coefs) <-  nms[not.aliased]
         labels <- rownames(result$summary$coefficients)[relevant.coefs]
         if (result$type == "Ordered Logit")
-        {
-            if (missing == "Dummy variable adjustment")
-                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
-            else
-                labels <- labels[1:result$n.predictors]
-        } else if (output == "Correlation")
+            labels <- labels[-length(labels):-(length(labels) - (nlevels(.estimation.data[[outcome.name]]) - 2))]
+        else if (output == "Correlation")
         {
             labels <- attr(terms.formula(input.formula, data = data), "term.labels")
             labels <- labels[!grepDummyVars(labels)]
@@ -774,27 +800,23 @@ Regression <- function(formula = as.formula(NULL),
                 labels <- Labels(data, labels)
         } else
             labels <- labels[-1]
-        if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
-        {
-            result$subset <- subset
-            result$estimation.data <- .estimation.data <- CopyAttributes(data[subset, , drop = FALSE], data)
-            .weights <- weights[subset]
-        }
+        result$importance.labels <- labels
         # Process the data suitable for Jaccard coefficient analysis
         if (output == "Jaccard Coefficient")
         {
             jaccard.processed <- processDataSuitableForJaccard(.estimation.data, input.formula,
                                                                interaction.name, show.labels)
             result$estimation.data <- .estimation.data <- jaccard.processed$data
-            input.formula <- jaccard.processed$formula
+            input.formula <- importance.formula <- jaccard.processed$formula
             formula.with.interaction <- jaccard.processed$formula.with.interaction
-            labels <- result$labels <- jaccard.processed$labels
+            labels <- result$importance.labels <- jaccard.processed$labels
         }
         # Remove prefix if possible
         extracted.labels <- ExtractCommonPrefix(labels)
         if (!is.na(extracted.labels$common.prefix))
             labels <- extracted.labels$shortened.labels
-        result$importance <- estimateImportance(input.formula, .estimation.data, .weights,
+
+        result$importance <- estimateImportance(importance.formula, .estimation.data, .weights,
                                                 type, signs, result$r.squared,
                                                 labels, robust.se, outlier.prop.to.remove,
                                                 !recursive.call, correction, importance, ...)
@@ -1289,7 +1311,10 @@ tryError <- function(x)
     FALSE
 }
 
-# Warn for colinear variables, which have NA coeffient and are removed from summary table
+# Warn for colinear variables, which have NA coefficient and are removed from summary table
+#'
+#' @return Named logical vector of any predictors that are aliased.
+#' @noRd
 aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
@@ -1299,22 +1324,12 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
         regular.aliased <- aliased[!grepDummyVars(names.aliased)]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
                                   " coefficients have been estimated: ",
-                                  paste(alias.vars[regular.aliased], collapse = ", "))
-        # If no dummy variables in the aliasing, report all aliased.
-        # Otherwise only report the dummy variable scenario if a regular variable is also aliased
-        # i.e. silently have aliased dummy variables.
+                                  paste(sQuote(alias.vars[regular.aliased], q = FALSE), collapse = ", "))
         if (any(regular.aliased))
             warning(regular.warning)
-        if (any(dummy.aliased))
-        {
-            dummy.aliased.variables <- extractDummyNames(names.aliased[dummy.aliased])
-            dummy.warning <- paste0("The following dummy variable adjustment variable(s) are colinear ",
-                                    "with other variables and no dummy variables have been estimated: ",
-                                    alias.vars[dummy.aliased],
-                                    "A different missing value technique might be more suitable.")
-            warning(regular.warning)
-        }
+        return(regular.aliased)
     }
+    aliased
 }
 
 #' @importFrom stats model.frame model.matrix model.response
@@ -2286,4 +2301,96 @@ hccmFixed <- function(model, type = c("hc3", "hc0", "hc1", "hc2", "hc4"),
     factor <- switch(type, hc0 = 1, hc1 = df.res/n, hc2 = 1 -
                          h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+}
+
+
+#' Updates the provided formula removing the predictors requested.
+#' @param predictors.to.remove Character vector of predictors to remove from the formula
+#' @param input.formula A formula object to manipulate.
+#' @param data The data associated with the provided formula
+#' @return The updated formula object.
+#' @importFrom stats terms.formula
+#' @noRd
+updateFormulaForImportanceAnalysis <- function(predictors.to.remove,
+                                               input.formula, data)
+{
+    # Remove the unwanted predictors from the formula
+    importance.formula <- update(terms(input.formula, data = data),
+                                 as.formula(paste0(". ~ .", " - ", paste0(predictors.to.remove, collapse = " - "))))
+    importance.formula
+}
+
+#' Function determines the predictor names of both numeric and factors that are aliased
+#' and the same information at the factor level. E.g. suppose there are two aliased variables
+#' X1 and X2 where X1 is a numeric var and X2 is a factor with three levels A, B and C where only
+#' level C is the aliased level. Then the predictor names returned by this function would be "X1" and
+#' "X2" while the level representation would be "X1" and "X2C". For later use the mapping for the
+#' factor levels to their factor variable are determined via the formula terms and model matrix.
+#' The aliased variables are determined using the \code{\link{alias}} function which requires either
+#' an \code{\link{lm}}, \code{\link{aov}} input or a \code{\link{formula}} input. The latter is used
+#' here.
+#' @param input.formula The formula object for the regression
+#' @param data The data associated with the formula
+#' @param outcome.name The name of the outcome variable, it could be determined via the formula but for
+#'  convenience the name is used here to simplify the input data.
+#' @return A list that contains the following four elements \itemize{
+#' \item \code{predictors.to.remove} A character vector of variables names that are identified as
+#' aliased via the \code{\link{alias}} function and should be removed.
+#' \item \code{aliased.variables} The character vector giving the same aliased variables but containing
+#' only the aliased levels for factor variables.
+#' \item \code{formula.term.labels} A character vector of the predictor names in order of appearance
+#' in the provided formula
+#' \item \code{model.mapping} A named numeric vector of the predictor variables (at the model matrix
+#' level where categorical levels are used for factors). E.g. in the above example this would contain
+#' four elements 0, 1, 2, 3 with names '(Intercept)', 'X1', 'X2B' and 'X2C'
+#' }
+#' @importFrom stats alias model.matrix
+#' @noRd
+determineAliasedAndMapping <- function(input.formula, data, outcome.name)
+{
+    # input formula converted to aov object in alias call, will complain
+    # of factor outcome in computation of residuals in that call
+    if (is(data[[outcome.name]], "factor"))
+        data[[outcome.name]] <- unclass(data[[outcome.name]])
+    # Remove the outlier column if it exists (possible inconvenience if dot used in formula)
+    data <- data[names(data) != "non.outlier.data_GQ9KqD7YOf"]
+    # Determine which variables are aliased in the model
+    aliased.variables <- row.names(alias(input.formula, data = data)$Complete)
+    # Determine the variables in the formula
+    formula.term.labels <- attr(terms(input.formula, data = data), "term.labels")
+    # Determine all variables in contrast form as required
+    relevant.model.matrix <- model.matrix(input.formula, data = data)
+    model.mapping <- attr(relevant.model.matrix, "assign")
+    names(model.mapping) <- colnames(relevant.model.matrix)
+    # Reconcile the aliased predictors/contrasts with the predictors in the formula
+    predictors.to.remove <- unique(formula.term.labels[model.mapping[aliased.variables]])
+
+    list(predictors.to.remove = predictors.to.remove,
+         aliased.variables = aliased.variables,
+         formula.term.labels = formula.term.labels,
+         model.mapping = model.mapping)
+}
+
+#' Function that checks if the input x has any aliased predictor elements and either removes them
+#' from x or provides a logical vector of which elements of x to retain.
+#' @param x The input to provide, assumed to be either a character vector of predictor names (default)
+#' or a vector where the predictor names are given in the names of x.
+#' @param aliased.processed A list returned by a call to \code{determineAliasedAndMapping}
+#' @param by.names Logical to specify if the names (\code{TRUE}) or the elements (\code{FALSE}) should
+#' be analyzed.
+#' @param remove Logical to specify if the aliased elements should be removed or flagged. When set to
+#' \code{TRUE} the aliased elements will be removed from the original input \code{x} and the smaller length
+#' vector is returned. When \code{FALSE} a logical vector is returned with elements that are \code{TRUE}
+#' if the predictor in the input \code{x} element is not aliased and \code{FALSE} when the element is
+#' aliased. This logical vector is named with the appropriate predictor names.
+#' @noRd
+filterAliased <- function(x, aliased.processed, by.names = FALSE, remove = TRUE)
+{
+    y <- if (by.names) names(x) else x
+    aliased <- with(aliased.processed, formula.term.labels[model.mapping[y]] %in% predictors.to.remove)
+    if (y[1] == "(Intercept)")
+        aliased <- c(FALSE, aliased)
+    names(aliased) <- y
+    x <- if (remove) x[!aliased] else !aliased
+    x
 }

@@ -711,3 +711,67 @@ test_that("Check error message when Categorical predictors used in RIA", {
                               missing = "Dummy variable adjustment"),
                    "The following variables have been treated as categorical: Interest", fixed = TRUE)
 })
+
+test_that("DS-2990: Check aliased predictors removed before being passed to RIA/Shapley", {
+    set.seed(1)
+    sigma.mat <- matrix(c(1, 0.5, 0.3,
+                          0.5, 1, 0.4,
+                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
+    X <- MASS::mvrnorm(n = 100, mu = rep(0, 3), Sigma = sigma.mat)
+    beta <- 1:3
+    Y <- X %*% beta + rnorm(100)
+    dat <- data.frame(Y = Y, X = X)
+    # add aliased predictors, single numeric and categorical
+    dat$X.4 <- dat$X.3
+    dat$cat1 <- factor(rep(c(1, 2, 3, 4), c(10, 10, 20, 60)), labels = LETTERS[1:4])
+    dat$cat2 <- factor(rep(c(1, 2, 3, 4, 5), c(10, 10, 20, 30, 30)), labels = LETTERS[1:5])
+    fancy.label.dat <- dat
+    for (i in seq_along(dat))
+        attr(fancy.label.dat[[i]], "label") <- paste0("Fancy label of ", names(dat)[i])
+    expect_error(ria <- Regression(Y ~ X.1 + X.2 + X.3, data = dat, output = "Relative Importance Analysis"), NA)
+    expect_warning(print(ria), "^Unusual observations detected")
+    # Only the aliased numeric predictors and aliased levels of the categorical predictor are shown
+    expect_warning(ria <- Regression(Y ~ ., data = dat, output = "Relative Importance Analysis"),
+                   paste0("The following variable(s) are colinear with other variables and no ",
+                          "coefficients have been estimated: 'X.4', 'cat2B', 'cat2C', 'cat2E'"),
+                   fixed = TRUE)
+    # Aliased variables are removed from Importance Analysis
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_warning(ria <- Regression(Y ~ ., data = fancy.label.dat, output = "Relative Importance Analysis", show.labels = TRUE),
+                   paste0("The following variable(s) are colinear with other variables and no ",
+                          "coefficients have been estimated: 'Fancy label of X.4', 'Fancy label of cat2: B', ",
+                          "'Fancy label of cat2: C', 'Fancy label of cat2: E'"),
+                   fixed = TRUE)
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1", "X.2", "X.3", "cat1: B", "cat1: C", "cat1: D"))
+    # Entire numeric predictor and entire categorical predictor removed for the RIA
+    expect_error(print(ria), NA)
+    ordered.logit.dat <- dat
+    y.to.ord <- factor(cut(dat$Y, breaks = c(-Inf, quantile(dat$Y, prob = c(0.25, 0.5, 0.75)), Inf),
+                           labels = LETTERS[1:4]), ordered = TRUE)
+    ordered.logit.dat$Y <- y.to.ord
+    expect_error(ria <- Regression(Y ~ X.1 + X.2 + X.3, data = ordered.logit.dat,
+                                   output = "Relative Importance Analysis", type = "Ordered Logit"),
+                 NA)
+    expect_error(print(ria), NA)
+    expect_warning(ria <- Regression(Y ~ ., data = ordered.logit.dat,
+                                     output = "Relative Importance Analysis", type = "Ordered Logit"),
+                   "^Some variable\\(s\\) are colinear")
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_error(print(ria), NA)
+    # Test Dummy variable in Ordered Logit
+    X.1.miss <- dat$X.1
+    X.1.miss[sample(c(TRUE, FALSE), size = nrow(dat), prob = c(1, 10), replace = TRUE)] <- NA
+    dat$X.1.miss <- X.1.miss
+    ordered.logit.dat$X.1.miss <- X.1.miss
+    expect_warning(ria <- Regression(Y ~ X.1.miss + X.2 + X.3 + X.4 + cat1 + cat2, data = ordered.logit.dat,
+                                     output = "Relative Importance Analysis", type = "Ordered Logit",
+                                     missing = "Dummy variable adjustment"),
+                   "^Some variable\\(s\\) are colinear")
+    # Aliased removed from importance analysis
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1.miss", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_error(print(ria), NA)
+})
