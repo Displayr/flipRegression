@@ -79,7 +79,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     sc <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
 
     if (!is.null(importance))
-    {
+    { # If relative importance analysis or shapley regression then aliased predictors should be checked
+        check.aliased.within.split <- !importance %in% c("Correlation", "Jaccard Coefficient")
         signs <- if (importance.absolute) 1 else NA
         for (j in 1:num.split)
         {
@@ -87,12 +88,35 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             if (length(unique(result$estimation.data[is.split,1])) < 2 ||
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
-            tmp.ri <- try(estimateImportance(result$importance.formula,
-                                             RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
+            importance.formula <- result$importance.formula
+            estimation.data <- RemoveMissingLevelsFromFactors(result$estimation.data[is.split, ])
+            estimation.data.C <- RemoveMissingLevelsFromFactors(result$estimation.data[-is.split, ])
+            if (check.aliased.within.split)
+            { # Check there are no aliased predictors within the split groups, if so, remove them from analysis
+                aliased.processed <- determineAliasedAndMapping(importance.formula,
+                                                                estimation.data,
+                                                                result$outcome.name)
+                aliased.processed.C <- determineAliasedAndMapping(importance.formula,
+                                                                  estimation.data.C,
+                                                                  result$outcome.name)
+                predictors.to.remove <- union(aliased.processed$predictors.to.remove,
+                                              aliased.processed.C$predictors.to.remove)
+                if (length(predictors.to.remove))
+                    importance.formula <- removePredictorsFromFormula(predictors.to.remove,
+                                                                      importance.formula,
+                                                                      estimation.data)
+                predictors.in.formula <- setdiff(AllVariablesNames(importance.formula), result$outcome.name)
+                if (length(predictors.in.formula) == 0)
+                    next
+                estimation.data <- estimation.data[, !names(estimation.data) %in% predictors.to.remove]
+                estimation.data.C <- estimation.data.C[, !names(estimation.data.C) %in% predictors.to.remove]
+            }
+            tmp.ri <- try(estimateImportance(importance.formula,
+                                             estimation.data,
                                              weights[is.split], result$type, signs, NA, NA, result$robust.se,
                                              result$outlier.prop.to.remove, FALSE, correction, importance))
-            tmpC.ri <- try(estimateImportance(result$importance.formula,
-                                              RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
+            tmpC.ri <- try(estimateImportance(importance.formula,
+                                              estimation.data.C,
                                               weights[-is.split], result$type, signs, NA, NA, result$robust.se,
                                               result$outlier.prop.to.remove, FALSE, correction, importance))
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
