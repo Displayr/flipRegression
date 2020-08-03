@@ -119,9 +119,8 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
              "should be binary variables. However, the ", outcome.string,
              both.not, predictor.string, general.statement)
     }
-    formulae <- createSuitableFormulaForJaccard(outcome.name = outcome.name,
-                                                predictor.names = predictor.names,
-                                                interaction.name = interaction.name)
+    formula <- createSuitableFormulaForJaccard(outcome.name = outcome.name,
+                                               predictor.names = predictor.names)
     if (interaction.name != "NULL")
         predictor.names <- predictor.names[predictor.names != interaction.name]
     if (show.labels)
@@ -129,8 +128,7 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
     else
         labels <- predictor.names
     return(list(data = data,
-                formula = formulae$formula,
-                formula.with.interaction = formulae$formula.with.interaction,
+                formula = formula,
                 labels = labels))
 }
 
@@ -182,12 +180,7 @@ checkBinaryVariableNoVariation <- function(x)
 }
 
 #' @importFrom stats terms.formula
-createSuitableFormulaForJaccard <- function(outcome.name, predictor.names, interaction.name = "NULL")
+createSuitableFormulaForJaccard <- function(outcome.name, predictor.names)
 {
-    basic.formula <- formula(paste0(outcome.name, " ~ ", paste0(predictor.names, collapse = " + ")))
-    formula.with.interaction <- basic.formula
-    if (interaction.name != "NULL")
-        formula.with.interaction <- update(terms(basic.formula),
-                                           sprintf(".~.*%s", interaction.name))
-    return(list(formula = basic.formula, formula.with.interaction = formula.with.interaction))
+    formula(paste0(outcome.name, " ~ ", paste0(predictor.names, collapse = " + ")))
 }

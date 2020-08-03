@@ -87,7 +87,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     data$Y <- rbinom(nrow(data), size = 1, prob = 0.5)
     expected.output.list <- list(data = subset(data, select = c("Y", "X1")),
                                  formula = Y ~ X1,
-                                 formula.with.interaction = Y ~ X1,
                                  labels = "X1")
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1, data = subset(data, select = c("Y", "X1"))),
                  expected.output.list)
@@ -111,7 +110,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "int"))
     expected.output.list <- list(data = input.dat,
                                  formula = Y ~ X1,
-                                 formula.with.interaction = Y ~ X1 + int + X1:int,
                                  labels = "X1")
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1,
                                                                 interaction.name = "int",
@@ -164,7 +162,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "binary.cat"))
     expected.output.list <- list(data = output.dat,
                                  formula = Y ~ X1 + binary.cat.1 + binary.cat.2,
-                                 formula.with.interaction = Y ~ X1 + binary.cat.1 + binary.cat.2,
                                  labels = c("X1", "binary.cat.1", "binary.cat.2"))
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1 + binary.cat,
                                                                 data = input.dat),
@@ -181,7 +178,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "cat"))
     expected.output.list <- list(data = output.dat,
                                  formula = Y ~ X1 + cat.1 + cat.2 + cat.3,
-                                 formula.with.interaction = Y ~ X1 + cat.1 + cat.2 + cat.3,
                                  labels = c("X1", "cat.1", "cat.2", "cat.3"))
 
     expect_equal(flipRegression::processDataSuitableForJaccard(Y ~ X1 + cat,
@@ -199,7 +195,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "ordered"))
     expected.output.list <- list(data = output.dat,
                                  formula = Y ~ X1 + ordered.1 + ordered.2 + ordered.3,
-                                 formula.with.interaction = Y ~ X1 + ordered.1 + ordered.2 + ordered.3,
                                  labels = c("X1", "ordered.1", "ordered.2", "ordered.3"))
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X2 + ordered,
                                                                 data = input.dat),
@@ -207,8 +202,7 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     # Check order of binary transformed categorical variables is preserved
     input.dat <- subset(data, select = c("Y", "int", "X1", "cat", "X2", "ordered", "X3"))
     expect_error(output <- flipRegression:::processDataSuitableForJaccard(data = input.dat,
-                                                                          formula = Y ~ int + X1 + cat + X2 + ordered + X3,
-                                                                          interaction.name = "NULL"),
+                                                                          formula = Y ~ int + X1 + cat + X2 + ordered + X3),
                  NA)
     expect_equal(names(output$data), c("Y", paste0("int.", 1:4), "X1",
                                        paste0("cat.", 1:3), "X2",

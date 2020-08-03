@@ -778,28 +778,37 @@ Regression <- function(formula = as.formula(NULL),
         if (adjust.for.aliased)
         {
             signs <- filterAliased(signs, aliased.processed, by.names = TRUE)
-            importance.formula <- updateFormulaForImportanceAnalysis(aliased.processed$predictors.to.remove,
-                                                                     input.formula, data)
+            importance.formula <- removePredictorsFromFormula(aliased.processed$predictors.to.remove,
+                                                              input.formula, data)
             not.aliased <- filterAliased(nms, aliased.processed, remove = FALSE)
+            result$importance.formula <- importance.formula
         } else
         {
+            result$importance.formula <- result$formula
             not.aliased <- rep(TRUE, length(nms))
             names(not.aliased) <- nms
         }
 
         relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients)) & not.aliased
-        names(relevant.coefs) <-  nms[not.aliased]
+        names(relevant.coefs) <- result$importance.names <- nms[not.aliased]
         labels <- rownames(result$summary$coefficients)[relevant.coefs]
         if (result$type == "Ordered Logit")
-            labels <- labels[-length(labels):-(length(labels) - (nlevels(.estimation.data[[outcome.name]]) - 2))]
-        else if (output == "Correlation")
+        { # Remove the response transition coefficients
+            n.remove <- (nlevels(.estimation.data[[outcome.name]]) - 2)
+            labels <- labels[-length(labels):-(length(labels) - n.remove)]
+            n.importance.names <- length(result$importance.names)
+            result$importance.names <- result$importance.names[-n.importance.names:-(n.importance.names - n.remove)]
+        } else if (output == "Correlation")
         {
             labels <- attr(terms.formula(input.formula, data = data), "term.labels")
-            labels <- labels[!grepDummyVars(labels)]
+            labels <- result$importance.names <- labels[!grepDummyVars(labels)]
             if (show.labels)
                 labels <- Labels(data, labels)
         } else
+        {
+            result$importance.names <- result$importance.names[-1]
             labels <- labels[-1]
+        }
         result$importance.labels <- labels
         # Process the data suitable for Jaccard coefficient analysis
         if (output == "Jaccard Coefficient")
@@ -808,7 +817,6 @@ Regression <- function(formula = as.formula(NULL),
                                                                interaction.name, show.labels)
             result$estimation.data <- .estimation.data <- jaccard.processed$data
             input.formula <- importance.formula <- jaccard.processed$formula
-            formula.with.interaction <- jaccard.processed$formula.with.interaction
             labels <- result$importance.labels <- jaccard.processed$labels
         }
         # Remove prefix if possible
@@ -2311,13 +2319,11 @@ hccmFixed <- function(model, type = c("hc3", "hc0", "hc1", "hc2", "hc4"),
 #' @return The updated formula object.
 #' @importFrom stats terms.formula
 #' @noRd
-updateFormulaForImportanceAnalysis <- function(predictors.to.remove,
-                                               input.formula, data)
+removePredictorsFromFormula <- function(predictors.to.remove, input.formula, data)
 {
     # Remove the unwanted predictors from the formula
-    importance.formula <- update(terms(input.formula, data = data),
-                                 as.formula(paste0(". ~ .", " - ", paste0(predictors.to.remove, collapse = " - "))))
-    importance.formula
+    update(terms(input.formula, data = data),
+           as.formula(paste0(". ~ .", " - ", paste0(predictors.to.remove, collapse = " - "))))
 }
 
 #' Function determines the predictor names of both numeric and factors that are aliased

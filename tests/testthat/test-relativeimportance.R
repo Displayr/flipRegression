@@ -738,6 +738,16 @@ test_that("DS-2990: Check aliased predictors removed before being passed to RIA/
     # Aliased variables are removed from Importance Analysis
     expect_equal(names(ria$importance$raw.importance),
                  c("X.1", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_error(print(ria), NA)
+    # Same for Shapley Regression
+    expect_warning(ria <- Regression(Y ~ ., data = dat, output = "Shapley Regression"),
+                   paste0("The following variable(s) are colinear with other variables and no ",
+                          "coefficients have been estimated: 'X.4', 'cat2B', 'cat2C', 'cat2E'"),
+                   fixed = TRUE)
+    # Aliased variables are removed from Importance Analysis
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_error(print(ria), NA)
     expect_warning(ria <- Regression(Y ~ ., data = fancy.label.dat, output = "Relative Importance Analysis", show.labels = TRUE),
                    paste0("The following variable(s) are colinear with other variables and no ",
                           "coefficients have been estimated: 'Fancy label of X.4', 'Fancy label of cat2: B', ",
@@ -773,5 +783,24 @@ test_that("DS-2990: Check aliased predictors removed before being passed to RIA/
     # Aliased removed from importance analysis
     expect_equal(names(ria$importance$raw.importance),
                  c("X.1.miss", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_error(print(ria), NA)
+    # Check crosstab interaction
+    groups <- factor(rep(1:3, c(15, 15, 70)), labels = paste0("Group ", 1:3))
+    dat$groups <- groups
+    expect_warning(ria <- Regression(Y ~ X.1 + X.2 + X.3 + X.4 + cat1 + cat2, data = dat,
+                                     output = "Relative Importance Analysis", interaction = dat$groups),
+                   paste0("The following variable(s) are colinear with other variables and no ",
+                          "coefficients have been estimated: 'X.4', 'cat2B', 'cat2C', 'cat2E'"),
+                   fixed = TRUE)
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
+    expect_error(print(ria), NA)
+    # Checked ordered logit in this case
+    expect_warning(ria <- Regression(Y ~ X.1 + X.2 + X.3 + X.4 + cat1 + cat2, data = ordered.logit.dat,
+                                     output = "Relative Importance Analysis", interaction = dat$groups,
+                                     type = "Ordered Logit"),
+                   "^Some variable\\(s\\) are colinear with other variables")
+    expect_equal(names(ria$importance$raw.importance),
+                 c("X.1", "X.2", "X.3", "cat1B", "cat1C", "cat1D"))
     expect_error(print(ria), NA)
 })
