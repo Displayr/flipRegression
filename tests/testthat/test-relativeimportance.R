@@ -709,5 +709,40 @@ test_that("Check error message when Categorical predictors used in RIA", {
     expect_warning(Regression(Overall ~ Fees + Interest, data = bank2,
                               output = "Relative Importance Analysis",
                               missing = "Dummy variable adjustment"),
-                   "The following variables have been treated as categorical: Interest", fixed = TRUE)
+                   paste0("The following variables have been treated as categorical: Interest. ",
+                          "This may over-inflate their effects."),
+                   fixed = TRUE)
+})
+
+
+test_that("DS-2990: Check aliased predictors removed before being passed to RIA/Shapley", {
+    set.seed(1)
+    sigma.mat <- matrix(c(1, 0.5, 0.3,
+                          0.5, 1, 0.4,
+                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
+    X <- MASS::mvrnorm(n = 100, mu = rep(0, 3), Sigma = sigma.mat)
+    beta <- 1:3
+    Y <- X %*% beta + rnorm(100)
+    dat <- data.frame(Y = Y, X = X)
+    # add aliased predictors, single numeric and categorical
+    dat$X.4 <- dat$X.3
+    dat$cat1 <- factor(rep(c(1, 2, 3, 4), c(10, 10, 20, 60)), labels = LETTERS[1:4])
+    dat$cat2 <- factor(rep(c(1, 2, 3, 4, 5), c(10, 10, 20, 30, 30)), labels = LETTERS[1:5])
+    fancy.label.dat <- dat
+    for (i in seq_along(dat))
+        attr(fancy.label.dat[[i]], "label") <- paste0("Fancy label of ", names(dat)[i])
+    # Expect error thrown about aliasing, use recursive call to prevent the warning being thrown before the error.
+    expect_error(Regression(Y ~ ., data = dat, output = "Relative Importance Analysis", recursive.call = TRUE),
+                 "^Some predictors are linearly dependent")
+    # Same for Shapley Regression
+    expect_error(Regression(Y ~ ., data = dat, output = "Shapley Regression", recursive.call = TRUE),
+                 "^Some predictors are linearly dependent")
+    ordered.logit.dat <- dat
+    y.to.ord <- factor(cut(dat$Y, breaks = c(-Inf, quantile(dat$Y, prob = c(0.25, 0.5, 0.75)), Inf),
+                           labels = LETTERS[1:4]), ordered = TRUE)
+    ordered.logit.dat$Y <- y.to.ord
+    expect_error(expect_warning(Regression(Y ~ ., data = ordered.logit.dat, recursive.call = TRUE,
+                                           output = "Relative Importance Analysis", type = "Ordered Logit"),
+                                "^Some variable\\(s\\) are colinear"),
+                 "^Some predictors are linearly dependent")
 })

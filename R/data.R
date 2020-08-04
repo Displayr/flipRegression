@@ -182,3 +182,106 @@ checkBinaryVariableNoVariation <- function(x)
 #' @importFrom stats terms.formula
 createSuitableFormulaForJaccard <- function(outcome.name, predictor.names)
     formula(paste0(outcome.name, " ~ ", paste0(predictor.names, collapse = " + ")))
+
+
+#' Function determines the predictor names of both numeric and factors that are aliased
+#' and the same information at the factor level. E.g. suppose there are two aliased variables
+#' X1 and X2 where X1 is a numeric var and X2 is a factor with three levels A, B and C where only
+#' level C is the aliased level. Then the predictor names returned by this function would be "X1" and
+#' "X2" while the level representation would be "X1" and "X2C". For later use the mapping for the
+#' factor levels to their factor variable are determined via the formula terms and model matrix.
+#' The aliased variables are determined using the \code{\link{alias}} function which requires either
+#' an \code{\link{lm}}, \code{\link{aov}} input or a \code{\link{formula}} input. The latter is used
+#' here.
+#' @param input.formula The formula object for the regression
+#' @param data The data associated with the formula
+#' @param outcome.name The name of the outcome variable, it could be determined via the formula but for
+#'  convenience the name is used here to simplify the input data.
+#' @return A list that contains the following four elements \itemize{
+#' \item \code{predictors.to.remove} A character vector of variables names that are identified as
+#' aliased via the \code{\link{alias}} function and should be removed.
+#' \item \code{aliased.variables} The character vector giving the same aliased variables but containing
+#' the specific aliased levels for factor variables.
+#' \item \code{predictor.classes} Character vector giving the class of predictor (factor or numeric)
+#' \item \code{variable.classes} Character vector giving the class of predictor, at the granularity of
+#' levels of each factor if possible.
+#' }
+#' @importFrom stats alias model.matrix
+#' @noRd
+determineAliased <- function(input.formula, data, outcome.name)
+{
+    # input formula converted to aov object in alias call, will complain
+    # of factor outcome in computation of residuals in that call
+    if (is(data[[outcome.name]], "factor"))
+        data[[outcome.name]] <- unclass(data[[outcome.name]])
+    # Filter the data using the outlier subset if it exists
+    if ("non.outlier.data_GQ9KqD7YOf" %in% names(data))
+    {
+        data <- data[data$non.outlier.data_GQ9KqD7YOf, ]
+        data <- data[names(data) != "non.outlier.data_GQ9KqD7YOf"]
+    }
+    # Determine which variables are aliased in the model and return NULL early if there are none.
+    aliased.variables <- alias(input.formula, data = data)$Complete
+    if (is.null(aliased.variables))
+        return(NULL)
+    # Determine which predictors are aliased with each other, coercing to list if necessary
+    aliased.variables <- apply(aliased.variables, 1, function(x) names(which(x != 0)))
+    if (!is(aliased.variables, "list"))
+        aliased.variables <- as.list(aliased.variables)
+    # Add aliased variables to their identified counterparts
+    aliased.variables <- mapply(function(x, x.names) c(x, x.names), aliased.variables, names(aliased.variables),
+                                SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    # Determine the variables in the formula
+    formula.term.labels <- attr(terms(input.formula, data = data), "term.labels")
+    # Determine all variables in contrast form as required
+    relevant.model.matrix <- model.matrix(input.formula, data = data)
+    model.mapping <- attr(relevant.model.matrix, "assign")
+    names(model.mapping) <- colnames(relevant.model.matrix)
+    # Reconcile the aliased predictors/contrasts with the predictors in the formula
+    aliased.variables <- lapply(aliased.variables, function(x) unique(formula.term.labels[model.mapping[x]]))
+    # Remove duplicates
+    duplicated.entries <- duplicated(unname(aliased.variables))
+    if (any(duplicated.entries))
+        aliased.variables <- unname(aliased.variables[!duplicated.entries])
+    # Determine the class of the predictors and the levels
+    grouped.predictors <- lapply(aliased.variables,
+                                 function(x) { # Use is instead of class to catch ordered factors as well.
+                                     vapply(data[x], function(y) if (is(y, "factor")) "factor" else "numeric",
+                                            character(1))
+                                })
+    grouped.predictors
+}
+
+#' Helper function to throw an informative error when a user attempts to conduct a Relative Importance
+#' Analysis or Shapley Regression when aliased predictors are in their dataset.
+#' @param alaised.grouped List containing named character vectors. Each character vector describes the
+#' group of aliased predictors where each character element gives the class of the predictor
+#' and the name gives the variable name of each predictor.
+#' @param labels Named character vector with elements being the variable labels and names being the variable
+#' names
+#' @noRd
+throwAliasedErrorImportanceAnalysis <- function(aliased.grouped, labels, output)
+{
+    # Determine if there are any factors that are aliased
+    factors.aliased <- vapply(aliased.grouped, function(x) any(x == "factor"), logical(1))
+    if (any(factors.aliased))
+    {
+        factor.variables <- lapply(aliased.grouped[factors.aliased], function(x) labels[names(which(x == "factor"))])
+        factor.msg <- paste0(" The linearly dependent relationship with the categorical variables ",
+                             " occurs in the dummy coding of at least one of the contrast levels for each categorical variable.")
+    } else
+        factor.msg <- NULL
+    base.error.message <- paste0("Some predictors are linearly dependent on other predictors and cannot ",
+                                 "be estimated if they are included in the model together. ")
+    groups <- vapply(aliased.grouped, function(x) paste0(sQuote(labels[names(x)], q = FALSE),
+                                                         collapse = ", "), character(1))
+    if (length(groups) == 1)
+        group.msg <- paste0("The following group of predictors: (", groups, ") have a linearly dependent ",
+                            "relationship and at least one of them needs to be removed to conduct a ",
+                            output, ".")
+    else
+        group.msg <- paste0("In each of the following groups of predictors there is a linearly dependent relationship ",
+                            "and at least one predictor needs to be removed to conduct a ", output, ". ",
+                            paste0("Group ", 1:length(groups), ": (", groups, ")", collapse = ", "), ".")
+    stop(base.error.message, group.msg, factor.msg)
+}

@@ -217,3 +217,65 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
                                                   paste0("cat.", 1:3), "X2",
                                                   paste0("ordered.", 1:3), "X3", "non.outlier.data_GQ9KqD7YOf"))
 })
+
+
+test_that("DS-2990: Test identification of aliased predictors", {
+    set.seed(1)
+    sigma.mat <- matrix(c(1, 0.5, 0.3,
+                          0.5, 1, 0.4,
+                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
+    X <- MASS::mvrnorm(n = 100, mu = rep(0, 3), Sigma = sigma.mat)
+    beta <- 1:3
+    Y <- X %*% beta + rnorm(100)
+    dat <- data.frame(Y = Y, X = X)
+    # add aliased predictors, single numeric and categorical
+    dat$X.4 <- dat$X.3
+    dat$X.5 <- 2*dat$X.3
+    dat$X.6 <- 1/2 * dat$X.3 - dat$X.2 + 1/2 * dat$X.1
+    dat$cat1 <- factor(rep(c(1, 2, 3, 4), c(10, 10, 20, 60)), labels = LETTERS[1:4])
+    dat$cat2 <- factor(rep(c(1, 2, 3, 4, 5), c(10, 10, 20, 30, 30)), labels = LETTERS[1:5])
+    ##  Check function that identifies predictors into groups of aliased predictors ##
+    # Expect null when no aliased predictors
+    expect_null(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3, data = dat, "Y"))
+    # Expect named list of class types that are aliased
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4, data = dat, "Y"),
+                 single.group <- list(c("X.3" = "numeric", "X.4" = "numeric")))
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1, data = dat, "Y"),
+                 single.group)
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1 + cat2, data = dat, "Y"),
+                 mixed.group <- list(c("X.3" = "numeric", "X.4" = "numeric"),
+                                     c("cat1" = "factor", "cat2" = "factor")))
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.5 + X.6, data = dat, "Y"),
+                 long.two <- list(c("X.3" = "numeric", "X.5" = "numeric"),
+                                  c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")))
+    ## Check error message thrown is appropriate
+    regular.labels <- c(paste0("X.", 1:6), paste0("cat", 1:2))
+    fancy.labels <- c("Apples", "Oranges", "Grapes", "Banana", "Peaches", "Kiwi", "Lions", "Tigers")
+    names(fancy.labels) <- names(regular.labels) <- regular.labels
+    # Single group, regular labels with names,
+    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(single.group, regular.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. The following group of predictors: ('X.3', 'X.4') have a ",
+                        "linearly dependent relationship and at least one of them needs to be removed to conduct a ",
+                        "Shapley Regression."), fixed = TRUE)
+    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(single.group, fancy.labels, "Relative Importance Analysis"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. The following group of predictors: ('Grapes', 'Banana') have a ",
+                        "linearly dependent relationship and at least one of them needs to be removed to conduct a ",
+                        "Relative Importance Analysis."), fixed = TRUE)
+    # Two numeric predictors aliased.
+    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(long.two, fancy.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if ",
+                        "they are included in the model together. In each of the following groups of predictors ",
+                        "there is a linearly dependent relationship and at least one predictor needs to be ",
+                        "removed to conduct a Shapley Regression. Group 1: ('Grapes', 'Peaches'), Group 2: ",
+                        "('Apples', 'Oranges', 'Grapes', 'Kiwi')."), fixed = TRUE)
+    # Mix categorical/numeric
+    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(mixed.group, regular.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. In each of the following groups of predictors there is a ",
+                        "linearly dependent relationship and at least one predictor needs to be removed to conduct a ",
+                        "Shapley Regression. Group 1: ('X.3', 'X.4'), Group 2: ('cat1', 'cat2'). The linearly dependent ",
+                        "relationship with the categorical variables  occurs in the dummy coding of at least one of the ",
+                        "contrast levels for each categorical variable."), fixed = TRUE)
+})

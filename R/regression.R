@@ -797,6 +797,19 @@ Regression <- function(formula = as.formula(NULL),
             input.formula <- jaccard.processed$formula
             labels <- result$importance.labels <- jaccard.processed$labels
         }
+        # Correlation outputs and Jaccard don't need to be checked since predictor importance is computed pairwise against the outcome.
+        check.for.aliased.vars <- !output %in% c("Correlation", "Jaccard Coefficient")
+        if (check.for.aliased.vars)
+        {
+            aliased.processed <- determineAliased(input.formula, .estimation.data, outcome.name)
+            if (is(aliased.processed, "list"))
+            { # Create mapping of predictor names to their labels if necessary for error message
+                formula.names <- AllVariablesNames(input.formula, .estimation.data)
+                formula.labels <- if (show.labels) Labels(data, formula.names) else formula.names
+                names(formula.labels) <- formula.names
+                throwAliasedErrorImportanceAnalysis(aliased.processed, formula.labels, output)
+            }
+        }
         # Remove prefix if possible
         extracted.labels <- ExtractCommonPrefix(labels)
         if (!is.na(extracted.labels$common.prefix))
