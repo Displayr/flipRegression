@@ -221,6 +221,8 @@
 #'      \item \code{p.values} The vector of p-values for the relevant statistics computed above.
 #'    }
 #'  \item \code{importance.type} Character string specifying the type of Importance analysis requested
+#'  \item \code{importance.names} Character vector of the names of the predictors in the importance analysis
+#'  \item \code{importance.labels} Character vector of the labels of the predictors in the importance analysis
 #'  \item \code{relative.importance} A copy of the \code{importance} output, kept for legacy purposes.
 #'  \item \code{interaction} A list containing the regression analysis with an interaction term. The list has elements
 #'  \itemize{
@@ -687,25 +689,27 @@ Regression <- function(formula = as.formula(NULL),
     # Replacing the variables with their labels
     result$outcome.name <- outcome.name
     result$outcome.label <- RemoveBackticks(outcome.name)
+    # Retain raw variable names for later use
+    if (type == "Multinomial Logit")
+        nms <- colnames(result$summary$coefficients)
+    else
+        nms <- rownames(result$summary$coefficients)
+    # Add fancy labels to summary table if requested
     if (show.labels)
     {
         if (type == "Multinomial Logit")
-        {
-            nms <- colnames(result$summary$coefficients)
             colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, nms)
-        }
         else
-        {
-            nms <- rownames(result$summary$coefficients)
             rownames(result$summary$coefficients) <- Labels(data, nms)
-        }
         label <- Labels(outcome.variable)
         if (!is.null(label))
             result$outcome.label <- label
     }
+    aliased.warning.labels <- if (show.labels) Labels(data, names(result$summary$aliased)) else NULL
     if (!recursive.call)
-        aliasedPredictorWarning(result$summary$aliased,
-                                if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
+        aliased.preds <- aliasedPredictorWarning(result$summary$aliased, aliased.warning.labels)
+    else
+        aliased.preds <- suppressWarnings(aliasedPredictorWarning(result$summary$aliased, aliased.warning.labels))
 
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
@@ -758,27 +762,31 @@ Regression <- function(formula = as.formula(NULL),
             }
             result$formula <- input.formula
         }
-        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
-        labels <- rownames(result$summary$coefficients)[relevant.coefs]
-        if (result$type == "Ordered Logit")
-        {
-            if (missing == "Dummy variable adjustment")
-                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
-            else
-                labels <- labels[1:result$n.predictors]
-        } else if (output == "Correlation")
-        {
-            labels <- attr(terms.formula(input.formula, data = data), "term.labels")
-            labels <- labels[!grepDummyVars(labels)]
-            if (show.labels)
-                labels <- Labels(data, labels)
-        } else
-            labels <- labels[-1]
         if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
         {
             result$subset <- subset
             result$estimation.data <- .estimation.data <- CopyAttributes(data[subset, , drop = FALSE], data)
             .weights <- weights[subset]
+        }
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        result$importance.names <- nms
+        labels <- rownames(result$summary$coefficients)[relevant.coefs]
+        if (result$type == "Ordered Logit")
+        {  # Remove the response transition coefficients
+            n.remove <- (nlevels(.estimation.data[[outcome.name]]) - 2)
+            labels <- labels[-length(labels):-(length(labels) - n.remove)]
+            n.importance.names <- length(result$importance.names)
+            result$importance.names <- result$importance.names[-n.importance.names:-(n.importance.names - n.remove)]
+        } else if (output == "Correlation")
+        {
+            labels <- attr(terms.formula(input.formula, data = data), "term.labels")
+            labels <- result$importance.names <- labels[!grepDummyVars(labels)]
+            if (show.labels)
+                labels <- Labels(data, labels)
+        } else
+        {
+            result$importance.names <- result$importance.names[-1]
+            labels <- labels[-1]
         }
         # Process the data suitable for Jaccard coefficient analysis
         if (output == "Jaccard Coefficient")
@@ -787,8 +795,7 @@ Regression <- function(formula = as.formula(NULL),
                                                                interaction.name, show.labels)
             result$estimation.data <- .estimation.data <- jaccard.processed$data
             input.formula <- jaccard.processed$formula
-            formula.with.interaction <- jaccard.processed$formula.with.interaction
-            labels <- result$labels <- jaccard.processed$labels
+            labels <- result$importance.labels <- jaccard.processed$labels
         }
         # Remove prefix if possible
         extracted.labels <- ExtractCommonPrefix(labels)
