@@ -219,7 +219,7 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
 })
 
 
-test_that("DS-2990: Test identification of aliased predictors", {
+test_that("DS-2990: Test identification of aliased predictors and variables with no variation", {
     set.seed(1)
     sigma.mat <- matrix(c(1, 0.5, 0.3,
                           0.5, 1, 0.4,
@@ -253,29 +253,88 @@ test_that("DS-2990: Test identification of aliased predictors", {
     fancy.labels <- c("Apples", "Oranges", "Grapes", "Banana", "Peaches", "Kiwi", "Lions", "Tigers")
     names(fancy.labels) <- names(regular.labels) <- regular.labels
     # Single group, regular labels with names,
-    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(single.group, regular.labels, "Shapley Regression"),
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(single.group, regular.labels, "Shapley Regression"),
                  paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
                         "are included in the model together. The following group of predictors: ('X.3', 'X.4') have a ",
                         "linearly dependent relationship and at least one of them needs to be removed to conduct a ",
                         "Shapley Regression."), fixed = TRUE)
-    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(single.group, fancy.labels, "Relative Importance Analysis"),
+    # Test warning given when a group is specified
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(single.group, regular.labels,
+                                                                           output = "Shapley Regression",
+                                                                           group.name = "Displayr"),
+                 paste0("Within the Displayr category, some predictors are linearly dependent on other predictors and ",
+                          "cannot be estimated if they are included in the model together. The following group of ",
+                          "predictors: ('X.3', 'X.4') have a linearly dependent relationship and at least one of them ",
+                          "needs to be removed to conduct a Shapley Regression."), fixed = TRUE)
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(single.group, fancy.labels, "Relative Importance Analysis"),
                  paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
                         "are included in the model together. The following group of predictors: ('Grapes', 'Banana') have a ",
                         "linearly dependent relationship and at least one of them needs to be removed to conduct a ",
                         "Relative Importance Analysis."), fixed = TRUE)
     # Two numeric predictors aliased.
-    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(long.two, fancy.labels, "Shapley Regression"),
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(long.two, fancy.labels, "Shapley Regression"),
                  paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if ",
                         "they are included in the model together. In each of the following groups of predictors ",
                         "there is a linearly dependent relationship and at least one predictor needs to be ",
                         "removed to conduct a Shapley Regression. Group 1: ('Grapes', 'Peaches'), Group 2: ",
                         "('Apples', 'Oranges', 'Grapes', 'Kiwi')."), fixed = TRUE)
     # Mix categorical/numeric
-    expect_error(flipRegression::throwAliasedErrorImportanceAnalysis(mixed.group, regular.labels, "Shapley Regression"),
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(mixed.group, regular.labels, "Shapley Regression"),
                  paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
                         "are included in the model together. In each of the following groups of predictors there is a ",
                         "linearly dependent relationship and at least one predictor needs to be removed to conduct a ",
                         "Shapley Regression. Group 1: ('X.3', 'X.4'), Group 2: ('cat1', 'cat2'). The linearly dependent ",
                         "relationship with the categorical variables  occurs in the dummy coding of at least one of the ",
                         "contrast levels for each categorical variable."), fixed = TRUE)
+    # Test outcome with no variation
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(mixed.group, regular.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. In each of the following groups of predictors there is a ",
+                        "linearly dependent relationship and at least one predictor needs to be removed to conduct a ",
+                        "Shapley Regression. Group 1: ('X.3', 'X.4'), Group 2: ('cat1', 'cat2'). The linearly dependent ",
+                        "relationship with the categorical variables  occurs in the dummy coding of at least one of the ",
+                        "contrast levels for each categorical variable."), fixed = TRUE)
+    dat$const <- 1
+    dat.with.att <- dat
+    attr(dat.with.att$const, "label") <- "Fancy constant"
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression"),
+                 paste0("The outcome variable, 'const', is constant and has no variation. The outcome needs to have ",
+                        "at least two unique values to conduct a Shapley Regression"),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression",
+                                                                 group.name = "Displayr"),
+                 paste0("Within the Displayr category, the outcome variable, 'const', is constant and has no variation. ",
+                        "The outcome needs to have at least two unique values to conduct a Shapley Regression"),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
+                                                                 data = dat.with.att, show.labels = TRUE, output = "Relative Importance Analysis"),
+                 paste0("The outcome variable, 'Fancy constant', is constant and has no variation. The outcome needs to have ",
+                        "at least two unique values to conduct a Relative Importance Analysis"),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Relative Importance Analysis"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Relative Importance Analysis. ",
+                        "The predictor 'const' is constant and has no variation."),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = TRUE, output = "Shapley Regression"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
+                        "The predictor 'Fancy constant' is constant and has no variation."),
+                 fixed = TRUE)
+    dat$const.fact <- factor(rep("B", nrow(dat)), levels = LETTERS[1:3])
+    dat.with.att <- dat
+    attr(dat.with.att$const.fact, "label") <- "This is a bad factor"
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = TRUE, output = "Shapley Regression"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
+                        "The predictor 'This is a bad factor' is constant and has no variation."),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + const + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
+                        "The following predictors are constant and have no variation: 'const.fact', 'const'"),
+                 fixed = TRUE)
 })
+

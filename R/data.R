@@ -259,8 +259,12 @@ determineAliased <- function(input.formula, data, outcome.name)
 #' and the name gives the variable name of each predictor.
 #' @param labels Named character vector with elements being the variable labels and names being the variable
 #' names
+#' @param group.name Character string or \code{NULL}. If character, then the error message is prepended
+#' with a string about the \code{group.name}, useful for crosstab interaction analysis output.
+#' If \code{MULL}, then it is assumed that the analysis is for the entire dataset and an error is thrown without
+#' any group description and solely describes the aliased predictors.
 #' @noRd
-throwAliasedErrorImportanceAnalysis <- function(aliased.grouped, labels, output)
+throwAliasedExceptionImportanceAnalysis <- function(aliased.grouped, labels, output, group.name = NULL)
 {
     # Determine if there are any factors that are aliased
     factors.aliased <- vapply(aliased.grouped, function(x) any(x == "factor"), logical(1))
@@ -271,8 +275,8 @@ throwAliasedErrorImportanceAnalysis <- function(aliased.grouped, labels, output)
                              " occurs in the dummy coding of at least one of the contrast levels for each categorical variable.")
     } else
         factor.msg <- NULL
-    base.error.message <- paste0("Some predictors are linearly dependent on other predictors and cannot ",
-                                 "be estimated if they are included in the model together. ")
+    base.message <- paste0("Some predictors are linearly dependent on other predictors and cannot ",
+                           "be estimated if they are included in the model together. ")
     groups <- vapply(aliased.grouped, function(x) paste0(sQuote(labels[names(x)], q = FALSE),
                                                          collapse = ", "), character(1))
     if (length(groups) == 1)
@@ -283,5 +287,105 @@ throwAliasedErrorImportanceAnalysis <- function(aliased.grouped, labels, output)
         group.msg <- paste0("In each of the following groups of predictors there is a linearly dependent relationship ",
                             "and at least one predictor needs to be removed to conduct a ", output, ". ",
                             paste0("Group ", 1:length(groups), ": (", groups, ")", collapse = ", "), ".")
-    stop(base.error.message, group.msg, factor.msg)
+    if (is.null(group.name))
+        stop(base.message, group.msg, factor.msg)
+    else
+    {
+        base.message <- paste0("Within the ", group.name, " category, ", sub("^S", "s", base.message))
+        stop(base.message, group.msg, factor.msg)
+    }
+}
+
+#' Throw an informative error or construct string
+#' @param input.formula The formula for the desired model
+#' @param estimation.data The estimation.data including outlier identifier logical column
+#' @param data The original data.frame of input data with label attributes
+#' @param outcome.name Character string of the outcome variable name (not label) to look up in the input data.
+#' @param show.labels Logical whether to show labels or names in the output message/error.
+#' @param output The type of output desired, either \code{"Shapley Regression"} or \code{"Relative Importance Analysis"}
+#' @param group.name Either a character string or \code{NULL} to pass to \code{throwAliasedExceptionImportanceAnalysis}
+#' If \code{NULL}, a error is thrown and is intended to be used when analysis of entire dataset is conducted. When a character
+#' string is used here, it is expected to refer to a specific level in a crosstab interaction that might have aliasing problems
+#' and a warning is given to the user.
+#' @noRd
+validateDataForRIA <- function(input.formula, estimation.data, data, outcome.name, show.labels, output, group.name = NULL)
+{
+    # Check to see if there are columns with no variation
+    validateVariablesHaveVariation(input.formula, estimation.data, outcome.name, data, output, show.labels, group.name)
+    # Check to see if there are linearly dependent predictors
+    aliased.processed <- determineAliased(input.formula, estimation.data, outcome.name)
+    if (is(aliased.processed, "list"))
+    { # Create mapping of predictor names to their labels if necessary for error message
+        formula.names <- AllVariablesNames(input.formula, estimation.data)
+        formula.labels <- if (show.labels) Labels(data, formula.names) else formula.names
+        names(formula.labels) <- formula.names
+        throwAliasedExceptionImportanceAnalysis(aliased.processed, formula.labels, output, group.name)
+    }
+}
+
+#' Function determines whether the outcome variable of predictors dont have any variation. Used to validate
+#' the data before use in Shapley Regression or RIA.
+#' @param input.formula The formula object for the regression. Used to determine predictor names
+#' @param estimation.data The estimation data, used to apply outlier filter if necessary
+#' @param outcome.name The name of the outcome variable, it could be determined via the formula but for
+#'  convenience the name is used here to simplify the input data.
+#' @param data The input data \code{data.frame}, including label attributes
+#' @param output String describing the output type. Typically Shapley Regression or Relative Importance Analysis
+#' @param show.labels Logical to determine whether to use names or labels in error messages.
+#' @param group.name String of the category label when used in crosstab interaction.
+#' @importFrom flipU AllVariablesNames
+#' @noRd
+validateVariablesHaveVariation <- function(input.formula, estimation.data, outcome.name, data, output, show.labels, group.name = NULL)
+{
+    # Filter the data using the outlier subset if it exists
+    if ("non.outlier.data_GQ9KqD7YOf" %in% names(estimation.data))
+    {
+        estimation.data <- estimation.data[estimation.data$non.outlier.data_GQ9KqD7YOf, ]
+        estimation.data <- estimation.data[names(estimation.data) != "non.outlier.data_GQ9KqD7YOf"]
+    }
+    outcome <- estimation.data[[outcome.name]]
+    outcome.label <- if (show.labels) Labels(data, outcome.name) else outcome.name
+    outcome.label <- sQuote(outcome.label, q = FALSE)
+    outcome.msg <- paste0("The outcome variable, ", outcome.label, ", is constant and has no variation. The outcome needs ",
+                          "to have at least two unique values to conduct a ", output)
+    # Check predictor has no variation if numeric or factor.
+    .hasNoVariation <- function(x) if (is(x, "factor")) all(duplicated(x)[-1L]) else var(x) == 0
+    outcome.no.variation <- .hasNoVariation(outcome)
+    if (outcome.no.variation)
+        throwRIAException(outcome.msg, group.name)
+    # Outcome variable should be fine from here. Inspect the predictors
+    predictors <- estimation.data[AllVariablesNames(input.formula, estimation.data)]
+    predictors <- predictors[names(predictors) != outcome.name]
+    no.variation.vars <- vapply(predictors, .hasNoVariation, logical(1))
+    if (any(no.variation.vars))
+    {
+        no.variation.vars <- names(which(no.variation.vars))
+        pred.labels <- if (show.labels) Labels(data, no.variation.vars) else no.variation.vars
+        pred.labels <- sQuote(pred.labels, q = FALSE)
+        if (length(pred.labels) == 1)
+            no.variation.msg <- paste0("The predictor ", pred.labels, " is constant and has no variation.")
+        else
+            no.variation.msg <- paste0("The following predictors are constant and have no variation: ",
+                                       paste0(pred.labels, collapse = ", "), ".")
+        no.variation.msg <- paste0("Each predictor needs to have at least two unique values to ",
+                                   "conduct a ", output, ". ", no.variation.msg)
+        throwRIAException(no.variation.msg, group.name)
+    }
+}
+
+#' Throw the error or prepend the error message with a relevant category name reference for the cross
+#' tab interaction
+#' @param x The string to pass into the error
+#' @param group.name The string of the category label/group name within the cross tab interaction,
+#' @noRd
+throwRIAException <- function(x, group.name = NULL)
+{
+    if (is.null(group.name))
+        stop(x)
+    else
+    { # Change first char to lowercase and prepend the group/category name
+        first.char <- substr(x, 1, 1)
+        x <- sub(paste0("^", first.char), tolower(first.char), x)
+        stop("Within the ", group.name, " category, ", x)
+    }
 }
