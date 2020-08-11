@@ -223,3 +223,19 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
                                                   paste0("cat.", 1:3), "X2",
                                                   paste0("ordered.", 1:3), "X3", "non.outlier.data_GQ9KqD7YOf"))
 })
+
+test_that("DS-2884: Ordered Logit with non-syntactic variable names",
+{
+    set.seed(303)
+    `Cola Tracking - January to September.sav`$Variables$d1 <- runif(100)
+    `Cola Tracking - January to September.sav`$Variables$d2` <- runif(100)
+    `Cola Tracking - January to September.sav`$Variables$d3` <- runif(100)
+    form <- `Cola Tracking - January to September.sav`$Variables$d1 ~
+        `Cola Tracking - January to September.sav`$Variables$d2 +
+        `Cola Tracking - January to September.sav`$Variables$d3
+    expect_error(out <- Regression(type = "Ordered Logit", formula = form),
+                 NA)
+    expect_equal(out$formula, d1 ~ d2 + d3, check.attributes = FALSE)
+    expect_error(print(out), NA)
+
+})

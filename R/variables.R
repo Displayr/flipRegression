@@ -66,16 +66,26 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
     else if ("polr" %in% class(object$original))
     {
-        # Make ordered logit work when variables have been removed due to
-        # colinearity
+        ## Make ordered logit work when variables have been removed due to
+        ## colinearity
+        .cleanNames <- function(v)
+        {
+            cnames <- sub("^[[:print:]]*[$](Variables|Questions)[$]", "", v)
+            cnames <- sub("^`", "", cnames)
+            cnames <- sub("`$", "", cnames)
+            make.names(cnames)
+        }
         original.coef <- object$original$coefficients
-        coef.names <- coefNamesBeforeOmitting(object)
+        coef.names <- .cleanNames(coefNamesBeforeOmitting(object))
         new.coef <- numeric(length(coef.names))
         names(new.coef) <- coef.names
-        new.coef[names(original.coef)] <- original.coef
-        reg.model <- object$original
-        reg.model$coefficients <- new.coef
 
+        new.coef[.cleanNames(names(original.coef))] <- original.coef
+        ## names(new.coef) <- RemoveBackticks(names(new.coef))
+        reg.model <- object$original
+        object$original$coefficients <- new.coef
+        reg.model$coefficients <- new.coef
+        names(reg.model$model) <- paste0("`", .cleanNames(names(reg.model$model)), "`")
         predict(reg.model, newdata = newdata, na.action = na.action)
     }
     else
@@ -97,14 +107,24 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
 
 coefNamesBeforeOmitting <- function(object)
 {
-    coef.names <- as.list(attr(object$original$terms, "term.labels"))
+    tl <- attr(object$original$terms, "term.labels")
+    coef.names <- RemoveBackticks(tl)
+    has.backticks <- tl[1L] != coef.names[1L]
+    coef.names <- as.list(coef.names)
+
     for (i in 1:length(coef.names))
     {
         nm <- coef.names[[i]]
         element <- object$original$contrasts[[nm]]
         if (!is.null(element) && element == "contr.treatment")
-            coef.names[[i]] <- paste0(nm, levels(object$original$model[[nm]])[-1])
+        {
+            vname <- nm
+            if (has.backticks)
+                vname <- paste0("`", vname, "`")
+            coef.names[[i]] <- paste0(vname, levels(object$original$model[[nm]])[-1])
+        }
     }
+
     unlist(coef.names)
 }
 
