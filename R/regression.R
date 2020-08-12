@@ -696,8 +696,6 @@ Regression <- function(formula = as.formula(NULL),
         }
         else
         {
-            ##:ess-bp-start::browser@nil:##
-browser(expr=is.null(.ESSBP.[["@38@"]]));##:ess-bp-end:##
             nms <- rownames(result$summary$coefficients)
             rownames(result$summary$coefficients) <- Labels(data, nms)
         }
@@ -875,8 +873,6 @@ tidySummary <- function(rsummary, fit.reg, result)
     }
     else
     {
-        ##:ess-bp-start::browser@nil:##
-browser(expr=is.null(.ESSBP.[["@37@"]]));##:ess-bp-end:##
         nms <- CleanBackticks(rownames(rsummary$coefficients))
         rownames(rsummary$coefficients) <- nms
     }
