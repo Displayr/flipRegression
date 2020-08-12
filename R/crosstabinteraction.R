@@ -67,10 +67,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     if (!is.null(importance))
     {
         importance.scores <- result$importance$importance
-        var.names <- if (result$type == "Ordered Logit")
-            var.names[1:length(importance.scores)]
-        else
-            var.names[-1]
+        var.names <- result$importance.names
+        var.labels <- result$importance.labels
         res$net.coef <- importance.scores
         num.var <- length(importance.scores)
     }
@@ -82,23 +80,34 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (!is.null(importance))
     {
-        var.labels <- if (result$type == "Ordered Logit") var.labels[1:num.var] else var.labels[-1]
         signs <- if (importance.absolute) 1 else NA
-
         for (j in 1:num.split)
         {
             is.split <- which(result$estimation.data[,interaction.name] == split.labels[j])
             if (length(unique(result$estimation.data[is.split,1])) < 2 ||
                 length(unique(result$estimation.data[-is.split,1])) < 2)
                 next
-            tmp.ri <- try(estimateImportance(result$formula,
-                                             RemoveMissingLevelsFromFactors(result$estimation.data[is.split,]),
+            estimation.data   <- RemoveMissingLevelsFromFactors(result$estimation.data[is.split,])
+            estimation.data.C <- RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,])
+            # Check data suitable and throw warning if it isn't and skip the current computation
+            if (importance %in% c("Shapley Regression", "Relative Importance Analysis"))
+            {
+                data.invalid <- tryCatch(validateDataForRIA(result$formula, estimation.data, result$model,
+                                                            result$outcome.name, result$show.labels,
+                                                            output = importance, group.name = split.labels[j]),
+                                         error = function(e) warning(e$message))
+                # Skip the attempt at RIA/Shapley if error detected here
+                if (!is.null(data.invalid))
+                    next
+            }
+            tmp.ri <- try(estimateImportance(result$formula, estimation.data,
                                              weights[is.split], result$type, signs, NA, NA, result$robust.se,
-                                             result$outlier.prop.to.remove, FALSE, correction, importance))
-            tmpC.ri <- try(estimateImportance(result$formula,
-                                              RemoveMissingLevelsFromFactors(result$estimation.data[-is.split,]),
+                                             result$outlier.prop.to.remove, FALSE, correction, importance),
+                          silent = TRUE)
+            tmpC.ri <- try(estimateImportance(result$formula, estimation.data.C,
                                               weights[-is.split], result$type, signs, NA, NA, result$robust.se,
-                                              result$outlier.prop.to.remove, FALSE, correction, importance))
+                                              result$outlier.prop.to.remove, FALSE, correction, importance),
+                           silent = TRUE)
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
                 tmp.sign <- sign(tmp.ri$importance)

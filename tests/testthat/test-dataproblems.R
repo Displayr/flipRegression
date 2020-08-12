@@ -87,7 +87,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     data$Y <- rbinom(nrow(data), size = 1, prob = 0.5)
     expected.output.list <- list(data = subset(data, select = c("Y", "X1")),
                                  formula = Y ~ X1,
-                                 formula.with.interaction = Y ~ X1,
                                  labels = "X1")
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1, data = subset(data, select = c("Y", "X1"))),
                  expected.output.list)
@@ -111,7 +110,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "int"))
     expected.output.list <- list(data = input.dat,
                                  formula = Y ~ X1,
-                                 formula.with.interaction = Y ~ X1 + int + X1:int,
                                  labels = "X1")
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1,
                                                                 interaction.name = "int",
@@ -164,7 +162,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "binary.cat"))
     expected.output.list <- list(data = output.dat,
                                  formula = Y ~ X1 + binary.cat.1 + binary.cat.2,
-                                 formula.with.interaction = Y ~ X1 + binary.cat.1 + binary.cat.2,
                                  labels = c("X1", "binary.cat.1", "binary.cat.2"))
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X1 + binary.cat,
                                                                 data = input.dat),
@@ -181,7 +178,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "cat"))
     expected.output.list <- list(data = output.dat,
                                  formula = Y ~ X1 + cat.1 + cat.2 + cat.3,
-                                 formula.with.interaction = Y ~ X1 + cat.1 + cat.2 + cat.3,
                                  labels = c("X1", "cat.1", "cat.2", "cat.3"))
 
     expect_equal(flipRegression::processDataSuitableForJaccard(Y ~ X1 + cat,
@@ -199,7 +195,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     input.dat <- subset(data, select = c("Y", "X1", "ordered"))
     expected.output.list <- list(data = output.dat,
                                  formula = Y ~ X1 + ordered.1 + ordered.2 + ordered.3,
-                                 formula.with.interaction = Y ~ X1 + ordered.1 + ordered.2 + ordered.3,
                                  labels = c("X1", "ordered.1", "ordered.2", "ordered.3"))
     expect_equal(flipRegression:::processDataSuitableForJaccard(Y ~ X2 + ordered,
                                                                 data = input.dat),
@@ -207,8 +202,7 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
     # Check order of binary transformed categorical variables is preserved
     input.dat <- subset(data, select = c("Y", "int", "X1", "cat", "X2", "ordered", "X3"))
     expect_error(output <- flipRegression:::processDataSuitableForJaccard(data = input.dat,
-                                                                          formula = Y ~ int + X1 + cat + X2 + ordered + X3,
-                                                                          interaction.name = "NULL"),
+                                                                          formula = Y ~ int + X1 + cat + X2 + ordered + X3),
                  NA)
     expect_equal(names(output$data), c("Y", paste0("int.", 1:4), "X1",
                                        paste0("cat.", 1:3), "X2",
@@ -223,3 +217,124 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
                                                   paste0("cat.", 1:3), "X2",
                                                   paste0("ordered.", 1:3), "X3", "non.outlier.data_GQ9KqD7YOf"))
 })
+
+
+test_that("DS-2990: Test identification of aliased predictors and variables with no variation", {
+    set.seed(1)
+    sigma.mat <- matrix(c(1, 0.5, 0.3,
+                          0.5, 1, 0.4,
+                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
+    X <- MASS::mvrnorm(n = 100, mu = rep(0, 3), Sigma = sigma.mat)
+    beta <- 1:3
+    Y <- X %*% beta + rnorm(100)
+    dat <- data.frame(Y = Y, X = X)
+    # add aliased predictors, single numeric and categorical
+    dat$X.4 <- dat$X.3
+    dat$X.5 <- 2*dat$X.3
+    dat$X.6 <- 1/2 * dat$X.3 - dat$X.2 + 1/2 * dat$X.1
+    dat$cat1 <- factor(rep(c(1, 2, 3, 4), c(10, 10, 20, 60)), labels = LETTERS[1:4])
+    dat$cat2 <- factor(rep(c(1, 2, 3, 4, 5), c(10, 10, 20, 30, 30)), labels = LETTERS[1:5])
+    ##  Check function that identifies predictors into groups of aliased predictors ##
+    # Expect null when no aliased predictors
+    expect_null(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3, data = dat, "Y"))
+    # Expect named list of class types that are aliased
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4, data = dat, "Y"),
+                 single.group <- list(c("X.3" = "numeric", "X.4" = "numeric")))
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1, data = dat, "Y"),
+                 single.group)
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1 + cat2, data = dat, "Y"),
+                 mixed.group <- list(c("X.3" = "numeric", "X.4" = "numeric"),
+                                     c("cat1" = "factor", "cat2" = "factor")))
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.5 + X.6, data = dat, "Y"),
+                 long.two <- list(c("X.3" = "numeric", "X.5" = "numeric"),
+                                  c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")))
+    ## Check error message thrown is appropriate
+    regular.labels <- c(paste0("X.", 1:6), paste0("cat", 1:2))
+    fancy.labels <- c("Apples", "Oranges", "Grapes", "Banana", "Peaches", "Kiwi", "Lions", "Tigers")
+    names(fancy.labels) <- names(regular.labels) <- regular.labels
+    # Single group, regular labels with names,
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(single.group, regular.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. The following group of predictors: ('X.3', 'X.4') have a ",
+                        "linearly dependent relationship and at least one of them needs to be removed to conduct a ",
+                        "Shapley Regression."), fixed = TRUE)
+    # Test warning given when a group is specified
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(single.group, regular.labels,
+                                                                           output = "Shapley Regression",
+                                                                           group.name = "Displayr"),
+                 paste0("Within the Displayr category, some predictors are linearly dependent on other predictors and ",
+                          "cannot be estimated if they are included in the model together. The following group of ",
+                          "predictors: ('X.3', 'X.4') have a linearly dependent relationship and at least one of them ",
+                          "needs to be removed to conduct a Shapley Regression."), fixed = TRUE)
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(single.group, fancy.labels, "Relative Importance Analysis"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. The following group of predictors: ('Grapes', 'Banana') have a ",
+                        "linearly dependent relationship and at least one of them needs to be removed to conduct a ",
+                        "Relative Importance Analysis."), fixed = TRUE)
+    # Two numeric predictors aliased.
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(long.two, fancy.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if ",
+                        "they are included in the model together. In each of the following groups of predictors ",
+                        "there is a linearly dependent relationship and at least one predictor needs to be ",
+                        "removed to conduct a Shapley Regression. Group 1: ('Grapes', 'Peaches'), Group 2: ",
+                        "('Apples', 'Oranges', 'Grapes', 'Kiwi')."), fixed = TRUE)
+    # Mix categorical/numeric
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(mixed.group, regular.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. In each of the following groups of predictors there is a ",
+                        "linearly dependent relationship and at least one predictor needs to be removed to conduct a ",
+                        "Shapley Regression. Group 1: ('X.3', 'X.4'), Group 2: ('cat1', 'cat2'). The linearly dependent ",
+                        "relationship with the categorical variables  occurs in the dummy coding of at least one of the ",
+                        "contrast levels for each categorical variable."), fixed = TRUE)
+    # Test outcome with no variation
+    expect_error(flipRegression::throwAliasedExceptionImportanceAnalysis(mixed.group, regular.labels, "Shapley Regression"),
+                 paste0("Some predictors are linearly dependent on other predictors and cannot be estimated if they ",
+                        "are included in the model together. In each of the following groups of predictors there is a ",
+                        "linearly dependent relationship and at least one predictor needs to be removed to conduct a ",
+                        "Shapley Regression. Group 1: ('X.3', 'X.4'), Group 2: ('cat1', 'cat2'). The linearly dependent ",
+                        "relationship with the categorical variables  occurs in the dummy coding of at least one of the ",
+                        "contrast levels for each categorical variable."), fixed = TRUE)
+    dat$const <- 1
+    dat.with.att <- dat
+    attr(dat.with.att$const, "label") <- "Fancy constant"
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression"),
+                 paste0("The outcome variable, 'const', is constant and has no variation. The outcome needs to have ",
+                        "at least two unique values to conduct a Shapley Regression"),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression",
+                                                                 group.name = "Displayr"),
+                 paste0("Within the Displayr category, the outcome variable, 'const', is constant and has no variation. ",
+                        "The outcome needs to have at least two unique values to conduct a Shapley Regression"),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
+                                                                 data = dat.with.att, show.labels = TRUE, output = "Relative Importance Analysis"),
+                 paste0("The outcome variable, 'Fancy constant', is constant and has no variation. The outcome needs to have ",
+                        "at least two unique values to conduct a Relative Importance Analysis"),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Relative Importance Analysis"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Relative Importance Analysis. ",
+                        "The predictor 'const' is constant and has no variation."),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = TRUE, output = "Shapley Regression"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
+                        "The predictor 'Fancy constant' is constant and has no variation."),
+                 fixed = TRUE)
+    dat$const.fact <- factor(rep("B", nrow(dat)), levels = LETTERS[1:3])
+    dat.with.att <- dat
+    attr(dat.with.att$const.fact, "label") <- "This is a bad factor"
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = TRUE, output = "Shapley Regression"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
+                        "The predictor 'This is a bad factor' is constant and has no variation."),
+                 fixed = TRUE)
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + const + X.2, dat, outcome.name = "Y",
+                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression"),
+                 paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
+                        "The following predictors are constant and have no variation: 'const.fact', 'const'"),
+                 fixed = TRUE)
+})
+
