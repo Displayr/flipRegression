@@ -108,7 +108,7 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
 coefNamesBeforeOmitting <- function(object)
 {
     tl <- attr(object$original$terms, "term.labels")
-    coef.names <- RemoveBackticks(tl)
+    coef.names <- CleanBackticks(tl)
     has.backticks <- tl[1L] != coef.names[1L]
     coef.names <- as.list(coef.names)
 
