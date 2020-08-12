@@ -1209,8 +1209,6 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
         hat.values <- hatvalues(fit.reg)
         if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
             v <- hccmAdjust(fit.reg, robust.se, hat.values)
-        else if (length(fit.reg$coefficients) == 1) # hccm fails with one predictor
-            v <- hccmFixed(fit.reg, type = robust.se)
         else
             v <- hccm(fit.reg, type = robust.se)
     }
@@ -2244,39 +2242,5 @@ hccmAdjust <- function(fit.reg, robust.se, h)
     # Using the the hc1 calculation for those cases.
     factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     factor[h == 1] <- df.res/n
-    V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
-}
-
-# This is a copy of car:::hccm.lm except with drop = FALSE added to the
-# model matrix indexing so that it works with models with a single predictor
-#' @importFrom stats na.omit weights
-hccmFixed <- function(model, type = c("hc3", "hc0", "hc1", "hc2", "hc4"),
-                      singular.ok = TRUE, ...)
-{
-    e <- na.omit(residuals(model))
-    removed <- attr(e, "na.action")
-    wts <- if (is.null(weights(model)))
-        1
-    else weights(model)
-    type <- match.arg(type)
-    if (any(aliased <- is.na(coef(model))) && !singular.ok)
-        stop("there are aliased coefficients in the model")
-    sumry <- summary(model, corr = FALSE)
-    s2 <- sumry$sigma^2
-    V <- sumry$cov.unscaled
-    if (type == FALSE)
-        return(s2 * V)
-    h <- hatvalues(model)
-    if (!is.null(removed)) {
-        wts <- wts[-removed]
-        h <- h[-removed]
-    }
-    X <- model.matrix(model)[, !aliased, drop = FALSE]
-    df.res <- df.residual(model)
-    n <- length(e)
-    e <- wts * e
-    p <- ncol(X)
-    factor <- switch(type, hc0 = 1, hc1 = df.res/n, hc2 = 1 -
-                         h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
 }

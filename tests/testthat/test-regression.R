@@ -293,12 +293,11 @@ test_that("Ensure output size does not get too large (DS-2518)", {
           })
 
 
-test_that("DS-2978: hccm fails with a single predictor", {
+test_that("DS-2978: hccm works with a single predictor", {
     x <- 1:10
     y <- x + rnorm(10)
 
-    # If this line stops failing, please replace hccmFixed with car::hccm
-    expect_error(car::hccm(lm(y ~ x - 1)), "dim\\(X\\) must have a positive length")
+    expect_error(car::hccm(lm(y ~ x - 1)), NA)
 })
 
 test_that("Output contains the right class for extension buttons", {
