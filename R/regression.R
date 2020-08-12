@@ -221,6 +221,8 @@
 #'      \item \code{p.values} The vector of p-values for the relevant statistics computed above.
 #'    }
 #'  \item \code{importance.type} Character string specifying the type of Importance analysis requested
+#'  \item \code{importance.names} Character vector of the names of the predictors in the importance analysis
+#'  \item \code{importance.labels} Character vector of the labels of the predictors in the importance analysis
 #'  \item \code{relative.importance} A copy of the \code{importance} output, kept for legacy purposes.
 #'  \item \code{interaction} A list containing the regression analysis with an interaction term. The list has elements
 #'  \itemize{
@@ -687,25 +689,27 @@ Regression <- function(formula = as.formula(NULL),
     # Replacing the variables with their labels
     result$outcome.name <- outcome.name
     result$outcome.label <- RemoveBackticks(outcome.name)
+    # Retain raw variable names for later use
+    if (type == "Multinomial Logit")
+        nms <- colnames(result$summary$coefficients)
+    else
+        nms <- rownames(result$summary$coefficients)
+    # Add fancy labels to summary table if requested
     if (show.labels)
     {
         if (type == "Multinomial Logit")
-        {
-            nms <- colnames(result$summary$coefficients)
             colnames(result$summary$coefficients) <- colnames(result$summary$standard.errors) <- Labels(data, nms)
-        }
         else
-        {
-            nms <- rownames(result$summary$coefficients)
             rownames(result$summary$coefficients) <- Labels(data, nms)
-        }
         label <- Labels(outcome.variable)
         if (!is.null(label))
             result$outcome.label <- label
     }
+    aliased.warning.labels <- if (show.labels) Labels(data, names(result$summary$aliased)) else NULL
     if (!recursive.call)
-        aliasedPredictorWarning(result$summary$aliased,
-                                if (show.labels) Labels(data, names(result$summary$aliased)) else NULL)
+        aliased.preds <- aliasedPredictorWarning(result$summary$aliased, aliased.warning.labels)
+    else
+        aliased.preds <- suppressWarnings(aliasedPredictorWarning(result$summary$aliased, aliased.warning.labels))
 
     result$terms <- result$original$terms
     result$coef <- coef(result$original)
@@ -733,15 +737,24 @@ Regression <- function(formula = as.formula(NULL),
         {
             # Update the formula silently (don't throw a warning)
             signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
-            classes <- sapply(data, class)
-            if (!is.null(interaction) && interaction.name %in% names(classes))
-                classes <- classes[-which(names(classes) == interaction.name)]
-            if (any(classes == "factor"))
-                stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
-                     "variables in ", output, ". Please remove the categorical predictors: ",
-                     paste0(names(classes), collapse = ", "), " and re-run the analysis.")
-            if (any(grepDummyVars(names(result$original$coefficients))))
-            {
+            # The data only needs to be adjusted and the formula updated for the RIA if dummy variable
+            # adjustment was used
+            dummy.predictors <- grepDummyVars(names(result$original$coefficients))
+            if (any(dummy.predictors))
+            { # First check if any predictors with dummy vars are factors and throw error since RIA cannot be conducted
+                preds.with.dummy <- extractDummyNames(names(result$original$coefficients)[dummy.predictors])
+                factor.preds <- vapply(data[-which(names(data) == outcome.name)],
+                                       inherits, what = "factor", logical(1))
+                if (!is.null(interaction) && interaction.name %in% names(factor.preds))
+                    factor.preds <- factor.preds[-which(names(factor.preds) == interaction.name)]
+                if (any(factor.preds) && any(names(which(factor.preds)) %in% preds.with.dummy))
+                {
+                    factor.preds <- names(which(factor.preds))
+                    factor.names <- if (show.labels) Labels(data, factor.preds) else factor.preds
+                    stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
+                         "variables in ", output, ". Please remove the categorical predictors: ",
+                         paste0(sQuote(factor.names, q = FALSE), collapse = ", "), " and re-run the analysis.")
+                } # Otherwise, conduct the imputation type step in the data and update formula, removing dummy vars
                 .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, show.labels)
                 input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
                                                              data = processed.data$estimation.data,
@@ -749,28 +762,33 @@ Regression <- function(formula = as.formula(NULL),
             }
             result$formula <- input.formula
         }
-        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
-        labels <- rownames(result$summary$coefficients)[relevant.coefs]
-        if (result$type == "Ordered Logit")
-        {
-            if (missing == "Dummy variable adjustment")
-                labels <- names(result$original$coefficients)[!grepDummyVars(names(result$original$coefficients))]
-            else
-                labels <- labels[1:result$n.predictors]
-        } else if (output == "Correlation")
-        {
-            labels <- attr(terms.formula(input.formula, data = data), "term.labels")
-            labels <- labels[!grepDummyVars(labels)]
-            if (show.labels)
-                labels <- Labels(data, labels)
-        } else
-            labels <- labels[-1]
         if (partial) # missing = "Use partial data (pairwise correlations)", possible option for Correlation and Jaccard output
         {
             result$subset <- subset
             result$estimation.data <- .estimation.data <- CopyAttributes(data[subset, , drop = FALSE], data)
             .weights <- weights[subset]
         }
+        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        result$importance.names <- nms
+        labels <- rownames(result$summary$coefficients)[relevant.coefs]
+        if (result$type == "Ordered Logit")
+        {  # Remove the response transition coefficients
+            n.remove <- (nlevels(.estimation.data[[outcome.name]]) - 2)
+            labels <- labels[-length(labels):-(length(labels) - n.remove)]
+            n.importance.names <- length(result$importance.names)
+            result$importance.names <- result$importance.names[-n.importance.names:-(n.importance.names - n.remove)]
+        } else if (output == "Correlation")
+        {
+            labels <- attr(terms.formula(input.formula, data = data), "term.labels")
+            labels <- result$importance.names <- labels[!grepDummyVars(labels)]
+            if (show.labels)
+                labels <- Labels(data, labels)
+        } else
+        {
+            result$importance.names <- result$importance.names[-1]
+            labels <- labels[-1]
+        }
+        result$importance.labels <- labels
         # Process the data suitable for Jaccard coefficient analysis
         if (output == "Jaccard Coefficient")
         {
@@ -778,9 +796,12 @@ Regression <- function(formula = as.formula(NULL),
                                                                interaction.name, show.labels)
             result$estimation.data <- .estimation.data <- jaccard.processed$data
             input.formula <- jaccard.processed$formula
-            formula.with.interaction <- jaccard.processed$formula.with.interaction
-            labels <- result$labels <- jaccard.processed$labels
+            labels <- result$importance.labels <- jaccard.processed$labels
         }
+        # Correlation outputs and Jaccard don't need to be checked since predictor importance is computed pairwise against the outcome.
+        check.for.aliased.vars <- !output %in% c("Correlation", "Jaccard Coefficient")
+        if (check.for.aliased.vars)
+            validateDataForRIA(input.formula, .estimation.data, data, outcome.name, show.labels, output)
         # Remove prefix if possible
         extracted.labels <- ExtractCommonPrefix(labels)
         if (!is.na(extracted.labels$common.prefix))
@@ -1290,24 +1311,12 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
         regular.aliased <- aliased[!grepDummyVars(names.aliased)]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
                                   " coefficients have been estimated: ",
-                                  paste(alias.vars[regular.aliased], collapse = ", "))
-        dummy.aliased.variables <- extractDummyNames(names.aliased[aliased])
-
-        # If no dummy variables in the aliasing, report all aliased.
-        # Otherwise only report the dummy variable scenario if a regular variable is also aliased
-        # i.e. silently have aliased dummy variables.
+                                  paste(sQuote(alias.vars[regular.aliased], q = FALSE), collapse = ", "))
         if (any(regular.aliased))
             warning(regular.warning)
-        if (any(dummy.aliased))
-        {
-            dummy.aliased.variables <- extractDummyNames(names.aliased[dummy.aliased])
-            dummy.warning <- paste0("The following dummy variable adjustment variable(s) are colinear ",
-                                    "with other variables and no dummy variables have been estimated: ",
-                                    alias.vars[dummy.aliased],
-                                    "A different missing value technique might be more suitable.")
-            warning(regular.warning)
-        }
+        return(regular.aliased)
     }
+    aliased
 }
 
 #' @importFrom stats model.frame model.matrix model.response

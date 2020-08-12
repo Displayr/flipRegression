@@ -179,21 +179,6 @@ extractVariableStandardErrors <- function(model, type, robust.se, linear.regress
         stop(paste("Type not handled: ", type))
 }
 
-extractVariableCoefficientNames <- function(obj)
-{
-    coef.names <- rownames(obj$summary$coefficients)
-    coef.names <- coef.names[!grepDummyVars(coef.names)]
-    if (obj$type %in% c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD"))
-        coef.names[-1]
-    else if (obj$type %in% c("Ordered Logit"))
-    {
-        orig.coef <- obj$original$coefficients
-        orig.coef <- orig.coef[!grepDummyVars(names(orig.coef))]
-        coef.names[-length(coef.names):-(length(orig.coef) + 1)]
-    } else
-        stop(paste("Type not handled: ", obj$type))
-}
-
 isTStatisticUsed <- function(model)
 {
     grepl("^t", colnames(summary(model)$coefficients)[3])

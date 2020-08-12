@@ -213,6 +213,8 @@ Generally, a list of class \code{Regression}. The exception being when \code{met
      \item \code{p.values} The vector of p-values for the relevant statistics computed above.
    }
  \item \code{importance.type} Character string specifying the type of Importance analysis requested
+ \item \code{importance.names} Character vector of the names of the predictors in the importance analysis
+ \item \code{importance.labels} Character vector of the labels of the predictors in the importance analysis
  \item \code{relative.importance} A copy of the \code{importance} output, kept for legacy purposes.
  \item \code{interaction} A list containing the regression analysis with an interaction term. The list has elements
  \itemize{
