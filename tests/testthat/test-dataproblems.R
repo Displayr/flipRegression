@@ -218,7 +218,6 @@ test_that("DS-2876: Jaccard coefficients not suitable", {
                                                   paste0("ordered.", 1:3), "X3", "non.outlier.data_GQ9KqD7YOf"))
 })
 
-
 test_that("DS-2990: Test identification of aliased predictors and variables with no variation", {
     set.seed(1)
     sigma.mat <- matrix(c(1, 0.5, 0.3,
@@ -338,3 +337,29 @@ test_that("DS-2990: Test identification of aliased predictors and variables with
                  fixed = TRUE)
 })
 
+test_that("DS-2884: Ordered Logit with non-syntactic variable names",
+{
+    set.seed(303)
+    `Cola Tracking.sav` <- list()
+    `Cola Tracking.sav`$Variables$d1 <- as.factor(sample(4, 100, replace = TRUE))
+    `Cola Tracking.sav`$Variables$d2 <- runif(100)
+    `Cola Tracking.sav`$Variables$d3 <- as.factor(sample(3, 100, replace = TRUE))
+    form <- `Cola Tracking.sav`$Variables$d1 ~
+        `Cola Tracking.sav`$Variables$d2 +
+        `Cola Tracking.sav`$Variables$d3
+    expect_error(out <- Regression(type = "Ordered Logit", formula = form),
+                 NA)
+    expect_error(print(out), NA)
+
+    ColaTracking.sav <- list()
+    ColaTracking.sav$Variables$d1 <- as.factor(sample(4, 100, replace = TRUE))
+    ColaTracking.sav$Variables$d2 <- runif(100)
+    ColaTracking.sav$Variables$d3 <- as.factor(sample(3, 100, replace = TRUE))
+    form <- ColaTracking.sav$Variables$d1 ~
+        ColaTracking.sav$Variables$d2 +
+        ColaTracking.sav$Variables$d3
+    expect_error(out <- Regression(type = "Ordered Logit", formula = form),
+                 NA)
+    expect_error(print(out), NA)
+
+})
