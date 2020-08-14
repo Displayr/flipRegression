@@ -801,7 +801,7 @@ Regression <- function(formula = as.formula(NULL),
         # Correlation outputs and Jaccard don't need to be checked since predictor importance is computed pairwise against the outcome.
         check.for.aliased.vars <- !output %in% c("Correlation", "Jaccard Coefficient")
         if (check.for.aliased.vars)
-            validateDataForRIA(input.formula, .estimation.data, data, outcome.name, show.labels, output)
+            validateDataForRIA(input.formula, .estimation.data, outcome.name, show.labels, output)
         # Remove prefix if possible
         extracted.labels <- ExtractCommonPrefix(labels)
         if (!is.na(extracted.labels$common.prefix))

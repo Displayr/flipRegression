@@ -92,7 +92,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             # Check data suitable and throw warning if it isn't and skip the current computation
             if (importance %in% c("Shapley Regression", "Relative Importance Analysis"))
             {
-                data.invalid <- tryCatch(validateDataForRIA(result$formula, estimation.data, result$model,
+                data.invalid <- tryCatch(validateDataForRIA(result$formula, estimation.data,
                                                             result$outcome.name, result$show.labels,
                                                             output = importance, group.name = split.labels[j]),
                                          error = function(e) warning(e$message))
