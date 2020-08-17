@@ -299,7 +299,6 @@ throwAliasedExceptionImportanceAnalysis <- function(aliased.grouped, labels, out
 #' Throw an informative error or construct string
 #' @param input.formula The formula for the desired model
 #' @param estimation.data The estimation.data including outlier identifier logical column
-#' @param data The original data.frame of input data with label attributes
 #' @param outcome.name Character string of the outcome variable name (not label) to look up in the input data.
 #' @param show.labels Logical whether to show labels or names in the output message/error.
 #' @param output The type of output desired, either \code{"Shapley Regression"} or \code{"Relative Importance Analysis"}
@@ -308,16 +307,24 @@ throwAliasedExceptionImportanceAnalysis <- function(aliased.grouped, labels, out
 #' string is used here, it is expected to refer to a specific level in a crosstab interaction that might have aliasing problems
 #' and a warning is given to the user.
 #' @noRd
-validateDataForRIA <- function(input.formula, estimation.data, data, outcome.name, show.labels, output, group.name = NULL)
+validateDataForRIA <- function(input.formula, estimation.data, outcome.name, show.labels, output, group.name = NULL)
 {
     # Check to see if there are columns with no variation
-    validateVariablesHaveVariation(input.formula, estimation.data, outcome.name, data, output, show.labels, group.name)
+    validateVariablesHaveVariation(input.formula, estimation.data, outcome.name, output, show.labels, group.name)
+    # Remove any dataset references e.g. mydata$Variables$Y since this breaks the later call to alias.
+    if (any(vars.to.relabel <- checkFormulaForDataReferences(input.formula, data = estimation.data)))
+    {
+        relabelled.outputs <- relabelFormulaAndData(vars.to.relabel, input.formula, estimation.data)
+        input.formula <- relabelled.outputs$formula
+        estimation.data <- relabelled.outputs$data
+        outcome.name <- relabelled.outputs$outcome.name
+    }
     # Check to see if there are linearly dependent predictors
     aliased.processed <- determineAliased(input.formula, estimation.data, outcome.name)
     if (is(aliased.processed, "list"))
     { # Create mapping of predictor names to their labels if necessary for error message
         formula.names <- AllVariablesNames(input.formula, estimation.data)
-        formula.labels <- if (show.labels) Labels(data, formula.names) else formula.names
+        formula.labels <- if (show.labels) Labels(estimation.data, formula.names) else formula.names
         names(formula.labels) <- formula.names
         throwAliasedExceptionImportanceAnalysis(aliased.processed, formula.labels, output, group.name)
     }
@@ -326,24 +333,23 @@ validateDataForRIA <- function(input.formula, estimation.data, data, outcome.nam
 #' Function determines whether the outcome variable of predictors dont have any variation. Used to validate
 #' the data before use in Shapley Regression or RIA.
 #' @param input.formula The formula object for the regression. Used to determine predictor names
-#' @param estimation.data The estimation data, used to apply outlier filter if necessary
+#' @param data The estimation data, used to apply outlier filter if necessary
 #' @param outcome.name The name of the outcome variable, it could be determined via the formula but for
 #'  convenience the name is used here to simplify the input data.
-#' @param data The input data \code{data.frame}, including label attributes
 #' @param output String describing the output type. Typically Shapley Regression or Relative Importance Analysis
 #' @param show.labels Logical to determine whether to use names or labels in error messages.
 #' @param group.name String of the category label when used in crosstab interaction.
 #' @importFrom flipU AllVariablesNames
 #' @noRd
-validateVariablesHaveVariation <- function(input.formula, estimation.data, outcome.name, data, output, show.labels, group.name = NULL)
+validateVariablesHaveVariation <- function(input.formula, data, outcome.name, output, show.labels, group.name = NULL)
 {
     # Filter the data using the outlier subset if it exists
-    if ("non.outlier.data_GQ9KqD7YOf" %in% names(estimation.data))
+    if ("non.outlier.data_GQ9KqD7YOf" %in% names(data))
     {
-        estimation.data <- estimation.data[estimation.data$non.outlier.data_GQ9KqD7YOf, ]
-        estimation.data <- estimation.data[names(estimation.data) != "non.outlier.data_GQ9KqD7YOf"]
+        data <- data[data$non.outlier.data_GQ9KqD7YOf, ]
+        data <- data[names(data) != "non.outlier.data_GQ9KqD7YOf"]
     }
-    outcome <- estimation.data[[outcome.name]]
+    outcome <- data[[outcome.name]]
     outcome.label <- if (show.labels) Labels(data, outcome.name) else outcome.name
     outcome.label <- sQuote(outcome.label, q = FALSE)
     outcome.msg <- paste0("The outcome variable, ", outcome.label, ", is constant and has no variation. The outcome needs ",
@@ -354,7 +360,7 @@ validateVariablesHaveVariation <- function(input.formula, estimation.data, outco
     if (outcome.no.variation)
         throwRIAException(outcome.msg, group.name)
     # Outcome variable should be fine from here. Inspect the predictors
-    predictors <- estimation.data[AllVariablesNames(input.formula, estimation.data)]
+    predictors <- data[AllVariablesNames(input.formula, data)]
     predictors <- predictors[names(predictors) != outcome.name]
     no.variation.vars <- vapply(predictors, .hasNoVariation, logical(1))
     if (any(no.variation.vars))
@@ -388,4 +394,63 @@ throwRIAException <- function(x, group.name = NULL)
         x <- sub(paste0("^", first.char), tolower(first.char), x)
         stop("Within the ", group.name, " category, ", x)
     }
+}
+
+#' Checks the formula object input and returns a named logical vector that specifies if any variable names
+#' in the formula use dataset references. e.g. \code{TRUE} if \code{`My data`$Variables$`Some Y`} and
+#' \code{FALSE} if a variable doesn't have dataset references.
+#' @param input.formula formula object that has an additive structure, i.e. Y ~ X1 + X2 (no interaction)
+#' @param data \code{data.frame} to use to expand formula if . is used in formula
+#' @param patt String pattern to match the dataset reference syntax.
+#' @return A named logical vector, with length (p + 1) where p is the number of predictors (1 extra for the
+#' outcome name). The values are \code{TRUE} if dataset reference found, \code{FALSE} otherwise.
+#' @noRd
+checkFormulaForDataReferences <- function(input.formula, data = NULL,
+                                          patt = "^[[:print:]]*[$](Variables|Questions)[$]")
+{
+    variable.names <- AllVariablesNames(input.formula, data = data)
+    refs.found <- grepl(pattern = patt, variable.names)
+    names(refs.found) <- variable.names
+    refs.found
+}
+
+#' Adds characters to elements in character vector until all elements are unique.
+#' @param strings Character vector with possibly duplicated elements.
+#' @return Character vector with extra chars added to original elements so that all elements are unique
+#' @noRd
+generateUniqueNames <- function(strings)
+{
+    possible.chars <- c(letters, LETTERS, 0:9)
+    .addLetters <- function(string, logical)
+        paste0(string[logical], sample(possible.chars, size = sum(logical), replace = TRUE))
+
+    while (any(duplicated <- duplicated(strings)))
+        strings[duplicated] <- .addLetters(strings, duplicated)
+    strings
+}
+
+#' Replaces the variables that have dataset references in both the formula and data provided.
+#' @param reference.vars Relevant logical vector, expected to be the output of \code{\link{checkFormulaForDataReferences}}
+#'     where the elements are not all \code{FALSE}. i.e. at least one variable has a dataset reference
+#'     in the formula and data below.
+#' @param formula Relevant \code{data.frame} used in the regression
+#' @param data Relevant \code{data.frame} used in the regression
+#' @param patt String pattern to match the dataset reference syntax.
+#' @return list that has an updated formula, data and outcome name without any dataset references
+#' @noRd
+relabelFormulaAndData <- function(reference.vars, formula, data, patt = "^[[:print:]]*[$](Variables|Questions)[$]")
+{
+    names(new.var.names) <- new.var.names <- names(reference.vars)
+    new.var.names <- sub(patt, "", new.var.names)
+    if (any(duplicated(new.var.names)))
+        new.var.names <- generateUniqueNames(new.var.names)
+    outcome.name <- new.outcome.name <- new.var.names[1]
+    new.predictor.names <- new.var.names[-1]
+    formula <- update(formula, as.formula(paste0(new.outcome.name, " ~ ",
+                                                 paste0(new.predictor.names, collapse = " + "),
+                                                 collapse = "")))
+    # Match data names to the appropriate new names
+    cols.to.update <- match(names(new.var.names), colnames(data), nomatch = 0)
+    names(data)[cols.to.update] <- new.var.names
+    list(formula = formula, data = data, outcome.name = unname(outcome.name))
 }

@@ -296,42 +296,42 @@ test_that("DS-2990: Test identification of aliased predictors and variables with
     dat$const <- 1
     dat.with.att <- dat
     attr(dat.with.att$const, "label") <- "Fancy constant"
-    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
-                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression"),
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat.with.att, outcome.name = "const",
+                                                                 show.labels = FALSE, output = "Shapley Regression"),
                  paste0("The outcome variable, 'const', is constant and has no variation. The outcome needs to have ",
                         "at least two unique values to conduct a Shapley Regression"),
                  fixed = TRUE)
-    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
-                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression",
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat.with.att, outcome.name = "const",
+                                                                 show.labels = FALSE, output = "Shapley Regression",
                                                                  group.name = "Displayr"),
                  paste0("Within the Displayr category, the outcome variable, 'const', is constant and has no variation. ",
                         "The outcome needs to have at least two unique values to conduct a Shapley Regression"),
                  fixed = TRUE)
-    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat, outcome.name = "const",
-                                                                 data = dat.with.att, show.labels = TRUE, output = "Relative Importance Analysis"),
+    expect_error(flipRegression:::validateVariablesHaveVariation(const ~ X.1 + X.2, dat.with.att, outcome.name = "const"
+                                                                 , show.labels = TRUE, output = "Relative Importance Analysis"),
                  paste0("The outcome variable, 'Fancy constant', is constant and has no variation. The outcome needs to have ",
                         "at least two unique values to conduct a Relative Importance Analysis"),
                  fixed = TRUE)
-    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat, outcome.name = "Y",
-                                                                 data = dat.with.att, show.labels = FALSE, output = "Relative Importance Analysis"),
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat.with.att, outcome.name = "Y",
+                                                                 show.labels = FALSE, output = "Relative Importance Analysis"),
                  paste0("Each predictor needs to have at least two unique values to conduct a Relative Importance Analysis. ",
                         "The predictor 'const' is constant and has no variation."),
                  fixed = TRUE)
-    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat, outcome.name = "Y",
-                                                                 data = dat.with.att, show.labels = TRUE, output = "Shapley Regression"),
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const + X.2, dat.with.att, outcome.name = "Y",
+                                                                 show.labels = TRUE, output = "Shapley Regression"),
                  paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
                         "The predictor 'Fancy constant' is constant and has no variation."),
                  fixed = TRUE)
     dat$const.fact <- factor(rep("B", nrow(dat)), levels = LETTERS[1:3])
     dat.with.att <- dat
     attr(dat.with.att$const.fact, "label") <- "This is a bad factor"
-    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + X.2, dat, outcome.name = "Y",
-                                                                 data = dat.with.att, show.labels = TRUE, output = "Shapley Regression"),
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + X.2, dat.with.att, outcome.name = "Y",
+                                                                 show.labels = TRUE, output = "Shapley Regression"),
                  paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
                         "The predictor 'This is a bad factor' is constant and has no variation."),
                  fixed = TRUE)
-    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + const + X.2, dat, outcome.name = "Y",
-                                                                 data = dat.with.att, show.labels = FALSE, output = "Shapley Regression"),
+    expect_error(flipRegression:::validateVariablesHaveVariation(Y ~ X.1 + const.fact + const + X.2, dat.with.att, outcome.name = "Y",
+                                                                 show.labels = FALSE, output = "Shapley Regression"),
                  paste0("Each predictor needs to have at least two unique values to conduct a Shapley Regression. ",
                         "The following predictors are constant and have no variation: 'const.fact', 'const'"),
                  fixed = TRUE)
@@ -362,4 +362,89 @@ test_that("DS-2884: Ordered Logit with non-syntactic variable names",
                  NA)
     expect_error(print(out), NA)
 
+})
+
+test_that("DS-2990: Helper functions detecting dataset references in formula", {
+    # Check that helper function to generate Unique names when necessary is valid
+    expect_error(unique.vars <- flipRegression::generateUniqueNames(rep("Same", 1000)), NA)
+    expect_true(all(!duplicated(unique.vars)))
+    # Check function that indentifies dataset references in formula is working
+    reference.formula <- `My data`$Variables$`My Y` ~ X
+    # Test outcome variable first
+    expect_error(name.output <- flipRegression::checkFormulaForDataReferences(reference.formula), NA)
+    # Dataset reference identified and correct logical vecto
+    expect_equal(name.output, c("`My data`$Variables$`My Y`" = TRUE, X = FALSE))
+    # Check predictors working ok too
+    reference.formula <- `My Y` ~ `My data`$Variables$X + `Other data`$Variables$`Fancy X` + X3 + `Another X`
+    expect_error(name.output <- flipRegression::checkFormulaForDataReferences(reference.formula), NA)
+    expect_equal(name.output, c("`My Y`" = FALSE, "`My data`$Variables$X" = TRUE, "`Other data`$Variables$`Fancy X`" = TRUE,
+                                X3 = FALSE, "`Another X`" = FALSE))
+    # Check handles the case where variables are ambiguous when dataset references are removed.
+    reference.formula <- Y ~ `My data`$Variables$X + `Other data`$Variables$X + X3 + X
+    expect_error(name.output <- flipRegression::checkFormulaForDataReferences(reference.formula), NA)
+    expect_equivalent(name.output, c(FALSE, TRUE, TRUE, FALSE, FALSE))
+    # Checks formula and data have their references to other datasets removed in their names.
+    sigma.mat <- matrix(c(1, 0.5, 0.3,
+                          0.5, 1, 0.4,
+                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
+    X <- MASS::mvrnorm(n = 100, mu = rep(0, 3), Sigma = sigma.mat)
+    dat <- data.frame(X = X)
+    dat$Y <- runif(nrow(dat))
+    dat.with.ref <- dat
+    # change the name of the outcome
+    names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
+    input.formula <- `My data`$Variables$Y ~ X.1 + X.2 + X.3
+    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+                 NA)
+    expect_setequal(names(output.list$data), c("Y", paste0("X.", 1:3)))
+    checkDataSame <- function(outlist, data)
+    {
+        # Do a manual rename of the columns
+        names(data) <- sub("^[[:print:]]*[$](Variables|Questions)[$]", "", names(data))
+        vapply(names(outlist$data), function(x) identical(outlist$data[[x]], data[[x]]), logical(1))
+    }
+    expect_true(all(checkDataSame(output.list, dat)))
+    expect_equal(output.list$formula, Y ~ X.1 + X.2 + X.3)
+    # Same but mess up both the predictor and outcomes
+    dat.with.ref <- dat
+    # change the name of the outcome and one of the predictors
+    names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
+    names(dat.with.ref)[2] <- "`Other data`$Variables$X.2"
+    input.formula <- `My data`$Variables$Y ~ X.1 + `Other data`$Variables$X.2 + X.3
+    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+                 NA)
+    expect_setequal(names(output.list$data), c("Y", paste0("X.", 1:3)))
+    expect_true(all(checkDataSame(output.list, dat)))
+    expect_equal(output.list$formula, Y ~ X.1 + X.2 + X.3)
+    # Now the same but give a variable conflict
+    dat.with.ref <- dat
+    names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
+    names(dat.with.ref)[2] <- "`Other data`$Variables$X.1"
+    names(dat.with.ref)[1] <- "`My data`$Variables$X.1"
+    input.formula <- `My data`$Variables$Y ~ `My data`$Variables$X.1 + `Other data`$Variables$X.1 + X.3
+    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+                 NA)
+    expect_setequal(substr(names(output.list$data), 1, 3), c("Y", paste0("X.", c(1, 1, 3))))
+    # Check mapping was done appropriately, if so, the linear models produced on both versions of the data
+    # should have identical coefficients
+    long.lm <- lm(`\`My data\`$Variables$Y` ~ ., data = dat.with.ref)
+    cleaned.lm <- lm(Y ~ ., data = output.list$data)
+    expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
+    # Same as above with a weights column
+    dat.with.ref <- dat
+    names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
+    names(dat.with.ref)[2] <- "`Other data`$Variables$X.1"
+    names(dat.with.ref)[1] <- "`My data`$Variables$X.1"
+    dat.with.ref$weights <- runif(nrow(dat))
+    input.formula <- `My data`$Variables$Y ~ `My data`$Variables$X.1 + `Other data`$Variables$X.1 + X.3
+    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+                 NA)
+    expect_setequal(substr(names(output.list$data), 1, 3), c("Y", "wei", paste0("X.", c(1, 1, 3))))
+    long.lm <- lm(`\`My data\`$Variables$Y` ~ ., data = dat.with.ref)
+    cleaned.lm <- lm(Y ~ ., data = output.list$data)
+    expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
 })
