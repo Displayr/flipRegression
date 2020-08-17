@@ -440,7 +440,6 @@ generateUniqueNames <- function(strings)
 #' @noRd
 relabelFormulaAndData <- function(reference.vars, formula, data, patt = "^[[:print:]]*[$](Variables|Questions)[$]")
 {
-    original.vars <- AllVariablesNames(formula)
     names(new.var.names) <- new.var.names <- names(reference.vars)
     new.var.names <- sub(patt, "", new.var.names)
     if (any(duplicated(new.var.names)))
