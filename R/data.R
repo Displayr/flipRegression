@@ -414,21 +414,6 @@ checkFormulaForDataReferences <- function(input.formula, data = NULL,
     refs.found
 }
 
-#' Adds characters to elements in character vector until all elements are unique.
-#' @param strings Character vector with possibly duplicated elements.
-#' @return Character vector with extra chars added to original elements so that all elements are unique
-#' @noRd
-generateUniqueNames <- function(strings)
-{
-    possible.chars <- c(letters, LETTERS, 0:9)
-    .addLetters <- function(string, logical)
-        paste0(string[logical], sample(possible.chars, size = sum(logical), replace = TRUE))
-
-    while (any(duplicated <- duplicated(strings)))
-        strings[duplicated] <- .addLetters(strings, duplicated)
-    strings
-}
-
 #' Replaces the variables that have dataset references in both the formula and data provided.
 #' @param reference.vars Relevant logical vector, expected to be the output of \code{\link{checkFormulaForDataReferences}}
 #'     where the elements are not all \code{FALSE}. i.e. at least one variable has a dataset reference
@@ -443,7 +428,10 @@ relabelFormulaAndData <- function(reference.vars, formula, data, patt = "^[[:pri
     names(new.var.names) <- new.var.names <- names(reference.vars)
     new.var.names <- sub(patt, "", new.var.names)
     if (any(duplicated(new.var.names)))
-        new.var.names <- generateUniqueNames(new.var.names)
+    {
+        new.var.names <- make.unique(new.var.names)
+        names(new.var.names) <- names(reference.vars)
+    }
     outcome.name <- new.outcome.name <- new.var.names[1]
     new.predictor.names <- new.var.names[-1]
     formula <- update(formula, as.formula(paste0(new.outcome.name, " ~ ",

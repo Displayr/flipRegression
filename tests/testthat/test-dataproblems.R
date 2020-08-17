@@ -365,9 +365,6 @@ test_that("DS-2884: Ordered Logit with non-syntactic variable names",
 })
 
 test_that("DS-2990: Helper functions detecting dataset references in formula", {
-    # Check that helper function to generate Unique names when necessary is valid
-    expect_error(unique.vars <- flipRegression::generateUniqueNames(rep("Same", 1000)), NA)
-    expect_true(all(!duplicated(unique.vars)))
     # Check function that indentifies dataset references in formula is working
     reference.formula <- `My data`$Variables$`My Y` ~ X
     # Test outcome variable first
