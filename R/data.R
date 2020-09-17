@@ -225,9 +225,10 @@ determineAliased <- function(input.formula, data, outcome.name)
     if (is.null(aliased.variables))
         return(NULL)
     # Determine which predictors are aliased with each other, coercing to list if necessary
-    aliased.variables <- apply(aliased.variables, 1, function(x) names(which(x != 0)))
-    if (!is(aliased.variables, "list"))
-        aliased.variables <- as.list(aliased.variables)
+    aliased.variables <- data.frame(t(aliased.variables), check.names = FALSE)
+    aliased.variable.names <- names(aliased.variables)
+    var.deps <- row.names(aliased.variables)
+    aliased.variables <- lapply(aliased.variables, function(x) var.deps[which(x != 0)])
     # Add aliased variables to their identified counterparts
     aliased.variables <- mapply(function(x, x.names) c(x, x.names), aliased.variables, names(aliased.variables),
                                 SIMPLIFY = FALSE, USE.NAMES = FALSE)

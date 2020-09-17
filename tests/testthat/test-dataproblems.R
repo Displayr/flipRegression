@@ -244,6 +244,8 @@ test_that("DS-2990: Test identification of aliased predictors and variables with
     expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1 + cat2, data = dat, "Y"),
                  mixed.group <- list(c("X.3" = "numeric", "X.4" = "numeric"),
                                      c("cat1" = "factor", "cat2" = "factor")))
+    expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.6, data = dat, "Y"),
+                 long.two <- list(c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")))
     expect_equal(flipRegression:::determineAliased(Y ~ X.1 + X.2 + X.3 + X.5 + X.6, data = dat, "Y"),
                  long.two <- list(c("X.3" = "numeric", "X.5" = "numeric"),
                                   c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")))
