@@ -426,13 +426,14 @@ checkFormulaForDataReferences <- function(input.formula, data = NULL,
 #' @noRd
 relabelFormulaAndData <- function(reference.vars, formula, data, patt = "^[[:print:]]*[$](Variables|Questions)[$]")
 {
-    names(new.var.names) <- new.var.names <- names(reference.vars)
-    new.var.names <- sub(patt, "", new.var.names)
+    new.var.names <- names(reference.vars)
+    new.var.names <- make.names(sub(patt, "", new.var.names))
     if (any(duplicated(new.var.names)))
     {
         new.var.names <- make.unique(new.var.names)
         names(new.var.names) <- names(reference.vars)
     }
+    names(new.var.names) <- names(reference.vars)
     outcome.name <- new.outcome.name <- new.var.names[1]
     new.predictor.names <- new.var.names[-1]
     formula <- update(formula, as.formula(paste0(new.outcome.name, " ~ ",
