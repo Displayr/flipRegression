@@ -260,8 +260,8 @@
 #' @importFrom flipTransformations AsNumeric
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
-#' @importFrom utils tail
 #' @importFrom stats drop.terms terms.formula
+#' @importFrom verbs Last
 #' @export
 Regression <- function(formula = as.formula(NULL),
                        data = NULL,
@@ -365,7 +365,7 @@ Regression <- function(formula = as.formula(NULL),
         # Inside internal loop, data is already set up properly
         formula.with.interaction <- interaction.formula
         data <- GetData(interaction.formula, data, auxiliary.data)
-        interaction.name <- tail(colnames(data), 1)
+        interaction.name <- Last(colnames(data), 1)
     }
     else
     {
