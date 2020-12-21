@@ -367,20 +367,26 @@ test_that("DS-2884: Ordered Logit with non-syntactic variable names",
 })
 
 test_that("DS-2990: Helper functions detecting dataset references in formula", {
-    # Check function that indentifies dataset references in formula is working
+    # Check function that identifies dataset references in formula is working
     reference.formula <- `My data`$Variables$`My Y` ~ X
     # Test outcome variable first
-    expect_error(name.output <- flipRegression::checkFormulaForDataReferences(reference.formula), NA)
+    expect_error(name.output <- flipRegression::checkFormulaForValidNames(reference.formula,
+                                                                          patt = dataset.reference.patt),
+                 NA)
     # Dataset reference identified and correct logical vecto
     expect_equal(name.output, c("`My data`$Variables$`My Y`" = TRUE, X = FALSE))
     # Check predictors working ok too
     reference.formula <- `My Y` ~ `My data`$Variables$X + `Other data`$Variables$`Fancy X` + X3 + `Another X`
-    expect_error(name.output <- flipRegression::checkFormulaForDataReferences(reference.formula), NA)
+    expect_error(name.output <- flipRegression::checkFormulaForValidNames(reference.formula,
+                                                                          patt = dataset.reference.patt),
+                 NA)
     expect_equal(name.output, c("`My Y`" = FALSE, "`My data`$Variables$X" = TRUE, "`Other data`$Variables$`Fancy X`" = TRUE,
                                 X3 = FALSE, "`Another X`" = FALSE))
     # Check handles the case where variables are ambiguous when dataset references are removed.
     reference.formula <- Y ~ `My data`$Variables$X + `Other data`$Variables$X + X3 + X
-    expect_error(name.output <- flipRegression::checkFormulaForDataReferences(reference.formula), NA)
+    expect_error(name.output <- flipRegression::checkFormulaForValidNames(reference.formula,
+                                                                          patt = dataset.reference.patt),
+                 NA)
     expect_equivalent(name.output, c(FALSE, TRUE, TRUE, FALSE, FALSE))
     # Checks formula and data have their references to other datasets removed in their names.
     sigma.mat <- matrix(c(1, 0.5, 0.3,
@@ -393,8 +399,21 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     # change the name of the outcome
     names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
     input.formula <- `My data`$Variables$Y ~ X.1 + X.2 + X.3
-    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
-    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+    bad.names <- c("`My data`$Variables$Y", paste0("X.", 1:3))
+    good.names <- c("Y", paste0("X.", 1:3))
+    names(good.names) <- bad.names
+    expected.check <- logical(4)
+    names(expected.check) <- bad.names
+    expected.check[1L] <- TRUE
+    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
+                                                                                patt = dataset.reference.patt),
+                 expected.check)
+    expected.mapping <- good.names
+    names(expected.mapping) <- bad.names
+    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
+                                                         remove.patt = dataset.reference.patt),
+                 expected.mapping)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
     expect_setequal(names(output.list$data), c("Y", paste0("X.", 1:3)))
     checkDataSame <- function(outlist, data)
@@ -411,8 +430,21 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
     names(dat.with.ref)[2] <- "`Other data`$Variables$X.2"
     input.formula <- `My data`$Variables$Y ~ X.1 + `Other data`$Variables$X.2 + X.3
-    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
-    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+    bad.names <- c("`My data`$Variables$Y", "X.1", "`Other data`$Variables$X.2", "X.3")
+    good.names <- c("Y", paste0("X.", 1:3))
+    names(good.names) <- bad.names
+    expected.check <- logical(4)
+    names(expected.check) <- bad.names
+    expected.check[c(1, 3)] <- TRUE
+    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
+                                                                                patt = dataset.reference.patt),
+                 expected.check)
+    expected.mapping <- good.names
+    names(expected.mapping) <- bad.names
+    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
+                                                         remove.patt = dataset.reference.patt),
+                 expected.mapping)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
     expect_setequal(names(output.list$data), c("Y", paste0("X.", 1:3)))
     expect_true(all(checkDataSame(output.list, dat)))
@@ -423,8 +455,22 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     names(dat.with.ref)[2] <- "`Other data`$Variables$X.1"
     names(dat.with.ref)[1] <- "`My data`$Variables$X.1"
     input.formula <- `My data`$Variables$Y ~ `My data`$Variables$X.1 + `Other data`$Variables$X.1 + X.3
-    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
-    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+    bad.names <- c("`My data`$Variables$Y", "`My data`$Variables$X.1", "`Other data`$Variables$X.1", "X.3")
+    good.names <- c("Y", rep("X.1", 2), "X.3")
+    names(good.names) <- bad.names
+    expected.check <- logical(4)
+    names(expected.check) <- bad.names
+    expected.check[1:3] <- TRUE
+    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
+                                                                                patt = dataset.reference.patt),
+                 expected.check)
+    expected.mapping <- good.names
+    expected.mapping[3] <- "X.1.1"
+    names(expected.mapping) <- bad.names
+    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
+                                                         remove.patt = dataset.reference.patt),
+                 expected.mapping)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
     expect_setequal(substr(names(output.list$data), 1, 3), c("Y", paste0("X.", c(1, 1, 3))))
     # Check mapping was done appropriately, if so, the linear models produced on both versions of the data
@@ -439,11 +485,41 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     names(dat.with.ref)[1] <- "`My data`$Variables$X.1"
     dat.with.ref$weights <- runif(nrow(dat))
     input.formula <- `My data`$Variables$Y ~ `My data`$Variables$X.1 + `Other data`$Variables$X.1 + X.3
-    expect_error(reference.vector <- flipRegression:::checkFormulaForDataReferences(input.formula), NA)
-    expect_error(output.list <- flipRegression:::relabelFormulaAndData(reference.vector, input.formula, dat.with.ref),
+    bad.names <- c("`My data`$Variables$Y", "`My data`$Variables$X.1", "`Other data`$Variables$X.1", "X.3")
+    good.names <- c("Y", rep("X.1", 2), "X.3")
+    names(good.names) <- bad.names
+    expected.check <- logical(4)
+    names(expected.check) <- bad.names
+    expected.check[1:3] <- TRUE
+    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
+                                                                                patt = dataset.reference.patt),
+                 expected.check)
+    expected.mapping <- good.names
+    expected.mapping[3] <- "X.1.1"
+    names(expected.mapping) <- bad.names
+    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
+                                                         remove.patt = dataset.reference.patt),
+                 expected.mapping)
+    expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
     expect_setequal(substr(names(output.list$data), 1, 3), c("Y", "wei", paste0("X.", c(1, 1, 3))))
     long.lm <- lm(`\`My data\`$Variables$Y` ~ ., data = dat.with.ref)
     cleaned.lm <- lm(Y ~ ., data = output.list$data)
     expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
+})
+
+test_that("Non-syntatic names in formula for alias checking in RIA", {
+    bad.formula <- `Q1#A` ~ X.1 + X.2 + X.3
+    sigma.mat <- matrix(c(1, 0.5, 0.3,
+                          0.5, 1, 0.4,
+                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
+    X <- MASS::mvrnorm(n = 10, mu = rep(0, 3), Sigma = sigma.mat)
+    dat <- data.frame(X = X)
+    dat$Y <- runif(nrow(dat))
+    non.syntatic.identified <- c(TRUE, FALSE, FALSE, FALSE)
+    names(non.syntatic.identified) <- c("`Q1#A`", paste0("X.", 1:3))
+    expect_equal(reference.vector <- flipRegression::checkFormulaForValidNames(bad.formula, data = dat,
+                                                                               patt = syntatic.name.patt,
+                                                                               negate = TRUE),
+                 non.syntatic.identified)
 })
