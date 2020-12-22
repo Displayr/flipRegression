@@ -18,5 +18,5 @@ for (type in c("Linear", "Multinomial Logit", "Binary Logit"))
 test_that("ChartData uses last iteration results; DS-2424",
 {
     z <- suppressWarnings(Regression(relationship ~ age + sex, data = adult.2000, type = "Linear"))
-    expect_equal(head(attr(z, "ChartData"))[, 1], z$coef)
+    expect_equal(attr(z, "ChartData")[, 1], z$coef)
 })

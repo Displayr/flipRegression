@@ -1,5 +1,4 @@
 context("Bugs")
-suppressWarnings(RNGversion("3.5.3"))
 data(bank, package = "flipExampleData")
 bank <- bank[sample(nrow(bank), 200), ] # random sample of 200 rows to improve perfomance
 zformula <- formula("Overall ~ Fees + Interest + Phone + Branch + Online + ATM")
