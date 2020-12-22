@@ -15,14 +15,6 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libgit2-dev
   - sudo apt-get install -y r-cran-rcppeigen
-  - rcode="options('testthat.progress.max_fails' = Inf); "
-  - rcode+="tfile <- tempfile(); capture.output(res<-devtools::test(), file = tfile); out <- readLines(tfile); cat(out, sep = '\n'); "
-  - rcode+="line.fail <- max(grep('FAIL', out)); "
-  - rcode+="tmp <- unlist(strsplit(split='[[:space:]]+', out[line.fail])); "
-  - rcode+="pos.fail <- grep('FAIL', tmp); n.fail <- as.numeric(tmp[pos.fail+1]); "
-  - rcode+="res <- as.data.frame(res); out <- data.frame(file = unlist(res[['file']]), warning = unlist(res[['warning']])); "
-  - rcode+="write.csv(out, file='test_results.csv'); "
-  - rcode+="quit(status = !identical(n.fail, 0), save='no');"
   - Rscript tools/travis_run_before_install.R
 
 r_packages:
@@ -37,9 +29,7 @@ r_github_packages:
 script:
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
   - R CMD check --as-cran --no-manual --no-build-vignettes --no-tests *.tar.gz
-  - if [ -d tests/testthat ]; then
-    Rscript --default-packages='datasets,utils,grDevices,graphics,stats,methods' -e "$rcode";
-    fi
+  - travis_wait 40 ./runTravisTests.sh
 
 notifications:
   slack:
