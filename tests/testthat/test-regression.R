@@ -279,7 +279,7 @@ test_that("Error if too many dummy predictors",
 
 test_that("DS-2702: Outcome labels are preserved", {
     bank$Overall <- as.factor(bank$Overall)
-    bank$Overall[is.na(bank$Overall)] <- 1 # previously label was lost for variables without missing values
+    #bank$Overall[is.na(bank$Overall)] <- 1 # previously label was lost for variables without missing values
     attr(bank$Overall, "label") <- "lbl"
     result <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                                           data = bank, show.labels = TRUE))
