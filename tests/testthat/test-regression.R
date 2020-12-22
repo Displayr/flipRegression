@@ -76,13 +76,13 @@ test_that(missing,
               } else
               {
                   z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.298)
+                  expect_equal(round(z, 3), 0.300)
                   z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.313)
+                  expect_equal(round(z, 3), 0.312)
                   z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
                   expect_equal(round(z, 3), 0.312)
                   z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.323)
+                  expect_equal(round(z, 3), 0.322)
               }
           })
 
