@@ -322,14 +322,14 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
         estimation.data <- relabelled.outputs$data
         outcome.name <- relabelled.outputs$outcome.name
     }
-    # Check names are syntatic for formula and data, if non-syntatic, make them that way.
-    if (any(non.syntatic.vars <- checkFormulaForValidNames(input.formula, data = estimation.data,
-                                                           patt = syntatic.name.patt,
-                                                           negate = TRUE)))
+    # Check names are syntactic for formula and data, if non-syntactic, make them that way.
+    if (any(non.syntactic.vars <- checkFormulaForValidNames(input.formula, data = estimation.data,
+                                                            patt = syntactic.name.patt,
+                                                            negate = TRUE)))
     {
-        new.var.names <- makeVariableNamesValid(non.syntatic.vars)
+        new.var.names <- makeVariableNamesValid(non.syntactic.vars)
         relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, estimation.data,
-                                                    patt = syntatic.name.patt)
+                                                    patt = syntactic.name.patt)
         input.formula <- relabelled.outputs$formula
         estimation.data <- relabelled.outputs$data
         outcome.name <- relabelled.outputs$outcome.name
@@ -345,7 +345,7 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
     }
 }
 
-syntatic.name.patt <- "^((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])$"
+syntactic.name.patt <- "^((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])$"
 dataset.reference.patt <- "^[[:print:]]*[$](Variables|Questions)[$]"
 
 makeVariableNamesValid <- function(vars.to.relabel, remove.patt = NULL)
@@ -353,12 +353,7 @@ makeVariableNamesValid <- function(vars.to.relabel, remove.patt = NULL)
     new.var.names <- names(vars.to.relabel)
     if (!is.null(remove.patt))
         new.var.names <- sub(remove.patt, "", new.var.names)
-    new.var.names <- make.names(new.var.names)
-    if (any(duplicated(new.var.names)))
-    {
-        new.var.names <- make.unique(new.var.names)
-        names(new.var.names) <- names(vars.to.relabel)
-    }
+    new.var.names <- make.names(new.var.names, unique = TRUE)
     names(new.var.names) <- names(vars.to.relabel)
     new.var.names
 }
@@ -450,16 +445,15 @@ checkFormulaForValidNames <- function(input.formula, data = NULL, patt, negate =
     refs.found
 }
 
-#' Replaces the variables that have dataset references in both the formula and data provided.
-#' @param reference.vars Relevant logical vector, expected to be the output of \code{\link{checkFormulaForDataReferences}}
-#'     where the elements are not all \code{FALSE}. i.e. at least one variable has a dataset reference
-#'     in the formula and data below.
+#' Updates the variables names for a formula and its associated data.
+#' @param new.var.names Relevant named character vector. The elements of the vector contain
+#'  the new desired labels and the names of the vector contain the old labels, hence providing
+#'  the appropriate mapping.
 #' @param formula Relevant \code{data.frame} used in the regression
 #' @param data Relevant \code{data.frame} used in the regression
-#' @param patt String pattern to match the dataset reference syntax.
 #' @return list that has an updated formula, data and outcome name without any dataset references
 #' @noRd
-relabelFormulaAndData <- function(new.var.names, formula, data, patt = "^[[:print:]]*[$](Variables|Questions)[$]")
+relabelFormulaAndData <- function(new.var.names, formula, data)
 {
     outcome.name <- new.outcome.name <- new.var.names[1]
     new.predictor.names <- new.var.names[-1]

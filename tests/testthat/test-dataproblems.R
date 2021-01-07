@@ -508,7 +508,7 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
 })
 
-test_that("Non-syntatic names in formula for alias checking in RIA", {
+test_that("Non-syntactic names in formula for alias checking in RIA", {
     bad.formula <- `Q1#A` ~ X.1 + X.2 + X.3
     sigma.mat <- matrix(c(1, 0.5, 0.3,
                           0.5, 1, 0.4,
@@ -516,10 +516,10 @@ test_that("Non-syntatic names in formula for alias checking in RIA", {
     X <- MASS::mvrnorm(n = 10, mu = rep(0, 3), Sigma = sigma.mat)
     dat <- data.frame(X = X)
     dat$Y <- runif(nrow(dat))
-    non.syntatic.identified <- c(TRUE, FALSE, FALSE, FALSE)
-    names(non.syntatic.identified) <- c("`Q1#A`", paste0("X.", 1:3))
+    non.syntactic.identified <- c(TRUE, FALSE, FALSE, FALSE)
+    names(non.syntactic.identified) <- c("`Q1#A`", paste0("X.", 1:3))
     expect_equal(reference.vector <- flipRegression::checkFormulaForValidNames(bad.formula, data = dat,
-                                                                               patt = syntatic.name.patt,
+                                                                               patt = syntactic.name.patt,
                                                                                negate = TRUE),
-                 non.syntatic.identified)
+                 non.syntactic.identified)
 })
