@@ -313,9 +313,23 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
     # Check to see if there are columns with no variation
     validateVariablesHaveVariation(input.formula, estimation.data, outcome.name, output, show.labels, group.name)
     # Remove any dataset references e.g. mydata$Variables$Y since this breaks the later call to alias.
-    if (any(vars.to.relabel <- checkFormulaForDataReferences(input.formula, data = estimation.data)))
+    if (any(vars.to.relabel <- checkFormulaForValidNames(input.formula, data = estimation.data,
+                                                         patt = dataset.reference.patt)))
     {
-        relabelled.outputs <- relabelFormulaAndData(vars.to.relabel, input.formula, estimation.data)
+        new.var.names <- makeVariableNamesValid(vars.to.relabel, remove.patt = dataset.reference.patt)
+        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, estimation.data)
+        input.formula <- relabelled.outputs$formula
+        estimation.data <- relabelled.outputs$data
+        outcome.name <- relabelled.outputs$outcome.name
+    }
+    # Check names are syntactic for formula and data, if non-syntactic, make them that way.
+    if (any(non.syntactic.vars <- checkFormulaForValidNames(input.formula, data = estimation.data,
+                                                            patt = syntactic.name.patt,
+                                                            negate = TRUE)))
+    {
+        new.var.names <- makeVariableNamesValid(non.syntactic.vars)
+        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, estimation.data,
+                                                    patt = syntactic.name.patt)
         input.formula <- relabelled.outputs$formula
         estimation.data <- relabelled.outputs$data
         outcome.name <- relabelled.outputs$outcome.name
@@ -329,6 +343,19 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
         names(formula.labels) <- formula.names
         throwAliasedExceptionImportanceAnalysis(aliased.processed, formula.labels, output, group.name)
     }
+}
+
+syntactic.name.patt <- "^((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])$"
+dataset.reference.patt <- "^[[:print:]]*[$](Variables|Questions)[$]"
+
+makeVariableNamesValid <- function(vars.to.relabel, remove.patt = NULL)
+{
+    new.var.names <- names(vars.to.relabel)
+    if (!is.null(remove.patt))
+        new.var.names <- sub(remove.patt, "", new.var.names)
+    new.var.names <- make.names(new.var.names, unique = TRUE)
+    names(new.var.names) <- names(vars.to.relabel)
+    new.var.names
 }
 
 #' Function determines whether the outcome variable of predictors dont have any variation. Used to validate
@@ -403,37 +430,31 @@ throwRIAException <- function(x, group.name = NULL)
 #' @param input.formula formula object that has an additive structure, i.e. Y ~ X1 + X2 (no interaction)
 #' @param data \code{data.frame} to use to expand formula if . is used in formula
 #' @param patt String pattern to match the dataset reference syntax.
+#' @param negate Whether to negate the pattern matches provided
 #' @return A named logical vector, with length (p + 1) where p is the number of predictors (1 extra for the
 #' outcome name). The values are \code{TRUE} if dataset reference found, \code{FALSE} otherwise.
 #' @noRd
-checkFormulaForDataReferences <- function(input.formula, data = NULL,
-                                          patt = "^[[:print:]]*[$](Variables|Questions)[$]")
+checkFormulaForValidNames <- function(input.formula, data = NULL, patt, negate = FALSE)
 {
     variable.names <- AllVariablesNames(input.formula, data = data)
-    refs.found <- grepl(pattern = patt, variable.names)
+    matches <- grepl(pattern = patt, variable.names)
+    if (negate)
+        matches <- !matches
+    refs.found <- matches
     names(refs.found) <- variable.names
     refs.found
 }
 
-#' Replaces the variables that have dataset references in both the formula and data provided.
-#' @param reference.vars Relevant logical vector, expected to be the output of \code{\link{checkFormulaForDataReferences}}
-#'     where the elements are not all \code{FALSE}. i.e. at least one variable has a dataset reference
-#'     in the formula and data below.
+#' Updates the variables names for a formula and its associated data.
+#' @param new.var.names Relevant named character vector. The elements of the vector contain
+#'  the new desired labels and the names of the vector contain the old labels, hence providing
+#'  the appropriate mapping.
 #' @param formula Relevant \code{data.frame} used in the regression
 #' @param data Relevant \code{data.frame} used in the regression
-#' @param patt String pattern to match the dataset reference syntax.
 #' @return list that has an updated formula, data and outcome name without any dataset references
 #' @noRd
-relabelFormulaAndData <- function(reference.vars, formula, data, patt = "^[[:print:]]*[$](Variables|Questions)[$]")
+relabelFormulaAndData <- function(new.var.names, formula, data)
 {
-    new.var.names <- names(reference.vars)
-    new.var.names <- make.names(sub(patt, "", new.var.names))
-    if (any(duplicated(new.var.names)))
-    {
-        new.var.names <- make.unique(new.var.names)
-        names(new.var.names) <- names(reference.vars)
-    }
-    names(new.var.names) <- names(reference.vars)
     outcome.name <- new.outcome.name <- new.var.names[1]
     new.predictor.names <- new.var.names[-1]
     formula <- update(formula, as.formula(paste0(new.outcome.name, " ~ ",
