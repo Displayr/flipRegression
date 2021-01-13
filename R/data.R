@@ -323,13 +323,12 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
         outcome.name <- relabelled.outputs$outcome.name
     }
     # Check names are syntactic for formula and data, if non-syntactic, make them that way.
-    if (any(non.syntactic.vars <- checkFormulaForValidNames(input.formula, data = estimation.data,
-                                                            patt = syntactic.name.patt,
-                                                            negate = TRUE)))
+    variable.names <- AllVariablesNames(input.formula, data = estimation.data)
+    syntactic.names <- make.names(variable.names, unique = TRUE)
+    if (!identical(variable.names, syntactic.names))
     {
-        new.var.names <- makeVariableNamesValid(non.syntactic.vars)
-        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, estimation.data,
-                                                    patt = syntactic.name.patt)
+        names(syntactic.names) <- variable.names
+        relabelled.outputs <- relabelFormulaAndData(syntactic.names, input.formula, estimation.data)
         input.formula <- relabelled.outputs$formula
         estimation.data <- relabelled.outputs$data
         outcome.name <- relabelled.outputs$outcome.name

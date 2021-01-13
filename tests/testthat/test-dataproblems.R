@@ -516,10 +516,11 @@ test_that("Non-syntactic names in formula for alias checking in RIA", {
     X <- MASS::mvrnorm(n = 10, mu = rep(0, 3), Sigma = sigma.mat)
     dat <- data.frame(X = X)
     dat$Y <- runif(nrow(dat))
-    non.syntactic.identified <- c(TRUE, FALSE, FALSE, FALSE)
-    names(non.syntactic.identified) <- c("`Q1#A`", paste0("X.", 1:3))
-    expect_equal(reference.vector <- flipRegression::checkFormulaForValidNames(bad.formula, data = dat,
-                                                                               patt = syntactic.name.patt,
-                                                                               negate = TRUE),
-                 non.syntactic.identified)
+    names(dat)[4] <- "`Q1#A`"
+    expect_error(flipRegression:::validateDataForRIA(bad.formula,
+                                                     estimation.data = dat,
+                                                     outcome.name = "`Q1#A`",
+                                                     show.labels = TRUE,
+                                                     output = "Shapley Regression"),
+                 NA)
 })
