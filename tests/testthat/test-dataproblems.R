@@ -508,7 +508,7 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
 })
 
-test_that("Non-syntactic names in formula for alias checking in RIA", {
+test_that("Non-syntactic names in formula", {
     bad.formula <- `Q1#A` ~ X.1 + X.2 + X.3
     sigma.mat <- matrix(c(1, 0.5, 0.3,
                           0.5, 1, 0.4,
@@ -517,10 +517,13 @@ test_that("Non-syntactic names in formula for alias checking in RIA", {
     dat <- data.frame(X = X)
     dat$Y <- runif(nrow(dat))
     names(dat)[4] <- "`Q1#A`"
-    expect_error(flipRegression:::validateDataForRIA(bad.formula,
-                                                     estimation.data = dat,
-                                                     outcome.name = "`Q1#A`",
-                                                     show.labels = TRUE,
-                                                     output = "Shapley Regression"),
-                 NA)
+    expected.mapping <- c("X.Q1.A.", X.1 = "X.1", X.2 = "X.2", X.3 = "X.3")
+    names(expected.mapping)[1] <- "`Q1#A`"
+    expect_equal(flipRegression:::checkForNonSyntacticNames(input.formula = bad.formula,
+                                                            data = dat),
+                 expected.mapping)
+    good.formula <- Y ~ X.1 + X.2 + X.3
+    names(dat)[4] <- "Y"
+    expect_null(flipRegression:::checkForNonSyntacticNames(input.formula = good.formula,
+                                                           data = dat))
 })

@@ -67,7 +67,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     if (!is.null(importance))
     {
         importance.scores <- result$importance$importance
-        var.names <- result$importance.names
+        var.names <- result$importance.names[!grepDummyVars(result$importance.names)]
         var.labels <- result$importance.labels
         res$net.coef <- importance.scores
         num.var <- length(importance.scores)

@@ -405,6 +405,46 @@ Regression <- function(formula = as.formula(NULL),
             }
         }
     }
+    # Update dataset references and non-syntactic names if they exist
+    ## Dataset references first
+    ## Remove any dataset references e.g. mydata$Variables$Y
+    if (any(vars.with.data.refs <- checkFormulaForValidNames(input.formula, data = data,
+                                                             patt = dataset.reference.patt)))
+    {
+        new.var.names <- makeVariableNamesValid(vars.with.data.refs, remove.patt = dataset.reference.patt)
+        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, data)
+        input.formula <- relabelled.outputs$formula
+        data <- relabelled.outputs$data
+    }
+    non.syntactic.names <- checkForNonSyntacticNames(input.formula, data = data)
+    if (non.syntactic.names.exist <- !is.null(non.syntactic.names))
+    {
+        relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data)
+        input.formula <- relabelled.outputs$formula
+        data <- relabelled.outputs$data
+    }
+    # Update interaction formula if it is affected.
+    formula.has.dot <- "." %in% all.vars(input.formula)
+    all.variable.names <- AllVariablesNames(input.formula, data = data)
+    if (formula.has.dot)
+        all.variable.names <- all.variable.names[all.variable.names != interaction.name]
+    unique.syntactic.interaction.name <- Last(make.names(c(all.variable.names, interaction.name),
+                                                         unique = TRUE),
+                                              1)
+    interaction.name.needs.updating <- !identical(interaction.name, unique.syntactic.interaction.name)
+    if (any(vars.with.data.refs) || non.syntactic.names.exist || interaction.name.needs.updating)
+    {
+        if (is.null(interaction))
+            formula.with.interaction <- input.formula
+        else
+        {
+            formula.with.interaction <- update(terms(input.formula, data = data),
+                                               sprintf(".~.*%s", unique.syntactic.interaction.name))
+            names(data)[which(names(data) == interaction.name)] <- unique.syntactic.interaction.name
+            interaction.name <- unique.syntactic.interaction.name
+        }
+    }
+
     if (show.labels)
     {
         labels <- Labels(data)
@@ -432,7 +472,7 @@ Regression <- function(formula = as.formula(NULL),
     if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
         stop("'subset' and 'data' are required to have the same number of observations. They do not.")
     # Check if there are any entirely missing variables in the data and adjust accordingly.
-    missing.variables <- apply(data, 2, function(x) all(is.na(x)))
+    missing.variables <- vapply(data, function(x) all(is.na(x)), logical(1L))
     if(any(missing.variables))
     {
         missing.variable.adjustment <- removeMissingVariables(data, formula, formula.with.interaction,
@@ -759,6 +799,7 @@ Regression <- function(formula = as.formula(NULL),
                 input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
                                                              data = processed.data$estimation.data,
                                                              update.string = " - ")$formula
+                nms <- nms[!grepDummyVars(nms)]
             }
             result$formula <- input.formula
         }
@@ -813,7 +854,6 @@ Regression <- function(formula = as.formula(NULL),
         result$importance.type <- importance
         result$relative.importance <- result$importance
     }
-
     if (result$test.interaction)
         result$interaction <- computeInteractionCrosstab(result, interaction.name, interaction.label,
                                                          formula.with.interaction, importance,
