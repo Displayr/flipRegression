@@ -312,27 +312,6 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
 {
     # Check to see if there are columns with no variation
     validateVariablesHaveVariation(input.formula, estimation.data, outcome.name, output, show.labels, group.name)
-    # Remove any dataset references e.g. mydata$Variables$Y since this breaks the later call to alias.
-    if (any(vars.to.relabel <- checkFormulaForValidNames(input.formula, data = estimation.data,
-                                                         patt = dataset.reference.patt)))
-    {
-        new.var.names <- makeVariableNamesValid(vars.to.relabel, remove.patt = dataset.reference.patt)
-        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, estimation.data)
-        input.formula <- relabelled.outputs$formula
-        estimation.data <- relabelled.outputs$data
-        outcome.name <- relabelled.outputs$outcome.name
-    }
-    # Check names are syntactic for formula and data, if non-syntactic, make them that way.
-    variable.names <- AllVariablesNames(input.formula, data = estimation.data)
-    syntactic.names <- make.names(variable.names, unique = TRUE)
-    if (!identical(variable.names, syntactic.names))
-    {
-        names(syntactic.names) <- variable.names
-        relabelled.outputs <- relabelFormulaAndData(syntactic.names, input.formula, estimation.data)
-        input.formula <- relabelled.outputs$formula
-        estimation.data <- relabelled.outputs$data
-        outcome.name <- relabelled.outputs$outcome.name
-    }
     # Check to see if there are linearly dependent predictors
     aliased.processed <- determineAliased(input.formula, estimation.data, outcome.name)
     if (is(aliased.processed, "list"))
@@ -463,4 +442,16 @@ relabelFormulaAndData <- function(new.var.names, formula, data)
     cols.to.update <- match(names(new.var.names), colnames(data), nomatch = 0)
     names(data)[cols.to.update] <- new.var.names
     list(formula = formula, data = data, outcome.name = unname(outcome.name))
+}
+
+checkForNonSyntacticNames <- function(input.formula, data)
+{
+    variable.names <- AllVariablesNames(input.formula, data = data)
+    syntactic.names <- make.names(variable.names, unique = TRUE)
+    if (non.syntactic.names <- !identical(variable.names, syntactic.names))
+    {
+        names(syntactic.names) <- variable.names
+        return(syntactic.names)
+    }
+    return(NULL)
 }
