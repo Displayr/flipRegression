@@ -417,7 +417,11 @@ Regression <- function(formula = as.formula(NULL),
         new.var.names[vars.with.data.refs] <- paste0(new.var.names[vars.with.data.refs],
                                                      " from ",
                                                      dataset.names)
-        labels.to.update <- if (length(unique(dataset.names)) == 1L) FALSE else vars.with.data.refs
+        original.labels <- Labels(data, all.variable.names)
+        if (length(unique(dataset.names)) == 1L || !anyDuplicated(original.labels))
+            labels.to.update <- FALSE
+        else
+            labels.to.update <- vars.with.data.refs
         relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, data, update.labels = labels.to.update)
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
