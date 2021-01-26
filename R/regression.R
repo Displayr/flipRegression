@@ -405,27 +405,33 @@ Regression <- function(formula = as.formula(NULL),
             }
         }
     }
-    # Update dataset references and non-syntactic names if they exist
+    # Remove/Update dataset references and non-syntactic names if they exist
     ## Dataset references first
     ## Remove any dataset references e.g. mydata$Variables$Y
-    if (any(vars.with.data.refs <- checkFormulaForValidNames(input.formula, data = data,
-                                                             patt = dataset.reference.patt)))
+    all.variable.names <- AllVariablesNames(input.formula, data)
+    if (any(vars.with.data.refs <- checkVariablesForDataSetNames(all.variable.names)))
     {
-        new.var.names <- makeVariableNamesValid(vars.with.data.refs, remove.patt = dataset.reference.patt)
-        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, data)
+        names(all.variable.names) <- all.variable.names
+        dataset.names <- lookupDataSetNames(all.variable.names[vars.with.data.refs], data)
+        new.var.names <- removeDataSetReferences(vars.with.data.refs)
+        new.var.names[vars.with.data.refs] <- paste0(new.var.names[vars.with.data.refs],
+                                                     " from ",
+                                                     dataset.names)
+        labels.to.update <- if (length(unique(dataset.names)) == 1L) FALSE else vars.with.data.refs
+        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, data, update.labels = labels.to.update)
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
+        all.variable.names <- AllVariablesNames(input.formula, data = data)
     }
-    non.syntactic.names <- checkForNonSyntacticNames(input.formula, data = data)
+    non.syntactic.names <- checkForNonSyntacticNames(all.variable.names)
     if (non.syntactic.names.exist <- !is.null(non.syntactic.names))
     {
-        relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data)
+        relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data, update.labels = FALSE)
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
+        all.variable.names <- AllVariablesNames(input.formula, data = data)
     }
-    # Update interaction formula if it is affected.
     formula.has.dot <- "." %in% all.vars(input.formula)
-    all.variable.names <- AllVariablesNames(input.formula, data = data)
     if (formula.has.dot)
         all.variable.names <- all.variable.names[all.variable.names != interaction.name]
     unique.syntactic.interaction.name <- Last(make.names(c(all.variable.names, interaction.name),

@@ -326,12 +326,10 @@ validateDataForRIA <- function(input.formula, estimation.data, outcome.name, sho
 syntactic.name.patt <- "^((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])$"
 dataset.reference.patt <- "^[[:print:]]*[$](Variables|Questions)[$]"
 
-makeVariableNamesValid <- function(vars.to.relabel, remove.patt = NULL)
+removeDataSetReferences <- function(vars.to.relabel)
 {
     new.var.names <- names(vars.to.relabel)
-    if (!is.null(remove.patt))
-        new.var.names <- sub(remove.patt, "", new.var.names)
-    new.var.names <- make.names(new.var.names, unique = TRUE)
+    new.var.names <- sub(dataset.reference.patt, "", new.var.names)
     names(new.var.names) <- names(vars.to.relabel)
     new.var.names
 }
@@ -402,25 +400,17 @@ throwRIAException <- function(x, group.name = NULL)
     }
 }
 
-#' Checks the formula object input and returns a named logical vector that specifies if any variable names
-#' in the formula use dataset references. e.g. \code{TRUE} if \code{`My data`$Variables$`Some Y`} and
+#' Checks the provided character vecvtor of variable names use dataset references. e.g. \code{TRUE} if \code{`My data`$Variables$`Some Y`} and
 #' \code{FALSE} if a variable doesn't have dataset references.
-#' @param input.formula formula object that has an additive structure, i.e. Y ~ X1 + X2 (no interaction)
-#' @param data \code{data.frame} to use to expand formula if . is used in formula
-#' @param patt String pattern to match the dataset reference syntax.
-#' @param negate Whether to negate the pattern matches provided
+#' @param all.variable.names Variable names to be checked
 #' @return A named logical vector, with length (p + 1) where p is the number of predictors (1 extra for the
 #' outcome name). The values are \code{TRUE} if dataset reference found, \code{FALSE} otherwise.
 #' @noRd
-checkFormulaForValidNames <- function(input.formula, data = NULL, patt, negate = FALSE)
+checkVariablesForDataSetNames <- function(all.variable.names)
 {
-    variable.names <- AllVariablesNames(input.formula, data = data)
-    matches <- grepl(pattern = patt, variable.names)
-    if (negate)
-        matches <- !matches
-    refs.found <- matches
-    names(refs.found) <- variable.names
-    refs.found
+    dataset.refs.found <- grepl(pattern = dataset.reference.patt, all.variable.names)
+    names(dataset.refs.found) <- all.variable.names
+    dataset.refs.found
 }
 
 #' Updates the variables names for a formula and its associated data.
@@ -429,10 +419,16 @@ checkFormulaForValidNames <- function(input.formula, data = NULL, patt, negate =
 #'  the appropriate mapping.
 #' @param formula Relevant \code{data.frame} used in the regression
 #' @param data Relevant \code{data.frame} used in the regression
+#' @param update.labels An optional logical vector. If false, no labels are updated in the data input.
+#'   If a logical vector is provided, then any true element will be used to update the data.
 #' @return list that has an updated formula, data and outcome name without any dataset references
 #' @noRd
-relabelFormulaAndData <- function(new.var.names, formula, data)
+relabelFormulaAndData <- function(new.var.names, formula, data, update.labels = FALSE)
 {
+    if (any(update.labels))
+        data <- updateAttribute(data, attr.to.update = "label", updated.values = new.var.names[update.labels])
+    new.var.names <- gsub(" ", "_", new.var.names)
+    data <- updateAttribute(data, attr.to.update = "name", updated.values = new.var.names)
     outcome.name <- new.outcome.name <- new.var.names[1]
     new.predictor.names <- new.var.names[-1]
     formula <- update(formula, as.formula(paste0(new.outcome.name, " ~ ",
@@ -441,12 +437,16 @@ relabelFormulaAndData <- function(new.var.names, formula, data)
     # Match data names to the appropriate new names
     cols.to.update <- match(names(new.var.names), colnames(data), nomatch = 0)
     names(data)[cols.to.update] <- new.var.names
+
     list(formula = formula, data = data, outcome.name = unname(outcome.name))
 }
 
-checkForNonSyntacticNames <- function(input.formula, data)
+#' Checks the provided character vector contains syntactic names by comparing the output of make.names.
+#' If the names are syntactic, the return output is NULL. Otherwise a mapped character vector with syntactic
+#' names is provided (syntactic names are the vector elements, old names are the vector element names)
+#' @nodRd
+checkForNonSyntacticNames <- function(variable.names)
 {
-    variable.names <- AllVariablesNames(input.formula, data = data)
     syntactic.names <- make.names(variable.names, unique = TRUE)
     if (non.syntactic.names <- !identical(variable.names, syntactic.names))
     {
@@ -454,4 +454,35 @@ checkForNonSyntacticNames <- function(input.formula, data)
         return(syntactic.names)
     }
     return(NULL)
+}
+
+#' Look up name of the provided data set or derive it from the provided variable names if required.
+#' @noRd
+lookupDataSetNames <- function(variable.names, data)
+{
+    dataset.names <- vapply(variable.names,
+                            function(x) if (!is.null(dataset.found <- attr(data[[x]], "dataset")))
+                                            dataset.found
+                                        else NA_character_,
+                            character(1L))
+    if (anyNA(dataset.names))
+    {
+        missing.dataset.names <- is.na(dataset.names)
+        dataset.names[missing.dataset.names] <- sub("[$](Variables|Questions)[$].*", "", variable.names[missing.dataset.names])
+        dataset.names[missing.dataset.names] <- gsub("`", "", dataset.names[missing.dataset.names])
+    }
+    dataset.names
+}
+
+#' @param data data.frame of data to be updated
+#' @param attr.to.update The name of the attribute to update (attribute declared at the variable level not data.frame level).
+#' @param updated.vales A named vector of values to update. The elements contain the new attribute values. The names contain the
+#'   variables to lookup inside the data.frame.
+#' @noRd
+updateAttribute <- function(data, attr.to.update, updated.values)
+{
+    for (var in names(updated.values))
+        if (!is.null(attr(data[[var]], attr.to.update)))
+            attr(data[[var]], attr.to.update) <- unname(updated.values[var])
+    data
 }
