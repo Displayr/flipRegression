@@ -367,25 +367,22 @@ test_that("DS-2884: Ordered Logit with non-syntactic variable names",
 })
 
 test_that("DS-2990: Helper functions detecting dataset references in formula", {
-    # Check function that identifies dataset references in formula is working
-    reference.formula <- `My data`$Variables$`My Y` ~ X
+    # Check function that identifies dataset references in variable names is working
+    all.var.names <- c("`My data`$Variables$`My Y`", "X")
     # Test outcome variable first
-    expect_error(name.output <- flipRegression::checkFormulaForValidNames(reference.formula,
-                                                                          patt = dataset.reference.patt),
+    expect_error(name.output <- flipRegression::checkVariablesForDataSetNames(all.var.names),
                  NA)
-    # Dataset reference identified and correct logical vecto
+    # Dataset reference identified and correct logical vector
     expect_equal(name.output, c("`My data`$Variables$`My Y`" = TRUE, X = FALSE))
     # Check predictors working ok too
-    reference.formula <- `My Y` ~ `My data`$Variables$X + `Other data`$Variables$`Fancy X` + X3 + `Another X`
-    expect_error(name.output <- flipRegression::checkFormulaForValidNames(reference.formula,
-                                                                          patt = dataset.reference.patt),
+    all.var.names <- c("`My Y`", "`My data`$Variables$X", "`Other data`$Variables$`Fancy X`", "X3", "`Another X`")
+    expect_error(name.output <- flipRegression::checkVariablesForDataSetNames(all.var.names),
                  NA)
     expect_equal(name.output, c("`My Y`" = FALSE, "`My data`$Variables$X" = TRUE, "`Other data`$Variables$`Fancy X`" = TRUE,
                                 X3 = FALSE, "`Another X`" = FALSE))
     # Check handles the case where variables are ambiguous when dataset references are removed.
-    reference.formula <- Y ~ `My data`$Variables$X + `Other data`$Variables$X + X3 + X
-    expect_error(name.output <- flipRegression::checkFormulaForValidNames(reference.formula,
-                                                                          patt = dataset.reference.patt),
+    all.var.names <- c("Y", "`My data`$Variables$X", "`Other data`$Variables$X", "X3", "X")
+    expect_error(name.output <- flipRegression::checkVariablesForDataSetNames(all.var.names),
                  NA)
     expect_equivalent(name.output, c(FALSE, TRUE, TRUE, FALSE, FALSE))
     # Checks formula and data have their references to other datasets removed in their names.
@@ -398,21 +395,20 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     dat.with.ref <- dat
     # change the name of the outcome
     names(dat.with.ref)[length(dat)] <- "`My data`$Variables$Y"
-    input.formula <- `My data`$Variables$Y ~ X.1 + X.2 + X.3
+    all.var.names <- c("`My data`$Variables$Y", "X.1", "X.2", "X.3")
     bad.names <- c("`My data`$Variables$Y", paste0("X.", 1:3))
     good.names <- c("Y", paste0("X.", 1:3))
     names(good.names) <- bad.names
     expected.check <- logical(4)
     names(expected.check) <- bad.names
     expected.check[1L] <- TRUE
-    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
-                                                                                patt = dataset.reference.patt),
+    expect_equal(reference.vector <- flipRegression:::checkVariablesForDataSetNames(all.var.names),
                  expected.check)
     expected.mapping <- good.names
     names(expected.mapping) <- bad.names
-    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
-                                                         remove.patt = dataset.reference.patt),
+    expect_equal(flipRegression:::removeDataSetReferences(reference.vector),
                  expected.mapping)
+    input.formula <- `My data`$Variables$Y ~ X.1 + X.2 + X.3
     expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
     expect_setequal(names(output.list$data), c("Y", paste0("X.", 1:3)))
@@ -436,13 +432,11 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     expected.check <- logical(4)
     names(expected.check) <- bad.names
     expected.check[c(1, 3)] <- TRUE
-    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
-                                                                                patt = dataset.reference.patt),
+    expect_equal(reference.vector <- flipRegression:::checkVariablesForDataSetNames(bad.names),
                  expected.check)
     expected.mapping <- good.names
     names(expected.mapping) <- bad.names
-    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
-                                                         remove.patt = dataset.reference.patt),
+    expect_equal(flipRegression:::removeDataSetReferences(reference.vector),
                  expected.mapping)
     expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
@@ -461,22 +455,28 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     expected.check <- logical(4)
     names(expected.check) <- bad.names
     expected.check[1:3] <- TRUE
-    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
-                                                                                patt = dataset.reference.patt),
+    expect_equal(reference.vector <- flipRegression:::checkVariablesForDataSetNames(bad.names),
                  expected.check)
     expected.mapping <- good.names
-    expected.mapping[3] <- "X.1.1"
+    expected.mapping[3] <- "X.1"
     names(expected.mapping) <- bad.names
-    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
-                                                         remove.patt = dataset.reference.patt),
+    expect_equal(flipRegression:::removeDataSetReferences(reference.vector),
                  expected.mapping)
+    expected.dataset.names <- c(rep("My data", 2), "Other data")
+    names(expected.dataset.names) <- bad.names[reference.vector]
+    expect_equal(flipRegression:::lookupDataSetNames(bad.names[reference.vector], dat.with.ref),
+                 expected.dataset.names)
+    expected.mapping[reference.vector] <- paste0(expected.mapping[reference.vector],
+                                                 " from ",
+                                                 expected.dataset.names)
     expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
-    expect_setequal(substr(names(output.list$data), 1, 3), c("Y", paste0("X.", c(1, 1, 3))))
+    expect_setequal(names(output.list$data),
+                    c("X.1_from_My_data", "X.1_from_Other_data", "X.3", "Y_from_My_data"))
     # Check mapping was done appropriately, if so, the linear models produced on both versions of the data
     # should have identical coefficients
     long.lm <- lm(`\`My data\`$Variables$Y` ~ ., data = dat.with.ref)
-    cleaned.lm <- lm(Y ~ ., data = output.list$data)
+    cleaned.lm <- lm(Y_from_My_data ~ ., data = output.list$data)
     expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
     # Same as above with a weights column
     dat.with.ref <- dat
@@ -491,39 +491,62 @@ test_that("DS-2990: Helper functions detecting dataset references in formula", {
     expected.check <- logical(4)
     names(expected.check) <- bad.names
     expected.check[1:3] <- TRUE
-    expect_equal(reference.vector <- flipRegression:::checkFormulaForValidNames(input.formula,
-                                                                                patt = dataset.reference.patt),
+    expect_equal(reference.vector <- flipRegression:::checkVariablesForDataSetNames(bad.names),
                  expected.check)
     expected.mapping <- good.names
-    expected.mapping[3] <- "X.1.1"
     names(expected.mapping) <- bad.names
-    expect_equal(flipRegression:::makeVariableNamesValid(reference.vector,
-                                                         remove.patt = dataset.reference.patt),
+    expect_equal(flipRegression:::removeDataSetReferences(reference.vector),
                  expected.mapping)
+    expected.dataset.names <- c(rep("My data", 2), "Other data")
+    names(expected.dataset.names) <- bad.names[reference.vector]
+    expect_equal(flipRegression:::lookupDataSetNames(bad.names[reference.vector], dat.with.ref),
+                 expected.dataset.names)
+    expected.mapping[reference.vector] <- paste0(expected.mapping[reference.vector],
+                                                 " from ",
+                                                 expected.dataset.names)
     expect_error(output.list <- flipRegression:::relabelFormulaAndData(expected.mapping, input.formula, dat.with.ref),
                  NA)
-    expect_setequal(substr(names(output.list$data), 1, 3), c("Y", "wei", paste0("X.", c(1, 1, 3))))
+    expect_setequal(names(output.list$data),
+                    c("X.1_from_My_data", "X.1_from_Other_data", "X.3", "Y_from_My_data", "weights"))
     long.lm <- lm(`\`My data\`$Variables$Y` ~ ., data = dat.with.ref)
-    cleaned.lm <- lm(Y ~ ., data = output.list$data)
+    cleaned.lm <- lm(Y_from_My_data ~ ., data = output.list$data)
     expect_equal(unname(long.lm$coef), unname(cleaned.lm$coef))
 })
 
 test_that("Non-syntactic names in formula", {
-    bad.formula <- `Q1#A` ~ X.1 + X.2 + X.3
-    sigma.mat <- matrix(c(1, 0.5, 0.3,
-                          0.5, 1, 0.4,
-                          0.3, 0.4, 1), byrow = TRUE, ncol = 3)
-    X <- MASS::mvrnorm(n = 10, mu = rep(0, 3), Sigma = sigma.mat)
-    dat <- data.frame(X = X)
-    dat$Y <- runif(nrow(dat))
-    names(dat)[4] <- "`Q1#A`"
+    non.syntactic.names <- c("`Q1#A`", "X.1", "X.2", "X.3")
     expected.mapping <- c("X.Q1.A.", X.1 = "X.1", X.2 = "X.2", X.3 = "X.3")
     names(expected.mapping)[1] <- "`Q1#A`"
-    expect_equal(flipRegression:::checkForNonSyntacticNames(input.formula = bad.formula,
-                                                            data = dat),
+    expect_equal(flipRegression:::checkForNonSyntacticNames(non.syntactic.names),
                  expected.mapping)
-    good.formula <- Y ~ X.1 + X.2 + X.3
-    names(dat)[4] <- "Y"
-    expect_null(flipRegression:::checkForNonSyntacticNames(input.formula = good.formula,
-                                                           data = dat))
+    expect_null(flipRegression:::checkForNonSyntacticNames(c("Y", paste0("X.", 1:3))))
+})
+
+test_that("Non syntactic variable names and dataset references", {
+    non.syntactic.names <- c("`Q1#A`", "`X@1`", "`X^2`", "X.3")
+    dat <- MASS::mvrnorm(n = 50, mu = 1:4, Sigma = crossprod(matrix(c(1, 0.2, 0.3, 0.4,
+                                                                      0.2, 1, 0.25, 0.1,
+                                                                      0.3, 0.25, 1, 0.05,
+                                                                      0.4, 0.1, 0.05, 1),
+                                                                    byrow = TRUE, nrow = 4)))
+    dataref <- "dat2$Variables$"
+    non.syntactic.names <- paste0(dataref, non.syntactic.names)
+    bad.formula <- as.formula(paste0(non.syntactic.names[1], " ~ ",
+                                     paste0(non.syntactic.names[-1], collapse = " + ")))
+    dat <- as.data.frame(dat)
+    names(dat) <- non.syntactic.names
+    fancy.labels <- paste0(c("My ", rep("Preds ", 3)), gsub(paste0("`|dat2\\$Variables\\$"), "", non.syntactic.names), " fancy label!")
+    for (i in seq_along(names(dat)))
+        attr(dat[[i]], "label") <- fancy.labels[i]
+    expect_error(model.using.names <- Regression(bad.formula,
+                                                 data = dat,
+                                                 outlier.prop.to.remove = 0.4),
+                 NA)
+    expect_error(model.using.labels <- Regression(bad.formula,
+                                                  data = dat,
+                                                  outlier.prop.to.remove = 0.4,
+                                                  show.labels = TRUE),
+                 NA)
+    expect_error(print(model.using.names), NA)
+    expect_error(print(model.using.labels), NA)
 })
