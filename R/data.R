@@ -440,7 +440,7 @@ relabelFormulaAndData <- function(new.var.names, formula, data)
 #' Checks the provided character vector contains syntactic names by comparing the output of make.names.
 #' If the names are syntactic, the return output is NULL. Otherwise a mapped character vector with syntactic
 #' names is provided (syntactic names are the vector elements, old names are the vector element names)
-#' @nodRd
+#' @noRd
 checkForNonSyntacticNames <- function(variable.names)
 {
     syntactic.names <- make.names(variable.names, unique = TRUE)
