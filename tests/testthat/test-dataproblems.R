@@ -521,3 +521,32 @@ test_that("Non-syntactic names in formula", {
                  expected.mapping)
     expect_null(flipRegression:::checkForNonSyntacticNames(c("Y", paste0("X.", 1:3))))
 })
+
+test_that("Non syntactic variable names and dataset references", {
+    non.syntactic.names <- c("`Q1#A`", "`X@1`", "`X^2`", "X.3")
+    dat <- MASS::mvrnorm(n = 50, mu = 1:4, Sigma = crossprod(matrix(c(1, 0.2, 0.3, 0.4,
+                                                                      0.2, 1, 0.25, 0.1,
+                                                                      0.3, 0.25, 1, 0.05,
+                                                                      0.4, 0.1, 0.05, 1),
+                                                                    byrow = TRUE, nrow = 4)))
+    dataref <- "dat2$Variables$"
+    non.syntactic.names <- paste0(dataref, non.syntactic.names)
+    bad.formula <- as.formula(paste0(non.syntactic.names[1], " ~ ",
+                                     paste0(non.syntactic.names[-1], collapse = " + ")))
+    dat <- as.data.frame(dat)
+    names(dat) <- non.syntactic.names
+    fancy.labels <- paste0(c("My ", rep("Preds ", 3)), gsub(paste0("`|dat2\\$Variables\\$"), "", non.syntactic.names), " fancy label!")
+    for (i in seq_along(names(dat)))
+        attr(dat[[i]], "label") <- fancy.labels[i]
+    expect_error(model.using.names <- Regression(bad.formula,
+                                                 data = dat,
+                                                 outlier.prop.to.remove = 0.4),
+                 NA)
+    expect_error(model.using.labels <- Regression(bad.formula,
+                                                  data = dat,
+                                                  outlier.prop.to.remove = 0.4,
+                                                  show.labels = TRUE),
+                 NA)
+    expect_error(print(model.using.names), NA)
+    expect_error(print(model.using.labels), NA)
+})

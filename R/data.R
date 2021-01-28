@@ -419,14 +419,10 @@ checkVariablesForDataSetNames <- function(all.variable.names)
 #'  the appropriate mapping.
 #' @param formula Relevant \code{data.frame} used in the regression
 #' @param data Relevant \code{data.frame} used in the regression
-#' @param update.labels An optional logical vector. If false, no labels are updated in the data input.
-#'   If a logical vector is provided, then any true element will be used to update the data.
 #' @return list that has an updated formula, data and outcome name without any dataset references
 #' @noRd
-relabelFormulaAndData <- function(new.var.names, formula, data, update.labels = FALSE)
+relabelFormulaAndData <- function(new.var.names, formula, data)
 {
-    if (any(update.labels))
-        data <- updateAttribute(data, attr.to.update = "label", updated.values = new.var.names[update.labels])
     new.var.names <- gsub(" ", "_", new.var.names)
     data <- updateAttribute(data, attr.to.update = "name", updated.values = new.var.names)
     outcome.name <- new.outcome.name <- new.var.names[1]

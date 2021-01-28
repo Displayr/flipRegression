@@ -422,7 +422,17 @@ Regression <- function(formula = as.formula(NULL),
             labels.to.update <- FALSE
         else
             labels.to.update <- vars.with.data.refs
-        relabelled.outputs <- relabelFormulaAndData(new.var.names, input.formula, data, update.labels = labels.to.update)
+        if (any(labels.to.update))
+        {
+            new.labels <- paste0(original.labels[labels.to.update], " from ", dataset.names[labels.to.update])
+            data <- updateAttribute(data, attr.to.update = "label", updated.values = new.labels)
+        }
+        syntactic.new.names <- make.names(new.var.names, unique = TRUE)
+        if (!identical(unname(new.var.names), syntactic.new.names))
+            names(syntactic.new.names) <- all.variable.names
+        else
+            syntactic.new.names <- new.var.names
+        relabelled.outputs <- relabelFormulaAndData(syntactic.new.names, input.formula, data)
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
         all.variable.names <- AllVariablesNames(input.formula, data = data)
@@ -430,7 +440,7 @@ Regression <- function(formula = as.formula(NULL),
     non.syntactic.names <- checkForNonSyntacticNames(all.variable.names)
     if (non.syntactic.names.exist <- !is.null(non.syntactic.names))
     {
-        relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data, update.labels = FALSE)
+        relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data)
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
         all.variable.names <- AllVariablesNames(input.formula, data = data)
