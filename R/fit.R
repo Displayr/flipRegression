@@ -124,8 +124,7 @@ FittedAndObserved = function(object) {
     list(fitted = fitted, observed = observed)
 }
 
-
-
+#' @importFrom verbs Sum
 nullDeviance <- function(x)
 {
     null.d <- x$original$null.deviance
@@ -136,7 +135,7 @@ nullDeviance <- function(x)
     else
         table(Observed(x)[x$subset])
     observed <- observed[observed > 0 & !is.na(observed)]
-    ll <- sum(observed * log(prop.table(observed)))
+    ll <- Sum(observed * log(prop.table(observed)), remove.missing = FALSE)
     -2 * ll
 }
 

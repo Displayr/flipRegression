@@ -51,6 +51,7 @@ numberObservations <- function(x)
 #'
 #' Durbin, J., Watson, G. S. (1950). 'Testing for Serial Correlation in Least Squares
 #' Regression, I'. Biometrika 37, (pp. 3 - 4.
+#' @importFrom verbs Sum
 #' @export
 DurbinWatson <- function(model, n.permutations = 1000, seed = 123)
 {
@@ -71,12 +72,12 @@ DurbinWatson <- function(model, n.permutations = 1000, seed = 123)
   {
     .dW <- function(x)
     {
-      sum((x[-n] - x[-1]) ^ 2) / sum(x^2)
+      Sum((x[-n] - x[-1]) ^ 2, remove.missing = FALSE) / Sum(x^2, remove.missing = FALSE)
     }
     .permute <- function(x) { .dW(sample(x)) }
     d <- .dW(r)
     replicates <- replicate(n.permutations, .permute(r))
-    p = sum(if (d < 2) d > replicates else d < replicates) / n.permutations * 2
+    p = Sum(if (d < 2) d > replicates else d < replicates, remove.missing = FALSE) / n.permutations * 2
     result <- list(data.name = paste(deparse(model$call), sep = "\n", collapse = "\n"), statistic = c("d" = d), p.value = p, method = "Durbin-Watson statistic")
     class(result) <- "htest"
   }
@@ -449,12 +450,13 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 #' @details The proportion of observed values that take the same values as the predicted values.
 #' Where the outcome variable in the model is not a factor and not a count, predicted values are
 #' assigned to buckets as per \code{\link{ConfusionMatrix}}.
+#' @importFrom verbs Sum
 #' @export
 Accuracy <- function(obj, subset = NULL, weights = obj$weights)
 {
   cm <- ConfusionMatrix(obj, subset, weights)
-  n <- sum(cm)
-  correct <- sum(diag(cm))
+  n <- Sum(cm, remove.missing = FALSE)
+  correct <- Sum(diag(cm), remove.missing = FALSE)
   correct / n
 }
 

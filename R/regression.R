@@ -261,7 +261,7 @@
 #' CreatingBinaryDependentVariableIfNecessary Factor Ordered
 #' @importFrom lmtest coeftest
 #' @importFrom stats drop.terms terms.formula
-#' @importFrom verbs Last
+#' @importFrom verbs Last Sum
 #' @export
 Regression <- function(formula = as.formula(NULL),
                        data = NULL,
@@ -436,9 +436,7 @@ Regression <- function(formula = as.formula(NULL),
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
         all.variable.names <- AllVariablesNames(input.formula, data = data)
-    }
-    non.syntactic.names <- checkForNonSyntacticNames(all.variable.names)
-    if (non.syntactic.names.exist <- !is.null(non.syntactic.names))
+    } else if (non.syntactic.names.exist <- !is.null(non.syntactic.names <- checkForNonSyntacticNames(all.variable.names)))
     {
         relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data)
         input.formula <- relabelled.outputs$formula
@@ -485,7 +483,7 @@ Regression <- function(formula = as.formula(NULL),
     }
     outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
-    if(sum(outcome.name == names(data)) > 1)
+    if(Sum(outcome.name == names(data), remove.missing = FALSE) > 1)
         stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
@@ -567,8 +565,8 @@ Regression <- function(formula = as.formula(NULL),
         data.for.levels <- data.for.levels[, !(names(data.for.levels) == outcome.name), drop = FALSE]
         if (ncol(data.for.levels) > 1)
         {
-            variable.count <- sum(sapply(data.for.levels, function(x) abs(length(levels(x)) - 1)))
-            n.data <- sum(processed.data$post.missing.data.estimation.sample)
+            variable.count <- Sum(sapply(data.for.levels, function(x) abs(length(levels(x)) - 1)), remove.missing = FALSE)
+            n.data <- Sum(processed.data$post.missing.data.estimation.sample, remove.missing = FALSE)
             if (n.data < variable.count)
                 stop(gettextf("There are fewer observations (%d)%s(%d)", n.data,
                               " than there are variables after converting categorical to dummy variables ", variable.count),
@@ -1851,6 +1849,7 @@ validateDataForStacking <- function(data)
 # The stacking requires names of the grid data.frame to be in the form predictor, outcome (comma separated)
 # If metadata available in the codeframe, the names are uniquely identified
 # If metadata is unavailable, no commas allowed in names to avoid ambiguity.
+#' @importFrom verbs Sum
 validateNamesInGrid <- function(data)
 {
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
@@ -1872,7 +1871,7 @@ validateNamesInGrid <- function(data)
              " which don't appear in the labels of the grid of predictor variables.")
     # Check if is a clear match (no clash of predictor names with outcome names) and no codeframe available,
     # then 'transpose' the grid labels, i.e. outcome, predictor labels changed to predictor, outcome
-    dimensions.matching <- sum(any.matches)
+    dimensions.matching <- Sum(any.matches, remove.missing = FALSE)
     if (dimensions.matching == 1 && any.matches[1] && is.null(attr(data[["X"]], "codeframe")))
         names(data[["X"]]) <- paste0(grid.names[[2]], ", ", grid.names[[1]])
     # Throw error for ambiguous cases, i.e. outcome labels appear in both grid label dimensions.

@@ -30,6 +30,7 @@ outcomeVariableFromModel <- function(Regression.object)
 #' @importFrom flipU OutcomeName OutcomeVariable
 #' @importFrom flipTransformations AsDataFrame
 #' @importFrom flipFormat ExtractCommonPrefix
+#' @importFrom verbs Sum
 #' @noRd
 processDataSuitableForJaccard <- function(data, formula, interaction.name = "NULL", show.labels = FALSE)
 {
@@ -82,7 +83,7 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
         # Check if both predictors and outcome are not binary
         both.not <- ifelse(!outcome.is.binary && any(!predictors.are.binary), " and ", "")
         # General statement
-        non.binary.variable.msg <- ngettext(sum(c(!outcome.is.binary, !predictors.are.binary)),
+        non.binary.variable.msg <- ngettext(Sum(c(!outcome.is.binary, !predictors.are.binary), remove.missing = FALSE),
                                             "variable to a binary variable ", "variables to binary variables ")
         general.statement <- paste0(", please change the ", non.binary.variable.msg,
                                     "if you wish to create output with the Jaccard coefficients.")
@@ -108,7 +109,7 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
         # Check if both predictors and outcome have no variation
         both.not <- ifelse(outcome.no.variation && any(predictors.no.variation), " and ", "")
         # General statement
-        n.variables <- sum(c(outcome.no.variation, predictors.no.variation))
+        n.variables <- Sum(c(outcome.no.variation, predictors.no.variation), remove.missing = FALSE)
         no.variation.msg <- ngettext(n.variables,
                                      ", it is constant ", ", the variables are constant ")
         general.statement <- paste0(no.variation.msg, "with no variation (all values in the variable are zero ",

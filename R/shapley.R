@@ -1,6 +1,7 @@
 # Calculates Shapley importance for each independent variable in the regression.
 # Shapley, L.S. (1953). "A value for n-person games"
 #' @importFrom utils combn
+#' @importFrom verbs Sum
 computeShapleyImportance <- function(formula, data = NULL, weights, signs,
                                      variable.names, robust.se = FALSE, outlier.prop.to.remove = NULL,
                                      show.warnings = TRUE, correction, ...)
@@ -51,7 +52,7 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
     # obtain standard errors from relative importance analysis and scaling by the importance
     relative.importance <- estimateRelativeImportance(formula, data, weights,
                                                       "Linear", signs,
-                                                      sum(raw.importance),
+                                                      Sum(raw.importance, remove.missing = FALSE),
                                                       variable.names, robust.se,
                                                       outlier.prop.to.remove = 0,
                                                       show.warnings,

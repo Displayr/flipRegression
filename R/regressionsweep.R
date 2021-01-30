@@ -19,6 +19,7 @@
 #' CheckForLinearDependence CalibrateWeight
 #' @importFrom stats complete.cases
 #' @importFrom flipFormat Labels BaseDescription
+#' @importFrom verbs Sum
 #' @export
 LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL,
                                                                                weights = NULL, ...)
@@ -55,7 +56,7 @@ LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL
         for (c in 1:r)
         {
             pairwise.data <- !is.na(y.and.x[,c]) & !is.na(y.and.x[,r])
-            pairwise.n[r, c] <- if(weighted) sum(weights[pairwise.data], na.rm = TRUE) else sum(pairwise.data)
+            pairwise.n[r, c] <- if(weighted) Sum(weights[pairwise.data]) else Sum(pairwise.data)
         }
     min.pairwise.n <- min(pairwise.n, na.rm = TRUE)
     cors <- if (weighted)
@@ -175,11 +176,12 @@ inverseBootstrap <- function(x, probabilities)
 }
 
 #' @importFrom stats sd cor
+#' @importFrom verbs Sum
 # Bootstrapping
 regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
 {
     data <- as.matrix(cbind(x, y))
-    prob = weights / sum(weights)
+    prob = weights / Sum(weights, remove.missing = FALSE)
     betas <- matrix(NA, b, ncol(x))
     for (i in 1:b)
     {
@@ -304,7 +306,7 @@ regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
 #     }
 #     else {
 #         colnames(beta) <- y
-#         R2 <- sum(beta * xy.matrix)/y.matrix
+#         R2 <- Sum(beta * xy.matrix)/y.matrix
 #         R2 <- matrix(R2)
 #         rownames(beta) <- x
 #         rownames(R2) <- colnames(R2) <- y
@@ -313,10 +315,10 @@ regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
 #     keys.x <- diag(as.vector(1 - 2 * (px$loadings < 0)))
 #     py <- principal(y.matrix)
 #     keys.y <- diag(as.vector(1 - 2 * (py$loadings < 0)))
-#     Vx <- sum(keys.x %*% x.matrix %*% t(keys.x))
-#     Vy <- sum(keys.y %*% y.matrix %*% t(keys.y))
+#     Vx <- Sum(keys.x %*% x.matrix %*% t(keys.x))
+#     Vy <- Sum(keys.y %*% y.matrix %*% t(keys.y))
 #     ruw <- colSums(abs(xy.matrix))/sqrt(Vx)
-#     Ruw <- sum(diag(keys.x) %*% xy.matrix %*% t(keys.y))/sqrt(Vx *
+#     Ruw <- Sum(diag(keys.x) %*% xy.matrix %*% t(keys.y))/sqrt(Vx *
 #                                                                   Vy)
 #     if (numy < 2) {
 #         Rset <- 1 - det(m.matrix)/(det(x.matrix))
@@ -342,7 +344,7 @@ regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
 #         }
 #         cc2 <- eigen(Myx)$values
 #         cc <- sqrt(cc2)
-#         T <- sum(cc2)/length(cc2)
+#         T <- Sum(cc2)/length(cc2)
 #     }
 #     if (!is.null(n.obs)) {
 #         k <- length(x)
