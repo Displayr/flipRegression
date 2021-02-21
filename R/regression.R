@@ -436,7 +436,9 @@ Regression <- function(formula = as.formula(NULL),
         input.formula <- relabelled.outputs$formula
         data <- relabelled.outputs$data
         all.variable.names <- AllVariablesNames(input.formula, data = data)
-    } else if (non.syntactic.names.exist <- !is.null(non.syntactic.names <- checkForNonSyntacticNames(all.variable.names)))
+    }
+    non.syntactic.names <- checkForNonSyntacticNames(all.variable.names)
+    if (non.syntactic.names.exist <- !is.null(non.syntactic.names))
     {
         relabelled.outputs <- relabelFormulaAndData(non.syntactic.names, input.formula, data)
         input.formula <- relabelled.outputs$formula
