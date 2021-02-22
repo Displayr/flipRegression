@@ -98,6 +98,7 @@ multipleImputationImportance <- function(models, importance.absolute)
 }
 
 #' @importFrom stats pchisq
+#' @importFrom verbs Sum
 multipleImputationCrosstabInteraction <- function(models, importance)
 {
     n <- nrow(models[[1]]$interaction$bb)
@@ -132,7 +133,7 @@ multipleImputationCrosstabInteraction <- function(models, importance)
 
     # Report normalised relative importance/Shapley scores but use raw scores for p-values
     if (!is.null(importance))
-        bb <- apply(bb, 2, function(x){x/sum(abs(x))*100})
+        bb <- apply(bb, 2, function(x){x/Sum(abs(x), remove.missing = FALSE)*100})
 
     combined.coefs <- cbind(bb, net.coef)
     colnames(combined.coefs) <- names(split.size)
@@ -185,7 +186,7 @@ multipleImputationCrosstabInteraction <- function(models, importance)
 # # # # Computing test by hand.
 # # # .ss <- function(x) var(x) * (length(x) - 1)
 # # # sst <- .ss(dat$y)
-# # # sse <- sum(aggregate(y~id, data = dat,FUN = .ss)[,2])
+# # # sse <- Sum(aggregate(y~id, data = dat,FUN = .ss)[,2])
 # # # ssw <- sst - ssw
 # # # icc <- m / (m - 1) * ssw / sst
 # # # vif <- 1 + (m - 1) * icc
@@ -479,7 +480,7 @@ multipleImputationCrosstabInteraction <- function(models, importance)
 # # # Y <- bank[, c("Overall")]
 # # # cors <- cor(XandY <- cbind(X, Y), use = "pairwise.complete.obs")
 # # # n.rows <- nrow(XandY)
-# # # ns <- n.rows - apply(XandY, 2, function(x) sum(is.na(x)))
+# # # ns <- n.rows - apply(XandY, 2, function(x) Sum(is.na(x)))
 # # #
 # # #
 # # #
@@ -550,7 +551,7 @@ multipleImputationCrosstabInteraction <- function(models, importance)
 # # #
 # # #
 # # #
-# # #                 n.rows - apply(XandY, 2, function(x) sum(is.na(x)))
+# # #                 n.rows - apply(XandY, 2, function(x) Sum(is.na(x)))
 # # #
 # # #
 # # #
@@ -698,7 +699,7 @@ multipleImputationCrosstabInteraction <- function(models, importance)
 # # #     body(.pairwise.regression)[n] <- NULL
 # # #     .pairwise.regression(2, 3:8, zbank)
 # # #
-# # #     print(sum(bank,na.rm = TRUE))
+# # #     print(Sum(bank,na.rm = TRUE))
 # # #
 # # # zzbank = AdjustDataToReflectWeights(zbank, weights)
 # # # psych::setCor(2, 3:8, zzbank)

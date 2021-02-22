@@ -1,6 +1,7 @@
 #' @importFrom flipTransformations RemoveMissingLevelsFromFactors
 #' @importFrom flipData DataFormula
 #' @importFrom stats update.formula
+#' @importFrom verbs Sum
 computeInteractionCrosstab <- function(result, interaction.name, interaction.label,
                                        formula.with.interaction, importance,
                                        importance.absolute, internal.loop, ...)
@@ -27,7 +28,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     original.r2 <- if (result$type == "Linear" & is.null(weights)) summary(result$original)$r.square
                    else 1 - deviance(result$original)/nullDeviance(result)
 
-    res <- list(label = interaction.label, split.size = c(split.size, NET=sum(split.size)),
+    res <- list(label = interaction.label, split.size = c(split.size, NET = Sum(split.size, remove.missing = FALSE)),
                 pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL,
                 net.coef = net.coef, importance = importance)
 
@@ -183,7 +184,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     # Report normalised relative importance scores but use raw scores for p-values
     if (!is.null(importance))
-        bb <- apply(bb, 2, function(x){x/sum(abs(x), na.rm=T)*100})
+        bb <- apply(bb, 2, function(x){x/Sum(abs(x))*100})
     # Catch case when single predictor used and bb reduces to vector
     if (length(var.labels) == 1)
         bb <- matrix(bb, nrow = 1)
@@ -195,6 +196,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 }
 
 #' @importFrom stats pt p.adjust
+#' @importFrom verbs Sum
 compareCoef <- function(bb, bc, ss, sc, nn, correction, importance)
 {
     if (any(dim(bb) != dim(ss)))
@@ -202,7 +204,7 @@ compareCoef <- function(bb, bc, ss, sc, nn, correction, importance)
     if (length(nn) != ncol(bb))
         stop("Length of nn should match columns in bb\n")
 
-    nc <- sum(nn, na.rm=T) - nn
+    nc <- Sum(nn) - nn
     pp <- matrix(NA, nrow=nrow(bb), ncol=ncol(bb))
     tt <- matrix(NA, nrow=nrow(bb), ncol=ncol(bb))
     for (j in 1:ncol(bb))

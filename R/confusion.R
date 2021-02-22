@@ -21,6 +21,7 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, dec
 #' @importFrom utils methods
 #' @importFrom flipData Observed EstimationData
 #' @importFrom flipFormat FormatAsReal
+#' @importFrom verbs Sum
 #' @export
 ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
@@ -53,7 +54,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
 
     description <- paste0("Fitted model (", obj.name, "): ", obj$sample.description, "  ",
-                          FormatAsReal(sum(confusion), decimals = decimals), " observed/predicted pairs with ",
+                          FormatAsReal(Sum(confusion, remove.missing = FALSE), decimals = decimals), " observed/predicted pairs with ",
                           accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
     attr(confusion, "decimals") <- decimals
@@ -64,6 +65,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
 
 # Alternative method taking a data.frame as input
 #' @importFrom methods is
+#' @importFrom verbs Sum
 #' @export
 ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
@@ -74,13 +76,13 @@ ConfusionMatrix.data.frame <- function(obj, subset = obj$subset, weights = obj$w
 
     attr(confusion, "outcome.label") <- colnames(obj)[2]
     accuracy.pct <- FormatAsPercent(attr(confusion, "accuracy"), 4)
-    description <- paste0(sum(confusion), " observed/predicted pairs with ", accuracy.pct, " accuracy;")
+    description <- paste0(Sum(confusion, remove.missing = FALSE), " observed/predicted pairs with ", accuracy.pct, " accuracy;")
     attr(confusion, "description") <- description
     attr(confusion, "decimals") <- decimals
     return(confusion)
 }
 
-
+#' @importFrom verbs Sum
 confusionMatrixHelper <- function(observed, predicted, subset, weights)
 {
     if (is.factor(observed))
@@ -108,7 +110,7 @@ confusionMatrixHelper <- function(observed, predicted, subset, weights)
     }
 
     class(confusion) <- "ConfusionMatrix"
-    accuracy <- sum(diag(confusion)) / sum(confusion)
+    accuracy <- Sum(diag(confusion), remove.missing = FALSE) / Sum(confusion, remove.missing = FALSE)
     attr(confusion, "accuracy") <- accuracy
     return(confusion)
 }
@@ -203,6 +205,7 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @importFrom utils read.table
 #' @importFrom flipTables TidyTabularData
 #' @importFrom flipFormat FormatAsReal
+#' @importFrom verbs Sum SumColumns SumRows
 #' @export
 #' @method print ConfusionMatrix
 print.ConfusionMatrix <- function(x, ...) {
@@ -219,12 +222,12 @@ print.ConfusionMatrix <- function(x, ...) {
     }
 
     # create tooltip matrices of percentages
-    cell.pct <- 100 * mat / sum(mat)
+    cell.pct <- 100 * mat / Sum(mat, remove.missing = FALSE)
     cell.pct <- matrix(sprintf("%s%% of all cases",
                                format(round(cell.pct, 2), nsmall = 2)),
                        nrow = n.row, ncol = n.row)
 
-    column.sums <- t(data.frame(colSums(mat)))
+    column.sums <- t(data.frame(SumColumns(mat, remove.missing = FALSE)))
     column.sums <- column.sums[rep(row.names(column.sums), n.row), ]
     column.pct <- 100 * mat / column.sums
     column.pct <- matrix(sprintf("%s%% of Predicted class",
@@ -232,7 +235,7 @@ print.ConfusionMatrix <- function(x, ...) {
                          nrow = n.row, ncol = n.row)
     column.pct[mat == 0] <- "-"
 
-    row.sums <- t(data.frame(rowSums(mat)))
+    row.sums <- t(data.frame(SumRows(mat, remove.missing = FALSE)))
     row.sums <- row.sums[rep(row.names(row.sums), n.row), ]
     row.pct <- 100 * mat / t(row.sums)
     row.pct <- matrix(sprintf("%s%% of Observed class",

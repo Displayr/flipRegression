@@ -23,6 +23,7 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
+#' @importFrom verbs Sum SumRows
 #' @noRd
 estimateRelativeImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                        robust.se = FALSE, outlier.prop.to.remove = NULL, show.warnings = TRUE,
@@ -102,10 +103,10 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     }
     else
         # R-squared is not always the sum of raw.importance, e.g. with binary logit
-        scaling.factor <- r.square / sum(raw.importance)
+        scaling.factor <- r.square / Sum(raw.importance, remove.missing = FALSE)
     raw.importance <- raw.importance * scaling.factor
 
-    se  <- sqrt(rowSums(lambda ^ 4 * beta.se ^ 4) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
+    se  <- sqrt(SumRows(lambda ^ 4 * beta.se ^ 4, remove.missing = FALSE) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
     names(se) <- variable.names
 
     appendStatistics(result, raw.importance, se, signs, fit, correction)
@@ -307,12 +308,13 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
 #' @param y The binary input variable y
 #' @param centered A logical to determine if the centered coefficient is returned.
 #'   If \code{TRUE}, then the estimate of the mean is subtracted off the jaccard coefficient.
+#'   @importFrom verbs Sum
 #' @noRd
 singleJaccardCoefficient <- function(x, y, centered = FALSE, weights = NULL) {
     if (is.null(weights))
-        j <- sum(y & x, na.rm = TRUE)/sum(x | y, na.rm = TRUE)
+        j <- Sum(y & x)/Sum(x | y)
     else
-        j <- sum(weights[y & x], na.rm = TRUE)/sum(weights[x | y], na.rm = TRUE)
+        j <- Sum(weights[y & x])/Sum(weights[x | y])
     if (centered)
         j <- j - singleJaccardExpectation(x, y)
     j
@@ -365,6 +367,7 @@ computeJaccardImportance <- function(formula, data = NULL, weights, variable.nam
 #' @param y A numeric vector of the binary outcome variable
 #' @param weights A numeric vector of non-negative weight values
 #' @importFrom survey svydesign svyratio degf
+#' @importFrom verbs Sum
 #' @noRd
 jaccardTest <- function(x, y, weights)
 {
@@ -383,7 +386,7 @@ jaccardTest <- function(x, y, weights)
         standard.error <- sqrt(as.numeric(ratio.estimation$var))
     else
     { # Compute the second order Taylor expansion estimate of the variance
-        weight.factor <- sum(weights^2)/sum(weights)^2
+        weight.factor <- Sum(weights^2, remove.missing = FALSE)/Sum(weights, remove.missing = FALSE)^2
         multiplier <- (p + q - 2 * p * q)/(p * q * (p + q - p * q))
         standard.error <- expected.jaccard* sqrt(weight.factor * multiplier)
     }
