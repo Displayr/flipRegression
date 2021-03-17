@@ -66,27 +66,33 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
     else if ("polr" %in% class(object$original))
     {
-        ## Make ordered logit work when variables have been removed due to
-        ## colinearity
-        .cleanNames <- function(v)
-        {
-            cnames <- sub("^[[:print:]]*[$](Variables|Questions)[$]", "", v)
-            cnames <- sub("^`", "", cnames)
-            cnames <- sub("`$", "", cnames)
-            make.names(cnames)
-        }
         original.coef <- object$original$coefficients
-        coef.names <- .cleanNames(coefNamesBeforeOmitting(object))
-        new.coef <- numeric(length(coef.names))
-        names(new.coef) <- coef.names
+        if (length(original.coef) == 0L)
+            predict(object$original, newdata = newdata, na.action = na.action)
+        else
+        {
+            ## Make ordered logit work when variables have been removed due to
+            ## colinearity
+            .cleanNames <- function(v)
+            {
+                cnames <- sub("^[[:print:]]*[$](Variables|Questions)[$]", "", v)
+                cnames <- sub("^`", "", cnames)
+                cnames <- sub("`$", "", cnames)
+                make.names(cnames)
+            }
+            original.coef <- object$original$coefficients
+            coef.names <- .cleanNames(coefNamesBeforeOmitting(object))
+            new.coef <- numeric(length(coef.names))
+            names(new.coef) <- coef.names
 
-        new.coef[.cleanNames(names(original.coef))] <- original.coef
-        ## names(new.coef) <- RemoveBackticks(names(new.coef))
-        reg.model <- object$original
-        object$original$coefficients <- new.coef
-        reg.model$coefficients <- new.coef
-        names(reg.model$model) <- paste0("`", .cleanNames(names(reg.model$model)), "`")
-        predict(reg.model, newdata = newdata, na.action = na.action)
+            new.coef[.cleanNames(names(original.coef))] <- original.coef
+            ## names(new.coef) <- RemoveBackticks(names(new.coef))
+            reg.model <- object$original
+            object$original$coefficients <- new.coef
+            reg.model$coefficients <- new.coef
+            names(reg.model$model) <- paste0("`", .cleanNames(names(reg.model$model)), "`")
+            predict(reg.model, newdata = newdata, na.action = na.action)
+        }
     }
     else
         predict(object$original, newdata = newdata, na.action = na.action)

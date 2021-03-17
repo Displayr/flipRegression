@@ -16,14 +16,15 @@ for (type in c("Linear", "Poisson", "Binary Logit",  "NBD", "Multinomial Logit",
 test_that(paste("Stepwise: ", "Quasi-Poisson"), {
     z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
                     data = bank, type = "Quasi-Poisson"))
-    expect_that(suppressWarnings(Stepwise(z)), throws_error())
+    expect_error(suppressWarnings(Stepwise(z)))
 })
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
-    test_that(paste("Stepwise weighted: ", type), {
-        z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
+    for (direction in c("Forward", "Backward"))
+            test_that(paste(direction, "Stepwise weighted:", type), {
+                z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
                         data = bank, type = type, weights = wgt))
-        expect_error(suppressWarnings(Stepwise(z)), NA)
+                expect_error(suppressWarnings(Stepwise(z, direction = direction)), NA)
     })
 
 test_that("Stepwise: detailed", {

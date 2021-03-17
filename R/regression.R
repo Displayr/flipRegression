@@ -1387,8 +1387,9 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
         {
             # svyolr (currently 21/01/2020) doesn't have a subset argument
             # Instead manually filter the data using the provided non.outlier.data column
-            .estimation.data <- .estimation.data[, -which(colnames(.estimation.data) == "non.outlier.data_GQ9KqD7YOf")]
-            .estimation.data <- .estimation.data[non.outlier.data_GQ9KqD7YOf, ]
+            .estimation.data <- .estimation.data[, names(.estimation.data) != "non.outlier.data_GQ9KqD7YOf",
+                                                 drop = FALSE]
+            .estimation.data <- .estimation.data[non.outlier.data_GQ9KqD7YOf, , drop = FALSE]
             .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data_GQ9KqD7YOf])
             out <- svyolr(.formula, .design, ...)
             out$df <- out$edf
