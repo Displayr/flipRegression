@@ -741,6 +741,9 @@ Regression <- function(formula = as.formula(NULL),
     # remove environment attribute to reduce size
     attr(result$original$terms, ".Environment") <- NULL
     attr(attr(result$original$model, "terms"), ".Environment") <- NULL
+    ## remove names from residuals and fitted values to reduce size
+    result$original$residuals <- unname(result$original$residuals)
+    result$original$fitted.values <- unname(result$original$fitted.values)
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
