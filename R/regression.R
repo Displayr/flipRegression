@@ -957,6 +957,7 @@ tidySummary <- function(rsummary, fit.reg, result)
         nms <- CleanBackticks(rownames(rsummary$coefficients))
         rownames(rsummary$coefficients) <- nms
     }
+    rsummary$deviance.resid <- unname(rsummary$deviance.resid)
     return(rsummary)
 }
 
