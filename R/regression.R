@@ -961,6 +961,9 @@ tidySummary <- function(rsummary, fit.reg, result)
         rownames(rsummary$coefficients) <- nms
     }
     rsummary$deviance.resid <- unname(rsummary$deviance.resid)
+    rsummary$model <- rsummary$design <- NULL  # reduce size of summary
+    rsummary$lp <- unname(rsummary$lp)
+
     return(rsummary)
 }
 
