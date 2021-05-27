@@ -14,7 +14,8 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
     output.not.jaccard.or.correlation <- !x$output %in% c("Jaccard Coefficient", "Correlation")
     if (type.relevant.for.outliers && !partial && output.not.jaccard.or.correlation)
     {
-        capture.output(unusual <- UnusualObservations(x))
+        ##        capture.output(unusual <- UnusualObservations(x))
+        unusual <- UnusualObservations(x)
         if (!is.null(unusual))
             warning(unusual)
     }
