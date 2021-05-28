@@ -738,12 +738,7 @@ Regression <- function(formula = as.formula(NULL),
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
 
-    # remove environment attribute to reduce size
-    attr(result$original$terms, ".Environment") <- NULL
-    attr(attr(result$original$model, "terms"), ".Environment") <- NULL
-    ## remove names from residuals and fitted values to reduce size
-    result$original$residuals <- unname(result$original$residuals)
-    result$original$fitted.values <- unname(result$original$fitted.values)
+    result$original <- reduceOutputSize(result$original)
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
@@ -2365,4 +2360,18 @@ hccmAdjust <- function(fit.reg, robust.se, h)
     factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     factor[h == 1] <- df.res/n
     V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+}
+
+reduceOutputSize <- function(original)
+{
+    # remove environment attribute to reduce size
+    attr(original$terms, ".Environment") <- NULL
+    attr(attr(original$model, "terms"), ".Environment") <- NULL
+    ## remove names from residuals and fitted values to reduce size
+    original$residuals <- unname(original$residuals)
+    original$fitted.values <- unname(original$fitted.values)
+    original$weights <- unname(original$weights)
+    original$prior.weights <- NULL
+    original$survey.design <- NULL
+    return(original)
 }
