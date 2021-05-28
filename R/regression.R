@@ -739,6 +739,7 @@ Regression <- function(formula = as.formula(NULL),
     result$effects.format <- effects.format
 
     result$original <- reduceOutputSize(result$original)
+##    attr(attr(result$model, "terms"), ".Environment") <- NULL
 
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
@@ -2371,7 +2372,9 @@ reduceOutputSize <- function(original)
     original$residuals <- unname(original$residuals)
     original$fitted.values <- unname(original$fitted.values)
     original$weights <- unname(original$weights)
-    original$prior.weights <- NULL
-    original$survey.design <- NULL
+    original$prior.weights <- unname(original$prior.weights)
+    if (!inherits(original, "svyglm"))
+        original$y <- NULL
+    ## original$survey.design <- NULL
     return(original)
 }
