@@ -2365,7 +2365,8 @@ hccmAdjust <- function(fit.reg, robust.se, h)
 reduceOutputSize <- function(fit)
 {
     original <- fit$original
-    # remove environment attribute to reduce size
+    ## remove environment attribute to reduce size
+    attr(fit$terms, ".Environment") <- NULL
     attr(original$terms, ".Environment") <- NULL
     attr(original$formula, ".Environment") <- NULL
     attr(attr(original$model, "terms"), ".Environment") <- NULL
