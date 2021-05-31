@@ -738,9 +738,6 @@ Regression <- function(formula = as.formula(NULL),
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
 
-    result$original <- reduceOutputSize(result$original)
-##    attr(attr(result$model, "terms"), ".Environment") <- NULL
-
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
     result$summary$call <- cl
@@ -911,6 +908,8 @@ Regression <- function(formula = as.formula(NULL),
     }
     result <- setChartData(result, output)
     result$stacked <- stacked.data.check
+    result <- reduceOutputSize(result)
+
     return(result)
 }
 
@@ -2363,18 +2362,23 @@ hccmAdjust <- function(fit.reg, robust.se, h)
     V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
 }
 
-reduceOutputSize <- function(original)
+reduceOutputSize <- function(fit)
 {
+    original <- fit$original
     # remove environment attribute to reduce size
     attr(original$terms, ".Environment") <- NULL
+    attr(original$formula, ".Environment") <- NULL
     attr(attr(original$model, "terms"), ".Environment") <- NULL
+    attr(fit$summary$formula, ".Environment") <- NULL
+    attr(fit$summary$terms, ".Environment") <- NULL
     ## remove names from residuals and fitted values to reduce size
     original$residuals <- unname(original$residuals)
     original$fitted.values <- unname(original$fitted.values)
     original$weights <- unname(original$weights)
     original$prior.weights <- unname(original$prior.weights)
-    if (!inherits(original, "svyglm"))
-        original$y <- NULL
-    ## original$survey.design <- NULL
-    return(original)
+    ## if (!inherits(original, "svyglm"))
+    ##     original$y <- NULL
+    ## original$survey.design <- NULL  # needed can't delete
+    fit$original <- original
+    return(fit)
 }
