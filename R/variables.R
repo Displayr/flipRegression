@@ -230,7 +230,14 @@ Probabilities.Regression <- function(object, newdata, ...)
     if (isTRUE(object$stacked) && IsRServer())
         stop("Saving probabilitiles is currently not supported for stacked data.")
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
-        return(suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "probs")))
+    {
+        probs <- suppressWarnings(predict(object$original, newdata = newdata,
+                                          na.action = na.pass, type = "probs"))
+        if (is.null(colnames(probs)))
+            colnames(probs) <- levels(object$estimation.data[, object$outcome.name])
+        return(probs)
+    }
+
     if (object$type == "Binary Logit")
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "response"))
