@@ -2368,7 +2368,7 @@ reduceOutputSize <- function(fit)
     ## remove environment attribute to reduce size
     attr(fit$terms, ".Environment") <- NULL
     attr(original$terms, ".Environment") <- NULL
-    attr(original$formula, ".Environment") <- NULL
+    ## attr(original$formula, ".Environment") <- NULL
     attr(attr(original$model, "terms"), ".Environment") <- NULL
     attr(fit$summary$formula, ".Environment") <- NULL
     attr(fit$summary$terms, ".Environment") <- NULL
