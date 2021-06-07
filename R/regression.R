@@ -2365,13 +2365,14 @@ hccmAdjust <- function(fit.reg, robust.se, h)
 reduceOutputSize <- function(fit)
 {
     original <- fit$original
+    original$qr$qr <- c()  # removing qr breaks predict; qr$qr okay
     ## remove environment attribute to reduce size
-    attr(fit$terms, ".Environment") <- NULL
-    attr(original$terms, ".Environment") <- NULL
-    attr(original$formula, ".Environment") <- NULL
-    attr(attr(original$model, "terms"), ".Environment") <- NULL
-    attr(fit$summary$formula, ".Environment") <- NULL
-    attr(fit$summary$terms, ".Environment") <- NULL
+    attr(fit$terms, ".Environment") <- c()
+    attr(original$terms, ".Environment") <- c()
+    attr(original$formula, ".Environment") <- c()
+    attr(attr(original$model, "terms"), ".Environment") <- c()
+    attr(fit$summary$formula, ".Environment") <- c()
+    attr(fit$summary$terms, ".Environment") <- c()
     ## remove names from residuals and fitted values to reduce size
     original$residuals <- unname(original$residuals)
     original$fitted.values <- unname(original$fitted.values)
