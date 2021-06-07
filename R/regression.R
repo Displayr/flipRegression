@@ -2380,6 +2380,10 @@ reduceOutputSize <- function(fit)
     original$prior.weights <- unname(original$prior.weights)
     if (is.matrix(fit$summary$fitted.values))
         rownames(fit$summary$fitted.values) <- NULL
+    if (is.vector(original$y))
+        original$y <- unname(original$y)
+    if (is.vector(original$linear.predictors))
+        original$linear.predictors <- unname(original$linear.predictors)
     ## if (!inherits(original, "svyglm"))
     ##     original$y <- NULL
     ## original$survey.design <- NULL  # needed can't delete
