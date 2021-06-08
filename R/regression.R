@@ -2365,7 +2365,8 @@ hccmAdjust <- function(fit.reg, robust.se, h)
 reduceOutputSize <- function(fit)
 {
     original <- fit$original
-    original$qr$qr <- c()  # removing qr breaks predict; qr$qr okay
+    ## Can't delete qr; needed for predict, rstudent, lm.influence, outlierTest
+    ## original$qr$qr <- c()
     ## remove environment attribute to reduce size
     attr(fit$terms, ".Environment") <- c()
     attr(original$terms, ".Environment") <- c()
