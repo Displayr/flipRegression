@@ -435,6 +435,8 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
     txt <- paste0(diagnostic, "(model, ...)")
     if (!is.null(model$residuals))
         names(model$residuals) <- seq_along(model$residuals)
+    if (is.vector(model$y))
+        names(model$y) <- seq_along(model$residuals)
     t <- eval(parse(text = txt))
 
     if (exists(".formula", envir = .GlobalEnv))
