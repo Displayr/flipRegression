@@ -1382,8 +1382,11 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
 {
     model <- InterceptExceptions(
         if (is.null(weights))
-            polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, ...)
-        else
+        {
+            start <- findAppropriateStartingValueForOrderedLogit(.formula, .estimation.data, cutoff = 0.5)
+            polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
+                 start = start, Hess = TRUE, ...)
+        } else
         {
             # svyolr (currently 21/01/2020) doesn't have a subset argument
             # Instead manually filter the data using the provided non.outlier.data column
@@ -1436,7 +1439,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
                          "If possible, this issue could be solved by merging the categories of the outcome variable ",
                          "such that all categories appear in all sub-groups.")
             }
-            if (e$message == "response must have 3 or more levels")
+            if (grepl(c("response must have 3 or more levels|cannot be dichotimized as it only contains one level.$"),
+                      e$message))
             {
                 outcome <- OutcomeVariable(.formula, .estimation.data)
                 outcome.levels <- levels(outcome)
@@ -1454,6 +1458,33 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
                 stop("An error occurred during model fitting. ",
                      "Please check your input data for unusual values: ", e$message)
         })
+}
+
+#' @importFrom flipTransformations DichotomizeFactor
+findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.data, cutoff = 0.5)
+{
+    outcome.name <- OutcomeName(.formula, .estimation.data)
+    y <- DichotomizeFactor(.estimation.data[[outcome.name]], cutoff = cutoff, warning = FALSE)
+    X <- model.matrix(.formula, .estimation.data)
+    initial.logit.fit <- glm.fit(X, y, family = binomial())
+    if (!initial.logit.fit$converged)
+        stop("attempt to find suitable starting values failed")
+    coefs <- initial.logit.fit$coefficients
+    if (any(is.na(coefs))) {
+        warning("design appears to be rank-deficient, so dropping some coefs")
+        keep <- names(coefs)[!is.na(coefs)]
+        coefs <- coefs[keep]
+        x <- x[, keep[-1L], drop = FALSE]
+        pc <- ncol(x)
+    }
+    q <- nlevels(.estimation.data[[outcome.name]]) - 1L
+    first.level <- levels(y)[1]
+    cut.point <- substr(first.level, 4L, nchar(first.level))
+    q1 <- which(levels(.estimation.data[[outcome.name]]) == cut.point)
+    logit <- function(p) log(p/(1 - p))
+    spacing <- logit((1L:q)/(q + 1L))
+    gammas <- -coefs[1L] + spacing - spacing[q1]
+    c(coefs[-1L], gammas)
 }
 
 setChartData <- function(result, output)
