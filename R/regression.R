@@ -1411,6 +1411,14 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
                      "when the outcome variable has no variation.")
             else
                 stop(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
+        } else if (grepl("attempt to find suitable starting values failed|initial value in 'vmmin' is not finite", e$message))
+        {
+            stop("It is not possible to fit the Ordered Logit Regression model since a suitable starting point ",
+                 "cannot be found for the iterative algorithm used for fitting the model. ",
+                 "It is recommended to check the input data to see if it is appropriate. ",
+                 "If possible, consider merging categories in the outcome variable that don't have many observations. ",
+                 "It is also worth checking that there is sufficient variation in the predictor variables for ",
+                 "each level in the outcome variable.")
         } else
             stop("An error occurred during model fitting. ",
                  "Please check your input data for unusual values: ", e$message)
@@ -1422,7 +1430,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
                 tryCatch(polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
                               Hess = TRUE, ...),
                          error = function(e) {
-                         invokeRestart("polrWithStart", findAppropriateStartingValueForOrderedLogit(.formula, .estimation.data)) }),
+                             invokeRestart("polrWithStart", findAppropriateStartingValueForOrderedLogit(.formula, .estimation.data))
+                             }),
                 polrWithStart = function(x0) polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, start = x0))
         } else
         {
