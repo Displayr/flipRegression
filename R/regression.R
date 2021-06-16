@@ -1473,6 +1473,7 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
 }
 
 #' @importFrom flipTransformations DichotomizeFactor
+#' @importFrom stats glm.fit
 findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.data, cutoff = 0.5)
 {
     outcome.name <- OutcomeName(.formula, .estimation.data)
