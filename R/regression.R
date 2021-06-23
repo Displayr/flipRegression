@@ -1380,10 +1380,60 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
 #' @importFrom stats model.frame model.matrix model.response
 fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data_GQ9KqD7YOf, ...)
 {
+    .orderedLogitWarnings <- function(w) {
+        if (w$message == "design appears to be rank-deficient, so dropping some coefs")
+            warning("Some variable(s) are colinear with other variables ",
+                    "and they have been removed from the estimation.")
+        else
+            warning(w$message)
+    }
+    .orderedLogitErrors <- function(e) {
+        if (exists(".design"))
+        {
+            m <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            y <- model.response(m)
+            unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
+            if (unobserved.levels != "")
+                stop("Outcome variable has level(s): ", unobserved.levels, " that are not observed in the data. ",
+                     "If possible, this issue could be solved by merging the categories of the outcome variable ",
+                     "such that all categories appear in all sub-groups.")
+        }
+        if (grepl(c("response must have 3 or more levels|cannot be dichotimized as it only contains one level.$"),
+                  e$message))
+        {
+            outcome <- OutcomeVariable(.formula, .estimation.data)
+            outcome.levels <- levels(outcome)
+            base.error.msg <- paste0("Fitting an Ordered Logit model requires the outcome variable ",
+                                     "to have three or more levels. The outcome variable here has ")
+            levels.msg <- paste0(sQuote(outcome.levels), collapse = " and ")
+            if (length(outcome.levels) == 1)
+                stop(base.error.msg, "only one level: ", levels.msg, ". A Regression model cannot be computed ",
+                     "when the outcome variable has no variation.")
+            else
+                stop(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
+        } else if (grepl("attempt to find suitable starting values failed|initial value in 'vmmin' is not finite", e$message))
+        {
+            stop("It is not possible to fit the Ordered Logit Regression model since a suitable starting point ",
+                 "cannot be found for the iterative algorithm used for fitting the model. ",
+                 "It is recommended to check the input data to see if it is appropriate. ",
+                 "If possible, consider merging categories in the outcome variable that don't have many observations. ",
+                 "It is also worth checking that there is sufficient variation in the predictor variables for ",
+                 "each level in the outcome variable.")
+        } else
+            stop("An error occurred during model fitting. ",
+                 "Please check your input data for unusual values: ", e$message)
+    }
     model <- InterceptExceptions(
         if (is.null(weights))
-            polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, ...)
-        else
+        {
+            withRestarts(
+                tryCatch(polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
+                              Hess = TRUE, ...),
+                         error = function(e) {
+                             invokeRestart("polrWithStart", findAppropriateStartingValueForOrderedLogit(.formula, .estimation.data))
+                             }),
+                polrWithStart = function(x0) polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, start = x0))
+        } else
         {
             # svyolr (currently 21/01/2020) doesn't have a subset argument
             # Instead manually filter the data using the provided non.outlier.data column
@@ -1418,42 +1468,36 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             out$design <- .design
             out
         },
-        warning.handler = function(w) {
-            if (w$message == "design appears to be rank-deficient, so dropping some coefs")
-                warning("Some variable(s) are colinear with other variables ",
-                        "and they have been removed from the estimation.")
-            else
-                warning(w$message)
-        },
-        error.handler = function(e) {
-            if (exists(".design"))
-            {
-                m <- model.frame(.formula, model.frame(.design), na.action = na.pass)
-                y <- model.response(m)
-                unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
-                if (unobserved.levels != "")
-                    stop("Outcome variable has level(s): ", unobserved.levels, " that are not observed in the data. ",
-                         "If possible, this issue could be solved by merging the categories of the outcome variable ",
-                         "such that all categories appear in all sub-groups.")
-            }
-            if (e$message == "response must have 3 or more levels")
-            {
-                outcome <- OutcomeVariable(.formula, .estimation.data)
-                outcome.levels <- levels(outcome)
-                base.error.msg <- paste0("Fitting an Ordered Logit model requires the outcome variable ",
-                                         "to have three or more levels. The outcome variable here has ")
-                levels.msg <- paste0(sQuote(outcome.levels), collapse = " and ")
-                if (length(outcome.levels) == 1)
-                    stop(base.error.msg, "only one level: ", levels.msg, ". A Regression model cannot be computed ",
-                         "when the outcome variable has no variation.")
-                else
-                    stop(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
-            }
+        warning.handler = .orderedLogitWarnings,
+        error.handler = .orderedLogitErrors)
+}
 
-            else
-                stop("An error occurred during model fitting. ",
-                     "Please check your input data for unusual values: ", e$message)
-        })
+#' @importFrom flipTransformations DichotomizeFactor
+#' @importFrom stats glm.fit
+findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.data, cutoff = 0.5)
+{
+    outcome.name <- OutcomeName(.formula, .estimation.data)
+    y <- DichotomizeFactor(.estimation.data[[outcome.name]], cutoff = cutoff, warning = FALSE)
+    X <- model.matrix(.formula, .estimation.data)
+    initial.logit.fit <- glm.fit(X, y, family = binomial())
+    if (!initial.logit.fit$converged)
+        stop("attempt to find suitable starting values failed")
+    coefs <- initial.logit.fit$coefficients
+    if (any(is.na(coefs))) {
+        warning("design appears to be rank-deficient, so dropping some coefs")
+        keep <- names(coefs)[!is.na(coefs)]
+        coefs <- coefs[keep]
+        x <- x[, keep[-1L], drop = FALSE]
+        pc <- ncol(x)
+    }
+    q <- nlevels(.estimation.data[[outcome.name]]) - 1L
+    first.level <- levels(y)[1]
+    cut.point <- substr(first.level, 4L, nchar(first.level))
+    q1 <- which(levels(.estimation.data[[outcome.name]]) == cut.point)
+    logit <- function(p) log(p/(1 - p))
+    spacing <- logit((1L:q)/(q + 1L))
+    gammas <- -coefs[1L] + spacing - spacing[q1]
+    c(coefs[-1L], gammas)
 }
 
 setChartData <- function(result, output)

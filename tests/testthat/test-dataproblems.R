@@ -550,3 +550,11 @@ test_that("Non syntactic variable names and dataset references", {
     expect_error(print(model.using.names), NA)
     expect_error(print(model.using.labels), NA)
 })
+
+test_that("DS-3379: MASS::polr starting value not suitable", {
+    dat <- readRDS("dat.with.bad.starting.value.rds")
+    single.warn <- capture_warnings(Regression(y ~ ., data = dat,
+                                               type = "Ordered Logit",
+                                               missing = "Dummy variable adjustment"))
+    expect_equal(single.warn , "glm.fit: fitted probabilities numerically 0 or 1 occurred")
+})
