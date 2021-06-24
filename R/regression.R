@@ -2344,6 +2344,8 @@ reduceOutputSize <- function(fit)
     ## if (!inherits(original, "svyglm"))
     ##     original$y <- NULL
     ## original$survey.design <- NULL  # needed can't delete
+    if (!is.null(original$survey.design))
+        fit$design <- original$survey.design
     original$data <- NULL
     fit$original <- original
     return(fit)
