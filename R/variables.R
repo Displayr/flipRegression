@@ -24,7 +24,8 @@ residuals.Regression <- function(object, type = "raw", ...)
         return(observed - predicted)
     }
     resids <- residuals(object$original, ...)
-    fillInMissingRowNames(rownames(object$model), resids)
+    ## fillInMissingRowNames(rownames(object$model), resids)
+    return(resids)
 }
 
 
@@ -144,7 +145,8 @@ fitted.Regression <- function(object, ...)
     notValidForPartial(object, "fitted")
     notValidForCrosstabInteraction(object, "fitted")
     fitted.values <- fitted(object$original)
-    fillInMissingRowNames(rownames(object$model), fitted.values)
+    ## fillInMissingRowNames(rownames(object$model), fitted.values)
+    return(fitted.values)
 }
 
 fillInMissingRowNames <- function(row.names, variable)
@@ -228,7 +230,14 @@ Probabilities.Regression <- function(object, newdata, ...)
     if (isTRUE(object$stacked) && IsRServer())
         stop("Saving probabilitiles is currently not supported for stacked data.")
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
-        return(suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "probs")))
+    {
+        probs <- suppressWarnings(predict(object$original, newdata = newdata,
+                                          na.action = na.pass, type = "probs"))
+        if (is.null(colnames(probs)))
+            colnames(probs) <- levels(object$estimation.data[, object$outcome.name])
+        return(probs)
+    }
+
     if (object$type == "Binary Logit")
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "response"))

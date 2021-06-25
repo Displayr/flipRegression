@@ -738,10 +738,6 @@ Regression <- function(formula = as.formula(NULL),
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
 
-    # remove environment attribute to reduce size
-    attr(result$original$terms, ".Environment") <- NULL
-    attr(attr(result$original$model, "terms"), ".Environment") <- NULL
-
     suppressWarnings(tmpSummary <- summary(result$original))
     result$summary <- tidySummary(tmpSummary, result$original, result)
     result$summary$call <- cl
@@ -912,6 +908,8 @@ Regression <- function(formula = as.formula(NULL),
     }
     result <- setChartData(result, output)
     result$stacked <- stacked.data.check
+    result <- reduceOutputSize(result)
+
     return(result)
 }
 
@@ -957,6 +955,10 @@ tidySummary <- function(rsummary, fit.reg, result)
         nms <- CleanBackticks(rownames(rsummary$coefficients))
         rownames(rsummary$coefficients) <- nms
     }
+    rsummary$deviance.resid <- unname(rsummary$deviance.resid)
+    rsummary$model <- rsummary$design <- NULL  # reduce size of summary
+    rsummary$lp <- unname(rsummary$lp)
+
     return(rsummary)
 }
 
@@ -2358,4 +2360,37 @@ hccmAdjust <- function(fit.reg, robust.se, h)
     factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
     factor[h == 1] <- df.res/n
     V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+}
+
+reduceOutputSize <- function(fit)
+{
+    original <- fit$original
+    ## Can't delete qr; needed for predict, rstudent, lm.influence, outlierTest
+    ## original$qr$qr <- c()
+    ## remove environment attribute to reduce size
+    attr(fit$terms, ".Environment") <- c()
+    attr(original$terms, ".Environment") <- c()
+    attr(original$formula, ".Environment") <- c()
+    attr(attr(original$model, "terms"), ".Environment") <- c()
+    attr(fit$summary$formula, ".Environment") <- c()
+    attr(fit$summary$terms, ".Environment") <- c()
+    ## remove names from residuals and fitted values to reduce size
+    original$residuals <- unname(original$residuals)
+    original$fitted.values <- unname(original$fitted.values)
+    original$weights <- unname(original$weights)
+    original$prior.weights <- unname(original$prior.weights)
+    if (is.matrix(fit$summary$fitted.values))
+        rownames(fit$summary$fitted.values) <- NULL
+    if (is.vector(original$y))
+        original$y <- unname(original$y)
+    if (is.vector(original$linear.predictors))
+        original$linear.predictors <- unname(original$linear.predictors)
+    ## if (!inherits(original, "svyglm"))
+    ##     original$y <- NULL
+    ## original$survey.design <- NULL  # needed can't delete
+    if (!is.null(original$survey.design))
+        fit$design <- original$survey.design
+    original$data <- NULL
+    fit$original <- original
+    return(fit)
 }
