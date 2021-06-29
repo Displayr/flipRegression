@@ -2374,8 +2374,9 @@ reduceOutputSize <- function(fit)
     attr(attr(original$model, "terms"), ".Environment") <- c()
     attr(fit$summary$formula, ".Environment") <- c()
     attr(fit$summary$terms, ".Environment") <- c()
-    ## remove names from residuals and fitted values to reduce size
-    original$residuals <- unname(original$residuals)
+    ## remove names from some components to reduce size
+    ## Names on residuals are needed for diagnostic plots
+    ## original$residuals <- unname(original$residuals)
     original$fitted.values <- unname(original$fitted.values)
     original$weights <- unname(original$weights)
     original$prior.weights <- unname(original$prior.weights)
