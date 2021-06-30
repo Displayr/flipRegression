@@ -436,7 +436,8 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
     ## if (!is.null(model$residuals))
     ##     names(model$residuals) <- which(x$subset)
     if (is.vector(model$y))
-        names(model$y) <- which(x$subset)  # seq_along(model$residuals)
+        names(model$y) <- which(x$subset)[x$non.outlier.data]
+
     t <- eval(parse(text = txt))
 
     if (exists(".formula", envir = .GlobalEnv))
