@@ -433,11 +433,6 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
 
     assign(".formula", frml, envir=.GlobalEnv)
     txt <- paste0(diagnostic, "(model, ...)")
-    ## if (!is.null(model$residuals))
-    ##     names(model$residuals) <- which(x$subset)
-    if (is.vector(model$y))
-        names(model$y) <- which(x$subset)[x$non.outlier.data]
-
     t <- eval(parse(text = txt))
 
     if (exists(".formula", envir = .GlobalEnv))
