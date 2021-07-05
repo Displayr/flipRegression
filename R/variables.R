@@ -24,8 +24,7 @@ residuals.Regression <- function(object, type = "raw", ...)
         return(observed - predicted)
     }
     resids <- residuals(object$original, ...)
-    ## fillInMissingRowNames(rownames(object$model), resids)
-    return(resids)
+    fillInMissingRowNames(rownames(object$model), resids)
 }
 
 
@@ -145,8 +144,7 @@ fitted.Regression <- function(object, ...)
     notValidForPartial(object, "fitted")
     notValidForCrosstabInteraction(object, "fitted")
     fitted.values <- fitted(object$original)
-    ## fillInMissingRowNames(rownames(object$model), fitted.values)
-    return(fitted.values)
+    fillInMissingRowNames(rownames(object$model), fitted.values)
 }
 
 fillInMissingRowNames <- function(row.names, variable)
