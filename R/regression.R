@@ -2375,8 +2375,13 @@ reduceOutputSize <- function(fit)
     attr(fit$summary$formula, ".Environment") <- c()
     attr(fit$summary$terms, ".Environment") <- c()
     ## remove names from residuals and fitted values to reduce size
-    original$residuals <- unname(original$residuals)
-    original$fitted.values <- unname(original$fitted.values)
+    ## if they are identical to 1,2,...,n
+    resid <- original$residuals
+    if (identical(names(resid), as.character(seq_along(resid))))
+    {
+        original$residuals <- unname(resid)
+        original$fitted.values <- unname(original$fitted.values)
+    }
     original$weights <- unname(original$weights)
     original$prior.weights <- unname(original$prior.weights)
     if (is.matrix(fit$summary$fitted.values))
