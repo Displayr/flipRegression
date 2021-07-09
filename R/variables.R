@@ -24,14 +24,7 @@ residuals.Regression <- function(object, type = "raw", ...)
         return(observed - predicted)
     }
     resids <- residuals(object$original, ...)
-    ## residuals may have been stripped of their names
-    ## if they are identical to 1,...,n
-    ## to reduce output size in reduceOutputSize()
-    if (!is.null(names(resids)))
-        resids <- fillInMissingRowNames(rownames(object$model), resids)
-    else
-        names(resids) <- seq_along(resids)
-    resids
+    fillInMissingRowNames(rownames(object$model), resids)
 }
 
 
@@ -151,20 +144,26 @@ fitted.Regression <- function(object, ...)
     notValidForPartial(object, "fitted")
     notValidForCrosstabInteraction(object, "fitted")
     fitted.values <- fitted(object$original)
-    ## residuals may have been stripped of their names
-    ## if they are identical to 1,...,n
-    ## to reduce output size in reduceOutputSize()
-    if (!is.null(names(fitted.values)))
-        fillInMissingRowNames(rownames(object$model), fitted.values)
-    else
-        names(fitted.values) <- seq_along(fitted.values)
-    fitted.values
+    fillInMissingRowNames(rownames(object$model), fitted.values)
 }
 
+#' This function ensures that residuals and fitted values
+#' from the resid and fitted methods have the same length
+#' and names as the original data including missing values,
+#' i.e. the behaviour of stats::napass
+#' residuals may have been stripped of their names
+#' if they are identical to 1,...,n (i.e. no missing values)
+#' to reduce output size in reduceOutputSize()
+#' @noRd
 fillInMissingRowNames <- function(row.names, variable)
 {
     if(is.matrix(variable))
+    {
+        if (is.null(rownames(variable)))
+            rownames(variable) <- seq_len(nrow(variable))
         return(variable[match(row.names, rownames(variable)), ])
+    }else if (is.null(names(variable)))
+        names(variable) <- seq_len(length(variable))
     result <- variable[match(row.names, names(variable))]
     names(result) <- row.names
     result
