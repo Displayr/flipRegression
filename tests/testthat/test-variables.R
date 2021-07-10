@@ -23,3 +23,26 @@ test_that("Observed with .",{
     fit <- Regression(y~., data = dat)
     expect_equal(Observed(fit), dat[["y"]])
 })
+
+data(bank, package = "flipExampleData")
+
+test_that("na.exclude behaviour of Regression methods",
+{
+    fit <- suppressWarnings(
+        Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                   data = bank, missing = "Exclude cases with missing data")
+    )
+    resid <- residuals(fit)
+    resid.expect <- flipRegression:::fillInMissingRowNames(rownames(bank),
+                                                           residuals(fit$original))
+    expect_equal(resid, resid.expect)
+    expect_equal(names(resid), rownames(bank))
+    expect_length(resid, nrow(bank))
+
+    fitted <- fitted(fit)
+    fitted.expect <- flipRegression:::fillInMissingRowNames(rownames(bank),
+                                                           fitted(fit$original))
+    expect_equal(fitted, fitted.expect)
+    expect_equal(names(fitted), rownames(bank))
+    expect_length(fitted, nrow(bank))
+})

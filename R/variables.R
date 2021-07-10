@@ -147,10 +147,23 @@ fitted.Regression <- function(object, ...)
     fillInMissingRowNames(rownames(object$model), fitted.values)
 }
 
+#' This function ensures that residuals and fitted values
+#' from the resid and fitted methods have the same length
+#' and names as the original data including missing values,
+#' i.e. the behaviour of stats::napass
+#' residuals may have been stripped of their names
+#' if they are identical to 1,...,n (i.e. no missing values)
+#' to reduce output size in reduceOutputSize()
+#' @noRd
 fillInMissingRowNames <- function(row.names, variable)
 {
     if(is.matrix(variable))
+    {
+        if (is.null(rownames(variable)))
+            rownames(variable) <- seq_len(nrow(variable))
         return(variable[match(row.names, rownames(variable)), ])
+    }else if (is.null(names(variable)))
+        names(variable) <- seq_len(length(variable))
     result <- variable[match(row.names, names(variable))]
     names(result) <- row.names
     result
@@ -228,7 +241,14 @@ Probabilities.Regression <- function(object, newdata, ...)
     if (isTRUE(object$stacked) && IsRServer())
         stop("Saving probabilitiles is currently not supported for stacked data.")
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
-        return(suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "probs")))
+    {
+        probs <- suppressWarnings(predict(object$original, newdata = newdata,
+                                          na.action = na.pass, type = "probs"))
+        if (is.null(colnames(probs)))
+            colnames(probs) <- levels(object$estimation.data[, object$outcome.name])
+        return(probs)
+    }
+
     if (object$type == "Binary Logit")
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "response"))
