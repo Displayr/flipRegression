@@ -46,3 +46,8 @@ test_that("na.exclude behaviour of Regression methods",
     expect_equal(names(fitted), rownames(bank))
     expect_length(fitted, nrow(bank))
 })
+
+test_that("labels adding back for infIndexPlot; DS-3339",
+{
+    expect_error(infIndexPlot(z), NA)
+})
