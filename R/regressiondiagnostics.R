@@ -416,7 +416,7 @@ infIndexPlot.Regression <- function(model, ...)
 {
   checkAcceptableModel(model, c("glm","lm"), "'influenceIndexPlot'")
   model <- model$original
-  model <- addBackNamesIfMissing(model)
+  model <- addBackNamesIfNecessary(model)
   infIndexPlot(model, ...)
 }
 
