@@ -416,6 +416,7 @@ infIndexPlot.Regression <- function(model, ...)
 {
   checkAcceptableModel(model, c("glm","lm"), "'influenceIndexPlot'")
   model <- model$original
+  model <- addBackNamesIfMissing(model)
   infIndexPlot(model, ...)
 }
 
@@ -424,7 +425,7 @@ infIndexPlot.Regression <- function(model, ...)
 diagnosticTestFromCar<- function(x, diagnostic, ...)
 {
     model <- x$original
-
+    model <- addBackNamesIfNecessary(model)
     assign(".estimation.data", x$estimation.data, envir=.GlobalEnv)
     ## drop aliased/colinear variables
     ## if (any(x$summary$aliased))
@@ -432,18 +433,30 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
     frml <- formula(model)
 
     assign(".formula", frml, envir=.GlobalEnv)
+    on.exit(
+    {
+        if (exists(".formula", envir = .GlobalEnv))
+            remove(".formula", envir = .GlobalEnv)
+        if (exists(".estimation.data", envir = .GlobalEnv))
+            remove(".estimation.data", envir = .GlobalEnv)
+    })
     txt <- paste0(diagnostic, "(model, ...)")
-    if (!is.null(model$residuals))
-        names(model$residuals) <- seq_along(model$residuals)
-    if (is.vector(model$y))
-        names(model$y) <- seq_along(model$residuals)
-    t <- eval(parse(text = txt))
+    eval(parse(text = txt))
+}
 
-    if (exists(".formula", envir = .GlobalEnv))
-        remove(".formula", envir = .GlobalEnv)
-    if (exists(".estimation.data", envir = .GlobalEnv))
-        remove(".estimation.data", envir = .GlobalEnv)
-    t
+#' Names may have been stripped from some vector elements
+#' from the original model fit to reduce Regression
+#' output size in reduceOutputSize(). This
+#' function adds back the names to avoid errors
+#' when calling diagnostics from the car package
+#' @noRd
+addBackNamesIfNecessary <- function(model)
+{
+  if (!is.null(model$residuals) && is.null(names(model$residuals)))
+      names(model$residuals) <- seq_along(model$residuals)
+  if (is.vector(model$y) && is.null(names(model$y)))
+      names(model$y) <- seq_along(model$residuals)
+  return(model)
 }
 
 #' \code{Accuracy}
