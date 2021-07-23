@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // shapleyImportance
 NumericVector shapleyImportance(Eigen::MatrixXd& corr_regressors, Eigen::VectorXd& corr_xy, List combinations_list);
 RcppExport SEXP _flipRegression_shapleyImportance(SEXP corr_regressorsSEXP, SEXP corr_xySEXP, SEXP combinations_listSEXP) {

@@ -33,7 +33,9 @@ Imports: car,
 Suggests: flipExampleData,
  testthat,
  robustbase
-Remotes: Displayr/flipU,
+Remotes: 
+ cran/survey@4.0,
+ Displayr/flipU,
  Displayr/flipFormat,
  Displayr/flipData,
  Displayr/flipStandardCharts,
