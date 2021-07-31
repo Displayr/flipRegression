@@ -1,0 +1,27 @@
+- Regression - Binary Logit
+- Regression - Diagnostic - Multicollinearity Table (VIF)
+- Regression - Diagnostic - Plot - Cook's Distance
+- Regression - Diagnostic - Plot - Cook's Distance vs Leverage
+- Regression - Diagnostic - Plot - Goodness of Fit
+- Regression - Diagnostic - Plot - Influence Index
+- Regression - Diagnostic - Plot - Normal Q-Q
+- Regression - Diagnostic - Plot - Residuals vs Fitted
+- Regression - Diagnostic - Plot - Residuals vs Leverage
+- Regression - Diagnostic - Plot - Scale-Location
+- Regression - Diagnostic - Prediction-Accuracy Table
+- Regression - Diagnostic - Test Residual Heteroscedasticity
+- Regression - Diagnostic - Test Residual Normality (Shapiro-Wilk)
+- Regression - Diagnostic - Test Residual Serial Correlation (Durbin-Watson)
+- Regression - Driver Analysis
+- Regression - Generalized Linear Model
+- Regression - Linear Regression
+- Regression - Multinomial Logit
+- Regression - NBD Regression
+- Regression - Ordered Logit
+- Regression - Poisson Regression
+- Regression - Quasi-Poisson Regression
+- Regression - Save Variable(s) - Fitted Values
+- Regression - Save Variable(s) - Predicted Values
+- Regression - Save Variable(s) - Probabilities of Each Response
+- Regression - Save Variable(s) - Residuals
+- Regression - Stepwise
