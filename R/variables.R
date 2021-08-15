@@ -244,6 +244,8 @@ Probabilities.Regression <- function(object, newdata, ...)
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata,
                                           na.action = na.pass, type = "probs"))
+        if (object$type == "Multinomial Logit" && NCOL(probs) == 1L)
+            probs <- cbind(1 - probs, probs)
         if (is.null(colnames(probs)))
             colnames(probs) <- levels(object$estimation.data[, object$outcome.name])
         return(probs)
