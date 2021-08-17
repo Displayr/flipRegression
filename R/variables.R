@@ -254,8 +254,20 @@ Probabilities.Regression <- function(object, newdata, ...)
     if (object$type == "Binary Logit")
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "response"))
+        outcome.levels <- levels(Observed(object))
+        if (length(outcome.levels) == 1L)
+        {
+            warning("The Outcome variable only has a single category for this Binary Logit Regression model. ",
+                    "The computed probabilities here are very likely to be uninformative and the outcome variable ",
+                    "of the original Binary Logit model inspected. It should have the second category added and ",
+                    "the Binary Logit model recomputed. The computed probabilities are all near zero as it ",
+                    "is attempting to compute the probability of observing a category that wasn't included in the ",
+                    "original data.")
+            outcome.levels <- c(paste0("Not ", outcome.levels),
+                                outcome.levels)
+        }
         probs <- cbind(1 - probs, probs)
-        colnames(probs) <- levels(Observed(object))
+        colnames(probs) <- outcome.levels
         return(probs)
     }
     xs <- 0:max(Observed(object), na.rm = TRUE)
