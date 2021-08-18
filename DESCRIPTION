@@ -34,7 +34,6 @@ Suggests: flipExampleData,
  testthat,
  robustbase
 Remotes: 
- cran/survey@4.0,
  Displayr/flipU,
  Displayr/flipFormat,
  Displayr/flipData,
