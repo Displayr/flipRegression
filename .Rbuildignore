@@ -2,5 +2,6 @@
 ^\.Rproj\.user$
 .travis.yml
 .*~
+^StandardRTests.yml$
 runTravisTests.sh
 tools/travis_run_before_install.R$

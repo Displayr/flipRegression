@@ -366,6 +366,7 @@ allEffects.Regression <- function(model, ...)
     assign(".formula", frml, envir=.GlobalEnv)
     assign(".design", model$design, envir=.GlobalEnv)
     attach(.estimation.data, warn.conflicts = FALSE)
+    model$original$data <- .estimation.data
     effects <- allEffects(model$original, ...)  # BreuschPagan(x$original)
 
     ## remove(".design", envir=.GlobalEnv)
