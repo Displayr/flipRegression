@@ -725,7 +725,7 @@ Regression <- function(formula = as.formula(NULL),
     if (missing != "Dummy variable adjustment")
         result$model <- data
     else
-        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = TRUE)
 
     result$robust.se <- robust.se
     result$type <- type
