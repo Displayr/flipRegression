@@ -16,6 +16,7 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libgit2-dev
   - sudo apt-get install -y r-cran-rcppeigen
+  - export flipFormat_BRANCH_NAME=DS-3534
   - Rscript tools/travis_run_before_install.R
 
 r_packages:
