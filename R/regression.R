@@ -554,6 +554,7 @@ Regression <- function(formula = as.formula(NULL),
             stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
         result <- list(original = LinearRegressionFromCorrelations(input.formula, data, subset,
                                                                    weights, outcome.name, ...),
+                       outliers.removed = !is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0,
                        call = cl)
         result$sample.description <- result$original$sample.description
     }
@@ -679,7 +680,8 @@ Regression <- function(formula = as.formula(NULL),
         }
         original <- fit$original
         .design <- fit$design
-        result <- list(original = original, call = cl)
+        result <- list(original = original, call = cl,
+                       outliers.removed = !is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
 
         result$non.outlier.data <- fit$non.outlier.data
 
@@ -692,7 +694,7 @@ Regression <- function(formula = as.formula(NULL),
         result$n.predictors <- sum(!(names(result$original$coefficients) %in% "(Intercept)"))
         result$n.observations <- sum(.estimation.data$non.outlier.data_GQ9KqD7YOf)
         # If outliers are removed, remake the footer
-        if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
+        if (result$outliers.removed)
         {
             n.subset <- attr(CleanSubset(subset, nrow(data)), "n.subset")
             n.estimation <- result$n.observations
@@ -892,6 +894,7 @@ Regression <- function(formula = as.formula(NULL),
             result$anova <- anova.out
         }
     }
+
     result$footer <- regressionFooter(result)
     if (!is.null(result$importance))
         result$importance.footer <- importanceFooter(result)
@@ -963,7 +966,6 @@ tidySummary <- function(rsummary, fit.reg, result)
 }
 
 
-
 regressionFooter <- function(x)
 {
     # Creating a nicely formatted text description of the model.
@@ -974,6 +976,10 @@ regressionFooter <- function(x)
 
     if (x$test.interaction)
     {
+        if (x$outliers.removed)
+            footer <- sub("n = [0-9]+ cases",
+                          paste0("n = ", x$interaction$split.size[2L, "NET"], " cases"),
+                          x$sample.description)
         if (x$missing == "Multiple imputation" && !is.null(x$interaction$anova.test))
             footer <- paste0(footer, " ", x$interaction$anova.test, " uses statistic averaged over multiple imputations;")
 
@@ -1008,6 +1014,10 @@ regressionFooter <- function(x)
 importanceFooter <- function(x)
 {
     footer <- x$sample.description
+    if (x$test.interaction && x$outliers.removed)
+        footer <- sub("n = [0-9]+ cases",
+                      paste0("n = ", x$interaction$split.size[2L, "NET"], " cases"),
+                      footer)
     # Suppress the footer addition for the Jaccard and Correlation outputs
     if (!x$test.interaction && !x$importance %in% c("Jaccard Coefficient", "Correlation"))
         footer <- paste0(footer, " R-squared: ", FormatAsReal(x$r.squared, 4), ";")
@@ -1565,7 +1575,8 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
 # Helper function to check user has input a valid value.
 checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimation.data)
 {
-    if ((remove.outliers <- (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)) && outlier.prop.to.remove >= 0.5)
+    remove.outliers <- !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0
+    if (remove.outliers && outlier.prop.to.remove >= 0.5)
         stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
              FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
              " to a lower setting and re-run the analysis.")

@@ -9,9 +9,10 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
     signsWarning(signs, show.warnings, "Linear")
 
     # If necessary, filter the data to the outlier adjusted subset
-    if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+    outliers.removed <- !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0
+    if (outliers.removed && "non.outlier.data_GQ9KqD7YOf" %in% names(data))
     {
-        data.indices <- data[, "non.outlier.data_GQ9KqD7YOf"]
+        data.indices <- data[["non.outlier.data_GQ9KqD7YOf"]]
         data <- data[data.indices, ]
         if (!is.null(weights))
             weights <- weights[data.indices]
@@ -60,6 +61,6 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
     standard.errors <- raw.importance * relative.importance$standard.errors /
                        relative.importance$raw.importance
 
-    result <- list()
+    result <- if (outliers.removed) list(non.outlier.n = info[["non.outlier.n"]]) else list()
     appendStatistics(result, raw.importance, standard.errors, signs, fit, correction)
 }

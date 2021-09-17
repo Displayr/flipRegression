@@ -4,7 +4,6 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
 {
     if (!is.null(weights))
         robust.se <- FALSE
-
     if (importance == "Relative Importance Analysis")
         estimateRelativeImportance(formula, data, weights, type, signs, r.square, variable.names,
                                    robust.se, outlier.prop.to.remove, show.warnings, correction, ...)
@@ -12,9 +11,9 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
         computeShapleyImportance(formula, data, weights, signs, variable.names, robust.se, outlier.prop.to.remove,
                                  show.warnings, correction, ...)
     else if (importance == "Jaccard Coefficient")
-        computeJaccardImportance(formula, data, weights, variable.names, correction, ...)
+        computeJaccardImportance(formula, data, weights, variable.names, correction, outlier.prop.to.remove)
     else if (importance == "Correlation")
-        computeCorrelationImportance(formula, data, weights, variable.names, correction, ...)
+        computeCorrelationImportance(formula, data, weights, variable.names, correction, outlier.prop.to.remove)
     else
         stop("Importance type not handled: ", importance)
 }
@@ -55,7 +54,8 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
     if (is.null(weights))
         weights <- rep(1, nrow(data))
 
-    result <- list()
+    result <- if (is.na(info[["non.outlier.n"]])) list()
+              else list(non.outlier.n = info[["non.outlier.n"]])
 
     x.zscore <- sapply(num.X, function(x) weightedZScores(x, weights))
 
@@ -206,6 +206,7 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
                                   r.square, variable.names, robust.se = FALSE,
                                   outlier.prop.to.remove, ...)
 {
+    non.outlier.n <- NA
     if (is.null(signs) || any(is.na(signs)) || is.null(r.square) || is.na(r.square))
     {
         formula2 <- DataFormula(formula, data)
@@ -223,8 +224,11 @@ extractRegressionInfo <- function(formula, data, weights, type, signs,
             tmp.names <- CleanBackticks(names(fit$original$coefficients))
             variable.names <- if (type == "Ordered Logit") tmp.names else tmp.names[-1]
         }
+        if (!is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+            non.outlier.n <- sum(fit[["non.outlier.data"]])
     }
-    list(signs = signs, r.square = r.square, variable.names = variable.names)
+    list(signs = signs, r.square = r.square,
+         variable.names = variable.names, non.outlier.n = non.outlier.n)
 }
 
 #' Function to find the correct subset omitting outliers, returns
@@ -279,12 +283,17 @@ subsetDataWeightsAndFormula <- function(formula, data, weights)
 #' @importFrom flipU OutcomeName
 #' @importFrom stats terms.formula
 #' @noRd
-computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.names = NA)
+computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.names = NA,
+                                       outlier.prop.to.remove = 0)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
     relevant.data <- processed.data$data
     weights <- processed.data$weights
     formula <- processed.data$formula
+
+    if (!"non.outlier.data_GQ9KqD7YOf" %in% names(data) &&
+        !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+        relevant.data <- removeOutliersFromLinearRegression()
 
     outcome.name <- OutcomeName(formula, relevant.data)
     outcome.variable <- relevant.data[[outcome.name]]
@@ -300,7 +309,8 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
     list(outcome.variable = outcome.variable,
          coefficients = jaccard.coefficients,
          predictor.variables = predictor.variables,
-         weights = weights)
+         weights = weights,
+         non.outlier.n = nrow(relevant.data))
 }
 
 #' Compute the single Jaccard coefficient between x and y
@@ -336,9 +346,11 @@ singleJaccardExpectation <- function(x, y)
 #' @param correction A character specifying the multiple comparisons correction to be applied.
 #' @importFrom stats terms.formula
 #' @noRd
-computeJaccardImportance <- function(formula, data = NULL, weights, variable.names = NA, correction)
+computeJaccardImportance <- function(formula, data = NULL, weights, variable.names = NA,
+                                     correction = "None", outlier.prop.to.remove = 0)
 {
-    jaccard.coef.output <- computeJaccardCoefficients(formula, data, weights, variable.names)
+    jaccard.coef.output <- computeJaccardCoefficients(formula, data, weights,
+                                                      variable.names, outlier.prop.to.remove)
     # Extract the outcome binary variable, the data.frame of predictor binary variables
     # the computed jaccard coefficients and the relative importance and possible weights
     y <- jaccard.coef.output$outcome.variable
@@ -359,7 +371,8 @@ computeJaccardImportance <- function(formula, data = NULL, weights, variable.nam
          standard.errors = standard.errors,
          statistics = test.statistics,
          sample.size = sample.size,
-         p.values = pvalues)
+         p.values = pvalues,
+         non.outlier.n = jaccard.coef.output[["non.outlier.n"]])
 }
 
 #' Compute the single p-value using reasmpled binary variables x and y
@@ -410,13 +423,19 @@ jaccardTest <- function(x, y, weights)
 #' @importFrom flipStatistics CorrelationsWithSignificance
 #' @importFrom flipTransformations AsDataFrame
 #' @noRd
-computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names, correction)
+computeCorrelationImportance <- function(formula, data = NULL, weights, variable.names,
+                                         correction, outlier.prop.to.remove = 0)
 {
     processed.data <- subsetDataWeightsAndFormula(formula, data, weights)
     relevant.data <- AsDataFrame(processed.data$data, use.names = TRUE, categorical.as.binary = FALSE)
     names(relevant.data) <- names(processed.data$data)
     weights <- processed.data$weights
     formula <- processed.data$formula
+
+    if (!"non.outlier.data_GQ9KqD7YOf" %in% names(data) &&
+        !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+        relevant.data <- removeDataThatAreOutliersFromLinearRegression(formula, relevant.data, weights,
+                                                                       outlier.prop.to.remove = outlier.prop.to.remove)
 
     outcome.name <- OutcomeName(formula, relevant.data)
     outcome.variable <- relevant.data[[outcome.name]]
@@ -443,7 +462,8 @@ computeCorrelationImportance <- function(formula, data = NULL, weights, variable
          statistics = statistics,
          standard.errors = std.errs,
          sample.size = sample.size,
-         p.values = pvalues)
+         p.values = pvalues,
+         non.outlier.n = nrow(relevant.data))
 }
 
 # Extracts the first row of a numeric matrix, the columns selected are
@@ -455,4 +475,18 @@ extractFirstRowMatrixToNumeric <- function(mat, indices)
     x <- as.numeric(x)
     names(x) <- names.x
     x
+}
+
+# Removes proportion of outliers from a fitted Linear Regression model and returns
+# the data not considered to be outliers.
+removeDataThatAreOutliersFromLinearRegression <- function(formula, data, weights, outlier.prop.to.remove)
+{
+    linear.model.outliers.removed <- FitRegression(.formula = formula, .estimation.data = data,
+                                                   .weights = weights,  outlier.prop.to.remove = outlier.prop.to.remove,
+                                                   robust.se = FALSE, # Not required as standard errors not used
+                                                   type = "Linear")
+    non.outlier.data <- linear.model.outliers.removed[["non.outlier.data"]]
+    relevant.data <- linear.model.outliers.removed[[".estimation.data"]][non.outlier.data, ]
+    relevant.data[["non.outlier.data_GQ9KqD7YOf"]] <- NULL
+    relevant.data
 }

@@ -280,23 +280,27 @@ test_that("Relative Importance and Shapley Output", {
         if (tt == "Linear")
         {
             shapley.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                  outlier.prop.to.remove = 0.1,
-                                                  output = "Shapley Regression")$importance
-            shapley.on.subset <- Regression(bank.formula[[tt]], type = tt,
-                                               data = small.bank[regression.non.outlier.data, ],
-                                               outlier.prop.to.remove = 0,
+                                               outlier.prop.to.remove = 0.1,
                                                output = "Shapley Regression")$importance
-            expect_equal(shapley.with.removal, shapley.on.subset)
+            shapley.on.subset <- Regression(bank.formula[[tt]], type = tt,
+                                            data = small.bank[regression.non.outlier.data, ],
+                                            outlier.prop.to.remove = 0,
+                                            output = "Shapley Regression")$importance
+            expect_equal(shapley.with.removal[["non.outlier.n"]], 198L)
+            expect_equal(shapley.with.removal[names(shapley.with.removal) != "non.outlier.n"],
+                         shapley.on.subset)
             weighted.shapley.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                           weights = weight,
-                                                           outlier.prop.to.remove = 0.1,
-                                                           output = "Shapley Regression")$importance
-            weighted.shapley.on.subset <- Regression(bank.formula[[tt]], type = tt,
-                                                        data = small.bank[weighted.regression.non.outlier.data, ],
-                                                        outlier.prop.to.remove = 0,
                                                         weights = weight,
+                                                        outlier.prop.to.remove = 0.1,
                                                         output = "Shapley Regression")$importance
-            expect_equal(weighted.shapley.with.removal, weighted.shapley.on.subset)
+            weighted.shapley.on.subset <- Regression(bank.formula[[tt]], type = tt,
+                                                     data = small.bank[weighted.regression.non.outlier.data, ],
+                                                     outlier.prop.to.remove = 0,
+                                                     weights = weight,
+                                                     output = "Shapley Regression")$importance
+            expect_equal(weighted.shapley.with.removal[["non.outlier.n"]], 198L)
+            expect_equal(weighted.shapley.with.removal[names(weighted.shapley.with.removal) != "non.outlier.n"],
+                         weighted.shapley.on.subset)
         }
     }
 })
