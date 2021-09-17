@@ -36,7 +36,7 @@ Suggests: flipExampleData,
 Remotes: 
  cran/survey@4.0,
  Displayr/flipU,
- Displayr/flipFormat,
+ Displayr/flipFormat@DS-3534,
  Displayr/flipData,
  Displayr/flipStandardCharts,
  Displayr/flipStatistics,
