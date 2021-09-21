@@ -1520,7 +1520,8 @@ setChartData <- function(result, output)
                   {
                       dt <- rbind(result$interaction$coefficients,
                                   result$interaction$split.size)
-                      rownames(dt)[nrow(dt)] <- "n"
+                      if (!result$outliers.removed)
+                          rownames(dt)[nrow(dt)] <- "n"
                       dt
                   }
                   else if (output %in% c("Relative Importance Analysis",
