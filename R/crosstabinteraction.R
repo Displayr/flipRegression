@@ -28,9 +28,16 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     original.r2 <- if (result$type == "Linear" & is.null(weights)) summary(result$original)$r.square
                    else 1 - deviance(result$original)/nullDeviance(result)
 
-    res <- list(label = interaction.label, split.size = c(split.size, NET = Sum(split.size, remove.missing = FALSE)),
+    res <- list(label = interaction.label,
+                split.size = c(split.size, NET = Sum(split.size, remove.missing = FALSE)),
                 pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL,
                 net.coef = net.coef, importance = importance)
+    outlier.prop.to.remove <- result[["outlier.prop.to.remove"]]
+    # Give an extra row for the counts after outlier removal.
+    outliers.removed <- !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0
+    if (outliers.removed)
+        res[["split.size"]] <- rbind(n = res[["split.size"]],
+                                     `n (after outliers removed)` = 0)
 
     if (is.null(importance))
     {
@@ -78,7 +85,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     bc <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
     ss <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
     sc <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
-
+    result$estimation.data[["non.outlier.data_GQ9KqD7YOf"]] <- NULL
+    outlier.prop.to.remove <- if (outliers.removed) result$call[["outlier.prop.to.remove"]]
+                              else 0L
     if (!is.null(importance))
     {
         signs <- if (importance.absolute) 1 else NA
@@ -103,11 +112,11 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
             }
             tmp.ri <- try(estimateImportance(result$formula, estimation.data,
                                              weights[is.split], result$type, signs, NA, NA, result$robust.se,
-                                             result$outlier.prop.to.remove, FALSE, correction, importance),
+                                             outlier.prop.to.remove, FALSE, correction, importance),
                           silent = TRUE)
             tmpC.ri <- try(estimateImportance(result$formula, estimation.data.C,
                                               weights[-is.split], result$type, signs, NA, NA, result$robust.se,
-                                              result$outlier.prop.to.remove, FALSE, correction, importance),
+                                              outlier.prop.to.remove, FALSE, correction, importance),
                            silent = TRUE)
             if (!inherits(tmp.ri, "try-error") && !inherits(tmpC.ri, "try-error"))
             {
@@ -117,34 +126,36 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 ss[names(tmp.ri$raw.importance),j] <- tmp.ri$standard.errors
                 bc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$raw.importance * tmpC.sign
                 sc[names(tmpC.ri$raw.importance),j] <- tmpC.ri$standard.errors
+                if (outliers.removed)
+                    res[["split.size"]][2L, j] <- tmp.ri[["non.outlier.n"]]
             }
         }
     } else
     {
+        estimation.data <- result$estimation.data
         base.error.msg <- paste0("Cannot perform regression split by interaction term. Settings require fitting ",
                                  "the model for all sub-groups determined by the interaction variable ",
                                  interaction.name, ".")
         ## in case original formula has ., need to remove interaction
         ## term from formula
+
         formula2 <- update.formula(result$terms, paste0("~.-", interaction.name))
         for (j in 1:num.split)
         {
-            is.split <- which(result$estimation.data[,interaction.name] == split.labels[j])
-            if (length(unique(result$estimation.data[is.split,1])) < 2 ||
-                length(unique(result$estimation.data[-is.split,1])) < 2)
+            is.split <- which(estimation.data[,interaction.name] == split.labels[j])
+            if (length(unique(estimation.data[is.split,1])) < 2 ||
+                length(unique(estimation.data[-is.split,1])) < 2)
                 next
-
-            tmp.fit <- try(FitRegression(formula2, result$estimation.data[is.split,],
+            tmp.fit <- try(FitRegression(formula2, estimation.data[is.split,],
                                          weights[is.split], result$type, result$robust.se,
-                                         result$outlier.prop.to.remove),
+                                         outlier.prop.to.remove),
                            silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
                 stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
                      " takes the value ", split.labels[j], ". ", attr(tmp.fit, "condition")$message, "\n")
-
-            tmpC.fit <- try(FitRegression(formula2, result$estimation.data[-is.split,],
+            tmpC.fit <- try(FitRegression(formula2, estimation.data[-is.split,],
                                           weights[-is.split], result$type, result$robust.se,
-                                          result$outlier.prop.to.remove),
+                                          outlier.prop.to.remove),
                             silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))
                 stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
@@ -164,6 +175,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                 ss[rownames(tmp.coefs),j] <- tmp.coefs[,2]
                 bc[rownames(tmpC.coefs),j] <- tmpC.coefs[,1]
                 sc[rownames(tmpC.coefs),j] <- tmpC.coefs[,2]
+                if (outliers.removed)
+                    res[["split.size"]][2L, j] <- Sum(tmp.fit[["non.outlier.data"]])
             }
         }
     }
@@ -175,6 +188,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         res$sc <- sc
         return(res)
     }
+    if (!is.null(nrow(res[["split.size"]])))
+        res[["split.size"]][2L, NCOL(res[["split.size"]])] <- Sum(res[["split.size"]][2L, -NCOL(res[["split.size"]])])
 
     coef.sign <- compareCoef(bb, bc, ss^2, sc^2, split.size, correction, importance)
     res$coef.pvalues <- coef.sign$pvalues
