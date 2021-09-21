@@ -369,3 +369,32 @@ test_that("Correct n.estimation used with outlier removal and checks", {
                  perl = TRUE)
 })
 
+test_that("DS-3534 Outlier removal in Jaccard and Correlation", {
+    coefs.wo.outliers <- list(c(40, -0.14),
+                              c(20, 0),
+                              c(20, -0.02))
+    x.ranges <- list(c(71, 76, 79, 79, 95, 108, 120, 120, 121, 141, 147),
+                     c(145, 160, 160, 168, 168, 225, 258),
+                     c(276, 276, 276, 301, 304, 318, 350, 351, 360, 360, 400, 440, 460, 472))
+    group <- factor(rep(letters[1:3], vapply(x.ranges, length, 1L)))
+    dat <- mapply(function(coefs, x.domain) {
+        y <- coefs[1] + coefs[2] * x.domain + rnorm(length(x.domain), sd = 1)
+        data.frame(y = y, x = x.domain)
+    },
+    coefs.wo.outliers,
+    x.ranges,
+    SIMPLIFY = FALSE)
+    dat <- do.call(rbind, dat)
+    dat[["group"]] <- group
+    # Add outliers
+    outliers <- data.frame(x = c(70, 250, 300),
+                           y = c(10, 15, 0),
+                           group = factor(letters[1:3]))
+    dat.w.outliers <- rbind(dat, outliers)
+    # Check outliers get removed
+    split.dat.w.outliers <- split(dat.w.outliers, dat.w.outliers[["group"]])
+    outliers.removed <- lapply(split.dat.w.outliers, function(input.dat)
+        removeDataThatAreOutliersFromLinearRegression(formula = y ~ x, data = input.dat, weights = NULL,
+                                                      outlier.prop.to.remove = 0.13))
+    expect_equal(outliers.removed, split(dat, dat[["group"]]))
+})

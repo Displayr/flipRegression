@@ -293,8 +293,8 @@ computeJaccardCoefficients <- function(formula, data = NULL, weights, variable.n
 
     if (!"non.outlier.data_GQ9KqD7YOf" %in% names(data) &&
         !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
-        relevant.data <- removeOutliersFromLinearRegression()
-
+        relevant.data <- removeDataThatAreOutliersFromLinearRegression(formula, relevant.data, weights,
+                                                                       outlier.prop.to.remove = outlier.prop.to.remove)
     outcome.name <- OutcomeName(formula, relevant.data)
     outcome.variable <- relevant.data[[outcome.name]]
     predictor.names <- attr(terms.formula(formula, data = relevant.data), "term.labels")
