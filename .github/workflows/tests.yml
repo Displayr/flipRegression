@@ -20,7 +20,7 @@ jobs:
       - name: Pull code
         uses: actions/checkout@v2
       - name: Install flip dependencies
-        run: remotes <- strsplit(read.dcf("DESCRIPTION", fields = "Remotes")[1, ], ",\\s*\\n")[[1]]; remotes; remotes::install_github(remotes, upgrade = 'never', dependencies = c("Depends", "Imports", "LinkingTo", "Suggests"), Ncpus = parallel::detectCores())
+        run: remotes <- strsplit(read.dcf("DESCRIPTION", fields = "Remotes")[1, ], ",\\s*\\n")[[1]]; remotes; remotes::install_github(remotes, upgrade = 'never', Ncpus = parallel::detectCores())
         shell: Rscript {0}
       - name: Run R CMD check and test
         run: rcmdcheck::rcmdcheck(args = c("--as-cran", "--no-manual", "--no-build-vignettes", "--no-tests"), build_args = c("--no-build-vignettes", "--no-resave-data"))
