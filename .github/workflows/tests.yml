@@ -1,0 +1,47 @@
+on:
+  push:
+    branches: '**'
+
+jobs:
+
+  BuildCheckAndTest:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/displayr/r-server-skinny-base:basic
+      credentials:
+        username: jrwishart
+        password: ${{ secrets.JUSTIN_GITHUB_PAT }}
+    steps:
+      - name: Install git
+        run: |
+          apt-fast install -y git
+        env:
+          GITHUB_PAT: ${{ secrets.JUSTIN_GITHUB_PAT }}
+      - name: Pull code
+        uses: actions/checkout@v2
+      - name: Install flip dependencies
+        run: |
+          remotes::install_github(strsplit(read.dcf("DESCRIPTION", fields = "Remotes")[1, ], ",\\s*\\n")[[1]])
+        shell: Rscript {0}
+      - name: Run R CMD check and test
+        run: rcmdcheck::rcmdcheck(args = c("--as-cran", "--no-manual", "--no-build-vignettes"), build_args = c("--no-build-vignettes", "--no-resave-data"))
+        shell: Rscript {0}
+      - name: Run tests
+        run: devtools::test()
+        shell: Rscript {0}
+
+  slackNotification:
+    runs-on: ubuntu-latest
+    name: Slack Notification
+    needs: 'BuildCheckAndTest'
+    if: always() && !cancelled()
+    steps:
+      - name: Slack Notification
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          repo_token: ${{ secrets.JUSTIN_GITHUB_PAT }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_GITHUB_NOTIFICATIONS }}
+          name: flipRegression Github After Action Report
+          icon_url: "https://avatars.githubusercontent.com/u/13129122?s=200&v=4"
+          channel: '#github-notifications'
+          include_jobs: true
