@@ -24,7 +24,7 @@ jobs:
           remotes::install_github(strsplit(read.dcf("DESCRIPTION", fields = "Remotes")[1, ], ",\\s*\\n")[[1]])
         shell: Rscript {0}
       - name: Run R CMD check and test
-        run: rcmdcheck::rcmdcheck(args = c("--as-cran", "--no-manual", "--no-build-vignettes"), build_args = c("--no-build-vignettes", "--no-resave-data"))
+        run: rcmdcheck::rcmdcheck(args = c("--as-cran", "--no-manual", "--no-build-vignettes", "--no-tests"), build_args = c("--no-build-vignettes", "--no-resave-data"))
         shell: Rscript {0}
       - name: Run tests
         run: devtools::test()
