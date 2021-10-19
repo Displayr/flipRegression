@@ -86,7 +86,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     ss <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
     sc <- matrix(NA, num.var, num.split, dimnames=list(var.names, NULL))
     result$estimation.data[["non.outlier.data_GQ9KqD7YOf"]] <- NULL
-    outlier.prop.to.remove <- if (outliers.removed) result$call[["outlier.prop.to.remove"]]
+    outlier.prop.to.remove <- if (outliers.removed) result[["outlier.prop.to.remove"]]
                               else 0L
     if (!is.null(importance))
     {

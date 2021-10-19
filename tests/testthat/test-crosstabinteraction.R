@@ -2,7 +2,6 @@ context("Crosstab interaction")
 
 data(bank, package = "flipExampleData")
 
-
 test_that("Basic output", {
     zz <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank))
     expect_equal(nrow(zz$interaction$coefficients), 3)
@@ -15,8 +14,10 @@ test_that("Basic output", {
                                              interaction=bank$ATM)), NA)
 })
 
+set.seed(12321)
 all.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
-w1 <- rep(1, nrow(bank))
+outliers.to.remove <- 0.1
+w1 <- 2 * runif(nrow(bank))
 f1 <- bank$ID < 200
 test_that("Weights", {
 
@@ -27,7 +28,7 @@ test_that("Weights", {
         # svyolr (weighted Ordered Logit) will error since it wants to invert the Hessian and the response variable
         # will have unobserved levels for some sub-groups splitting by ATM for the interaction test. This gives a
         # singular Hessian (row/column for the intercept adjustments at the unobserved level)
-        error.msg <- if (tt != "Ordered Logit") NA else "^Cannot perform regression split by interaction term"
+        error.msg <- if (tt != "Ordered Logit") NA else "^Cannot perform regression split by interaction term|^Removing outliers"
 
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                                  interaction = ATM, data = bank, type = tt, weights = w1)), error.msg)
@@ -36,6 +37,17 @@ test_that("Weights", {
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                                  interaction = ATM, data = bank, type = tt,
                                                      weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
+        # With outlier removal
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt, weights = w1,
+                                                 outlier.prop.to.remove = outliers.to.remove)), error.msg)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt, weights = w1, subset = f1,
+                                                 outlier.prop.to.remove = outliers.to.remove)), error.msg)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
+                                                 interaction = ATM, data = bank, type = tt,
+                                                 outlier.prop.to.remove = outliers.to.remove,
+                                                 weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
     }
     expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                              interaction = ATM, data = bank, type = "Multinomial Logit")))

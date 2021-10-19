@@ -1078,7 +1078,7 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
                                                          type, robust.se, outlier.prop.to.remove, seed = seed,...)
         model <- refitted.model.data$model
         .estimation.data <- refitted.model.data$.estimation.data
-        .design <- refitted.model.data$.design
+        .design <- refitted.model.data$design
         non.outlier.data <- refitted.model.data$non.outlier.data
     } else
         non.outlier.data <- rep(TRUE, nrow(.estimation.data))
