@@ -276,7 +276,9 @@ checkAcceptableModel <- function(x, classes, diagnostic, exclude.partial.data = 
 vif.Regression <- function (mod, ...)
 {
   checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
-  diagnosticTestFromCar(mod, "vif", ...)
+  res <- diagnosticTestFromCar(mod, "vif", ...)
+  class(res) <- c(class(res), "visualization-selector")
+  res
 }
 
 #' @importFrom car Anova
@@ -510,6 +512,8 @@ GoodnessOfFitPlot.Regression = function(object, max.points = 1000, ...) {
                    title = title,
                    x.title = "Observed",
                    y.title = "Fitted")
+    class(chart) <- c(class(chart), "visualization-selector")
+    chart
 }
 
 #' for categorical vars, need to take care to get formula term from the

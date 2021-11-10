@@ -4,5 +4,7 @@
 plot.Regression <- function(x, which = 1, ...)
 {
   checkAcceptableModel(x, c("lm", "glm"),"This plot")
-  plot(x$original, which = which, ...)
+  res <- plot(x$original, which = which, ...)
+  class(res) <- c(class(res), "visualization-selector")
+  res
 }

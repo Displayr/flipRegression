@@ -70,7 +70,7 @@ GoodnessOfFit.default = function(object, digits = max(3L, getOption("digits") - 
 #' @export
 GoodnessOfFitInternal <- function(value, description, call) {
     result <- list(call = call, value = value, description = description)
-    class(result) <- "flipGOF"
+    class(result) <- c("flipGOF", "visualization-selector")
     result
 }
 

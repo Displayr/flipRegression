@@ -109,7 +109,7 @@ confusionMatrixHelper <- function(observed, predicted, subset, weights)
         attr(confusion, "type") <- "numeric"
     }
 
-    class(confusion) <- "ConfusionMatrix"
+    class(confusion) <- c("ConfusionMatrix", "visualization-selector")
     accuracy <- Sum(diag(confusion), remove.missing = FALSE) / Sum(confusion, remove.missing = FALSE)
     attr(confusion, "accuracy") <- accuracy
     return(confusion)
