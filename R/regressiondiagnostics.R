@@ -277,7 +277,7 @@ vif.Regression <- function (mod, ...)
 {
   checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
   res <- diagnosticTestFromCar(mod, "vif", ...)
-  class(res) <- c(class(res), "visualization-selector")
+  class(res) <- c(class(res), "matrix", "visualization-selector")
   res
 }
 
