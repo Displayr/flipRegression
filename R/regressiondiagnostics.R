@@ -276,8 +276,8 @@ checkAcceptableModel <- function(x, classes, diagnostic, exclude.partial.data = 
 vif.Regression <- function (mod, ...)
 {
   checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
-  res <- diagnosticTestFromCar(mod, "vif", ...)
-  class(res) <- c(class(res), "matrix", "visualization-selector")
+  res <- as.matrix(diagnosticTestFromCar(mod, "vif", ...))
+  class(res) <- c(class(res), "visualization-selector")
   res
 }
 
