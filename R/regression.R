@@ -1058,6 +1058,10 @@ importanceFooter <- function(x)
 #'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
 #'   denote that a percentage between none and 50\% of the data points are removed.
 #' @param seed A integer seed to generate the surrogate residuals.
+#' @param dummy.processed.data A list containing the output from \code{\link[flipData]{EstimationData}} when the dummy
+#' adjustment for missing data is used. It is only needed when outliers are removed with dummy adjustment. In that
+#' situation, the estimation data needs to be recalibrated in case any adjustment variables are redundant or singular
+#' when outliers are removed from the data.
 #' @param ... Arguments to the wrapped functions.
 #' @importFrom flipData CalibrateWeight WeightedSurveyDesign
 #' @importFrom flipFormat FormatAsPercent
@@ -1637,22 +1641,20 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
         }
         interaction.requested <- !is.null(dummy.processed.data[["interaction.name"]])
         if (interaction.requested)
-            .estimation.data[[dummy.processed.data[["interaction.name"]]]] <- dummy.processed.data[["interaction"]][relevant.subset]
-        dummy.vars.left <- names(.estimation.data)[grepDummyVars(names(.estimation.data))]
+            new.estimation.data[[dummy.processed.data[["interaction.name"]]]] <- dummy.processed.data[["interaction"]][relevant.subset]
+        dummy.vars.left <- names(new.estimation.data)[grepDummyVars(names(new.estimation.data))]
         if (length(dummy.vars.left) > 0)
         {
             # Copy attributes for mapping
             for (dummy.var in dummy.vars.left)
-                attr(.estimation.data[[dummy.var]], "predictors.matching.dummy") <-
+                attr(new.estimation.data[[dummy.var]], "predictors.matching.dummy") <-
                     attr(processed.data[["estimation.data"]][[dummy.var]], "predictors.matching.dummy")
             # Update the formulae
             dummy.vars.left <- paste0(dummy.vars.left, collapse = " + ")
-            formula <- update(terms(basic.formula, data = .estimation.data),
+            formula <- update(terms(basic.formula, data = new.estimation.data),
                               as.formula(paste(". ~ . + ", dummy.vars.left, collapse = "")))
-            formula.with.interaction <- if (interaction.requested)
-                update(terms(formula.with.interaction, data = .estimation.data),
-                       as.formula(paste(". ~ . + ", dummy.vars.left, collapse = "")))
         }
+        .estimation.data <- new.estimation.data
     } else
         .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
     # svyolr is fragile and errors if ordered response values have empty levels since the

@@ -12,6 +12,7 @@ FitRegression(
   robust.se,
   outlier.prop.to.remove,
   seed = 12321,
+  dummy.processed.data = NULL,
   ...
 )
 }
@@ -38,6 +39,11 @@ A value of 0 or NULL would denote no points are removed. A value x, with 0 < x <
 denote that a percentage between none and 50\% of the data points are removed.}
 
 \item{seed}{A integer seed to generate the surrogate residuals.}
+
+\item{dummy.processed.data}{A list containing the output from \code{\link[flipData]{EstimationData}} when the dummy
+adjustment for missing data is used. It is only needed when outliers are removed with dummy adjustment. In that
+situation, the estimation data needs to be recalibrated in case any adjustment variables are redundant or singular
+when outliers are removed from the data.}
 
 \item{...}{Arguments to the wrapped functions.}
 }
