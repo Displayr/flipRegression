@@ -556,5 +556,56 @@ test_that("DS-3379: MASS::polr starting value not suitable", {
     single.warn <- capture_warnings(Regression(y ~ ., data = dat,
                                                type = "Ordered Logit",
                                                missing = "Dummy variable adjustment"))
-    expect_equal(single.warn , "glm.fit: fitted probabilities numerically 0 or 1 occurred")
+    expect_equal(single.warn, "glm.fit: fitted probabilities numerically 0 or 1 occurred")
+})
+
+test_that("DS-3618: Dummy adjusted models with outlier removal ", {
+    set.seed(3618)
+    dat <- MASS::mvrnorm(n = 50, mu = 1:5,
+                         Sigma = crossprod(matrix(c(1,    0.2,  0.3,  0.4, 0.3,
+                                                    0.2,    1, 0.25,  0.1, 0.2,
+                                                    0.3, 0.25,    1, 0.05, 0.25,
+                                                    0.4,  0.1, 0.05,    1,  0.3,
+                                                    0.3,  0.2, 0.25,  0.3,    1),
+                                                  byrow = TRUE, nrow = 5)))
+    Y <- rnorm(nrow(dat))
+    Y[1:2] <- c(-1, 1) * 100 #Outlier
+    dat <- data.frame(Y = Y, dat)
+    # Force some redundant structure in missing values
+    is.na(dat[[2]]) <- 1:3
+    is.na(dat[[3]]) <- 1:2
+    is.na(dat[[4]]) <- 3:5
+    is.na(dat[[5]]) <- 3
+    dummy.adjusted.dat <- flipData::EstimationData(Y ~ ., data = dat,
+                                                  missing = "Dummy variable adjustment")
+    original.model.formula <- Y ~ X1 + X2 + X3 + X4 + X5
+    model.formula.with.int <- Y ~ X1 + X2 + X3 + X4 + X5 +
+        X1:group + X2:group + X3:group + X4:group + X5:group
+    formulae <- list(formula = original.model.formula,
+                     formula.with.interaction = model.formula.with.int)
+    form.with.int <- original.model.formula
+    dummy.formula <- updateDummyVariableFormulae(original.model.formula, form.with.int,
+                                                 data = dummy.adjusted.dat[["estimation.data"]])
+    dummy.formula <- dummy.formula[["formula"]]
+
+    first.dummy.model <- fitModel(dummy.formula, dummy.adjusted.dat[["estimation.data"]],
+                                  .weights = NULL, type = "Linear", robust.se = FALSE,
+                                  subset = NULL)
+    dummy.adjusted.dat[["formulae"]] <- formulae
+    model <- first.dummy.model[["model"]]
+    ed <- first.dummy.model[["estimation.data"]]
+    first.formula <- first.dummy.model[["formula"]]
+    refit.model <- refitModelWithoutOutliers(model = model, formula = first.formula,
+                                             .estimation.data = ed, .weights = NULL,
+                                             type = "Linear", robust.se = FALSE, outlier.prop.to.remove = 0.05,
+                                             dummy.processed.data = dummy.adjusted.dat)
+    new.model <- refit.model[["model"]]
+    first.model.fit <- first.dummy.model[["model"]]
+    # Except the 2nd and 3rd obs to be identified as outliers
+    expect_equal(refit.model[["non.outlier.data"]], as.logical(rep(c(1, 0, 1), c(1, 2, 50-3))))
+    expect_setequal(names(coef(first.model.fit)),
+                    c("(Intercept)", paste0("X", 1:5), paste0("X", 1:4, ".dummy.var_GQ9KqD7YOf")))
+    # Expect the 2nd and 4th dummy variable to be removed after outliers removed since thy are singular.
+    expect_setequal(setdiff(names(coef(first.model.fit)), names(coef(new.model))),
+                    paste0("X", c(2, 4), ".dummy.var_GQ9KqD7YOf"))
 })

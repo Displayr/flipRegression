@@ -653,6 +653,7 @@ Regression <- function(formula = as.formula(NULL),
             if (any(aliased.dummy.vars))
                 aliasedDummyVariableWarning(data, mapping.variables[aliased.dummy.vars], show.labels, predictor.names)
             # Update formula to include dummy variables
+            original.formulae <- list(formula = input.formula, formula.with.interaction = formula.with.interaction)
             new.formulae <- updateDummyVariableFormulae(input.formula, formula.with.interaction,
                                                         data = processed.data$estimation.data)
             input.formula <- new.formulae$formula
@@ -667,8 +668,21 @@ Regression <- function(formula = as.formula(NULL),
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
+        outlier.removed <- !is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0
+        outlier.and.dummy.adjusted <- missing == "Dummy variable adjustment" && outlier.removed
+        dummy.processed.data <- if (outlier.and.dummy.adjusted) processed.data
+        if (!is.null(dummy.processed.data))
+        {
+            dummy.processed.data[["formulae"]] <- original.formulae
+            if (!is.null(interaction))
+            {
+                dummy.processed.data[["interaction.name"]] <- interaction.name
+                dummy.processed.data[["interaction"]] <- interaction
+            }
+        }
         fit <- FitRegression(.formula, .estimation.data, .weights, type, robust.se,
-                             outlier.prop.to.remove, seed = seed, ...)
+                             outlier.prop.to.remove, seed = seed,
+                             dummy.processed.data = dummy.processed.data, ...)
         .estimation.data <- fit$.estimation.data
         .formula <- fit$formula
         if (internal)
@@ -681,7 +695,7 @@ Regression <- function(formula = as.formula(NULL),
         original <- fit$original
         .design <- fit$design
         result <- list(original = original, call = cl,
-                       outliers.removed = !is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0)
+                       outliers.removed = outlier.removed)
 
         result$non.outlier.data <- fit$non.outlier.data
 
@@ -1044,6 +1058,10 @@ importanceFooter <- function(x)
 #'   A value of 0 or NULL would denote no points are removed. A value x, with 0 < x < 0.5 (not inclusive) would
 #'   denote that a percentage between none and 50\% of the data points are removed.
 #' @param seed A integer seed to generate the surrogate residuals.
+#' @param dummy.processed.data A list containing the output from \code{\link[flipData]{EstimationData}} when the dummy
+#' adjustment for missing data is used. It is only needed when outliers are removed with dummy adjustment. In that
+#' situation, the estimation data needs to be recalibrated in case any adjustment variables are redundant or singular
+#' when outliers are removed from the data.
 #' @param ... Arguments to the wrapped functions.
 #' @importFrom flipData CalibrateWeight WeightedSurveyDesign
 #' @importFrom flipFormat FormatAsPercent
@@ -1054,7 +1072,8 @@ importanceFooter <- function(x)
 #' @importFrom survey svyglm svyolr
 #' @export
 FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se, outlier.prop.to.remove,
-                          seed = 12321, ...)
+                          seed = 12321,
+                          dummy.processed.data = NULL, ...)
 {
     .design <- NULL
     # Initially fit model on all the data and then refit with outlier removal if necessary
@@ -1075,7 +1094,8 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
     if (remove.outliers)
     {
         refitted.model.data <- refitModelWithoutOutliers(model, .formula, .estimation.data, .weights,
-                                                         type, robust.se, outlier.prop.to.remove, seed = seed,...)
+                                                         type, robust.se, outlier.prop.to.remove,
+                                                         dummy.processed.data = dummy.processed.data, seed = seed,...)
         model <- refitted.model.data$model
         .estimation.data <- refitted.model.data$.estimation.data
         .design <- refitted.model.data$design
@@ -1595,7 +1615,8 @@ checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimati
 # Identifies the outliers and refits the model
 #' @importFrom flipU InterceptExceptions
 refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
-                                      type, robust.se, outlier.prop.to.remove, seed, ...)
+                                      type, robust.se, outlier.prop.to.remove,
+                                      dummy.processed.data, seed, ...)
 {
     non.outlier.data <- findNonOutlierObservations(.estimation.data,
                                                    outlier.prop.to.remove,
@@ -1603,7 +1624,39 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                                                    type,
                                                    .weights,
                                                    seed)
-    .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
+    if (!is.null(dummy.processed.data))
+    {
+        basic.formula <- dummy.processed.data[["formulae"]][["formula"]]
+        formula.with.interaction <- dummy.processed.data[["formulae"]][["formula.with.interaction"]]
+        relevant.subset <- dummy.processed.data[["post.missing.data.estimation.sample"]]
+        data.with.missing <- dummy.processed.data[["data"]][relevant.subset , ][non.outlier.data, ]
+        processed.data <- EstimationData(basic.formula, data.with.missing, missing = "Dummy variable adjustment")
+        aliased.or.non.outlier <- setdiff(names(.estimation.data), names(processed.data$estimation.data))
+        aliased <- setdiff(aliased.or.non.outlier, "non.outlier.data_GQ9KqD7YOf")
+        new.estimation.data <- .estimation.data
+        for (var in setdiff(names(.estimation.data), c(aliased.or.non.outlier, OutcomeName(formula))))
+            new.estimation.data[non.outlier.data, var] <- processed.data[["estimation.data"]][[var]]
+        if (length(aliased) > 0) {
+            new.estimation.data[aliased] <- NULL
+        }
+        interaction.requested <- !is.null(dummy.processed.data[["interaction.name"]])
+        if (interaction.requested)
+            new.estimation.data[[dummy.processed.data[["interaction.name"]]]] <- dummy.processed.data[["interaction"]][relevant.subset]
+        dummy.vars.left <- names(new.estimation.data)[grepDummyVars(names(new.estimation.data))]
+        if (length(dummy.vars.left) > 0)
+        {
+            # Copy attributes for mapping
+            for (dummy.var in dummy.vars.left)
+                attr(new.estimation.data[[dummy.var]], "predictors.matching.dummy") <-
+                    attr(processed.data[["estimation.data"]][[dummy.var]], "predictors.matching.dummy")
+            # Update the formulae
+            dummy.vars.left <- paste0(dummy.vars.left, collapse = " + ")
+            formula <- update(terms(basic.formula, data = new.estimation.data),
+                              as.formula(paste(". ~ . + ", dummy.vars.left, collapse = "")))
+        }
+        .estimation.data <- new.estimation.data
+    } else
+        .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
     # svyolr is fragile and errors if ordered response values have empty levels since the
     # Hessian is singular. Removing data with automated outlier removal can trigger this.
     if (type == "Ordered Logit" && !is.null(.weights))

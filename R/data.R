@@ -360,7 +360,7 @@ validateVariablesHaveVariation <- function(input.formula, data, outcome.name, ou
     outcome.msg <- paste0("The outcome variable, ", outcome.label, ", is constant and has no variation. The outcome needs ",
                           "to have at least two unique values to conduct a ", output)
     # Check predictor has no variation if numeric or factor.
-    .hasNoVariation <- function(x) if (is(x, "factor")) all(duplicated(x)[-1L]) else var(x) == 0
+    .hasNoVariation <- function(x) if (is(x, "factor")) all(duplicated(x)[-1L]) else var(x, na.rm = TRUE) == 0
     outcome.no.variation <- .hasNoVariation(outcome)
     if (outcome.no.variation)
         throwRIAException(outcome.msg, group.name)

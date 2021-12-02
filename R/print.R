@@ -479,7 +479,11 @@ checkVIFAndWarn <- function(x)
                 vifs <- vifs[, 3]^2
                 prefix <- "squared Generalized "
             } else
+            {
+                vifs <- if (is.matrix(vifs) && ncol(vifs) == 1) vifs[, 1] else vifs
                 prefix <- ""
+            }
+
             # Check is the largest calculated VIF is large enough for a warning.
             max.vif <- max(vifs)
             if (max.vif >= 4)
