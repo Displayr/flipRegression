@@ -21,6 +21,7 @@ before_install:
 r_packages:
   - devtools
   - roxygen2
+  - mice
 
 r_github_packages:
   - Displayr/flipDevTools
