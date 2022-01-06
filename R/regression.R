@@ -1629,7 +1629,7 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
         basic.formula <- dummy.processed.data[["formulae"]][["formula"]]
         formula.with.interaction <- dummy.processed.data[["formulae"]][["formula.with.interaction"]]
         relevant.subset <- dummy.processed.data[["post.missing.data.estimation.sample"]]
-        data.with.missing <- dummy.processed.data[["data"]][relevant.subset , ][non.outlier.data, ]
+        data.with.missing <- dummy.processed.data[["data"]][relevant.subset, ][non.outlier.data, ]
         processed.data <- EstimationData(basic.formula, data.with.missing, missing = "Dummy variable adjustment")
         aliased.or.non.outlier <- setdiff(names(.estimation.data), names(processed.data$estimation.data))
         aliased <- setdiff(aliased.or.non.outlier, "non.outlier.data_GQ9KqD7YOf")
@@ -1655,8 +1655,8 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                               as.formula(paste(". ~ . + ", dummy.vars.left, collapse = "")))
         }
         .estimation.data <- new.estimation.data
-    } else
-        .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
+    }
+    .estimation.data$non.outlier.data_GQ9KqD7YOf <- non.outlier.data
     # svyolr is fragile and errors if ordered response values have empty levels since the
     # Hessian is singular. Removing data with automated outlier removal can trigger this.
     if (type == "Ordered Logit" && !is.null(.weights))

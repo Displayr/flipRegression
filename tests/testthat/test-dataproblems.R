@@ -599,6 +599,7 @@ test_that("DS-3618: Dummy adjusted models with outlier removal ", {
                                              .estimation.data = ed, .weights = NULL,
                                              type = "Linear", robust.se = FALSE, outlier.prop.to.remove = 0.05,
                                              dummy.processed.data = dummy.adjusted.dat)
+    expect_false(all(refit.model[[".estimation.data"]][["non.outlier.data_GQ9KqD7YOf"]]))
     new.model <- refit.model[["model"]]
     first.model.fit <- first.dummy.model[["model"]]
     # Except the 2nd and 3rd obs to be identified as outliers
