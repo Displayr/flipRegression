@@ -22,7 +22,7 @@ estimateImportance <- function(formula, data = NULL, weights, type, signs, r.squ
 #' @importFrom flipData DataFormula
 #' @importFrom flipTransformations AsNumeric
 #' @importFrom flipU OutcomeName AllVariablesNames
-#' @importFrom verbs Sum SumRows
+#' @importFrom verbs Sum SumEachRow
 #' @noRd
 estimateRelativeImportance <- function(formula, data = NULL, weights, type, signs, r.square, variable.names,
                                        robust.se = FALSE, outlier.prop.to.remove = NULL, show.warnings = TRUE,
@@ -106,7 +106,7 @@ estimateRelativeImportance <- function(formula, data = NULL, weights, type, sign
         scaling.factor <- r.square / Sum(raw.importance, remove.missing = FALSE)
     raw.importance <- raw.importance * scaling.factor
 
-    se  <- sqrt(SumRows(lambda ^ 4 * beta.se ^ 4, remove.missing = FALSE) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
+    se  <- sqrt(SumEachRow(lambda ^ 4 * beta.se ^ 4, remove.missing = FALSE) * (2 + 4 * (beta / beta.se) ^ 2)) * scaling.factor
     names(se) <- variable.names
 
     appendStatistics(result, raw.importance, se, signs, fit, correction)
