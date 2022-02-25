@@ -579,7 +579,7 @@ Regression <- function(formula = as.formula(NULL),
         if (missing == "Multiple imputation")
         {
             models <- lapply(processed.data$estimation.data,
-                             FUN = function(x) Regression(formula,
+                             FUN = function(x) Regression(input.formula,
                                                           data = x,                               # contains interaction factor; filters already applied
                                                           missing = "Error if missing data",
                                                           weights = processed.data$weights,
