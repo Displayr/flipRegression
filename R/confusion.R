@@ -205,7 +205,7 @@ makeConfusionMatrixSymmetrical <- function(cm)
 #' @importFrom utils read.table
 #' @importFrom flipTables TidyTabularData
 #' @importFrom flipFormat FormatAsReal
-#' @importFrom verbs Sum SumColumns SumRows
+#' @importFrom verbs Sum SumEachColumn SumEachRow
 #' @export
 #' @method print ConfusionMatrix
 print.ConfusionMatrix <- function(x, ...) {
@@ -227,7 +227,7 @@ print.ConfusionMatrix <- function(x, ...) {
                                format(round(cell.pct, 2), nsmall = 2)),
                        nrow = n.row, ncol = n.row)
 
-    column.sums <- t(data.frame(SumColumns(mat, remove.missing = FALSE)))
+    column.sums <- t(data.frame(SumEachColumn(mat, remove.missing = FALSE)))
     column.sums <- column.sums[rep(row.names(column.sums), n.row), ]
     column.pct <- 100 * mat / column.sums
     column.pct <- matrix(sprintf("%s%% of Predicted class",
@@ -235,7 +235,7 @@ print.ConfusionMatrix <- function(x, ...) {
                          nrow = n.row, ncol = n.row)
     column.pct[mat == 0] <- "-"
 
-    row.sums <- t(data.frame(SumRows(mat, remove.missing = FALSE)))
+    row.sums <- t(data.frame(SumEachRow(mat, remove.missing = FALSE)))
     row.sums <- row.sums[rep(row.names(row.sums), n.row), ]
     row.pct <- 100 * mat / t(row.sums)
     row.pct <- matrix(sprintf("%s%% of Observed class",
@@ -262,5 +262,3 @@ print.ConfusionMatrix <- function(x, ...) {
                                                                "% Observed" = row.pct))
     print(heatmap)
 }
-
-
