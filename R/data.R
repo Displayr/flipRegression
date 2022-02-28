@@ -95,7 +95,7 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
     # Check if any variables have no variation (all zeros or all ones) and throw error
     outcome.no.variation <- checkBinaryVariableNoVariation(outcome.check)
     predictors.no.variation <- vapply(predictor.checks, checkBinaryVariableNoVariation, FALSE)
-    if (outcome.no.variation || predictors.no.variation)
+    if (outcome.no.variation || any(predictors.no.variation))
     {
         if (outcome.no.variation)
             outcome.string <- variablesNotBinaryMessage(data, outcome.name, show.labels, "outcome")

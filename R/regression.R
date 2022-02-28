@@ -1033,7 +1033,7 @@ importanceFooter <- function(x)
                       paste0("n = ", x$interaction$split.size[2L, "NET"], " cases"),
                       footer)
     # Suppress the footer addition for the Jaccard and Correlation outputs
-    if (!x$test.interaction && !x$importance %in% c("Jaccard Coefficient", "Correlation"))
+    if (!x$test.interaction && !x$importance.type %in% c("Jaccard Coefficient", "Correlation"))
         footer <- paste0(footer, " R-squared: ", FormatAsReal(x$r.squared, 4), ";")
     footer <- paste0(footer, " multiple comparisons correction: ", x$correction, ";")
     footer
