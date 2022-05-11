@@ -170,9 +170,9 @@ test_that("Relative importance linear", {
                                                        show.warnings = TRUE, correction = "None")
     expect_equal(unname(ria$importance[3]), 84.254254422183)
     expect_equal(unname(ria$raw.importance[1]), 0.00427583141764991)
-    expect_equal(unname(ria$standard.errors[2]), 0.00639909659943047)
-    expect_equal(unname(ria$statistics[3]), 1.67707778306778)
-    expect_equal(unname(ria$p.values[1]), 0.601684127723725)
+    expect_equal(unname(ria$standard.errors[2]), 0.00639974583223708)
+    expect_equal(unname(ria$statistics[3]), 1.67709811051115)
+    expect_equal(unname(ria$p.values[1]), 0.601689357057393)
 })
 
 test_that("Relative importance linear weighted", {
@@ -183,9 +183,9 @@ test_that("Relative importance linear weighted", {
                                                        show.warnings = TRUE, correction = "None")
     expect_equal(unname(ria$importance[3]), 80.657438103125)
     expect_equal(unname(ria$raw.importance[1]), 0.00356269285452153)
-    expect_equal(unname(ria$standard.errors[2]), 0.00922207572739253)
-    expect_equal(unname(ria$statistics[3]), 1.80433377885404)
-    expect_equal(unname(ria$p.values[1]), 0.639743624224031)
+    expect_equal(unname(ria$standard.errors[2]), 0.00922220001471266)
+    expect_equal(unname(ria$statistics[3]), 1.80434200504385)
+    expect_equal(unname(ria$p.values[1]), 0.63974959606131)
 })
 
 types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson", "NBD")
