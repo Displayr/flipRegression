@@ -85,7 +85,7 @@ test_that("Relative importance", {
     z2 <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = Branch,
                                       data = bank, output="Relative Importance Analysis"))
     expect_equal(round(z2$interaction$coefficients[2,1], 2), 3.27)
-    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4664)
+    expect_equal(round(z2$interaction$coef.pvalues[2,1], 4), 0.4666)
 
     data("cola", package="flipExampleData")
     res2 <- suppressWarnings(Regression(Q9_B~Q5_5_2+Q5_7_2+Q5_13_2+Q5_16_2+Q5_17_2+Q5_19_2+Q5_23_2+Q5_25_2+Q5_31_2, interaction=Q2, data=cola, show.labels=T, output="Relative Importance Analysis"))
@@ -94,13 +94,13 @@ test_that("Relative importance", {
 
     # coefficients with signs match Q output
     expect_equal(unname(round(res2$interaction$coefficients[,1],3)), c(-9.550,34.350,2.209,0.426,27.504,-1.173,-8.698,9.594,-6.497))
-    expect_equal(round(res2$interaction$coef.pvalues[,1],4), c(0.0402,0.1360,0.8537,0.9939,0.8152,0.6605,0.9571,0.7539,0.2133))
-    expect_equal(round(res2$interaction$coef.pFDR[,1],4), c(0.7238,1,1,1,1,1,1,1,1))
+    expect_equal(round(res2$interaction$coef.pvalues[,1],4), c(0.0401, 0.1357, 0.8539, 0.9939, 0.8152, 0.6605, 0.9571, 0.7538, 0.2147))
+    expect_equal(round(res2$interaction$coef.pFDR[,1],4), c(0.7226,1,1,1,1,1,1,1,1))
     expect_equal(res4$interaction$coef.pvalues, res2$interaction$coef.pFDR)
 
     # Q does not allow signs to be ignored - just checking values are different
     expect_equal(res3$interaction$coefficients[1,1],  9.5495906)
-    expect_equal(round(res3$interaction$coef.pvalues[1,1],7),  0.4392116)
+    expect_equal(round(res3$interaction$coef.pvalues[1,1],7),  0.4390609)
 
     })
 
