@@ -284,9 +284,9 @@ test_that("Shapley",
     expect_equal(result$raw.importance[1], c(Fees = 0.115570678291964))
     expect_equal(sum(result$raw.importance), 0.4988654351715)
     expect_equal(result$importance[1], c(Fees = 23.1667039133))
-    expect_equal(result$standard.errors[1], c(Fees = 0.03113091404327))
-    expect_equal(result$statistics[1], c(Fees = 3.712408769345))
-    expect_equal(result$p.values[1], c(Fees = 0.0002559481304636))
+    expect_equal(result$standard.errors[1], c(Fees = 0.0311308198242954))
+    expect_equal(result$statistics[1], c(Fees = 3.71242000513488))
+    expect_equal(result$p.values[1], c(Fees = 0.000255937393846806))
     expect_equal(result$importance[2], c(Interest = -15.1397373957463))
 
     expect_warning(result <- computeShapleyImportance(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
@@ -299,9 +299,9 @@ test_that("Shapley",
     expect_equal(result$raw.importance[1], c(Fees = 0.1090244509126))
     expect_equal(sum(result$raw.importance), 0.4936505179077)
     expect_equal(result$importance[1], c(Fees = 22.08535126726))
-    expect_equal(result$standard.errors[1], c(Fees = 0.0302990327033463))
-    expect_equal(result$statistics[1], c(Fees = 3.59828156826045))
-    expect_equal(result$p.values[1], c(Fees = 0.000389921200592241))
+    expect_equal(result$standard.errors[1], c(Fees = 0.0302987299497523))
+    expect_equal(result$statistics[1], c(Fees = 3.59831752332123))
+    expect_equal(result$p.values[1], c(Fees = 0.000389870122508642))
 
     suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                      data = bank, type = "Linear", output = "Shapley Regression")))
