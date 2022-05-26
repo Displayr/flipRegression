@@ -264,3 +264,27 @@ test_that("DS-2826: Check VIFs are handled properly", {
     #expect_warning(checkVIFAndWarn(nan.mod), nan.caught.warning, fixed = TRUE)
 })
 
+test_that("DS-3777 VIF is permissible for polr and svyolr models", {
+    set.seed(12321)
+    # Low VIF scenario
+    X <- MASS::mvrnorm(n = 100, mu = c(1, 5, 6), Sigma = matrix(c(1, 0.4, 0.2,
+                                                                  0.4, 1, 0.5,
+                                                                  0.2, 0.5, 1),
+                                                                nrow = 3, byrow = TRUE))
+    cat.var <- sample(letters[1:3], size = 100, replace = TRUE)
+    beta <- c(5, 1, 2, 3)
+    Y <- cbind(rep(1, nrow(X)), X) %*% beta + rnorm(100, sd = 1)
+    y <- factor(cut(Y, breaks = c(-Inf, 25,  35, 40, Inf), labels = LETTERS[1:4]), ordered = TRUE)
+    dat <- data.frame(y = y, X = X)
+    w <- runif(100L)
+    # Regular polr ok
+    expect_error(ordered.logit <- Regression(y ~ ., data = dat, type = "Ordered Logit"), NA)
+    expect_true(is(ordered.logit$original, "polr"))
+    expect_error(vif.table <- vif(ordered.logit), NA)
+    expect_true(all(vif.table < 3) && length(vif.table) == 3L)
+    # svyolr ok
+    expect_error(w.ordered.logit <- Regression(y ~ ., weights = w, data = dat, type = "Ordered Logit"), NA)
+    expect_true(is(w.ordered.logit$original, "svyolr"))
+    expect_error(w.vif.table <- vif(w.ordered.logit), NA)
+    expect_true(all(w.vif.table < 3) && length(w.vif.table) == 3L)
+})
