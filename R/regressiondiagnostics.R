@@ -275,7 +275,7 @@ checkAcceptableModel <- function(x, classes, diagnostic, exclude.partial.data = 
 #' @export
 vif.Regression <- function (mod, ...)
 {
-  checkAcceptableModel(mod, c("lm", "glm"), "'vif'")
+  checkAcceptableModel(mod, c("lm", "glm", "polr", "svyolr"), "'vif'")
   res <- as.matrix(diagnosticTestFromCar(mod, "vif", ...))
   class(res) <- c(class(res), "visualization-selector")
   res
@@ -434,7 +434,7 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
     ## if (any(x$summary$aliased))
     ##     model <- updateAliasedModel(x)
     frml <- formula(model)
-
+    assign(".design", model$design, envir=.GlobalEnv)
     assign(".formula", frml, envir=.GlobalEnv)
     on.exit(
     {
@@ -442,6 +442,8 @@ diagnosticTestFromCar<- function(x, diagnostic, ...)
             remove(".formula", envir = .GlobalEnv)
         if (exists(".estimation.data", envir = .GlobalEnv))
             remove(".estimation.data", envir = .GlobalEnv)
+        if (exists(".design", envir = .GlobalEnv))
+            remove(".design", envir = .GlobalEnv)
     })
     txt <- paste0(diagnostic, "(model, ...)")
     eval(parse(text = txt))

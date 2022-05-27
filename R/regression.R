@@ -2003,10 +2003,11 @@ validateNamesInGrid <- function(data)
     return(data[["X"]])
 }
 
+#' @importFrom methods is
 validMultiOutcome <- function(data)
 {
-    if (class(data) != "data.frame")
-        stop("Outcome variable to be stacked needs to be a data.frame. " ,
+    if (!is(data, "data.frame"))
+        stop("Outcome variable to be stacked needs to be a data.frame. ",
              "Please assign a data.frame to the \"Y\" element of the 'unstacked.data' argument.")
 }
 
@@ -2020,10 +2021,11 @@ checkNumberObservations <- function(data)
     }
 }
 
+#' @importFrom methods is
 validGridPredictor <- function(data)
 {
-    if (class(data) != "data.frame")
-        stop("Predictor variables to be stacked needs to be a data.frame. " ,
+    if (!is(data, "data.frame"))
+        stop("Predictor variables to be stacked needs to be a data.frame. ",
              "Please assign a data.frame to the \"X\" element of the 'unstacked.data' argument.")
 }
 
