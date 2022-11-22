@@ -49,3 +49,5 @@ notifications:
 # committing a new change to .travis.yml in each repository
 after_success:
   - Rscript -e "require(flipDevTools); NotifyWarnings(); TriggerDownstreamBuilds()"
+after_failure:
+  - Rscript -e "require(flipDevTools); NotifyWarnings()"
