@@ -2309,3 +2309,27 @@ test_that("Multiple imputation with larger example",
 test_that("R4.0. update", {
     expect_warning(Regression(Overall~Fees+Interest+Phone, data=bank, interaction = ATM, type = "NBD", missing = "Multiple imputation"))
 })
+
+test_that("Outlier removal", {
+    reg.formula <- Overall ~ Fees + Interest + Phone
+    args <- list(formula = reg.formula,
+                 data = bank,
+                 missing = "Multiple imputation")
+    reg.model <- do.call(Regression, args)
+    warnings <- capture_warnings(reg.printed <- print(reg.model))
+    expect_true(all(startsWith(warnings, "Unusual observations detected") |
+                    startsWith(warnings, "The outcome variable appears to contain categories")))
+    outlier.string <- r"(the 10\% most outlying observations in the data have been removed)"
+    expect_false(grepl(outlier.string, reg.printed[["x"]][["html"]]))
+    args[["outlier.prop.to.remove"]] <- 0.1
+
+    outlier.reg.model <- do.call(Regression, args)
+    warnings <- capture_warnings(reg.printed <- print(outlier.reg.model))
+    expect_true(all(startsWith(warnings, "Unusual observations detected") |
+                    startsWith(warnings, "The outcome variable appears to contain categories")))
+    expect_true(grepl(outlier.string, reg.printed[["x"]][["html"]]))
+    reg.coefs <- reg.model[["original"]][["coefficients"]]
+    outlier.reg.coefs <- outlier.reg.model[["original"]][["coefficients"]]
+    expect_identical(names(reg.coefs), names(outlier.reg.coefs))
+    expect_true(!any(reg.coefs == outlier.reg.coefs))
+})

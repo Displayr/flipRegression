@@ -580,7 +580,7 @@ Regression <- function(formula = as.formula(NULL),
         {
             models <- lapply(processed.data$estimation.data,
                              FUN = function(x) Regression(input.formula,
-                                                          data = x,                               # contains interaction factor; filters already applied
+                                                          data = x, # contains interaction factor; filters already applied
                                                           missing = "Error if missing data",
                                                           weights = processed.data$weights,
                                                           type = type,
@@ -637,6 +637,9 @@ Regression <- function(formula = as.formula(NULL),
             final.model$weights <- weights
             final.model$stacked <- stacked.data.check
             final.model <- setChartData(final.model, output)
+            if (models[[1]][["outliers.removed"]])
+                final.model[["footer"]] <- appendOutlierInfoToFooter(final.model[["footer"]],
+                                                                     final.model[["outlier.prop.to.remove"]])
             return(final.model)
         }
         unfiltered.weights <- processed.data$unfiltered.weights
@@ -916,13 +919,11 @@ Regression <- function(formula = as.formula(NULL),
     options(contrasts = old.contrasts[[1]])
     if (!is.null(result$outlier.prop.to.remove) && result$outlier.prop.to.remove > 0)
     {
-        result$footer <- paste0(result$footer, "; the ", FormatAsPercent(result$outlier.prop.to.remove),
-                                " most outlying observations in the data have been removed and the model refitted;")
+        outlier.prop.to.remove <- result[["outlier.prop.to.remove"]]
+        result$footer <- appendOutlierInfoToFooter(result$footer, outlier.prop.to.remove)
         if (!is.null(result$importance))
-            result$importance.footer <- paste(result$importance.footer, "the",
-                                              FormatAsPercent(result$outlier.prop.to.remove),
-                                              "most outlying observations in the data have been removed",
-                                              "and the model refitted;")
+            result$importance.footer <- appendOutlierInfoToFooter(result$importance.footer,
+                                                                  outlier.prop.to.remove)
     }
     result <- setChartData(result, output)
     result$stacked <- stacked.data.check
@@ -985,8 +986,8 @@ regressionFooter <- function(x)
 {
     # Creating a nicely formatted text description of the model.
     partial <- x$missing == "Use partial data (pairwise correlations)"
-    aic <- if(partial) NA else AIC(x)
-    rho.2 <- if(partial | x$type == "Linear") NA else McFaddensRhoSquared(x)
+    aic <- if (partial) NA else AIC(x)
+    rho.2 <- if (partial || x$type == "Linear") NA else McFaddensRhoSquared(x)
     footer <- x$sample.description
 
     if (x$test.interaction)
@@ -2466,4 +2467,10 @@ reduceOutputSize <- function(fit)
     original$data <- NULL
     fit$original <- original
     return(fit)
+}
+
+appendOutlierInfoToFooter <- function(footer.string, proportion.to.print) {
+    paste0(footer.string, "; the ",
+           FormatAsPercent(proportion.to.print), " most outlying observations ",
+           "in the data have been removed and the model refitted")
 }
