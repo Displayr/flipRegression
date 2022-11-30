@@ -591,7 +591,8 @@ Regression <- function(formula = as.formula(NULL),
                                                           interaction.formula = formula.with.interaction,
                                                           output = output,
                                                           correction = "None",
-                                                          recursive.call = TRUE
+                                                          recursive.call = TRUE,
+                                                          outlier.prop.to.remove = outlier.prop.to.remove,
                              ))
 
             models[[1]]$correction <- correction
