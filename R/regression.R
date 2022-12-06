@@ -1194,7 +1194,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model$df <- NA
             else
             {
-                assign(".design", .design, envir=.GlobalEnv)
+                assign(".design", .design, environment(.formula))
                 aic <- try(extractAIC(model), silent = TRUE)
                 if (any("try-error" %in% class(aic)))
                 {
@@ -1203,7 +1203,6 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                             "some aspect of the analysis. ")
                     aic <- rep(NA, 2)
                 }
-                remove(".design", envir=.GlobalEnv)
                 model$df <- aic[1]
                 model$aic <- aic[2]
             }
@@ -1241,9 +1240,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                                family = poisson()),
                             "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                      family = quasipoisson()))
-            assign(".design", .design, envir=.GlobalEnv)
+            assign(".design", .design, envir = environment(.formula))
             aic <- extractAIC(model)
-            remove(".design", envir=.GlobalEnv)
             model$df <- aic[1]
             model$aic <- aic[2]
         }
