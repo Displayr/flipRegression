@@ -85,9 +85,9 @@ test_that("Weighted Ordered Logit (svyolr)", {
     expect_error(regression <- Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
                                           type = "Ordered Logit", outlier.prop.to.remove = 0),
                  NA)
-    non.outlier.data <- flipRegression:::findNonOutlierObservations(data = small.bank, outlier.prop.to.remove = 0.1,
-                                                                    model = regression$original, type = "Ordered Logit",
-                                                                    weights = small.bank$weight, seed = 12321)
+    non.outlier.data <- findNonOutlierObservations(data = small.bank, outlier.prop.to.remove = 0.1,
+                                                   model = regression$original, type = "Ordered Logit",
+                                                   weights = small.bank$weight, seed = 12321)
     expected.error.message <- paste0("Removing outliers has removed all the observations in the outcome variable with",
                                      " level(s): 7. If possible, this issue could be solved by merging the categories ",
                                      "of the outcome variable or reducing the Automated Outlier removal setting.")
@@ -224,12 +224,12 @@ test_that("Consistent structure with automated outlier removal", {
     expect_false(identical(automated.removal.linear$coef, basic.linear$coef))
     expect_equal(basic.linear$coef, lm(bank.formula[["Linear"]], data = small.bank)$coefficients)
     n.data <- nrow(basic.linear$estimation.data)
-    computed.subset <- flipRegression:::findNonOutlierObservations(data = basic.linear$estimation.data,
-                                                                   model = lm(bank.formula[["Linear"]],
-                                                                              data = basic.linear$estimation.data),
-                                                                   outlier.prop.to.remove = proportion,
-                                                                   type = "Linear",
-                                                                   weights = NULL)
+    computed.subset <- findNonOutlierObservations(data = basic.linear$estimation.data,
+                                                  model = lm(bank.formula[["Linear"]],
+                                                             data = basic.linear$estimation.data),
+                                                  outlier.prop.to.remove = proportion,
+                                                  type = "Linear",
+                                                  weights = NULL)
     expect_equal(computed.subset, automated.removal.linear$non.outlier.data)
     manually.computed.subset <- rank(abs(basic.linear$original$residuals)) <= ceiling(n.data * (1 - proportion))
     expect_equivalent(computed.subset, manually.computed.subset)
