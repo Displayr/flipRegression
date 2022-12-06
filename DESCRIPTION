@@ -27,14 +27,13 @@ Imports: car,
  rhtmlHeatmap,
  stats,
  sure,
- survey,
+ survey (>= 4.1.1),
  verbs,
  xml2
 Suggests: flipExampleData,
  testthat,
  robustbase
 Remotes:
- cran/survey@4.0,
  Displayr/flipU,
  Displayr/flipFormat,
  Displayr/flipData,
