@@ -1494,6 +1494,7 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             # predictor.
             class(out) <- c("svyolr", "polr")
             # Retain the design and formula for later use
+            assign(".design", .design, envir = environment(.formula))
             out$formula <- .formula
             out$design <- .design
             out
@@ -1524,8 +1525,8 @@ findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.da
     first.level <- levels(y)[1]
     cut.point <- substr(first.level, 4L, nchar(first.level))
     q1 <- which(levels(.estimation.data[[outcome.name]]) == cut.point)
-    logit <- function(p) log(p/(1 - p))
-    spacing <- logit((1L:q)/(q + 1L))
+    logit <- function(p) log(p / (1 - p))
+    spacing <- logit((1L:q) / (q + 1L))
     gammas <- -coefs[1L] + spacing - spacing[q1]
     c(coefs[-1L], gammas)
 }
@@ -1697,11 +1698,13 @@ findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type
         {
             if (!is.null(weights))
             {
-                assign(".design", model$design, envir=.GlobalEnv)
-                assign(".formula", model$formula, envir=.GlobalEnv)
+                assign(".design", model$design, envir = sys.frame())
+                assign(".formula", model$formula, envir = sys.frame())
                 model.residuals <- resids(model, method = "latent")
-                remove(".design", envir=.GlobalEnv)
-                remove(".formula", envir=.GlobalEnv)
+                if (identical(sys.frame(), .GlobalEnv)) {
+                    remove(".design", envir = sys.frame())
+                    remove(".formula", envir = sys.frame())
+                }
             } else
                 model.residuals <- resids(model, method = "latent")
         }
@@ -2435,7 +2438,7 @@ reduceOutputSize <- function(fit)
     ## remove environment attribute to reduce size
     attr(fit$terms, ".Environment") <- c()
     attr(original$terms, ".Environment") <- c()
-    attr(original$formula, ".Environment") <- c()
+    #attr(original$formula, ".Environment") <- c()
     attr(attr(original$model, "terms"), ".Environment") <- c()
     attr(fit$summary$formula, ".Environment") <- c()
     attr(fit$summary$terms, ".Environment") <- c()
