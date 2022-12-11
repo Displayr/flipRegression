@@ -44,10 +44,10 @@ reports the goodness-of-fit of an object.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Default goodness-of-fit \eqn{R^2}.
+\item \code{GoodnessOfFit(default)}: Default goodness-of-fit \eqn{R^2}.
 
-\item \code{Regression}: Goodness-of-fit for a Regression object. Computed as the \eqn{R^2} statistic.
+\item \code{GoodnessOfFit(Regression)}: Goodness-of-fit for a Regression object. Computed as the \eqn{R^2} statistic.
 With factors, the index value of the factor is used. With unordered factors, this will often be
 grieviously-downward biased.
-}}
 
+}}
