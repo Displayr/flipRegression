@@ -2,29 +2,27 @@ context("Automated Outlier Removal")
 
 data(bank, package = "flipExampleData")
 small.bank <- na.omit(bank)
-small.bank$Overall_Binary <- small.bank$Overall >= 4
-bank.formula <- list("Linear" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "Binary Logit" = formula("Overall_Binary ~ Phone + Fees"),
-                     "Ordered Logit" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "Poisson" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "Quasi-Poisson" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "NBD" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"),
-                     "Weighted Ordered Logit" = as.formula("ReducedOverall ~ Fees + Interest + Phone + Branch + Online"),
-                     "Multinomial Logit" = formula("Overall ~ Fees + Interest + Phone + Branch + Online"))
-
 # Combine highest category for weighted Ordered Logit tests
-small.bank$ReducedOverall = small.bank$Overall
-small.bank$ReducedOverall[small.bank$ReducedOverall == 7] = 6
+small.bank <- transform(small.bank,
+                        Overall_Binary = factor(as.numeric(Overall >= 4)),
+                        ReducedOverall = pmin(Overall, 6))
+bank.formula <- list(Linear = Overall ~ Fees + Interest + Phone + Branch + Online,
+                     `Binary Logit` = Overall_Binary ~ Phone + Fees,
+                     `Ordered Logit` = Overall ~ Fees + Interest + Phone + Branch + Online,
+                     Poisson = Overall ~ Fees + Interest + Phone + Branch + Online,
+                     `Quasi-Poisson` = Overall ~ Fees + Interest + Phone + Branch + Online,
+                     NBD = Overall ~ Fees + Interest + Phone + Branch + Online,
+                     `Weighted Ordered Logit` = ReducedOverall ~ Fees + Interest + Phone + Branch + Online,
+                     `Multinomial Logit` = Overall ~ Fees + Interest + Phone + Branch + Online)
 
 # coleman data from robustbase
 
-coleman <- structure(list(motherLev = c(6.19,
-                                        5.17, 7.04, 7.1, 6.15, 6.41, 6.86, 5.78, 6.51, 5.57, 5.62, 5.34,
-                                        5.8, 6.19, 5.62, 6.94, 6.33, 6.01, 7.51, 6.96),
-                          Y = c(37.01,
-                                26.51, 36.51, 40.7, 37.1, 33.9, 41.8, 33.4, 41.01, 37.2, 23.3,
-                                35.2, 34.9, 33.1, 22.7, 39.7, 31.8, 31.7, 43.1, 41.01)),
-                     class = "data.frame", row.names = c(NA, -20L))
+coleman <- data.frame(
+    motherLev = c(6.19, 5.17, 7.04, 7.1, 6.15, 6.41, 6.86, 5.78, 6.51, 5.57,
+                  5.62, 5.34, 5.8, 6.19, 5.62, 6.94, 6.33, 6.01, 7.51, 6.96),
+    Y = c(37.01, 26.51, 36.51, 40.7, 37.1, 33.9, 41.8, 33.4, 41.01, 37.2, 23.3,
+          35.2, 34.9, 33.1, 22.7, 39.7, 31.8, 31.7, 43.1, 41.01)
+)
 
 test_that("Linear method consistent with robustbase", {
 
@@ -85,9 +83,9 @@ test_that("Weighted Ordered Logit (svyolr)", {
     expect_error(regression <- Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
                                           type = "Ordered Logit", outlier.prop.to.remove = 0),
                  NA)
-    non.outlier.data <- flipRegression:::findNonOutlierObservations(data = small.bank, outlier.prop.to.remove = 0.1,
-                                                                    model = regression$original, type = "Ordered Logit",
-                                                                    weights = small.bank$weight, seed = 12321)
+    non.outlier.data <- findNonOutlierObservations(model = regression$original,
+                                                   outlier.prop.to.remove = 0.1,
+                                                   seed = 12321)
     expected.error.message <- paste0("Removing outliers has removed all the observations in the outcome variable with",
                                      " level(s): 7. If possible, this issue could be solved by merging the categories ",
                                      "of the outcome variable or reducing the Automated Outlier removal setting.")
@@ -102,7 +100,7 @@ test_that("Weighted Ordered Logit (svyolr)", {
     for (j in seq_along(outlier.proportions))
     {
         weighted.regression <- Regression(bank.formula[["Weighted Ordered Logit"]], data = small.bank,
-                                          type = "Ordered Logit",weights = weight, missing = miss,
+                                          type = "Ordered Logit", weights = weight, missing = miss,
                                           outlier.prop.to.remove = outlier.proportions[j])
         expect_equal(mean(weighted.regression$estimation.data$non.outlier.data_GQ9KqD7YOf),
                      1 - outlier.proportions[j], tolerance = 1e-2)
@@ -214,7 +212,9 @@ test_that("Consistent structure with automated outlier removal", {
                      basic.linear$estimation.data$non.outlier.data_GQ9KqD7YOf)
     expect_true(all(basic.linear$non.outlier.data_GQ9KqD7YOf))
     # Check automated output has the anticipated structure
-    automated.removal.linear <- Regression(bank.formula[["Linear"]], data = small.bank, outlier.prop.to.remove = proportion)
+    automated.removal.linear <- Regression(bank.formula[["Linear"]],
+                                           data = small.bank,
+                                           outlier.prop.to.remove = proportion)
     expect_true("non.outlier.data_GQ9KqD7YOf" %in% colnames(automated.removal.linear$estimation.data))
     expect_identical(automated.removal.linear$non.outlier.data,
                      automated.removal.linear$estimation.data$non.outlier.data_GQ9KqD7YOf)
@@ -224,17 +224,15 @@ test_that("Consistent structure with automated outlier removal", {
     expect_false(identical(automated.removal.linear$coef, basic.linear$coef))
     expect_equal(basic.linear$coef, lm(bank.formula[["Linear"]], data = small.bank)$coefficients)
     n.data <- nrow(basic.linear$estimation.data)
-    computed.subset <- flipRegression:::findNonOutlierObservations(data = basic.linear$estimation.data,
-                                                                   model = lm(bank.formula[["Linear"]],
-                                                                              data = basic.linear$estimation.data),
-                                                                   outlier.prop.to.remove = proportion,
-                                                                   type = "Linear",
-                                                                   weights = NULL)
+    computed.subset <- findNonOutlierObservations(model = lm(bank.formula[["Linear"]],
+                                                             data = basic.linear$estimation.data),
+                                                  outlier.prop.to.remove = proportion)
     expect_equal(computed.subset, automated.removal.linear$non.outlier.data)
     manually.computed.subset <- rank(abs(basic.linear$original$residuals)) <= ceiling(n.data * (1 - proportion))
     expect_equivalent(computed.subset, manually.computed.subset)
-    expect_equal(automated.removal.linear$coef, lm(bank.formula[["Linear"]],
-                                                   data = basic.linear$estimation.data[computed.subset, ])$coefficients)
+    filtered.data <- basic.linear$estimation.data[computed.subset, ]
+    expect_equal(automated.removal.linear[["coef"]],
+                 lm(bank.formula[["Linear"]], data = filtered.data)[["coefficients"]])
 })
 
 test_that("Relative Importance and Shapley Output", {
@@ -248,20 +246,20 @@ test_that("Relative Importance and Shapley Output", {
         expect_equal(mean(regression.non.outlier.data), 0.9, tolerance = 1e-2)
         # Check importance output is the same on auto removed and subsetted data
         expect_warning(importance.with.removal <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
-                                                               outlier.prop.to.remove = 0.1,
-                                                               output = "Relative Importance Analysis")$importance,
+                                                             outlier.prop.to.remove = 0.1,
+                                                             output = "Relative Importance Analysis")$importance,
                          expected.warning)
         expect_warning(importance.on.subset <- Regression(bank.formula[[tt]], type = tt,
-                                                            data = small.bank[regression.non.outlier.data, ],
-                                                            outlier.prop.to.remove = 0,
-                                                            output = "Relative Importance Analysis")$importance,
+                                                          data = small.bank[regression.non.outlier.data, ],
+                                                          outlier.prop.to.remove = 0,
+                                                          output = "Relative Importance Analysis")$importance,
                          expected.warning)
         expect_equal(importance.with.removal, importance.on.subset)
         # Same for weighted make adjustments for Ordered Logit to avoid error
         ttw <- if (tt == "Ordered Logit") "Weighted Ordered Logit" else tt
         expect_warning(weighted.regression.non.outlier.data <- Regression(bank.formula[[ttw]], data = small.bank,
-                                                                            type = tt, weights = weight,
-                                                                            outlier.prop.to.remove = 0.1)$non.outlier.data,
+                                                                          type = tt, weights = weight,
+                                                                          outlier.prop.to.remove = 0.1)$non.outlier.data,
                          expected.warning)
         expect_equal(mean(weighted.regression.non.outlier.data), 0.9, tolerance = 1e-2)
         expect_warning(weighted.importance.with.removal <- Regression(bank.formula[[ttw]], data = small.bank, type = tt,

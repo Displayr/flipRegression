@@ -1618,12 +1618,7 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                                       type, robust.se, outlier.prop.to.remove,
                                       dummy.processed.data, seed, ...)
 {
-    non.outlier.data <- findNonOutlierObservations(.estimation.data,
-                                                   outlier.prop.to.remove,
-                                                   model,
-                                                   type,
-                                                   .weights,
-                                                   seed)
+    non.outlier.data <- findNonOutlierObservations(model, outlier.prop.to.remove, seed)
     if (!is.null(dummy.processed.data))
     {
         basic.formula <- dummy.processed.data[["formulae"]][["formula"]]
@@ -1682,56 +1677,6 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                                  type, robust.se, subset = non.outlier.data, ...)
     return(list(model = fitted.model$model, .estimation.data = .estimation.data,
                 design = fitted.model$design, non.outlier.data = non.outlier.data))
-}
-
-# Returns a logical vector of observations that are not deemed outlier observations
-#' @importFrom sure resids
-#' @importFrom stats rstudent
-findNonOutlierObservations <- function(data, outlier.prop.to.remove, model, type, weights, seed)
-{
-    n.model <- nrow(data)
-    # In the Ordered Logit and Binary Logit cases use the Surrogate residuals
-    # for both the weighted and non-weighted models
-    if (type %in% c("Ordered Logit", "Binary Logit"))
-    {
-        set.seed(seed)
-        if (type == "Ordered Logit")
-        {
-            if (!is.null(weights))
-            {
-                assign(".design", model$design, envir=.GlobalEnv)
-                assign(".formula", model$formula, envir=.GlobalEnv)
-                model.residuals <- resids(model, method = "latent")
-                remove(".design", envir=.GlobalEnv)
-                remove(".formula", envir=.GlobalEnv)
-            } else
-                model.residuals <- resids(model, method = "latent")
-        }
-        else
-            model.residuals <- resids(model, method = "jitter", type = "response")
-    }
-    else
-    {
-        # use standardised deviance residuals in unweighted cases.
-        # otherwise use the Pearson sampling re-weighted residuals.
-        # These are computed in residuals.svyglm except in the NBD case.
-        # NBD kept as Pearson for consistency.
-        if (is.null(weights))
-        {
-            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
-                model.residuals <- rstudent(model, type = "deviance")
-            else
-                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
-        } else {
-            if (type %in% c("Linear", "Poisson", "Quasi-Poisson", "NBD"))
-                model.residuals <- residuals(model, type = "pearson")
-            else
-                stop("Unexpected or unsupported regression for automated outlier removal type: ", type)
-        }
-    }
-    bound <- ceiling(n.model * (1 - outlier.prop.to.remove))
-    valid.data.indices <- unname(rank(abs(model.residuals), ties.method = "random") <= bound)
-    return(valid.data.indices)
 }
 
 # Takes the input unstacked data, interaction, subset, weights and formula terms
