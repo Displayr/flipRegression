@@ -14,6 +14,7 @@ isWeightedModel <- function(model) {
 }
 
 # Takes a regression model and returns the type of model
+#' @importFrom stats family
 getModelType <- function(model) {
     # Examine the actual model if a Regression output
     if (inherits(model, "Regression"))
