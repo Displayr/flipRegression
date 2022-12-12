@@ -1,7 +1,7 @@
 Package: flipRegression
 Type: Package
 Title: Estimates standard regression models
-Version: 1.3.50
+Version: 1.3.52
 Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
 Description: Regression models according to the flip Project
@@ -46,5 +46,5 @@ Remotes:
  Displayr/verbs
 LinkingTo: Rcpp (>= 0.12.15),
  RcppEigen (>= 0.3.3.4.0)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.3
 Encoding: UTF-8
