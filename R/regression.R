@@ -1245,9 +1245,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                                family = poisson()),
                             "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                      family = quasipoisson()))
-            assign(".design", .design, envir = .GlobalEnv)
             aic <- extractAIC(model)
-            remove(".design", envir = .GlobalEnv)
             model$df <- aic[1]
             model$aic <- aic[2]
         }
