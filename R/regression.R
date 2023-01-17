@@ -2287,9 +2287,9 @@ hccmAdjust <- function(fit.reg, robust.se, h)
     p <- ncol(X)
     # Replace the singularities with compuatable values.
     # Using the the hc1 calculation for those cases.
-    factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
+    factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h / p))
     factor[h == 1] <- df.res/n
-    V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
+    V %*% t(X) %*% apply(X, 2, "*", (e^2) / factor) %*% V
 }
 
 reduceOutputSize <- function(fit)
