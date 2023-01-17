@@ -1194,8 +1194,12 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model$df <- NA
             else
             {
-                assign(".design", .design, envir=.GlobalEnv)
-                aic <- try(extractAIC(model), silent = TRUE)
+                assign(".design", .design, envir = .GlobalEnv)
+                # survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
+                # intercept only models. Workaround is to set null_has_intercept = FALSE
+                # Also divides by sigma2hat which is reversed here
+                aic <- try(survey:::extractAIC_svylm(model, null_has_intercept = FALSE),
+                           silent = TRUE) * sigma(model)^2
                 if (any("try-error" %in% class(aic)))
                 {
                     warning("Error occurred when computing AIC. The most likely ",
@@ -1203,9 +1207,9 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                             "some aspect of the analysis. ")
                     aic <- rep(NA, 2)
                 }
-                remove(".design", envir=.GlobalEnv)
-                model$df <- aic[1]
-                model$aic <- aic[2]
+                remove(".design", envir = .GlobalEnv)
+                model[["df"]] <- aic[1]
+                model[["aic"]] <- aic[2]
             }
         }
         else if (type == "Ordered Logit")
