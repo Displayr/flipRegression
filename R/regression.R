@@ -328,7 +328,7 @@ Regression <- function(formula = as.formula(NULL),
     subset <- eval(substitute(subset), data, parent.frame())
     if (!is.null(subset))
     {
-        if (is.null(subset.description) | (class(subset.description) == "try-error") | !is.null(attr(subset, "name")))
+        if (is.null(subset.description) || inherits(subset.description, "try-error") || !is.null(attr(subset, "name")))
             subset.description <- Labels(subset)
         if (is.null(attr(subset, "label")))
             attr(subset, "label") <- subset.description
