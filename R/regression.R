@@ -1112,6 +1112,7 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
 
 # Fits the models. Now in a separate function to FitRegression for repeated use
 # to prevent code duplication with the automated outlier removal refitting.
+#' @importFrom stats sigma
 fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
