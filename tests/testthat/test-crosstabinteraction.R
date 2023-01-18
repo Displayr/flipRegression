@@ -45,7 +45,7 @@ test_that("Weights", {
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                                  interaction = ATM, data = bank, type = tt,
                                                  outlier.prop.to.remove = outliers.to.remove,
-                                                 weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
+                                                 weights = w1, subset = f1, output = "Relative Importance Analysis")), error.msg)
     }
     expect_error(Regression(Overall ~ Fees + Interest,
                             interaction = ATM,
