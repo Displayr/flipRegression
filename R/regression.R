@@ -1196,18 +1196,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             else
             {
                 assign(".design", .design, envir = .GlobalEnv)
-                # survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
-                # intercept only models. Workaround is to set null_has_intercept = FALSE
-                # Also divides by sigma2hat which is reversed here
-                aic <- try(survey:::extractAIC_svylm(model, null_has_intercept = FALSE),
-                           silent = TRUE) * sigma(model)^2
-                if (any("try-error" %in% class(aic)))
-                {
-                    warning("Error occurred when computing AIC. The most likely ",
-                            "explanation for this is this is a small sample size in ",
-                            "some aspect of the analysis. ")
-                    aic <- rep(NA, 2)
-                }
+                # Use the internal function to derive the AIC until survey author fixes/updates
+                aic <- extractSvyLmAIC(model)
                 remove(".design", envir = .GlobalEnv)
                 model[["df"]] <- aic[1]
                 model[["aic"]] <- aic[2]
@@ -1261,6 +1251,28 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
     return(list(model = model, formula = .formula, design = .design, estimation.data = .estimation.data))
 }
 
+# survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
+# intercept only models. Interim fix below which computes the AIC information properly
+extractSvyLmAIC <- function(fit, k = 2) {
+    sfit <- summary(fit)
+    n <- sfit$df.null
+    Nhat <- sum(w <- fit$prior.weights)
+    sigma2hat <- coef(sfit$dispersion)
+    minus2ellhat <- Nhat * log(sigma2hat) + Nhat + Nhat * log(2 * pi)
+    V0 <- fit$naive.cov
+    V <- vcov(fit)
+    Delta_mu <- solve(V0, V) / sigma2hat
+    y <- fit$y
+    muhat <- fit$linear.predictors
+    Isigma2 <- Nhat/(2 * sigma2hat^2)
+    Usigma2 <- -1/(2 * sigma2hat) + (y - muhat)^2/(2 * sigma2hat^2)
+    Hsigma2 <- sum(w * Usigma2^2)
+    Deltasigma2 <- Hsigma2/Isigma2
+    deltabar <- mean(c(diag(Delta_mu), Deltasigma2))
+    eff.p <- sum(diag(Delta_mu)) + Deltasigma2
+    aic <- minus2ellhat + k * eff.p
+    c(eff.p = eff.p, AIC = aic, deltabar = deltabar)
+}
 
 #' notValidForPartial
 #'
