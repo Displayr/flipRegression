@@ -1254,24 +1254,23 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
 # survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
 # intercept only models. Interim fix below which computes the AIC information properly
 extractSvyLmAIC <- function(fit, k = 2) {
-    sfit <- summary(fit)
-    n <- sfit$df.null
-    Nhat <- sum(w <- fit$prior.weights)
-    sigma2hat <- coef(sfit$dispersion)
-    minus2ellhat <- Nhat * log(sigma2hat) + Nhat + Nhat * log(2 * pi)
-    V0 <- fit$naive.cov
+    sigma2.hat <- coef(summary(fit)[["dispersion"]])
+    w <- fit[["prior.weights"]]
+    n.hat <- sum(w)
+    minus.2.ell.hat <- n.hat * log(sigma2.hat) + n.hat + n.hat * log(2 * pi)
+    V0 <- fit[["naive.cov"]] * sigma2.hat
     V <- vcov(fit)
-    Delta_mu <- solve(V0, V) / sigma2hat
-    y <- fit$y
-    muhat <- fit$linear.predictors
-    Isigma2 <- Nhat/(2 * sigma2hat^2)
-    Usigma2 <- -1/(2 * sigma2hat) + (y - muhat)^2/(2 * sigma2hat^2)
-    Hsigma2 <- sum(w * Usigma2^2)
-    Deltasigma2 <- Hsigma2/Isigma2
-    deltabar <- mean(c(diag(Delta_mu), Deltasigma2))
-    eff.p <- sum(diag(Delta_mu)) + Deltasigma2
-    aic <- minus2ellhat + k * eff.p
-    c(eff.p = eff.p, AIC = aic, deltabar = deltabar)
+    delta.mu <- solve(V0, V)
+    y <- fit[["y"]]
+    mu.hat <- fit[["linear.predictors"]]
+    i.sigma2 <- n.hat / (2 * sigma2.hat^2)
+    u.sigma2 <- -1 / (2 * sigma2.hat) + (y - mu.hat)^2 / (2 * sigma2.hat^2)
+    h.sigma2 <- sum(w * u.sigma2^2)
+    delta.sigma2 <- h.sigma2 / i.sigma2
+    delta.bar <- mean(c(diag(delta.mu), delta.sigma2))
+    eff.p <- sum(diag(delta.mu)) + delta.sigma2
+    aic <- minus.2.ell.hat + k * eff.p
+    c(eff.p = eff.p, AIC = aic, deltabar = delta.bar)
 }
 
 #' notValidForPartial
