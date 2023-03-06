@@ -1257,7 +1257,6 @@ extractSvyLmAIC <- function(fit, k = 2) {
     w <- fit[["prior.weights"]]
     n.hat <- sum(w)
     y <- fit[["y"]]
-    # mu.hat = X %*% beta
     mu.hat <- fit[["linear.predictors"]]
     eps <- y - mu.hat
     sigma2.hat <- sum(eps^2 * w) / n.hat
