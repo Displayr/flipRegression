@@ -147,18 +147,58 @@ sim.xy <- function (n, p, nval, rho = 0, s = 5, beta.type = 1, snr = 1)
     enlist(x, y, xval, yval, Sigma, beta, sigma)
 }
 
-test_that("EH-623: Simulation study of fwrd-stepwise reg. using bestsubset pkg",
+expect_stepwise_sim_contains_true_nonzero_coefficients <- function(
+                                                                   seed,
+                                                                   stepwise.direction,
+                                                                   n.respondents,
+                                                                   n.predictors,
+                                                                   n.non.zero.coef,
+                                                                   signal.to.noise.ratio,
+                                                                   n.max.false.pos.nonzero = 0,
+                                                                   n.max.false.neg.nonzero = 0)
 {
-    set.seed(2)
-    dat <- sim.xy(n = 1000, p = 10, nval = 0, rho = 0, s = 3, beta.type = 1, snr = 4)
+    set.seed(seed)
+    dat <- sim.xy(n = n.respondents, p = n.predictors, nval = 0, rho = 0,
+                  s = n.non.zero.coef, beta.type = 1,
+                  snr = signal.to.noise.ratio)
     df <- as.data.frame(cbind(y = dat$y, dat$x))
     pred.names <- colnames(df)[-1]
 
     included.expected <- pred.names[dat$beta > 0]
     excluded.expected <- setdiff(pred.names, included.expected)
-    ## Stepwise does not work with '.' on RHS of formula
+
+    ## Stepwise does not work with "." on RHS of formula
     form <- as.formula(paste0("y~", paste(pred.names, collapse = "+")))
     reg.out <- Regression(form, data = df)
-    stepwise.out <- Stepwise(reg.out, direction = "Forward")
-    expect_setequal(stepwise.out$excluded, excluded.expected)
+    stepwise.out <- Stepwise(reg.out, direction = stepwise.direction)
+    incl.out <- setdiff(pred.names, stepwise.out$excluded)
+    expect_true(sum(!included.expected %in% incl.out) <= n.max.false.neg.nonzero)
+    expect_true(sum(incl.out %in% excluded.expected) <= n.max.false.pos.nonzero)
+}
+
+test_that("EH-623: Simulation study of stepwise reg. using bestsubset pkg",
+{
+    for (direction in c("Forward", "Backward"))
+        for (seed in 2:4)
+            expect_stepwise_sim_contains_true_nonzero_coefficients(
+                               seed, stepwise.direction = direction,
+                               n.respondents = 1000, n.predictors = 10,
+                               n.non.zero.coef = 3, signal.to.noise.ratio = 4,
+                               n.max.false.pos.nonzero = 2, n.max.false.neg.nonzero = 0)
+
+    for (direction in c("Forward", "Backward"))
+        for (seed in 10:12)
+            expect_stepwise_sim_contains_true_nonzero_coefficients(
+                               seed, stepwise.direction = direction,
+                               n.respondents = 1000, n.predictors = 10,
+                               n.non.zero.coef = 3, signal.to.noise.ratio = 2,
+                               n.max.false.pos.nonzero = 3, n.max.false.neg.nonzero = 0)
+
+    for (direction in c("Forward", "Backward"))
+        for (seed in 100:102)
+            expect_stepwise_sim_contains_true_nonzero_coefficients(
+                               seed, stepwise.direction = direction,
+                               n.respondents = 300, n.predictors = 20,
+                               n.non.zero.coef = 4, signal.to.noise.ratio = 1,
+                               n.max.false.pos.nonzero = 5, n.max.false.neg.nonzero = 0)
 })
