@@ -263,7 +263,7 @@
 #' @importFrom stats drop.terms terms.formula
 #' @importFrom verbs Last Sum
 #' @export
-Regression <- function(formula = as.formula(NULL),
+Regression <- function(formula = NULL,
                        data = NULL,
                        subset = NULL,
                        weights = NULL,
@@ -292,10 +292,12 @@ Regression <- function(formula = as.formula(NULL),
                        unstacked.data = NULL,
                        ...)
 {
-    if (identical(formula, formula(NULL)) && !stacked.data.check)
+    if (is.null(formula) && !stacked.data.check)
         stop(dQuote("formula"), " argument is missing and is required unless stackable data is provided via the ",
              dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
              "Please provide a formula or stackable data and re-run the Regression.")
+    regression.call <- match.call(expand.dots = FALSE)
+    validateRegressionArguments(regression.call)
     old.contrasts <- options("contrasts")
     options(contrasts = contrasts)
     if (detail || output == "Detail")
@@ -303,8 +305,6 @@ Regression <- function(formula = as.formula(NULL),
     if (robust.se == "No")
         robust.se <- FALSE
     cl <- match.call()
-    if(!missing(statistical.assumptions))
-        stop("'statistical.assumptions' objects are not yet supported.")
 
     importance <- if (output == "Relative Importance Analysis" || relative.importance)
         "Relative Importance Analysis"
@@ -493,7 +493,7 @@ Regression <- function(formula = as.formula(NULL),
         stop("'subset' and 'data' are required to have the same number of observations. They do not.")
     # Check if there are any entirely missing variables in the data and adjust accordingly.
     missing.variables <- vapply(data, function(x) all(is.na(x)), logical(1L))
-    if(any(missing.variables))
+    if (any(missing.variables))
     {
         missing.variable.adjustment <- removeMissingVariables(data, formula, formula.with.interaction,
                                                               missing.variables, outcome.name, input.formula)
@@ -537,21 +537,13 @@ Regression <- function(formula = as.formula(NULL),
     }
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
-    if (robust.se != FALSE & (partial | missing == "Multiple imputation"))
-        stop(paste0("Robust standard errors cannot be computed with 'missing' set to ", missing, "."))
-    if (robust.se != FALSE & type != "Linear")
-        stop("Robust standard errors may only be computed using Linear regressions.")
     if (partial)
     {
-        if (internal)
-            stop("'internal' may not be selected with regressions based on correlation matrices.")
         if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
             stop("Relative importance analysis and Shapley Regression are not ",
                  "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
-        if (type != "Linear")
-            stop(paste0("'Use partial data (pairwise)' can only be used with 'type' of 'Linear'."))
         result <- list(original = LinearRegressionFromCorrelations(input.formula, data, subset,
                                                                    weights, outcome.name, ...),
                        outliers.removed = !is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0,
@@ -1137,7 +1129,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             model <- lm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, model = TRUE)
             model$aic <- AIC(model)
         }
-        else if (type == "Poisson" | type == "Quasi-Poisson" | type == "Binary Logit")
+        else if (type == "Poisson" || type == "Quasi-Poisson" || type == "Binary Logit")
             model <- glm(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
                          family = switch(type,
                                          "Poisson" = poisson,
@@ -1176,8 +1168,6 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             else
                 warning(result$warnings)
         }
-        else
-            stop("Unknown regression 'type'.")
     }
     else
     {

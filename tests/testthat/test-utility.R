@@ -42,3 +42,57 @@ test_that("getModelType and isWeightedModel operate correctly", {
         expect_equal(isWeightedModel(full.models[[i]]), !is.null(weights[[i]]))
     }
 })
+
+# Test arguments to Regression
+test_that("DS-4096: Informative error if arguments are not valid", {
+    expect_error(Regression(bank.formula,
+                            small.bank, missing = "Multiple imputation",
+                            outlier.prop.to.remove = 0.1,
+                            type = "Linear"),
+                 "Multiple imputation is not supported with automated outlier removal")
+    # Check regression types
+    valid.regression.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson",
+                                "Ordered Logit", "Multinomial Logit", "NBD")
+    not.linear <- setdiff(valid.regression.types, "Linear")
+    expected.error <- paste0(sQuote("type"), " should be one of ",
+                             paste0(dQuote(valid.regression.types), collapse = ", "), ".")
+    expect_error(throwErrorInvalidArgument("type"), expected.error)
+    expect_error(Regression(bank.formula, small.bank, type = "foo"), expected.error)
+    expect_error(Regression(bank.formula, small.bank, type = "linear"), expected.error)
+    # Check missing value arguments
+    valid.missing.args <- c("Error if missing data", "Exclude cases with missing data",
+                            "Dummy variable adjustment", "Use partial data (pairwise correlations)",
+                            "Imputation (replace missing values with estimates)", "Multiple imputation")
+    expected.error <- paste0(sQuote("missing"), " should be one of ",
+                             paste0(dQuote(valid.missing.args), collapse = ", "), ".")
+    expect_error(throwErrorInvalidArgument("missing"), expected.error, fixed = TRUE)
+    expect_error(Regression(bank.formula, small.bank, type = "Linear", missing = "foo"),
+                 expected.error, fixed = TRUE)
+    expect_error(Regression(bank.formula, small.bank, type = "Linear", missing = "multiple imp"),
+                 expected.error, fixed = TRUE)
+    ## Check robust.se not supported outside linear regression
+    for (invalid.type in not.linear)
+        expect_error(Regression(bank.formula, small.bank, type = invalid.type, robust.se = TRUE),
+                     "Robust standard errors are only supported for Linear regression.")
+    ## Multiple imputation not valid with outlier removal
+    expect_error(Regression(bank.formula, small.bank, type = "Linear",
+                            missing = "Multiple imputation",
+                            outlier.prop.to.remove = 0.1),
+                    "Multiple imputation is not supported with automated outlier removal")
+    ## Partial data not supported in internal calls
+    expect_error(Regression(bank.formula, small.bank, type = "Linear",
+                            internal = TRUE, missing = "Use partial data (pairwise correlations)"),
+                 "'internal' may not be selected with regressions based on correlation matrices.")
+    ## Partial data not supported outside linear regression
+    for (invalid.type in not.linear)
+        expect_error(Regression(bank.formula, small.bank, type = invalid.type,
+                                missing = "Use partial data (pairwise correlations)"),
+                     "Use partial data (pairwise correlations) is only supported for Linear regression.",
+                     fixed = TRUE)
+    ## Robust SE not supported if using partial data or multiple imputation
+    for (missing in c("Use partial data (pairwise correlations)", "Multiple imputation"))
+        expect_error(Regression(bank.formula, small.bank, type = "Linear",
+                                missing = missing, robust.se = TRUE),
+                     "Robust standard errors cannot be computed with 'missing' set to")
+
+})
