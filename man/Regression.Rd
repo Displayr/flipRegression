@@ -5,7 +5,7 @@
 \title{Generalized Regression Outputs}
 \usage{
 Regression(
-  formula = as.formula(NULL),
+  formula = NULL,
   data = NULL,
   subset = NULL,
   weights = NULL,
