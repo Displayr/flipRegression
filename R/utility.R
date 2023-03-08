@@ -62,11 +62,18 @@ validateRegressionArguments <- function(regression.call) {
     validateStatisticalAssumptionsArgument(regression.args)
 }
 
+isFormula <- function(formula) {
+    is.call(formula) && length(formula) == 3L && formula[[1]] == quote(`~`)
+}
+
 validateFormulaArgument <- function(regression.args) {
-    formula <- regression.args[["formula"]]
+    # If stacked data is provided, then the formula is not required
     stacked.data.check <- regression.args[["stacked.data.check"]]
-    if (!inherits(formula, "formula") && !stacked.data.check)
-        stop(dQuote("formula"), " argument is missing and is required unless stackable data is provided via the ",
+    if (isTRUE(stacked.data.check)) return()
+    # Check formula
+    formula <- regression.args[["formula"]]
+    if (!isFormula(formula))
+        stop(dQuote("formula"), " argument is not a formula and is required unless stackable data is provided via the ",
              dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
              "Please provide a formula or stackable data and re-run the Regression.")
 }
@@ -127,10 +134,6 @@ throwErrorInvalidArgument <- function(arg.name) {
     valid.parameters <- valid.arguments[[arg.name]]
     stop(sQuote(arg.name), " should be one of ",
          paste0(dQuote(valid.parameters), collapse = ", "), ".")
-}
-
-validateImportanceArgument <- function(regression.args) {
-    importance <- regression.args[["importance"]]
 }
 
 validateMissingValueArgument <- function(regression.args) {

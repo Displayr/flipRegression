@@ -292,10 +292,6 @@ Regression <- function(formula = NULL,
                        unstacked.data = NULL,
                        ...)
 {
-    if (is.null(formula) && !stacked.data.check)
-        stop(dQuote("formula"), " argument is missing and is required unless stackable data is provided via the ",
-             dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
-             "Please provide a formula or stackable data and re-run the Regression.")
     regression.call <- match.call(expand.dots = FALSE)
     validateRegressionArguments(regression.call)
     old.contrasts <- options("contrasts")
