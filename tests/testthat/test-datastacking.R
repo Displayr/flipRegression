@@ -131,7 +131,7 @@ numeric.numeric.stacked <- structure(list(Y = structure(c(6, 8, 10, 8), label = 
 
 test_that("Test input error messages", {
     # Test formula error when none provided outside stacking context
-    error.msg <- paste0(dQuote("formula"), " argument is missing and is required unless stackable data is provided ",
+    error.msg <- paste0(dQuote("formula"), " argument is not a formula and is required unless stackable data is provided ",
                                "via the ", dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"),
                                " arguments. Please provide a formula or stackable data and re-run the Regression")
     expect_error(Regression(), error.msg)

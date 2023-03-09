@@ -38,3 +38,125 @@ getModelType <- function(model) {
     # Must be polr from here
     "Ordered Logit"
 }
+
+# Convert the regression call to a list of arguments, then evaluate the arguments
+# in the grandparent environment. This allows the arguments to be evaluated since this
+# function should be called within Regression itself. Then add the default arguments
+# to the list. Some arguments are not evaluated such as the subset, weights and
+# interaction arguments.
+validateRegressionArguments <- function(regression.call) {
+    regression.call[[1]] <- quote(list)
+    # Subset, weights or interaction might be emebedded in the data
+    # and not able to evaluated at the start
+    if (!is.null(regression.call[["weights"]]))
+        regression.call[["weights"]] <- NULL
+    if (!is.null(regression.call[["interaction"]]))
+        regression.call[["interaction"]] <- NULL
+    if (!is.null(regression.call[["subset"]]))
+        regression.call[["subset"]] <- NULL
+    # Evaluate the regression call in the parent environment to validate parameters
+    regression.args <- eval.parent(regression.call, n = 2L)
+    # Add the default arguments
+    all.args <- formals(Regression)
+    default.args <- setdiff(names(all.args), c(names(regression.args), "..."))
+    if (length(default.args) > 0)
+        regression.args <- c(regression.args, setNames(eval(all.args[default.args]), default.args))
+    # Validate the full list of arguments
+    validateFormulaArgument(regression.args)
+    validateRegressionTypeArgument(regression.args)
+    validateMissingValueArgument(regression.args)
+    validateOutlierRemovalArgument(regression.args)
+    validateStatisticalAssumptionsArgument(regression.args)
+}
+
+isFormula <- function(formula) {
+    is.call(formula) && length(formula) == 3L && formula[[1]] == quote(`~`)
+}
+
+validateFormulaArgument <- function(regression.args) {
+    # If stacked data is provided, then the formula is not required
+    stacked.data.check <- regression.args[["stacked.data.check"]]
+    if (isTRUE(stacked.data.check)) return()
+    # Check formula
+    formula <- regression.args[["formula"]]
+    if (!isFormula(formula))
+        stop(dQuote("formula"), " argument is not a formula and is required unless stackable data is provided via the ",
+             dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
+             "Please provide a formula or stackable data and re-run the Regression.")
+}
+
+# Regression argument checking
+validateOutlierRemovalArgument <- function(regression.args) {
+    outlier.prop.to.remove <- regression.args[["outlier.prop.to.remove"]]
+    if (is.null(outlier.prop.to.remove)) return()
+    if (!is.numeric(outlier.prop.to.remove) || length(outlier.prop.to.remove) != 1L)
+        stop(dQuote("outlier.prop.to.remove"), " should be a single numeric value.")
+    if (outlier.prop.to.remove < 0 || outlier.prop.to.remove > 1)
+        stop(dQuote("outlier.prop.to.remove"), " should be between 0 and 1.")
+}
+
+validateStatisticalAssumptionsArgument <- function(regression.args) {
+    if (!identical(regression.args[["statistical.assumptions"]], alist(, )[[1]]))
+        stop("'statistical.assumptions' objects are not yet supported.")
+}
+
+validateRobustStandardErrorsArgument <- function(regression.args) {
+    robust.standard.errors <- regression.args[["robust.standard.errors"]]
+    if (is.null(robust.standard.errors)) return()
+    if (!is.logical(robust.standard.errors) || length(robust.standard.errors) != 1L)
+        stop(dQuote("robust.standard.errors"), " should be a single logical value.")
+}
+
+validateRegressionArg <- function(regression.args, arg.name, valid.values) {
+    arg <- regression.args[[arg.name]]
+    if (!is.character(arg) || length(arg) != 1L)
+        stop(dQuote(arg.name), " should be a single character value.")
+    if (!arg %in% valid.values)
+        throwErrorInvalidArgument(arg.name)
+}
+
+valid.arguments <- list(
+    type = c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "Ordered Logit", "Multinomial Logit", "NBD"),
+    missing = c("Error if missing data", "Exclude cases with missing data", "Dummy variable adjustment",
+                "Use partial data (pairwise correlations)", "Imputation (replace missing values with estimates)",
+                "Multiple imputation")
+)
+
+validateRegressionTypeArgument <- function(regression.args) {
+    validateRegressionArg(regression.args, "type", valid.arguments[["type"]])
+    type <- regression.args[["type"]]
+    robust.se <- regression.args[["robust.se"]]
+    not.linear <- type != "Linear"
+    if (not.linear && isTRUE(robust.se))
+        stop("Robust standard errors are only supported for Linear regression.")
+    output <- regression.args[["output"]]
+    if (not.linear && startsWith(output, "Shapley"))
+        stop("Shapley requires Regression type to be Linear. Set the output to ",
+             "Relative Importance Analysis instead.")
+}
+
+throwErrorInvalidArgument <- function(arg.name) {
+    valid.parameters <- valid.arguments[[arg.name]]
+    stop(sQuote(arg.name), " should be one of ",
+         paste0(dQuote(valid.parameters), collapse = ", "), ".")
+}
+
+validateMissingValueArgument <- function(regression.args) {
+    validateRegressionArg(regression.args, "missing", valid.arguments[["missing"]])
+    # Check combination of missing value handling and outlier removal
+    outlier.prop.to.remove <- regression.args[["outlier.prop.to.remove"]]
+    missing <- regression.args[["missing"]]
+    if (missing == "Multiple imputation" && !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
+        stop("Multiple imputation is not supported with automated outlier removal. ",
+             "Either change the missing value handling option or set the Automated outlier ",
+             "removal percentage to zero")
+    internal <- isTRUE(regression.args[["internal"]])
+    partial <- missing == "Use partial data (pairwise correlations)"
+    if (internal && partial)
+        stop("'internal' may not be selected with regressions based on correlation matrices.")
+    not.linear <- regression.args[["type"]] != "Linear"
+    if (not.linear && partial)
+        stop("Use partial data (pairwise correlations) is only supported for Linear regression.")
+    if (isTRUE(regression.args[["robust.se"]]) && (partial || missing == "Multiple imputation"))
+        stop("Robust standard errors cannot be computed with 'missing' set to ", missing, ".")
+}
