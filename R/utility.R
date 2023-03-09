@@ -98,8 +98,6 @@ validateRobustStandardErrorsArgument <- function(regression.args) {
     if (is.null(robust.standard.errors)) return()
     if (!is.logical(robust.standard.errors) || length(robust.standard.errors) != 1L)
         stop(dQuote("robust.standard.errors"), " should be a single logical value.")
-    if (robust.standard.errors && !isWeightedModel(regression.args[["model"]]))
-        stop("Robust standard errors are only supported for weighted models.")
 }
 
 validateRegressionArg <- function(regression.args, arg.name, valid.values) {
