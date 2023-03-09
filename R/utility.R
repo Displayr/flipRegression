@@ -39,6 +39,11 @@ getModelType <- function(model) {
     "Ordered Logit"
 }
 
+# Convert the regression call to a list of arguments, then evaluate the arguments
+# in the grandparent environment. This allows the arguments to be evaluated since this
+# function should be called within Regression itself. Then add the default arguments
+# to the list. Some arguments are not evaluated such as the subset, weights and
+# interaction arguments.
 validateRegressionArguments <- function(regression.call) {
     regression.call[[1]] <- quote(list)
     # Subset, weights or interaction might be emebedded in the data
@@ -51,10 +56,12 @@ validateRegressionArguments <- function(regression.call) {
         regression.call[["subset"]] <- NULL
     # Evaluate the regression call in the parent environment to validate parameters
     regression.args <- eval.parent(regression.call, n = 2L)
+    # Add the default arguments
     all.args <- formals(Regression)
     default.args <- setdiff(names(all.args), c(names(regression.args), "..."))
     if (length(default.args) > 0)
         regression.args <- c(regression.args, setNames(eval(all.args[default.args]), default.args))
+    # Validate the full list of arguments
     validateFormulaArgument(regression.args)
     validateRegressionTypeArgument(regression.args)
     validateMissingValueArgument(regression.args)
