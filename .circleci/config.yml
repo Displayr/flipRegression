@@ -23,11 +23,12 @@ jobs:
       - run:
           name: "[r-release] Install dependencies"
           command: |
-            sudo apt update && sudo apt install -y ccache pandoc libgit2-dev libharfbuzz-dev libfribidi-dev libprotoc-dev libprotobuf-dev libv8-dev librsvg2-dev libmpfr-dev libnlopt-dev
+            sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+            sudo apt update && sudo apt install -y ccache pandoc libgit2-dev libharfbuzz-dev libfribidi-dev libprotoc-dev libprotobuf-dev libv8-dev librsvg2-dev libmpfr-dev libnlopt-dev libgdal-dev libproj-dev
             R -q -e 'if (!dir.exists("~/R/library")) dir.create("~/R/library", recursive = TRUE)'
             echo -e 'options(Ncpus = 4, repos = structure(c(CRAN = "https://cloud.r-project.org/")))' > $HOME/.Rprofile
             echo -e '.libPaths("~/R/library")' >> $HOME/.Rprofile
-            R -q -e 'devtools::install_deps(dependencies = TRUE)'
+            R -q -e 'options(warn = 2); devtools::install_deps(dependencies = TRUE)'
 
       - run:
           name: "Check package"
