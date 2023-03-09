@@ -1253,17 +1253,23 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
 
 # survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
 # intercept only models. Interim fix below which computes the AIC information properly
+# See https://stats.stackexchange.com/questions/181539/aic-formula-in-introduction-to-statistical-learning
+# and https://numbers.atlassian.net/browse/EH-547
 extractSvyLmAIC <- function(fit, k = 2) {
+    # Extract weights used in survey
     w <- fit[["prior.weights"]]
     n.hat <- sum(w)
     y <- fit[["y"]]
     mu.hat <- fit[["linear.predictors"]]
     eps <- y - mu.hat
+    # Use ML estimate of sigma2
     sigma2.hat <- sum(eps^2 * w) / n.hat
-    minus.2.ell.hat <- n.hat * log(sigma2.hat) + n.hat + n.hat * log(2 * pi)
+    minus.2.ell.hat <- n.hat * (log(sigma2.hat) + 1 + log(2 * pi))
     V0 <- fit[["naive.cov"]] * sigma2.hat
     V <- vcov(fit)
+    # Compute the delta matrix for the regression coefficients
     delta.mu <- solve(V0, V)
+    # Compute the sigma2 component of the delta matrix
     i.sigma2 <- n.hat / (2 * sigma2.hat^2)
     u.sigma2 <- -1 / (2 * sigma2.hat) + eps^2 / (2 * sigma2.hat^2)
     h.sigma2 <- sum(w * u.sigma2^2)
