@@ -1253,7 +1253,7 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
 
 # survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
 # intercept only models. Interim fix below which computes the AIC information properly
-# See https://stats.stackexchange.com/questions/181539/aic-formula-in-introduction-to-statistical-learning
+# See https://stats.stackexchange.com/questions/592794/reconciling-the-survey-adjusted-aic-for-multiple-regression-models-in-the-r-surv
 # and https://numbers.atlassian.net/browse/EH-547
 extractSvyLmAIC <- function(fit, k = 2) {
     # Extract weights used in survey
