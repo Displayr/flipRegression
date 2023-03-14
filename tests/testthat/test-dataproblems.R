@@ -618,7 +618,7 @@ test_that("DS-3618: Dummy adjusted models with outlier removal ", {
                     paste0("X", c(2, 4), ".dummy.var_GQ9KqD7YOf"))
 })
 
-test_that("DS-4188: Dummy adjusted models that are aliased after subset", {
+test_that("DS-4188: No non-zero data after filtering and handling missing data in dummy adjustment", {
     set.seed(4188)
     Y <- rep(1:5, each = 10)
     X1 <- 1L * (runif(50L) > Y / 6)
