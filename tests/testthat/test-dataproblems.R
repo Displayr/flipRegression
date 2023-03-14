@@ -624,10 +624,11 @@ test_that("DS-4188: Dummy adjusted models that are aliased after subset", {
     X1 <- 1L * (runif(50L) > Y / 6)
     is.na(X1) <- sample.int(50L, size = 10L)
     dat <- data.frame(Y, X1, X2 = NA)
-    non.zero.X1 <- which.min(X1 != 0L)
-    dat[["X2"]][non.zero.X1] <- 0L
+    # Create variable with only one non-zero value after subsetting
+    non.zero.x1 <- which.min(X1 != 0L)
+    dat[["X2"]][non.zero.x1] <- 0L
     dat.filter <- logical(50L)
-    dat.filter[c(non.zero.X1, sample.int(50L, size = 25L))] <- TRUE
+    dat.filter[c(non.zero.x1, sample.int(50L, size = 25L))] <- TRUE
     expected.warn <- paste0("The following variable(s) are colinear with other variables and no ",
                             "coefficients have been estimated: 'X2'")
     expect_warning(reg <- Regression(Y ~ X1 + X2, data = dat, missing = "Dummy variable adjustment",
@@ -642,7 +643,8 @@ test_that("DS-4188: Dummy adjusted models that are aliased after subset", {
     expected.error <- paste0("Each predictor needs to have at least two unique values to conduct a ",
                              "Relative Importance Analysis. The predictor 'X2' is constant and has ",
                              "no variation.")
-    # Additional warning will be
+    # Additional earlier warning is generated about colinear variable being removed before RIA validates
+    # the input matrix
     expect_warning(
         expect_error(Regression(Y.ord ~ X1 + X2, data = dat,
                                 missing = "Dummy variable adjustment",

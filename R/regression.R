@@ -2190,6 +2190,8 @@ adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
                               })
         model.coefs <- c(model.coefs, unlist(extra.coefs))
     }
+    # Apply filter since one of the predictors may have been removed from the model as its colinear
+    # and a dummy variable might be linked to it (it wont have a slope coefficient, so it will have length zero)
     missing.replacements <- Filter(length, extractDummyAdjustedCoefs(model.coefs, means.from.data))
     missing.numeric <- vapply(names(missing.replacements),
                               function(x) is.numeric(design.data[[x]]),
