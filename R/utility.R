@@ -44,6 +44,7 @@ getModelType <- function(model) {
 # function should be called within Regression itself. Then add the default arguments
 # to the list. Some arguments are not evaluated such as the subset, weights and
 # interaction arguments.
+#' @importFrom stats setNames
 validateRegressionArguments <- function(regression.call) {
     regression.call[[1]] <- quote(list)
     # Subset, weights or interaction might be emebedded in the data
