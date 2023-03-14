@@ -1513,7 +1513,6 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             # Retain the design and formula for later use
             out[["formula"]] <- .formula
             out[["design"]] <- .design
-            .estimation.data[["non.outlier.data_GQ9KqD7YOf"]] <- non.outlier.data_GQ9KqD7YOf
             out
         },
         warning.handler = .orderedLogitWarnings,
