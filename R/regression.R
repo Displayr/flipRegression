@@ -1134,10 +1134,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                          "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            ordered.logit.output <- fitOrderedLogit(.formula, .estimation.data, NULL,
-                                                    non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
-            .estimation.data <- ordered.logit.output[[".estimation.data"]]
-            model <- ordered.logit.output[["model"]]
+            model <- fitOrderedLogit(.formula, .estimation.data, NULL,
+                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
@@ -1192,10 +1190,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             }
         }
         else if (type == "Ordered Logit") {
-            ordered.logit.output <- fitOrderedLogit(.formula, .estimation.data, weights,
+            model <- fitOrderedLogit(.formula, .estimation.data, weights,
                                      non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
-            model <- ordered.logit.output[["model"]]
-            .estimation.data <- ordered.logit.output[[".estimation.data"]]
         }
         else if (type == "Multinomial Logit")
         {
@@ -1522,21 +1518,6 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
         },
         warning.handler = .orderedLogitWarnings,
         error.handler = .orderedLogitErrors)
-    outcome.name <- OutcomeName(.formula, .estimation.data)
-    predictor.names <- AllVariablesNames(.formula, .estimation.data)
-    removed.predictors <- setdiff(predictor.names, c(names(model$coefficients), outcome.name))
-    if (length(removed.predictors) > 0 && any(dummy.variables <- grepDummyVars(predictor.names))) {
-        predictors.matching.dummy <- lapply(.estimation.data[dummy.variables], attr, "predictors.matching.dummy")
-        predictors.matching.dummy <- lapply(predictors.matching.dummy, function(x) x[!x %in% removed.predictors])
-        dummy.with.no.match <- lengths(predictors.matching.dummy) == 0L
-        if (any(dummy.with.no.match)) {
-            .estimation.data[names(predictors.matching.dummy)[dummy.with.no.match]] <- NULL
-            predictors.matching.dummy <- Filter(length, predictors.matching.dummy)
-        }
-        for (x in names(predictors.matching.dummy))
-            attr(.estimation.data[[x]], "predictors.matching.dummy") <- predictors.matching.dummy[[x]]
-    }
-    list(model = model, .estimation.data = .estimation.data)
 }
 
 #' @importFrom flipTransformations DichotomizeFactor
