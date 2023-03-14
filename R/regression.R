@@ -481,7 +481,7 @@ Regression <- function(formula = NULL,
     }
     outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
-    if(Sum(outcome.name == names(data), remove.missing = FALSE) > 1)
+    if (Sum(outcome.name == names(data), remove.missing = FALSE) > 1)
         stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
     if (!is.null(weights) & length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
@@ -637,7 +637,7 @@ Regression <- function(formula = NULL,
             mapping.variables <- lapply(dummy.variables,
                                         function(x) attr(.estimation.data[[x]], "predictors.matching.dummy"))
             names(mapping.variables) <- dummy.variables
-            aliased.dummy.vars <- vapply(mapping.variables, function(x) length(x) > 1, logical(1))
+            aliased.dummy.vars <- lengths(mapping.variables) > 1L
             if (any(aliased.dummy.vars))
                 aliasedDummyVariableWarning(data, mapping.variables[aliased.dummy.vars], show.labels, predictor.names)
             # Update formula to include dummy variables
@@ -1189,9 +1189,10 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model[["aic"]] <- aic[2]
             }
         }
-        else if (type == "Ordered Logit")
+        else if (type == "Ordered Logit") {
             model <- fitOrderedLogit(.formula, .estimation.data, weights,
                                      non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
+        }
         else if (type == "Multinomial Logit")
         {
             .estimation.data$weights <- CalibrateWeight(.weights)
@@ -1485,33 +1486,33 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             # Instead manually filter the data using the provided non.outlier.data column
             .estimation.data <- .estimation.data[, names(.estimation.data) != "non.outlier.data_GQ9KqD7YOf",
                                                  drop = FALSE]
-            .estimation.data <- .estimation.data[non.outlier.data_GQ9KqD7YOf, , drop = FALSE]
-            .design <- WeightedSurveyDesign(.estimation.data, weights[non.outlier.data_GQ9KqD7YOf])
+            .design <- WeightedSurveyDesign(.estimation.data[non.outlier.data_GQ9KqD7YOf, , drop = FALSE],
+                                            weights[non.outlier.data_GQ9KqD7YOf])
             out <- svyolr(.formula, .design, ...)
-            out$df <- out$edf
+            out[["df"]] <- out[["edf"]]
             # Compute the dAIC
             wt <- weights(.design)
-            out$deltabar <- mean(diag(out$Hessian %*% out$var))/mean(wt)
-            out$aic <- out$deviance + 2 * out$deltabar * out$df
+            out[["deltabar"]] <- mean(diag(out[["Hessian"]] %*% out[["var"]]))/mean(wt)
+            out[["aic"]] <- out[["deviance"]] + 2 * out[["deltabar"]] * out[["df"]]
             # Need this model element to handle the code in the predict.Regression method
-            out$model <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            out[["model"]] <- model.frame(.formula, model.frame(.design), na.action = na.pass)
             # Need linear predictor element to compute the surrogate residuals.
-            Terms <- attr(out$model, "terms")
-            x <- model.matrix(Terms, out$model)
+            Terms <- attr(out[["model"]], "terms")
+            x <- model.matrix(Terms, out[["model"]])
             # Remove intercept if if exists
             if  (length(xint <- match("(Intercept)", colnames(x), nomatch = 0)) > 0)
                 x <- x[, -xint, drop = FALSE]
             # Remove any colinear variables that were dropped by polr/svyolr
-            if (any(keep <- colnames(x) %in% names(out$coefficients)))
+            if (any(keep <- colnames(x) %in% names(out[["coefficients"]])))
                 x <- x[, keep, drop = FALSE]
-            out$lp <- drop(x %*% out$coefficients)
+            out[["lp"]] <- drop(x %*% out[["coefficients"]])
             # Give it the polr class to use the predict.polr method while using summary.svyolr method
             # Also allows the sure resids method to compute the mean via the polr method to get the linear
             # predictor.
             class(out) <- c("svyolr", "polr")
             # Retain the design and formula for later use
-            out$formula <- .formula
-            out$design <- .design
+            out[["formula"]] <- .formula
+            out[["design"]] <- .design
             out
         },
         warning.handler = .orderedLogitWarnings,
@@ -2159,11 +2160,9 @@ grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grep
 adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
 {
     model.formula <- formula(model)
-    formula.terms <- terms(model.formula)
     outcome.name <- as.character(attr(terms(model.formula), "variables"))[2]
-    outcome.variable <- data[[outcome.name]]
     design.data <- data[-which(names(data) == outcome.name)]
-    if (!any(sapply(design.data, function(x) any(is.na(x)))))
+    if (!any(vapply(design.data, anyNA, logical(1L))))
         return(estimation.data)
     # Compute means
     predictor.names <- attr(terms(model.formula), "term.labels")
@@ -2176,7 +2175,8 @@ adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
                                 function(x) attr(estimation.data[[x]], "predictors.matching.dummy"))
     names(mapping.variables) <- dummy.variables
     # dummy variables were aliased if mapping points to more than one original variable
-    aliased <- vapply(mapping.variables, function(x) length(x) > 1, logical(1))
+    aliased <- lengths(mapping.variables) > 1L
+    model.coefs <- model[["coefficients"]]
     if (any(aliased))
     {
         mapping.variables <- mapping.variables[aliased]
@@ -2187,10 +2187,11 @@ adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
                                   names(y) <- paste0(vars, ".dummy.var_GQ9KqD7YOf")
                                   y
                               })
-        model.coefs <- c(model$coefficients, unlist(extra.coefs))
-    } else
-        model.coefs <- model$coefficients
-    missing.replacements <- extractDummyAdjustedCoefs(model.coefs, means.from.data)
+        model.coefs <- c(model.coefs, unlist(extra.coefs))
+    }
+    # Apply filter since one of the predictors may have been removed from the model as its colinear
+    # and a dummy variable might be linked to it (it wont have a slope coefficient, so it will have length zero)
+    missing.replacements <- Filter(length, extractDummyAdjustedCoefs(model.coefs, means.from.data))
     missing.numeric <- vapply(names(missing.replacements),
                               function(x) is.numeric(design.data[[x]]),
                               logical(1))
@@ -2206,8 +2207,7 @@ adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
         new.data <- new.data[cases.to.include, ]
     # Add outlier removal column
     new.data[["non.outlier.data_GQ9KqD7YOf"]] <- estimation.data[["non.outlier.data_GQ9KqD7YOf"]]
-    new.data <- CopyAttributes(new.data, data)
-    return(new.data)
+    CopyAttributes(new.data, data)
 }
 
 # Gives an informative message to the user if there are any aliased dummy variables

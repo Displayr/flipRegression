@@ -617,3 +617,39 @@ test_that("DS-3618: Dummy adjusted models with outlier removal ", {
     expect_setequal(setdiff(names(coef(first.model.fit)), names(coef(new.model))),
                     paste0("X", c(2, 4), ".dummy.var_GQ9KqD7YOf"))
 })
+
+test_that("DS-4188: No non-zero data after filtering and handling missing data in dummy adjustment", {
+    set.seed(4188)
+    Y <- rep(1:5, each = 10)
+    X1 <- 1L * (runif(50L) > Y / 6)
+    is.na(X1) <- sample.int(50L, size = 10L)
+    dat <- data.frame(Y, X1, X2 = NA)
+    # Create variable with only one non-zero value after subsetting
+    non.zero.x1 <- which.min(X1 != 0L)
+    dat[["X2"]][non.zero.x1] <- 0L
+    dat.filter <- logical(50L)
+    dat.filter[c(non.zero.x1, sample.int(50L, size = 25L))] <- TRUE
+    expected.warn <- paste0("The following variable(s) are colinear with other variables and no ",
+                            "coefficients have been estimated: 'X2'")
+    expect_warning(reg <- Regression(Y ~ X1 + X2, data = dat, missing = "Dummy variable adjustment",
+                                     subset = dat.filter),
+                   expected.warn, fixed = TRUE)
+    dat[["Y.ord"]] <- as.ordered(dat[["Y"]])
+    expected.warn <- paste0("Some variable(s) are colinear with other variables and they have been ",
+                            "removed from the estimation.")
+    expect_warning(reg <- Regression(Y.ord ~ X1 + X2, data = dat, missing = "Dummy variable adjustment",
+                                     subset = dat.filter, type = "Ordered Logit"),
+                   expected.warn, fixed = TRUE)
+    expected.error <- paste0("Each predictor needs to have at least two unique values to conduct a ",
+                             "Relative Importance Analysis. The predictor 'X2' is constant and has ",
+                             "no variation.")
+    # Additional earlier warning is generated about colinear variable being removed before RIA validates
+    # the input matrix
+    expect_warning(
+        expect_error(Regression(Y.ord ~ X1 + X2, data = dat,
+                                missing = "Dummy variable adjustment",
+                                subset = dat.filter, type = "Ordered Logit",
+                                output = "Relative Importance Analysis"),
+                   expected.error, fixed = TRUE),
+        expected.warn, fixed = TRUE)
+})

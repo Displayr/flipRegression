@@ -355,19 +355,19 @@ validateVariablesHaveVariation <- function(input.formula, data, outcome.name, ou
         data <- data[names(data) != "non.outlier.data_GQ9KqD7YOf"]
     }
     outcome <- data[[outcome.name]]
-    outcome.label <- if (show.labels) Labels(data, outcome.name) else outcome.name
-    outcome.label <- sQuote(outcome.label, q = FALSE)
-    outcome.msg <- paste0("The outcome variable, ", outcome.label, ", is constant and has no variation. The outcome needs ",
-                          "to have at least two unique values to conduct a ", output)
-    # Check predictor has no variation if numeric or factor.
-    .hasNoVariation <- function(x) if (is(x, "factor")) all(duplicated(x)[-1L]) else var(x, na.rm = TRUE) == 0
-    outcome.no.variation <- .hasNoVariation(outcome)
-    if (outcome.no.variation)
+    # Check outcome has no variation if numeric or factor.
+    outcome.no.variation <- hasNoVariation(outcome)
+    if (outcome.no.variation) {
+        outcome.label <- if (show.labels) Labels(data, outcome.name) else outcome.name
+        outcome.label <- sQuote(outcome.label, q = FALSE)
+        outcome.msg <- paste0("The outcome variable, ", outcome.label, ", is constant and has no variation. The outcome needs ",
+            "to have at least two unique values to conduct a ", output)
         throwRIAException(outcome.msg, group.name)
+    }
     # Outcome variable should be fine from here. Inspect the predictors
     predictors <- data[AllVariablesNames(input.formula, data)]
     predictors <- predictors[names(predictors) != outcome.name]
-    no.variation.vars <- vapply(predictors, .hasNoVariation, logical(1))
+    no.variation.vars <- vapply(predictors, hasNoVariation, logical(1))
     if (any(no.variation.vars))
     {
         no.variation.vars <- names(which(no.variation.vars))
@@ -382,6 +382,15 @@ validateVariablesHaveVariation <- function(input.formula, data, outcome.name, ou
                                    "conduct a ", output, ". ", no.variation.msg)
         throwRIAException(no.variation.msg, group.name)
     }
+}
+
+hasNoVariation <- function(x) {
+    if (is(x, "factor")) {
+        missing <- is.na(x)
+        if (all(missing)) return(TRUE)
+        return(all(duplicated(x[!missing])[-1L]))
+    }
+    sum(!is.na(x)) <= 1L || var(x, na.rm = TRUE) == 0
 }
 
 #' Throw the error or prepend the error message with a relevant category name reference for the cross
