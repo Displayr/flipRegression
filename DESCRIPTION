@@ -39,6 +39,7 @@ Remotes:
  Displayr/flipData,
  Displayr/flipStandardCharts,
  Displayr/flipStatistics,
+ Displayr/flipExampleData,
  Displayr/flipTransformations,
  Displayr/flipTables,
  Displayr/rhtmlHeatmap,
