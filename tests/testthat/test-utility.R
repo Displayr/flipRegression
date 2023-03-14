@@ -96,3 +96,26 @@ test_that("DS-4096: Informative error if arguments are not valid", {
                      "Robust standard errors cannot be computed with 'missing' set to")
 
 })
+
+test_that("DS-4188: Handle variables with no variation", {
+    # Numeric tests of hasNoVariation
+    x <- runif(5)
+    expect_false(hasNoVariation(x))
+    x <- rep(1, 5)
+    expect_true(hasNoVariation(x))
+    x <- rep(NA, 5)
+    expect_true(hasNoVariation(x))
+    x <- c(NA, NA, 1, NA, NA)
+    expect_true(hasNoVariation(x))
+    # Factor tests of hasNoVariation
+    x <- factor(letters[1:5])
+    expect_false(hasNoVariation(x))
+    x <- factor(rep("a", 5))
+    expect_true(hasNoVariation(x))
+    x <- factor(rep(NA, 5))
+    expect_true(hasNoVariation(x))
+    x <- factor(c(NA, NA, 1, NA, NA))
+    expect_true(hasNoVariation(x))
+    x <- factor(c(NA, 1, 1))
+    expect_true(hasNoVariation(x))
+})

@@ -385,8 +385,11 @@ validateVariablesHaveVariation <- function(input.formula, data, outcome.name, ou
 }
 
 hasNoVariation <- function(x) {
-    if (is(x, "factor"))
-        return(all(duplicated(x)[-1L]))
+    if (is(x, "factor")) {
+        missing <- is.na(x)
+        if (all(missing)) return(TRUE)
+        return(all(duplicated(x[!missing])[-1L]))
+    }
     sum(!is.na(x)) <= 1L || var(x, na.rm = TRUE) == 0
 }
 
