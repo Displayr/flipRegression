@@ -44,17 +44,20 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         fit2 <- FitRegression(formula.with.interaction, result$estimation.data, weights,
                               result$type, result$robust.se, result$outlier.prop.to.remove, ...)
         atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
-        if (!is.null(weights))
-        {
-            .design <- fit2$design
-            assign(".design", .design, envir=.GlobalEnv)
+        if (!is.null(weights)) {
+            env <- environment(fit2[["formula"]])
+            assign(".design", fit2[["design"]], envir = env)
+            assign("svyglm", svyglm, envir = env)
         }
         atmp <- anova(result$original, fit2$original, test=atest)
+
         res$anova.output <- atmp
         res$full.r2 <- ifelse (result$type == "Linear" & is.null(weights), summary(fit2$original)$r.square,
                                                         1 - deviance(fit2$original)/nullDeviance(result))
-        if (!is.null(weights))
-            remove(".design", envir=.GlobalEnv)
+        if (!is.null(weights)) {
+            remove(".design", envir = env)
+            remove("svyglm", envir = env)
+        }
 
         if (!internal.loop)
         {
