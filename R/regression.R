@@ -1354,7 +1354,7 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
                      hc4 = (1 - hat.values)^pmin(4, n * hat.values / p))
 
     # Catch the case where there are singularities in the robust.se calculation.
-    if (robust.se %in% c("hc3", "hc4")) {
+    if (!robust.se %in% c("hc0", "hc1")) {
         boundary.hat.values <- hat.values > 1 - sqrt(.Machine[["double.eps"]])
         factor[boundary.hat.values] <- df.res / n
     }
