@@ -483,6 +483,23 @@ new.grid <- unstacked.codeframe.swap$X[column.indices]
 new.grid <- flipU::CopyAttributes(new.grid, unstacked.codeframe.swap$X)
 unstacked.codeframe.swap$X <- new.grid
 
+remapToTrinary <- function(input) {
+    if (is.list(input)) {
+        output <- lapply(input, remapToTrinary) |>
+                      setNames(names(input)) |>
+                      as.data.frame()
+        return(CopyAttributes(output, input))
+    }
+    trinary <- as.integer(input)
+    trinary <- cut(trinary,
+                   breaks = c(-Inf, 4, 7, Inf),
+                   labels = c("Low", "Medium", "High")) |> factor()
+    trinary
+}
+trinary.stacked <- remapToTrinary(technology.stacked$Q3)
+trinary.unstacked <- remapToTrinary(technology.unstacked$Y)
+trinary.mod <- remapToTrinary(unstacked.codeframe.swap$Y)
+
 for (type in types)
     for (s in seq_along(subset.choices))
         for (w in seq_along(weight.choices))
@@ -497,6 +514,11 @@ for (type in types)
                     mod.technology.stacked$Q3 <- stacked.count
                     mod.technology.unstacked$Y <- count.Y
                     mod.technology.unstacked.swap$Y <- count.Y
+                }
+                if (type == "Multinomial Logit") {
+                    mod.technology.stacked$Q3 <- trinary.stacked
+                    mod.technology.unstacked$Y <- trinary.unstacked
+                    mod.technology.unstacked.swap$Y <- trinary.mod
                 }
                 stacked.regression <- suppressWarnings(Regression(stacked.formula, type = type,
                                                                   output = "Summary",
