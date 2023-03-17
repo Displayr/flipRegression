@@ -36,15 +36,14 @@ test_that("Linear method consistent with robustbase", {
     }
 })
 
-outlier.proportions <- (0:3) / 10
+outlier.proportions <- (0:3)/10
 
-linear.coef <- array(c(-1.459413, -1.295832, -1.117945, -1.386525, 0.383453, 0.382063,
-                       0.375983, 0.39975, 0.287438, 0.279689, 0.25785, 0.272563,
-                       0.365195, 0.349545, 0.318893, 0.382782, 0.292158, 0.284359,
-                       0.310889, 0.290508, 0.134204, 0.128732, 0.111658, 0.100294),
-                     dim = c(4L, 6L),
-                     dimnames = list(NULL,
-                                     c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+linear.coef <- structure(c(-1.459413, -1.295832, -1.117945, -1.386525, 0.383453,
+                           0.382063, 0.375983, 0.39975, 0.287438, 0.279689, 0.25785, 0.272563,
+                           0.365195, 0.349545, 0.318893, 0.382782, 0.292158, 0.284359, 0.310889,
+                           0.290508, 0.134204, 0.128732, 0.111658, 0.100294), .Dim = c(4L, 6L),
+                         .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
+
 linear.coef.with.weight <- structure(c(-1.477443, -1.389282, -1.139199, -1.494176, 0.384225,
                                        0.388478, 0.382247, 0.43022, 0.27378, 0.266267, 0.24448, 0.245963,
                                        0.36295, 0.349076, 0.308568, 0.372647, 0.300361, 0.307878, 0.313785,
@@ -84,8 +83,8 @@ test_that("Weighted Ordered Logit (svyolr)", {
     expect_error(regression <- Regression(bank.formula[["Ordered Logit"]], data = small.bank, weights = weight,
                                           type = "Ordered Logit", outlier.prop.to.remove = 0),
                  NA)
-    non.outlier.data <- findNonOutlierObservations(model = regression[["original"]],
-                                                   outlier.prop.to.remove= 0.1,
+    non.outlier.data <- findNonOutlierObservations(model = regression$original,
+                                                   outlier.prop.to.remove = 0.1,
                                                    seed = 12321)
     expected.error.message <- paste0("Removing outliers has removed all the observations in the outcome variable with",
                                      " level(s): 7. If possible, this issue could be solved by merging the categories ",
@@ -113,7 +112,7 @@ poisson.coef <- structure(c(-0.033102, 0.054263, 0.08203, -0.006858, 0.09939,
                             0.102068, 0.08594, 0.098248, 0.072796, 0.067073, 0.069967, 0.067454,
                             0.095385, 0.087733, 0.081678, 0.098152, 0.07608, 0.07944, 0.081667,
                             0.077377, 0.033132, 0.021127, 0.02856, 0.030338),
-                          .Dim = c(4L, 6L),
+                          .Dim = c(4L,6L),
                           .Dimnames = list(NULL, c("(Intercept)", "Fees", "Interest", "Phone", "Branch", "Online")))
 
 poisson.coef.with.weight <- structure(c(-0.038808, 0.030415, 0.052372, -0.031036, 0.099405,

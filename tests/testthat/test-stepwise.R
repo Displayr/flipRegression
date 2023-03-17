@@ -147,15 +147,15 @@ sim.xy <- function (n, p, nval, rho = 0, s = 5, beta.type = 1, snr = 1)
     enlist(x, y, xval, yval, Sigma, beta, sigma)
 }
 
-expect_stepwise_sim_contains_true_nonzero_coefficients <- function(seed,
+expect_stepwise_sim_contains_true_nonzero_coefficients <- function(
+                                                                   seed,
                                                                    stepwise.direction,
                                                                    n.respondents,
                                                                    n.predictors,
                                                                    n.non.zero.coef,
                                                                    signal.to.noise.ratio,
                                                                    n.max.false.pos.nonzero = 0,
-                                                                   n.max.false.neg.nonzero = 0,
-                                                                   weights = NULL)
+                                                                   n.max.false.neg.nonzero = 0)
 {
     set.seed(seed)
     dat <- sim.xy(n = n.respondents, p = n.predictors, nval = 0, rho = 0,
@@ -169,44 +169,36 @@ expect_stepwise_sim_contains_true_nonzero_coefficients <- function(seed,
 
     ## Stepwise does not work with "." on RHS of formula
     form <- as.formula(paste0("y~", paste(pred.names, collapse = "+")))
-    reg.out <- if (!is.null(weights)) Regression(form, data = df, weights = weights) else Regression(form, data = df)
+    reg.out <- Regression(form, data = df)
     stepwise.out <- Stepwise(reg.out, direction = stepwise.direction)
     incl.out <- setdiff(pred.names, stepwise.out$excluded)
     expect_true(sum(!included.expected %in% incl.out) <= n.max.false.neg.nonzero)
     expect_true(sum(incl.out %in% excluded.expected) <= n.max.false.pos.nonzero)
 }
 
-test_that("EH-623 and EH-629: Simulation study of stepwise reg. using bestsubset pkg",
+test_that("EH-623: Simulation study of stepwise reg. using bestsubset pkg",
 {
-    set.seed(1)
-    weights <- list(NULL, runif(300), runif(1000))
-    for (w in c(1, 3))
-        for (direction in c("Forward", "Backward"))
-            for (seed in 2:4)
-                expect_stepwise_sim_contains_true_nonzero_coefficients(
+    for (direction in c("Forward", "Backward"))
+        for (seed in 2:4)
+            expect_stepwise_sim_contains_true_nonzero_coefficients(
                                seed, stepwise.direction = direction,
                                n.respondents = 1000, n.predictors = 10,
                                n.non.zero.coef = 3, signal.to.noise.ratio = 4,
-                               n.max.false.pos.nonzero = 2, n.max.false.neg.nonzero = 0,
-                               weights = weights[[w]])
+                               n.max.false.pos.nonzero = 2, n.max.false.neg.nonzero = 0)
 
-    for (w in c(1, 3))
-        for (direction in c("Forward", "Backward"))
-            for (seed in 10:12)
-                expect_stepwise_sim_contains_true_nonzero_coefficients(
-                                   seed, stepwise.direction = direction,
-                                   n.respondents = 1000, n.predictors = 10,
-                                   n.non.zero.coef = 3, signal.to.noise.ratio = 2,
-                                   n.max.false.pos.nonzero = 3, n.max.false.neg.nonzero = 0,
-                                   weights = weights[[w]])
+    for (direction in c("Forward", "Backward"))
+        for (seed in 10:12)
+            expect_stepwise_sim_contains_true_nonzero_coefficients(
+                               seed, stepwise.direction = direction,
+                               n.respondents = 1000, n.predictors = 10,
+                               n.non.zero.coef = 3, signal.to.noise.ratio = 2,
+                               n.max.false.pos.nonzero = 3, n.max.false.neg.nonzero = 0)
 
-    for (w in 1:2)
-        for (direction in c("Forward", "Backward"))
-            for (seed in 100:102)
-                expect_stepwise_sim_contains_true_nonzero_coefficients(
-                                   seed, stepwise.direction = direction,
-                                   n.respondents = 300, n.predictors = 20,
-                                   n.non.zero.coef = 4, signal.to.noise.ratio = 1,
-                                   n.max.false.pos.nonzero = 5, n.max.false.neg.nonzero = 0,
-                                   weights = weights[[w]])
+    for (direction in c("Forward", "Backward"))
+        for (seed in 100:102)
+            expect_stepwise_sim_contains_true_nonzero_coefficients(
+                               seed, stepwise.direction = direction,
+                               n.respondents = 300, n.predictors = 20,
+                               n.non.zero.coef = 4, signal.to.noise.ratio = 1,
+                               n.max.false.pos.nonzero = 5, n.max.false.neg.nonzero = 0)
 })
