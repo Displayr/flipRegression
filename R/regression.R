@@ -931,8 +931,9 @@ tidySummary <- function(rsummary, fit.reg, result)
     }
     if (result$robust.se != FALSE)
     {
-        if (is.null(result$weights))
+        if(is.null(result$weights))
         {
+            #robust.coef <-  coeftest(result, vcov. = vcov(result, result$robust.se))
             robust.coef <-  coeftest(fit.reg, vcov. = vcov2(fit.reg, result$robust.se))
             colnames(robust.coef)[2] <- "Robust SE"
             class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
@@ -1319,55 +1320,28 @@ nobs.Regression <- function(object, ...)
 vcov.Regression <- function(object, robust.se = FALSE, ...)
     vcov2(object$original, robust.se, ...)
 
-#' Computes the variance-covariance matrix for a regression model, possibly adjusting for
-#' Heteroskedasticity and singularities.
-#' @param fit.reg A raw fitted regression model (not a Regression object,
-#'                but the contents of fit[["original"]] if fit is a Regression object).
-#' @param robust.se If \code{TRUE}, computes standard errors that are robust (the HCCM).
-#'                  If \code{FALSE}, then the regular standard errors are computed.
-#'                  If a string it should be one of \code{"hc0"}, \code{"hc1"}, \code{"hc2"},
-#'                  \code{"hc3"} or \code{"hc4"}.
-#' @return The HCCM or standard covariance matrix, possibly adjusted if the resultant matrix
-#'         is identified to be singular.
-#' @noRd
-#' @importFrom stats nobs
+#' @importFrom car hccm
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
     {
         v <- vcov(fit.reg)
-        if (!inherits(fit.reg, "svyglm"))
+        if(!inherits(fit.reg, "svyglm"))
             return(v)
-        return(FixVarianceCovarianceMatrix(v))
     }
-    if (robust.se == TRUE)
-        robust.se <- "hc3"
-
-    hat.values <- hatvalues(fit.reg)
-    df.res <- df.residual(fit.reg)
-    n <- nobs(fit.reg)
-    factor <- switch(robust.se,
-                     hc0 = 1,
-                     hc1 = df.res / n,
-                     hc2 = 1 - hat.values,
-                     hc3 = (1 - hat.values)^2,
-                     hc4 = (1 - hat.values)^pmin(4, n * hat.values / p))
-
-    # Catch the case where there are singularities in the robust.se calculation.
-    if (!robust.se %in% c("hc0", "hc1")) {
-        boundary.hat.values <- hat.values > 1 - sqrt(.Machine[["double.eps"]])
-        factor[boundary.hat.values] <- df.res / n
+    else
+    {
+        if (robust.se == TRUE)
+            robust.se <- "hc3"
+        # Catch the case where singularities in the robust.se calculation.
+        hat.values <- hatvalues(fit.reg)
+        if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
+            v <- hccmAdjust(fit.reg, robust.se, hat.values)
+        else
+            v <- hccm(fit.reg, type = robust.se)
     }
-    # Compute the HCCM
-    V <- summary(fit.reg)[["cov.unscaled"]]
-    e <- residuals(fit.reg)
-    df.res <- df.residual(fit.reg)
-    n <- length(e)
-    aliased <- is.na(coef(fit.reg))
-    X <- model.matrix(fit.reg[["terms"]], data = fit.reg[["model"]])[, !aliased, drop = FALSE]
-    p <- ncol(X)
-    v <- V %*% t(X) %*% apply(X, 2, "*", (e^2) / factor) %*% V
     FixVarianceCovarianceMatrix(v)
+    v
 }
 
 

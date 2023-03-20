@@ -354,32 +354,35 @@ issvyglm <- function(model)
 
 #' @importFrom effects allEffects
 #' @export
-allEffects.Regression <- function(mod, ...)
+allEffects.Regression <- function(model, ...)
 {
-    has.aliased <- any(mod$summary$aliased)
+    has.aliased <- any(aliased.var <- model$summary$aliased)
 
-    .estimation.data <-  mod$estimation.data
-    assign(".estimation.data", .estimation.data, envir = .GlobalEnv)
+    .estimation.data <-  model$estimation.data
+    assign(".estimation.data", .estimation.data, envir=.GlobalEnv)
 
     if (has.aliased)
-        mod <- updateAliasedModel(mod)
-    frml <- mod$formula
+        model <- updateAliasedModel(model)
+    frml <- model$formula
 
-    assign(".formula", frml, envir = .GlobalEnv)
-    assign(".design", mod$design, envir = .GlobalEnv)
+    assign(".formula", frml, envir=.GlobalEnv)
+    assign(".design", model$design, envir=.GlobalEnv)
     attach(.estimation.data, warn.conflicts = FALSE)
-    mod$original$data <- .estimation.data
-    effects <- allEffects(mod$original, ...)  # BreuschPagan(x$original)
+    model$original$data <- .estimation.data
+    effects <- allEffects(model$original, ...)  # BreuschPagan(x$original)
 
+    ## remove(".design", envir=.GlobalEnv)
+    ## remove(".formula", envir=.GlobalEnv)
+    ## remove(".estimation.data", envir=.GlobalEnv)
     on.exit({
         if (".estimation.data" %in% search())
             detach(".estimation.data")
         if (exists(".formula", envir = .GlobalEnv))
-            remove(".formula", envir = .GlobalEnv)
+            remove(".formula", envir=.GlobalEnv)
         if (exists(".estimation.data", envir = .GlobalEnv))
-            remove(".estimation.data", envir = .GlobalEnv)
+            remove(".estimation.data", envir=.GlobalEnv)
         if (exists("design", envir = .GlobalEnv))
-            remove(".design", envir = .GlobalEnv)
+            remove(".design", envir=.GlobalEnv)
     })
     effects
 }
