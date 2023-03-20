@@ -931,8 +931,9 @@ tidySummary <- function(rsummary, fit.reg, result)
     }
     if (result$robust.se != FALSE)
     {
-        if (is.null(result$weights))
+        if(is.null(result$weights))
         {
+            #robust.coef <-  coeftest(result, vcov. = vcov(result, result$robust.se))
             robust.coef <-  coeftest(fit.reg, vcov. = vcov2(fit.reg, result$robust.se))
             colnames(robust.coef)[2] <- "Robust SE"
             class(robust.coef) <- "matrix" # Fixing weird bug where robust.se changes class of matrix.
@@ -1180,12 +1181,18 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model$df <- NA
             else
             {
-                assign(".design", .design, envir = .GlobalEnv)
-                # Use the internal function to derive the AIC until survey author fixes/updates
-                aic <- extractSvyLmAIC(model)
-                remove(".design", envir = .GlobalEnv)
-                model[["df"]] <- aic[1]
-                model[["aic"]] <- aic[2]
+                assign(".design", .design, envir=.GlobalEnv)
+                aic <- try(extractAIC(model), silent = TRUE)
+                if (any("try-error" %in% class(aic)))
+                {
+                    warning("Error occurred when computing AIC. The most likely ",
+                            "explanation for this is this is a small sample size in ",
+                            "some aspect of the analysis. ")
+                    aic <- rep(NA, 2)
+                }
+                remove(".design", envir=.GlobalEnv)
+                model$df <- aic[1]
+                model$aic <- aic[2]
             }
         }
         else if (type == "Ordered Logit") {
@@ -1222,14 +1229,9 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                                family = poisson()),
                             "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                      family = quasipoisson()))
-            env <- environment(model[["formula"]])
-            assign(".design", .design, envir = env)
-            assign("svyglm", svyglm, envir = env)
-            on.exit({
-                remove(".design", envir = env)
-                remove("svyglm", envir = env)
-            })
+            assign(".design", .design, envir=.GlobalEnv)
             aic <- extractAIC(model)
+            remove(".design", envir=.GlobalEnv)
             model$df <- aic[1]
             model$aic <- aic[2]
         }

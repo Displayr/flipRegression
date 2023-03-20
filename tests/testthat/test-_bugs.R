@@ -9,7 +9,7 @@ attr(wgt, "label") <- "ID"
 bank$o2 <- factor(unclass(bank$Overall) > 3)
 
 
-type <- "Multinomial Logit"
+type = "Multinomial Logit"
 for(missing in c("Multiple imputation", "Imputation (replace missing values with estimates)",
                  "Exclude cases with missing data", "Dummy variable adjustment"))
         test_that(paste("DS-884 MNL with 2 category dependent variable", missing),
@@ -32,6 +32,17 @@ test_that("Poisson ANOVA p-values are very different to Regression + ignore robu
     # Removed support for robust se from regression 17 Nov 2016
     expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = "Poisson", robust.se = TRUE)))
 })
+
+
+#
+# test_that("DS-1174: object VR_set_net not found")
+#     type = "Multinomial Logit"
+#     z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank,type = type))
+#     expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, type = type)), NA)
+#           expect_error(capture.output(suppressWarnings(print(z))),NA)
+#       })
+#
+# })
 
 test_that("Duplicated labels",
 {
