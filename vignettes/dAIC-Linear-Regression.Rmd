@@ -1,0 +1,158 @@
+---
+title: "flipRegression - $d$AIC (design adjusted AIC) for Linear Regression"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{flipRegression - $d$AIC (design adjusted AIC) for Linear Regression}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
+bibliography: bibliography.bib
+---
+
+# Likelihood Theory for Linear Regression
+
+## Standard theory (unweighted)
+
+Consider the following linear regression model:
+\[
+    \boldsymbol{Y} \sim \mathcal N(\boldsymbol{X} \boldsymbol{\beta}, \sigma^2 \boldsymbol{I}) \quad \text{ or for an individual observation } \quad y \sim \mathcal N(\boldsymbol{x}^T \boldsymbol{\beta}, \sigma^2)
+\]
+
+where $\boldsymbol{x} = \left( 1, x_1, x_2, \ldots, x_m\right)^T \in \mathbb{R}^{m + 1}$ is a column vector of covariates, $\boldsymbol{X} = \left( \boldsymbol{x}_1, \boldsymbol{x}_2, \ldots, \boldsymbol{x}_n\right)^T$ is an $n \times (m + 1)$ matrix of covariates, $\boldsymbol{Y} = \left( y_1, y_2, \ldots, y_n\right)^T \in \mathbb{R}^n$ are the observed outcomes, $\boldsymbol{\beta} = \left( \beta_0, \beta_1, \beta_2, \ldots, \beta_m\right)\in \mathbb{R}^{m + 1}$ is a vector of regression coefficients, and $\sigma^2 \in \left\{\mathbb{R}_+\setminus 0\right\}$ is the variance of the error term with $\boldsymbol{I}$ being the $p \times p$ identity matrix.
+
+This model can be characterised in a parametric likelihood framework as follows:
+
+* The parameter space is defined with,
+\[
+    \boldsymbol{\theta} = \left( \boldsymbol{\beta}^T, \sigma^2\right) \in \mathbb{R}^{m+1} \cup \left\{\mathbb{R}_+\setminus 0\right\}
+\]
+* with the associated parametric likelihood function given by,
+\[
+    f_{\boldsymbol{\theta}}(\boldsymbol{y}|\boldsymbol{x}) = \frac{1}{\sqrt{2 \pi \sigma^2}} \exp\left(-\frac{(\boldsymbol{y} - \boldsymbol{x}^T \boldsymbol{\beta})^2}{2 \sigma^2}\right).
+\]
+
+The log likelihood function is given by,
+
+\begin{aligned}
+    \ell(\boldsymbol{\theta}) &= \log L(\boldsymbol{\theta} \mid \boldsymbol{Y}, \boldsymbol{X}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
+        &=: l^{[1]} + l^{[2]} + l^{[3]}
+\end{aligned}
+
+For convenience, define the unexplained variation as $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{0}, \sigma^2 \boldsymbol{I})$.
+
+Maximising the log likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
+
+\begin{aligned}
+    \mathcal{U}(\boldsymbol{\theta}) &= \begin{pmatrix} \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\ - \frac{1}{2\sigma^2} (n  - \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} \\
+        \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix}  - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2} & -\frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \\ -\frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2} &  \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3} \end{pmatrix}
+\end{aligned}
+
+_Proof:_ Looking at partial derivatives.
+
+\begin{aligned}
+    \frac{\partial \ell}{\partial \boldsymbol{\beta}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\beta}} = \frac{\partial{l^{[2]}}}{\partial \boldsymbol{\beta}} = \boldsymbol{0}\\
+    l^{[3]} &=- (\boldsymbol{Y}^T\boldsymbol{Y} - \boldsymbol{Y}^T\boldsymbol{X}\boldsymbol{\beta} - \boldsymbol{\beta}^T \boldsymbol{X}^T \boldsymbol{Y} + \boldsymbol{\beta} \boldsymbol{X}^T \boldsymbol{X} \boldsymbol{\beta})/(2 \sigma^2)\\
+        &\Downarrow\\
+    \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}} &= \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\
+\end{aligned}
+
+For the $\sigma^2$ component,
+
+
+\begin{aligned}
+    \frac{\partial \ell}{\partial \boldsymbol{\sigma^2}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\sigma^2}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\sigma^2}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\sigma^2}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\sigma^2}} = 0\\
+        &\Downarrow\\
+    \frac{\partial l^{[2]}}{\partial \boldsymbol{\sigma^2}} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \boldsymbol{\sigma^2}} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2)
+\end{aligned}
+
+Note that the score vector will be zero at the MLE giving,
+
+\begin{aligned}
+    \mathcal U(\widehat{\boldsymbol{\theta}}) = \boldsymbol{0} \Rightarrow \begin{cases} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/ \widehat{\sigma}^2 \Rightarrow \widehat{\boldsymbol{\beta}} = (\boldsymbol{X}^T\boldsymbol{X})^{-1}\boldsymbol{X}^T\boldsymbol{Y}\\ - \frac{1}{2\widehat{\sigma}^2} (n  - (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})^T(\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/(\widehat{\sigma}^2)) = 0 \Rightarrow \widehat{\sigma}^2 =  (\boldsymbol{Y} - \widehat{\boldsymbol{Y}})^T(\boldsymbol{Y} - \widehat{\boldsymbol{Y}})/n = \widehat{\boldsymbol{\varepsilon}}^T\widehat{\boldsymbol{\varepsilon}}/n\\
+     \end{cases}
+\end{aligned}
+
+The Hessian matrix is thus computed as,
+
+\begin{aligned}
+    \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix} \frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \sigma^2} \\ \frac{\partial^2 \ell}{\partial \sigma^2 \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \ell}{\partial \sigma^2 \partial \sigma^2} \end{pmatrix}\\
+        \frac{\partial^2\ell}{\partial\boldsymbol{\beta}\partial\boldsymbol{\beta}^T} &= \frac{\partial}{\partial\boldsymbol{\beta}^T} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}) / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2}\\
+        \frac{\partial^2\ell}{\partial\boldsymbol{\beta}\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \boldsymbol{X}^T \boldsymbol{\varepsilon}^T / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \Rightarrow \frac{\partial^2\ell}{\partial\sigma^2\partial\boldsymbol{\beta}^T} = - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2}\\
+        \frac{\partial^2\ell}{\partial\sigma^2\partial\sigma^2} &= -\frac{1}{2\sigma^2} \frac{\partial}{\partial\sigma^2} (n - \boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon} / \sigma^2) = \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3}
+\end{aligned}
+
+The theory of $d$AIC given in [@dAIC] considers the weighted likelihood function in the construction, so is explored below.
+
+## Weighted likelihood
+
+The parameter space and underlying model is still the same but a simple random sample is not assumed. Instead each observed unit is given a sample weight of $w_i$ to scale up each observation to reflect the occurrence in the population. More specifically, they are chosen such that $\sum_{i = 1}^n w_i = N$, the population total. Then the likelihood is estimated using the weighted estimator,
+\[
+    \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N}\sum_{i=1}^n w_i \ell_i(\boldsymbol{\theta})
+\]
+where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x}_i)$ an observation can be considered sampled with probability $1/w_i$. For convenience define $\boldsymbol{W} = \mathrm{diag}(w_i)_{i = 1}^n$ as the diagonal matrix of weights.
+
+Leveraging the earlier results from the unweighted likelihood, the likelihood takes the form,
+
+\begin{aligned}
+    \widehat{\ell}(\boldsymbol{\theta}) &= - \frac{1}{2} \log(2 \pi) - \frac{1}{2} \log \sigma^2 -  \frac{1}{N}\frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T\boldsymbol{W}(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}\\
+        &= - \frac{1}{2} \log(2 \pi) - \frac{1}{2} \log \sigma^2 -  \frac{1}{N}\frac{\boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}}{2\sigma^2}\\
+        &= \widehat{\ell}_1 + \widehat{\ell}_2 + \widehat{\ell}_3.
+\end{aligned}
+
+Maximising the log likelihood function in a similar manner to the unweighted case gives the weighted score vector $\widehat{\mathcal{U}} = \frac{\partial \widehat{\ell}}{\partial \boldsymbol{\theta}} = \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial l_i(\boldsymbol{\beta})}{\partial \boldsymbol{\beta}}$, and corresponding negative Hessian $\widehat{\mathcal J}(\boldsymbol{\theta}) = - \frac{\partial^2 \widehat{\ell}}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T} = - \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial^2\ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}\partial\boldsymbol{\theta}^T}$. Evaluating these leads to the equations,
+\[
+\widehat{\mathcal{U}}(\boldsymbol{\theta}) = \begin{pmatrix} \boldsymbol{X}^T\boldsymbol{W} \boldsymbol{\varepsilon}/ (N\sigma^2)\\ - \frac{1}{2N\sigma^2} (N  - \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} = \frac{1}{N} \sum_{i = 1}^n w_i \begin{pmatrix} \boldsymbol{x}_i^T \frac{(y_i - \boldsymbol{x}_i^T\boldsymbol{\beta})}{2\sigma^2}\\ - \frac{1}{2\sigma^2}  + \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2 (\sigma^2)^2}\end{pmatrix} =: \begin{pmatrix}  U_{\boldsymbol{\beta}}\\ U_{\sigma^2}\end{pmatrix}.
+\]
+\[
+    \widehat{\mathcal J}(\boldsymbol{\theta}) = \begin{pmatrix} \frac{\boldsymbol{X}^T \boldsymbol{W} \boldsymbol{X}}{N} & \frac{\boldsymbol{X}^T \boldsymbol{W} \boldsymbol{\varepsilon}}{N} \\
+                                                 \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W} \boldsymbol{X}}{N} & \frac{1}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W}\boldsymbol{\varepsilon}}{N(\sigma^2)^3}
+                                 \end{pmatrix}
+\]
+The proof is omitted for brevity but follows the same approach as the unweighted case. When the weighted score vector is set to zero, the weighted MLE is given by,
+
+\begin{aligned}
+    \widehat{\boldsymbol{\beta}} &= \left(\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{X}\right)^{-1}\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{Y}, \qquad       \widehat{\sigma}^2 = \frac{1}{N} \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}.
+\end{aligned}
+
+# $d$AIC
+
+Following the theory of [@dAIC], the $d$AIC is constructed using the weighted likelihood and an adjustment from the "design effect matrix" as in [@Rao-Scott-1984] as follows,
+
+\[
+    d\mathrm{AIC} = - 2n\widehat{\ell}(\widehat{\boldsymbol{\theta}}) + 2p \widehat{\overline{\delta}}
+\]
+where $\widehat{\ell}$ is the weighted likelihood and $\widehat{\boldsymbol{\theta}}$ the weighted MLE. The number of parameters $p = m + 2$ (includes the $m$ slope parameters, the intercept, $\beta_0$, and variance parameter, $\sigma^2$). The design effect adjustment value $\widehat{\overline{\delta}}$ is explained in the next section.
+
+## Design effect matrix, $\boldsymbol{\Delta}$
+
+The design effect matrix term $\boldsymbol{\Delta} = \mathcal I(\boldsymbol{\theta}^*) \boldsymbol{V}(\boldsymbol{\theta}^*)$ where $\boldsymbol{V}(\boldsymbol{\theta}^*)$ denotes the asymptotic covariance matrix of $\sqrt{n}\widehat{\boldsymbol{\theta}}$ and $\mathcal{I}(\boldsymbol{\theta}) = \mathbb{E} \widehat{\boldsymbol{\mathcal J}}(\boldsymbol{\theta})$ denotes the Fisher Information matrix and the expectation is taken with respect to the sampling design.
+\[
+    \mathcal I(\boldsymbol{\theta}) = \mathbb{E}\widehat{\boldsymbol{\mathcal J}}(\boldsymbol{\theta}) = \begin{pmatrix}  \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2} & \boldsymbol{0} \\ \boldsymbol{0}^T &  \frac{n}{2(\sigma^2)^2}\end{pmatrix} =: \begin{pmatrix} \mathcal I_{\boldsymbol{\beta}} & \boldsymbol{0}\\ \boldsymbol{0}^T & \mathcal I_{\sigma^2} \end{pmatrix},
+\]
+where $\boldsymbol{0}$ is a column vector of zeros of dimension $m +1$. Note that the regression parameters, $\boldsymbol{\beta}$, and the variance nuisance parameter, $\sigma^2$, are orthogonal. That is, in the sense that the Information matrix is block diagonal.
+
+The design effect adjustment is computed using $\boldsymbol{\Delta}$ with,
+\[
+    \overline{\delta} = \mathrm{trace}(\boldsymbol{\Delta}) / p.
+\]
+The blockwise diagonal form of $\mathcal I(\boldsymbol{\theta})$ allows the trace to be computed separately for the regression parameters and the variance nuisance parameter. Indeed, due to the form of the negative Hessian $\widehat{\mathcal J}(\boldsymbol{\theta})$, it follows that $\boldsymbol{V}(\boldsymbol{\theta})$ will be blockwise diagonal with,
+\[
+    \boldsymbol{V}(\boldsymbol{\theta}) = \begin{pmatrix} V_{\boldsymbol{\beta}} & \boldsymbol{0} \\ \boldsymbol{0}^T & V_{\sigma^2} \end{pmatrix} \Rightarrow \mathrm{trace}(\boldsymbol{\Delta}) = \mathrm{trace}(\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}}) + \mathrm{trace}(\mathcal I_{\boldsymbol{\sigma^2}}V_{\sigma^2}) = \mathrm{trace}(\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}}) +\mathcal I_{\boldsymbol{\sigma^2}}V_{\sigma^2}
+\]
+The trace calculation is split into the two components. One for the regression parameters and one for the variance nuisance parameter. The trace of the regression parameters is estimated routinely using the standard variance covariance matrices of the regression parameters in $\mathcal I_{\boldsymbol{\beta}}$ and $V_{\boldsymbol{\beta}}$. That is, define $\boldsymbol{V}_{\boldsymbol{\beta}, 0}$ to be the variance covariance matrix of $\boldsymbol{\beta}$ under simple random design and the variance covariance matrix under sampling weights to be $\boldsymbol{V}_{\boldsymbol{\beta}}$. Then simply $\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}} = \boldsymbol{V}_{\boldsymbol{\beta}, 0}^{-1}\boldsymbol{V}(\boldsymbol{\beta})$
+
+The $\sigma^2$ component of the calculation involves estimating the scalars $\mathcal I_{\sigma^2}$ and $V_{\sigma^2}$. The $\mathcal I_{\sigma^2}$ component can be estimated directly with $\widehat{\mathcal{I}}_{\sigma^2} = n /(2(\widehat{\sigma}^2)^2)$. To estimate $V_{\sigma^2}$, it can be done by estimating the $\sigma^2$ element in the Information matrix under the sampling weights and then taking the reciporical. To estimate the $\sigma^2$ element in the Information matrix, use the standard estimation equation as the variance of the score equation. Since the score equation is zero at the MLE it only requires computing the second moment of the score vector. The contribution of each observation to the $\sigma^2$ element in the score equation is defined,
+\[
+    U_{\sigma^2, i}(\boldsymbol{\theta}) := \frac{\partial l_i(\boldsymbol{\theta})}{\partial \sigma^2} = - \frac{1}{2\sigma^2} + \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2(\sigma^2)^2}.
+\]
+Therefore an estimate of the second moment and consequently variance of this component since the score vector is zero at the MLE is given by,
+\[
+    \widehat{\mathbb{V}\text{ar}}U_{\sigma^2} = \frac{1}{N}\sum_{i = 1}^n w_i U_{\sigma^2, i}^2(\widehat{\boldsymbol{\theta}}) = \frac{1}{N}\sum_{i = 1}^n w_i \left( - \frac{1}{2\widehat{\sigma}^2} + \frac{(y_i - \boldsymbol{x}_i^T \widehat{\boldsymbol{\beta}})^2}{2(\widehat{\sigma}^2)^2}\right)^2
+\]
+Thus the estimate of the covariance element $V_{\sigma^2}$ can be estimated with,
+\[
+    \widehat V_{\sigma^2} = \left(\mathbb{V}\text{ar} U_{\sigma^2}\right)^{-1}.
+\]
+Finally $\widehat{\overline{\delta}} = \widehat{\delta_{\boldsymbol{\beta}}} + \widehat{\delta_{\sigma^2}} = \mathrm{trace}(\widehat{\boldsymbol{V}}_{\boldsymbol{\beta}, 0}^{-1} \widehat{\boldsymbol{V}}_{\boldsymbol{\beta}}) + \widehat{\mathcal{I}}_{\sigma^2}\widehat{V}_{\sigma^2}$.
+
+## References
