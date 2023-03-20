@@ -176,3 +176,4 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
 
     return importance;
 }
+

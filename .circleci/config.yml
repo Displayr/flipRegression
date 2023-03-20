@@ -38,6 +38,7 @@ jobs:
 
       - run:
           name: "Run unit tests"
+          no_output_timeout: 60m
           command: >-
               R -e 'capture.output(out \<<- devtools::test(reporter = "junit"), file = "test_output.txt");
               results <- unlist(lapply(out, `[[`, "results"), recursive = FALSE);
