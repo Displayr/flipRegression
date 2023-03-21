@@ -1376,34 +1376,25 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
                   "model (e.g., using weights or robust standard errors where a sub-group in the analysis ",
                   "has no variation in its residuals, or lack of variation in one or more predictors.)")
     v <- x
-    v <- try(
-        {
-            if (min(eigen(v)$values) >= min.eigenvalue)
-                return(v)
-            v.diag <- diag(v)
-            n.similar.to.diag <- abs(sweep(v, 1, v.diag, "/"))
-            high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
-            # Adjust appropriate parts of diagonal if possible
-            if (any(high.r))
-                diag(v)[high.r] <- v.diag[high.r] * 1.01
-            else # Otherwise give overall adjustment if no offending terms found.
-                diag(v) <- diag(v) * 1.01
-            v
-        }, silent = TRUE
-    )
-    if (tryError(v))
-        stop("There is a technical problem with the parameter variance-covariance matrix.", wng)
-    else
-        warning("There is a technical problem with the parameter variance-covariance matrix ",
-                "that has been corrected.", wng)
+    v <- try({
+        if (min(eigen(v)$values) >= min.eigenvalue)
+           return(v)
+        v.diag <- diag(v)
+        n.similar.to.diag <- abs(v / v.diag)
+        high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
+        # Adjust appropriate parts of diagonal if possible
+        if (any(high.r)) {
+            diag(v)[high.r] <- v.diag[high.r] * 1.01
+        } else {# Otherwise give overall adjustment if no offending terms found.
+            diag(v) <- diag(v) * 1.01
+        }
+        v
+    }, silent = TRUE)
+    if (inherits(v, "try-error"))
+        stop("There is a technical problem with the parameter variance-covariance matrix. ", wng)
+    warning("There is a technical problem with the parameter variance-covariance matrix ",
+            "that has been corrected. ", wng)
     v
-}
-
-tryError <- function(x)
-{
-    if (any("try-error" %in% class(x)))
-        return(TRUE)
-    FALSE
 }
 
 # Warn for colinear variables, which have NA coeffient and are removed from summary table
@@ -1411,7 +1402,6 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
         names.aliased <- names(aliased)
-        dummy.aliased <- aliased[grepDummyVars(names.aliased)]
         alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
         regular.aliased <- aliased[!grepDummyVars(names.aliased)]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
