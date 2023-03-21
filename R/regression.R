@@ -1303,7 +1303,7 @@ vcov.Regression <- function(object, robust.se = FALSE, ...)
 #' @return The HCCM or standard covariance matrix, possibly adjusted if the resultant matrix
 #'         is identified to be singular.
 #' @noRd
-#' @importFrom stats nobs
+#' @importFrom stats nobs weights na.omit
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
@@ -1321,7 +1321,9 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
     n <- nobs(fit.reg)
     # Setup the parts to compute HCCM
     V <- summary(fit.reg)[["cov.unscaled"]]
-    e <- residuals(fit.reg)
+    if (is.null(model.weights <- weights(fit.reg)))
+        model.weights <- 1
+    e <- na.omit(residuals(fit.reg) * model.weights)
     df.res <- df.residual(fit.reg)
     n <- length(e)
     aliased <- is.na(coef(fit.reg))

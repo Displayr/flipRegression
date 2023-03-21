@@ -10,7 +10,7 @@ colas$balanced <- c(rep(1:3, rep(100,3)), rep(NA, 27))
 colas$agenumeric <- car::recode(colas$d1, as.factor = FALSE, recodes = "'18 to 24' = 21; '25 to 29' = 27; '30 to 34' = 32; '35 to 39' = 37; '40 to 44' = 42; '45 to 49' = 47; '50 to 54' = 52; '55 to 64' = 60; '65 or more' = 77")
 
 test_that("Stata Linearized Standard Errors with weights", {
-    z <- Regression(like.coke~d1, weights = colas$agenumeric, data = colas, robust.se = FALSE)
+    z <- Regression(like.coke ~ d1, weights = colas$agenumeric, data = colas, robust.se = FALSE)
     # se
     expect_equal(as.numeric(z$summary$coefficients[1:3, 2]), c( .1186729, .2204833, .1738284), tolerance = 0.0000001)
     # p
@@ -18,7 +18,7 @@ test_that("Stata Linearized Standard Errors with weights", {
 })
 
 test_that("Stata Robust Standard Errors", {
-    z <- Regression(like.coke~d1, data = colas, robust.se = "hc1", show.labels = TRUE)
+    z <- Regression(like.coke ~ d1, data = colas, robust.se = "hc1", show.labels = TRUE)
     # xtabs(~d1 + like.coke, data = colas)
     # data.frame(colas$d1, colas$like.coke)
     # table(colas$d1)
@@ -61,6 +61,6 @@ test_that("HCCM calculations", {
         expect_equal(vcov2(model, robust.se = type), sandwich::vcovHC(model, type = toupper(type)))
         # Adjustments not used for weighted models
         expect_equal(vcov2(weighted.model, robust.se = type),
-                     FixVarianceCovarianceMatrix(vcov(weighted.model)))
+                     car::hccm(weighted.model, type = type))
     }
 })
