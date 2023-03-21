@@ -1319,6 +1319,14 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
     hat.values <- hatvalues(fit.reg)
     df.res <- df.residual(fit.reg)
     n <- nobs(fit.reg)
+    # Setup the parts to compute HCCM
+    V <- summary(fit.reg)[["cov.unscaled"]]
+    e <- residuals(fit.reg)
+    df.res <- df.residual(fit.reg)
+    n <- length(e)
+    aliased <- is.na(coef(fit.reg))
+    X <- model.matrix(fit.reg[["terms"]], data = fit.reg[["model"]])[, !aliased, drop = FALSE]
+    p <- ncol(X)
     factor <- switch(robust.se,
                      hc0 = 1,
                      hc1 = df.res / n,
@@ -1332,13 +1340,6 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
         factor[boundary.hat.values] <- df.res / n
     }
     # Compute the HCCM
-    V <- summary(fit.reg)[["cov.unscaled"]]
-    e <- residuals(fit.reg)
-    df.res <- df.residual(fit.reg)
-    n <- length(e)
-    aliased <- is.na(coef(fit.reg))
-    X <- model.matrix(fit.reg[["terms"]], data = fit.reg[["model"]])[, !aliased, drop = FALSE]
-    p <- ncol(X)
     v <- V %*% t(X) %*% apply(X, 2, "*", (e^2) / factor) %*% V
     FixVarianceCovarianceMatrix(v)
 }
