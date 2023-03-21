@@ -57,6 +57,10 @@ test_that("HCCM calculations", {
     weighted.model <- survey::svyglm(y ~ x, design)
     expect_equal(vcov2(weighted.model), FixVarianceCovarianceMatrix(vcov(weighted.model)))
     # Check other robust adjustments
-    for (type in adjustments)
+    for (type in adjustments) {
         expect_equal(vcov2(model, robust.se = type), sandwich::vcovHC(model, type = toupper(type)))
+        # Adjustments not used for weighted models
+        expect_equal(vcov2(weighted.model, robust.se = type),
+                     FixVarianceCovarianceMatrix(vcov(weighted.model)))
+    }
 })
