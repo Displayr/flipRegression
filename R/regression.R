@@ -1292,28 +1292,57 @@ nobs.Regression <- function(object, ...)
 vcov.Regression <- function(object, robust.se = FALSE, ...)
     vcov2(object$original, robust.se, ...)
 
-#' @importFrom car hccm
+#' Computes the variance-covariance matrix for a regression model, possibly adjusting for
+#' Heteroskedasticity and singularities.
+#' @param fit.reg A raw fitted regression model (not a Regression object,
+#'                but the contents of fit[["original"]] if fit is a Regression object).
+#' @param robust.se If \code{TRUE}, computes standard errors that are robust (the HCCM).
+#'                  If \code{FALSE}, then the regular standard errors are computed.
+#'                  If a string it should be one of \code{"hc0"}, \code{"hc1"}, \code{"hc2"},
+#'                  \code{"hc3"} or \code{"hc4"}.
+#' @return The HCCM or standard covariance matrix, possibly adjusted if the resultant matrix
+#'         is identified to be singular.
+#' @noRd
+#' @importFrom stats nobs weights
 vcov2 <- function(fit.reg, robust.se = FALSE, ...)
 {
     if (robust.se == FALSE)
     {
         v <- vcov(fit.reg)
-        if(!inherits(fit.reg, "svyglm"))
+        if (!inherits(fit.reg, "svyglm"))
             return(v)
+        return(FixVarianceCovarianceMatrix(v))
     }
-    else
-    {
-        if (robust.se == TRUE)
-            robust.se <- "hc3"
-        # Catch the case where singularities in the robust.se calculation.
-        hat.values <- hatvalues(fit.reg)
-        if (any(hat.values == 1) && !robust.se %in% c("hc0", "hc1"))
-            v <- hccmAdjust(fit.reg, robust.se, hat.values)
-        else
-            v <- hccm(fit.reg, type = robust.se)
+    if (robust.se == TRUE)
+        robust.se <- "hc3"
+
+    hat.values <- hatvalues(fit.reg)
+    df.res <- df.residual(fit.reg)
+    n <- nobs(fit.reg)
+    # Setup the parts to compute HCCM
+    V <- summary(fit.reg)[["cov.unscaled"]]
+    if (is.null(model.weights <- weights(fit.reg)))
+        model.weights <- 1
+    e <- residuals(fit.reg) * model.weights
+    df.res <- df.residual(fit.reg)
+    aliased <- is.na(coef(fit.reg))
+    X <- model.matrix(fit.reg[["terms"]], data = fit.reg[["model"]])[, !aliased, drop = FALSE]
+    p <- ncol(X)
+    factor <- switch(robust.se,
+                     hc0 = 1,
+                     hc1 = df.res / n,
+                     hc2 = 1 - hat.values,
+                     hc3 = (1 - hat.values)^2,
+                     hc4 = (1 - hat.values)^pmin(4, n * hat.values / p))
+
+    # Catch the case where there are singularities in the robust.se calculation.
+    if (!robust.se %in% c("hc0", "hc1")) {
+        boundary.hat.values <- hat.values > 1 - sqrt(.Machine[["double.eps"]])
+        factor[boundary.hat.values] <- df.res / n
     }
+    # Compute the HCCM
+    v <- V %*% t(X) %*% apply(X, 2, "*", (e^2) / factor) %*% V
     FixVarianceCovarianceMatrix(v)
-    v
 }
 
 
@@ -1339,8 +1368,9 @@ vcov.FitRegression <- function(object, robust.se = FALSE, ...)
 #' @param min.eigenvalue Minimm acceptable eigenvalue.
 #' @details Sandwich and sandwich-like standard errors can result uninvertable
 #' covariance matrices (e.g., if a parameter represents a sub-group, and the sub-group has no
-#' residual variance). This function checks to see if there are any eigenvalues less than \code{min.eigenvalue},
-#' which defaults to 1e-12. If there are, an attempt is made to guess the offending variances, and they are multiplied by 1.01.
+#' residual variance). This function checks to see if there are any eigenvalues less than
+#' \code{min.eigenvalue}, which defaults to 1e-12. If there are, an attempt is made to guess the
+#' offending variances, and they are multiplied by 1.01.
 #' @export
 FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
 {
@@ -1348,34 +1378,25 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
                   "model (e.g., using weights or robust standard errors where a sub-group in the analysis ",
                   "has no variation in its residuals, or lack of variation in one or more predictors.)")
     v <- x
-    v <- try(
-        {
-            if (min(eigen(v)$values) >= min.eigenvalue)
-                return(v)
-            v.diag <- diag(v)
-            n.similar.to.diag <- abs(sweep(v, 1, v.diag, "/"))
-            high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
-            # Adjust appropriate parts of diagonal if possible
-            if (any(high.r))
-                diag(v)[high.r] <- v.diag[high.r] * 1.01
-            else # Otherwise give overall adjustment if no offending terms found.
-                diag(v) <- diag(v) * 1.01
-            v
-        }, silent = TRUE
-    )
-    if (tryError(v))
-        stop("There is a technical problem with the parameter variance-covariance matrix.", wng)
-    else
-        warning("There is a technical problem with the parameter variance-covariance matrix ",
-                "that has been corrected.", wng)
+    v <- try({
+        if (min(eigen(v)$values) >= min.eigenvalue)
+           return(v)
+        v.diag <- diag(v)
+        n.similar.to.diag <- abs(v / v.diag)
+        high.r <- apply(n.similar.to.diag > 0.99, 1, sum) > 1
+        # Adjust appropriate parts of diagonal if possible
+        if (any(high.r)) {
+            diag(v)[high.r] <- v.diag[high.r] * 1.01
+        } else {# Otherwise give overall adjustment if no offending terms found.
+            diag(v) <- diag(v) * 1.01
+        }
+        v
+    }, silent = TRUE)
+    if (inherits(v, "try-error"))
+        stop("There is a technical problem with the parameter variance-covariance matrix. ", wng)
+    warning("There is a technical problem with the parameter variance-covariance matrix ",
+            "that has been corrected. ", wng)
     v
-}
-
-tryError <- function(x)
-{
-    if (any("try-error" %in% class(x)))
-        return(TRUE)
-    FALSE
 }
 
 # Warn for colinear variables, which have NA coeffient and are removed from summary table
@@ -1383,7 +1404,6 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
         names.aliased <- names(aliased)
-        dummy.aliased <- aliased[grepDummyVars(names.aliased)]
         alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
         regular.aliased <- aliased[!grepDummyVars(names.aliased)]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
@@ -2248,31 +2268,6 @@ extractDummyAdjustedCoefs <- function(coefficients, computed.means)
 
 extractDummyNames <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$")
     sapply(strsplit(string, dummy.pattern), "[", 1)
-
-# This function should only be called when
-# 1. Robust.se is requested and the method is not hc0 or hc1
-# 2. There are hat values at 1 (causing a singularity)
-# Arguments required are
-# 1. fit.reg: The original R regression object
-# 2. robust.se: The hc method string options are ("hc2", "hc3" or "hc4")
-# 3. h: the numeric hat values for all n observations.
-#' @importFrom stats df.residual model.matrix residuals coef
-hccmAdjust <- function(fit.reg, robust.se, h)
-{
-    # Setup the calculation like a standard call to hccm
-    V <- summary(fit.reg)$cov.unscaled
-    e <- residuals(fit.reg)
-    df.res <- df.residual(fit.reg)
-    n <- length(e)
-    aliased <- is.na(coef(fit.reg))
-    X <- model.matrix(fit.reg)[, !aliased, drop = FALSE]
-    p <- ncol(X)
-    # Replace the singularities with compuatable values.
-    # Using the the hc1 calculation for those cases.
-    factor <- switch(robust.se, hc2 = 1 - h, hc3 = (1 - h)^2, hc4 = (1 - h)^pmin(4, n * h/p))
-    factor[h == 1] <- df.res/n
-    V %*% t(X) %*% apply(X, 2, "*", (e^2)/factor) %*% V
-}
 
 reduceOutputSize <- function(fit)
 {

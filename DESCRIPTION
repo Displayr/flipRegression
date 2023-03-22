@@ -32,7 +32,8 @@ Imports: car,
  xml2
 Suggests: flipExampleData,
  testthat,
- robustbase
+ robustbase,
+ sandwich
 Remotes:
  cran/survey@4.0,
  Displayr/flipU,
