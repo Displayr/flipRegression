@@ -1325,7 +1325,6 @@ vcov2 <- function(fit.reg, robust.se = FALSE, ...)
         model.weights <- 1
     e <- residuals(fit.reg) * model.weights
     df.res <- df.residual(fit.reg)
-    n <- length(e)
     aliased <- is.na(coef(fit.reg))
     X <- model.matrix(fit.reg[["terms"]], data = fit.reg[["model"]])[, !aliased, drop = FALSE]
     p <- ncol(X)
