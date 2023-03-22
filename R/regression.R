@@ -1369,8 +1369,9 @@ vcov.FitRegression <- function(object, robust.se = FALSE, ...)
 #' @param min.eigenvalue Minimm acceptable eigenvalue.
 #' @details Sandwich and sandwich-like standard errors can result uninvertable
 #' covariance matrices (e.g., if a parameter represents a sub-group, and the sub-group has no
-#' residual variance). This function checks to see if there are any eigenvalues less than \code{min.eigenvalue},
-#' which defaults to 1e-12. If there are, an attempt is made to guess the offending variances, and they are multiplied by 1.01.
+#' residual variance). This function checks to see if there are any eigenvalues less than
+#' \code{min.eigenvalue}, which defaults to 1e-12. If there are, an attempt is made to guess the
+#' offending variances, and they are multiplied by 1.01.
 #' @export
 FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
 {
