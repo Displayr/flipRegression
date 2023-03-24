@@ -1282,18 +1282,26 @@ extractSvyLmAIC <- function(fit, k = 2) {
     eps <- y - mu.hat
     # Use ML estimate of sigma2
     sigma2.hat <- sum(eps^2 * w) / n.hat
+    # Compute the likelihood component of the AIC
     minus.2.ell.hat <- n.hat * (log(sigma2.hat) + 1 + log(2 * pi))
-    V0 <- fit[["naive.cov"]] * sigma2.hat
-    V <- vcov(fit)
+    # Construct the beta contribution to the design effect matrix
+    v.beta.zero <- fit[["naive.cov"]] * sigma2.hat
+    v.beta <- vcov(fit)
     # Compute the delta matrix for the regression coefficients
-    delta.mu <- solve(V0, V)
+    delta.beta.matrix <- solve(v.beta.zero, v.beta)
     # Compute the sigma2 component of the delta matrix
+    ## Information matrix for sigma2 in unweighted case
     i.sigma2 <- n.hat / (2 * sigma2.hat^2)
-    u.sigma2 <- -1 / (2 * sigma2.hat) + eps^2 / (2 * sigma2.hat^2)
-    h.sigma2 <- sum(w * u.sigma2^2)
-    delta.sigma2 <- h.sigma2 / i.sigma2
-    delta.bar <- mean(c(diag(delta.mu), delta.sigma2))
-    eff.p <- sum(diag(delta.mu)) + delta.sigma2
+    ## Estimate the covariance of sigma2 under sampling weights
+    ## Use the score equation estimator
+    u.sigma2.i <- -1 / (2 * sigma2.hat) + eps^2 / (2 * sigma2.hat^2)
+    var.sigma2 <-  1 / sum(w * u.sigma2.i^2)
+    delta.sigma2 <- i.sigma2 * var.sigma2
+    # Compute the overall design effects
+    delta.beta <- diag(delta.beta.matrix)
+    delta.bar <- mean(c(delta.beta, delta.sigma2))
+    eff.p <- sum(delta.beta, delta.sigma2)
+    # Compute the dAIC = -2LL + k * p * deltabar
     aic <- minus.2.ell.hat + k * eff.p
     c(eff.p = eff.p, AIC = aic, deltabar = delta.bar)
 }
