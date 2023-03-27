@@ -1421,10 +1421,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
 {
     .orderedLogitWarnings <- function(w) {
         if (w$message == "design appears to be rank-deficient, so dropping some coefs")
-            warning("Some variable(s) are colinear with other variables ",
-                    "and they have been removed from the estimation.")
-        else
-            warning(w$message)
+            return()
+        warning(w$message)
     }
     .orderedLogitErrors <- function(e) {
         if (exists(".design"))
