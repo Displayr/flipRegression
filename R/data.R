@@ -227,12 +227,12 @@ determineAliased <- function(input.formula, data, outcome.name)
         return(NULL)
     # Determine which predictors are aliased with each other, coercing to list if necessary
     aliased.variables <- data.frame(t(aliased.variables), check.names = FALSE)
-    aliased.variable.names <- names(aliased.variables)
     var.deps <- row.names(aliased.variables)
     aliased.variables <- lapply(aliased.variables, function(x) var.deps[which(x != 0)])
     # Add aliased variables to their identified counterparts
     aliased.variables <- mapply(function(x, x.names) c(x, x.names), aliased.variables, names(aliased.variables),
                                 SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    all.aliased.variables <- unlist(aliased.variables)
     # Determine the variables in the formula
     formula.term.labels <- attr(terms(input.formula, data = data), "term.labels")
     # Determine all variables in contrast form as required
@@ -251,7 +251,8 @@ determineAliased <- function(input.formula, data, outcome.name)
                                      vapply(data[x], function(y) if (is(y, "factor")) "factor" else "numeric",
                                             character(1))
                                 })
-    grouped.predictors
+    structure(grouped.predictors,
+              all.aliased.variables = all.aliased.variables)
 }
 
 #' Helper function to throw an informative error when a user attempts to conduct a Relative Importance
