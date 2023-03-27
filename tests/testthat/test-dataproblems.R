@@ -641,8 +641,8 @@ test_that("DS-4188: No non-zero data after filtering and handling missing data i
                                      subset = dat.filter),
                    expected.warn, fixed = TRUE)
     dat[["Y.ord"]] <- as.ordered(dat[["Y"]])
-    expected.warn <- paste0("Some variable(s) are colinear with other variables and they have been ",
-                            "removed from the estimation.")
+    expected.warn <- paste0("The following variable(s) are colinear with other variables and no ",
+                            "coefficients have been estimated: 'X2'")
     expect_warning(reg <- Regression(Y.ord ~ X1 + X2, data = dat, missing = "Dummy variable adjustment",
                                      subset = dat.filter, type = "Ordered Logit"),
                    expected.warn, fixed = TRUE)

@@ -743,6 +743,8 @@ Regression <- function(formula = NULL,
     result$effects.format <- effects.format
 
     suppressWarnings(tmpSummary <- summary(result$original))
+    if (type == "Ordered Logit")
+        tmpSummary <- appendAliasedToPolrSummary(tmpSummary, .formula, result[["model"]], outcome.name)
     result$summary <- tidySummary(tmpSummary, result$original, result)
     result$summary$call <- cl
 
