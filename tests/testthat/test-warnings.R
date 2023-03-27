@@ -81,6 +81,8 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Mul
               set.seed(213)
               y  <- 1:100
               x <- rnorm(100, y, y)
+              if (type == "Multinomial Logit")
+                  y <- factor(cut(y, breaks = c(-Inf, 33, 66, Inf), Labels = c("Low", "Medium", "High")))
               warn <- switch(type, "Ordered Logit" = "NaNs produced",
                              "Binary Logit" = "y has been dichotimized", NA)
               expect_warning(out <- Regression(y ~ x, type = type), warn)
@@ -91,6 +93,8 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Mul
               set.seed(213)
               y  <- 101:200
               x <- rnorm(100, y, y)
+              if (type == "Multinomial Logit")
+                  y <- factor(cut(y, breaks = c(-Inf, 133, 166, Inf), Labels = c("Low", "Medium", "High")))
               expect_warning(out <- Regression(y ~ x, type = type), warn)
               if (type == "Linear")
                   ExpectWarning(out, "appears to contain categories")
