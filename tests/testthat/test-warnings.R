@@ -109,7 +109,8 @@ test_that("Removed aliased predictors",
               y <- z <- rnorm(100)
 
               expect_warning(Regression(x ~ y + z),
-                             "The following variable(s) are colinear with other variables and no coefficients have been estimated: 'z'",
+                             paste0("The following variable(s) are colinear with other variables and ",
+                                    "no coefficients have been estimated: 'z'"),
                              fixed = TRUE)
           })
 

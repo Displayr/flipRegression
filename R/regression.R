@@ -767,7 +767,7 @@ Regression <- function(formula = NULL,
         if (!is.null(label))
             result$outcome.label <- label
     }
-    aliased.warning.labels <- if (show.labels) Labels(data, names(result$summary$aliased)) else NULL
+    aliased.warning.labels <- if (show.labels) Labels(data, names(result$summary$aliased))
     if (!recursive.call)
         aliased.preds <- aliasedPredictorWarning(result$summary$aliased, aliased.warning.labels)
     else
@@ -944,7 +944,7 @@ tidySummary <- function(rsummary, fit.reg, result)
         else
             robust.se = FALSE
     }
-    else if (result$type == "Ordered Logit" & result$missing != "Multiple imputation")
+    else if (result$type == "Ordered Logit" && result$missing != "Multiple imputation")
     {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
         coefs <-  rsummary$coefficients
         ps <- 2 * pt(-abs(coefs[, 3]), df = rsummary$df.residual)
