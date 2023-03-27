@@ -109,17 +109,32 @@ test_that("Removed aliased predictors",
                              fixed = TRUE)
           })
 
-test_that("Removed aliased predictors (ordered logit)",
-          {
-              x  <- 1:100
-              y <- z <- rnorm(100)
+test_that("Removed aliased predictors (ordered logit)", {
+    x  <- rep(1:20, each = 5)
+    y <- z <- rnorm(100)
+    Z <- structure(z, label = "Fancy Z")
+    expect_warning(model <- polr(ordered(x) ~ y + z, Hess = FALSE),
+                   "design appears to be rank-deficient", fixed = TRUE)
 
-              expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
-                             paste0("Some variable(s) are colinear with other ",
-                                    "variables and they have been removed from ",
-                                    "the estimation."),
-                             fixed = TRUE)
-          })
+    expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'z'"),
+                   fixed = TRUE)
+    expect_warning(Regression(x ~ y + Z, type = "Ordered Logit", show.labels = TRUE),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'Fancy Z'"),
+                   fixed = TRUE)
+    y <- z <- factor(sample(letters[1:3], 100, replace = TRUE))
+    expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'zb', 'zc'"),
+                   fixed = TRUE)
+    Z <- structure(z, label = "Fancy Z")
+    expect_warning(Regression(x ~ y + Z, type = "Ordered Logit", show.labels = TRUE),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'Fancy Z: b', 'Fancy Z: c"),
+                   fixed = TRUE)
+})
 
 data(bank, package = "flipExampleData")
 test_that("No VIF warning with dummy variables", {
