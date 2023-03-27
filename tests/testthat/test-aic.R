@@ -15,7 +15,10 @@ test_that("EH-530: Weighted AIC calculations correct", {
     # Compute the unweighted model and its AIC
     reg.model <- lm(target.formula, data = apisrs)
     default.aic <- AIC(reg.model)
-
+    # Should align with TIC too
+    require("VGAM", quietly = TRUE)
+    vglm.model <- vglm(target.formula, data = apisrs, family = uninormal)
+    default.tic <- TIC(vglm.model)
     # Compute the svyglm with unit weights
     unit.weighted.lm <- survey::svyglm(target.formula, design = unit.design)
 
@@ -24,8 +27,9 @@ test_that("EH-530: Weighted AIC calculations correct", {
 
     survey.aic <- AIC(unit.weighted.svyglm)[["AIC"]]
 
-    # Unit weighted model AIC should be within 1% tolerance of the unweighted model
+    # Unit weighted model AIC should be within 1% tolerance of the unweighted model and TIC
     expect_true(abs((default.aic - computed.aic) / computed.aic) < 0.01)
+    expect_true(abs((default.tic - computed.aic) / computed.aic) < 0.01)
     # survey package is way off the mark (as of survey version 4.1-1)
     expect_false(abs((default.aic - survey.aic) / survey.aic) < 0.01)
     expect_gt(abs((default.aic - survey.aic) / survey.aic), 138)
