@@ -307,4 +307,21 @@ test_that("DS-3777 VIF is permissible for polr and svyolr models", {
     expect_true(is(w.ordered.logit$original, "svyolr"))
     expect_error(w.vif.table <- vif(w.ordered.logit), NA)
     expect_true(all(w.vif.table < 3) && length(w.vif.table) == 3L)
+    # Aliased predictor
+    dat[["X.2"]] <- dat[["X.1"]]
+    expect_warning(ordered.logit <- Regression(y ~ ., data = dat, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'X.2'"),
+                   fixed = TRUE)
+    expect_error(car::vif(ordered.logit[["original"]]),
+                 "subscript out of bounds")
+    expect_error(car::vif(ordered.logit),
+                 "Cannot compute VIF when there are aliased predictors in the model")
+    # Same for svyolr
+    expect_warning(w.ordered.logit <- Regression(y ~ ., weights = w, data = dat, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'X.2'"),
+                   fixed = TRUE)
+    expect_error(car::vif(w.ordered.logit),
+                 "Cannot compute VIF when there are aliased predictors in the model")
 })

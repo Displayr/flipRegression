@@ -266,16 +266,22 @@ UnusualObservations <- function(model)
 
 checkAcceptableModel <- function(x, classes, diagnostic, exclude.partial.data = TRUE)
 {
-  if (exclude.partial.data & x$missing == "Use partial data (pairwise correlations)")
-    stop(paste0("'", diagnostic, "' is not computed for model that are computed using 'Use partial data (pairwise correlations)'"))
-  if (!any(classes %in% class(x$original)))
-    stop(paste0(diagnostic, " is not computed for models of this type or class."))
+    diagnostic <- paste0("'", diagnostic, "'")
+    if (exclude.partial.data && x$missing == "Use partial data (pairwise correlations)")
+       stop(diagnostic, " is not computed for model that are computed ",
+            "using 'Use partial data (pairwise correlations)'")
+    if (!any(classes %in% class(x$original)))
+        stop(diagnostic, " is not computed for models of this type or class.")
+    # Can't produce VIF if there are aliased variables in the model
+    aliased.polr <- getModelType(x) == "Ordered Logit" && any(x[["summary"]][["aliased"]])
+    if (aliased.polr && diagnostic == "'vif'")
+        stop("Cannot compute VIF when there are aliased predictors in the model")
 }
 
 #' @export
 vif.Regression <- function (mod, ...)
 {
-  checkAcceptableModel(mod, c("lm", "glm", "polr", "svyolr"), "'vif'")
+  checkAcceptableModel(mod, c("lm", "glm", "polr", "svyolr"), "vif")
   res <- as.matrix(diagnosticTestFromCar(mod, "vif", ...))
   class(res) <- c(class(res), "visualization-selector")
   res
