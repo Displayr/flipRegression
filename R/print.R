@@ -44,11 +44,19 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
                          more appropriate."))
         else
         {
-            if (x$type == "Linear" & IsCount(outcome.variable) && x$output != "Jaccard Coefficient")
-                warning(paste0("The outcome variable appears to contain categories (i.e., the values are ",
-                               "non-negative integers). A limited dependent variable regression may be ",
-                               "more appropriate (e.g., Ordered Logit for ordered categories, Multinomial ",
-                               "Logit for unordered categories, Quasi-Poisson Regression for counts)."))
+            linear.type.and.count.outcome <- x$type == "Linear" && IsCount(outcome.variable)
+            if (linear.type.and.count.outcome)
+            {
+                MAX.UNIQUE.LEVELS.FOR.MNL <- 12
+                linear.type.with.count.outcome.msg <- paste0(
+                    "The outcome variable appears to contain categories (i.e., the values are ",
+                    "non-negative integers). A limited dependent variable regression may be ",
+                    "more appropriate (e.g., Ordered Logit for ordered categories, Multinomial ",
+                    "Logit for unordered categories, Quasi-Poisson Regression for counts).")
+                if (x$output != "Jaccard Coefficient" &&
+                    length(unique(outcome.variable)) <= MAX.UNIQUE.LEVELS.FOR.MNL)
+                warning(linear.type.with.count.outcome.msg, call. = FALSE)
+            }
         }
     }
     # # Creating a nicely formatted text description of the model.
