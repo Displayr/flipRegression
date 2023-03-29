@@ -502,15 +502,8 @@ appendAliasedToPolrSummary <- function(model.summary, .formula, data, outcome.na
     model.summary[["aliased"]] <- setNames(logical(nrow(coefs)), rownames(coefs))
     # If aliased are identified, update the logical vector
     if (!is.null(aliased)) {
-        # Determine the number of binary splits for each logit
-        if (!is(data[[outcome.name]], "factor"))
-            data[[outcome.name]] <- factor(data[[outcome.name]])
-        n.ordered.levels <- length(levels(droplevels(data[[outcome.name]]))) - 1L
-        # Extract only the coefficients for the predictors, last predictors are polr intercepts
-        n.coefs <- nrow(coefs) - n.ordered.levels
-        predictors <- rownames(coefs)[1:n.coefs]
         # Identify missing predictors and deem them aliased
-        aliased <- aliased[!aliased %in% predictors]
+        aliased <- aliased[!aliased %in% rownames(coefs)]
         model.summary[["aliased"]][aliased] <- TRUE
     }
     model.summary
