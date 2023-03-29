@@ -1405,12 +1405,12 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
 aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
-        names.aliased <- names(aliased)
-        alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
-        regular.aliased <- aliased[!grepDummyVars(names.aliased)]
+        if (!is.null(aliased.labels))
+            names(aliased) <- aliased.labels
+        regular.aliased <- aliased[!grepDummyVars(names(aliased))]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
                                   " coefficients have been estimated: ",
-                                  paste(sQuote(alias.vars[regular.aliased], q = FALSE), collapse = ", "))
+                                  paste(sQuote(names(which(regular.aliased)), q = FALSE), collapse = ", "))
         if (any(regular.aliased))
             warning(regular.warning)
         return(regular.aliased)
