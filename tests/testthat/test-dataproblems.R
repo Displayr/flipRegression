@@ -243,17 +243,23 @@ test_that("DS-2990: Test identification of aliased predictors and variables with
     expect_null(determineAliased(Y ~ X.1 + X.2 + X.3, data = dat, "Y"))
     # Expect named list of class types that are aliased
     expect_equal(determineAliased(Y ~ X.1 + X.2 + X.3 + X.4, data = dat, "Y"),
-                 single.group <- list(c("X.3" = "numeric", "X.4" = "numeric")))
+                 single.group <- structure(list(c("X.3" = "numeric", "X.4" = "numeric")),
+                                           all.aliased.variables = c("X.3", "X.4")))
     expect_equal(determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1, data = dat, "Y"),
                  single.group)
+    aliased.factors <- paste0("cat", c(rep(1:2, 3), 2), rep(LETTERS[2:5], c(2, 2, 2, 1)))
     expect_equal(determineAliased(Y ~ X.1 + X.2 + X.3 + X.4 + cat1 + cat2, data = dat, "Y"),
-                 mixed.group <- list(c("X.3" = "numeric", "X.4" = "numeric"),
-                                     c("cat1" = "factor", "cat2" = "factor")))
+                 mixed.group <- structure(list(c("X.3" = "numeric", "X.4" = "numeric"),
+                                               c("cat1" = "factor", "cat2" = "factor")),
+                                          all.aliased.variables = c("X.3", "X.4", aliased.factors)))
     expect_equal(determineAliased(Y ~ X.1 + X.2 + X.3 + X.6, data = dat, "Y"),
-                 long.two <- list(c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")))
+                 long.two <- structure(list(c("X.1" = "numeric", "X.2" = "numeric",
+                                              "X.3" = "numeric", "X.6" = "numeric")),
+                                       all.aliased.variables = c("X.1", "X.2", "X.3", "X.6")))
     expect_equal(determineAliased(Y ~ X.1 + X.2 + X.3 + X.5 + X.6, data = dat, "Y"),
-                 long.two <- list(c("X.3" = "numeric", "X.5" = "numeric"),
-                                  c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")))
+                 long.two <- structure(list(c("X.3" = "numeric", "X.5" = "numeric"),
+                                       c("X.1" = "numeric", "X.2" = "numeric", "X.3" = "numeric", "X.6" = "numeric")),
+                                       all.aliased.variables = paste0("X.", c(3, 5, 1, 2, 3, 6))))
     ## Check error message thrown is appropriate
     regular.labels <- c(paste0("X.", 1:6), paste0("cat", 1:2))
     fancy.labels <- c("Apples", "Oranges", "Grapes", "Banana", "Peaches", "Kiwi", "Lions", "Tigers")
@@ -635,8 +641,8 @@ test_that("DS-4188: No non-zero data after filtering and handling missing data i
                                      subset = dat.filter),
                    expected.warn, fixed = TRUE)
     dat[["Y.ord"]] <- as.ordered(dat[["Y"]])
-    expected.warn <- paste0("Some variable(s) are colinear with other variables and they have been ",
-                            "removed from the estimation.")
+    expected.warn <- paste0("The following variable(s) are colinear with other variables and no ",
+                            "coefficients have been estimated: 'X2'")
     expect_warning(reg <- Regression(Y.ord ~ X1 + X2, data = dat, missing = "Dummy variable adjustment",
                                      subset = dat.filter, type = "Ordered Logit"),
                    expected.warn, fixed = TRUE)

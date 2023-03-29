@@ -81,6 +81,8 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Mul
               set.seed(213)
               y  <- 1:100
               x <- rnorm(100, y, y)
+              if (type == "Multinomial Logit")
+                  y <- factor(cut(y, breaks = c(-Inf, 33, 66, Inf), Labels = c("Low", "Medium", "High")))
               warn <- switch(type, "Ordered Logit" = "NaNs produced",
                              "Binary Logit" = "y has been dichotimized", NA)
               expect_warning(out <- Regression(y ~ x, type = type), warn)
@@ -91,6 +93,8 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Mul
               set.seed(213)
               y  <- 101:200
               x <- rnorm(100, y, y)
+              if (type == "Multinomial Logit")
+                  y <- factor(cut(y, breaks = c(-Inf, 133, 166, Inf), Labels = c("Low", "Medium", "High")))
               expect_warning(out <- Regression(y ~ x, type = type), warn)
               if (type == "Linear")
                   ExpectWarning(out, "appears to contain categories")
@@ -105,21 +109,37 @@ test_that("Removed aliased predictors",
               y <- z <- rnorm(100)
 
               expect_warning(Regression(x ~ y + z),
-                             "The following variable(s) are colinear with other variables and no coefficients have been estimated: 'z'",
+                             paste0("The following variable(s) are colinear with other variables and ",
+                                    "no coefficients have been estimated: 'z'"),
                              fixed = TRUE)
           })
 
-test_that("Removed aliased predictors (ordered logit)",
-          {
-              x  <- 1:100
-              y <- z <- rnorm(100)
+test_that("Removed aliased predictors (ordered logit)", {
+    x  <- rep(1:20, each = 5)
+    y <- z <- rnorm(100)
+    Z <- structure(z, label = "Fancy Z")
+    expect_warning(model <- polr(ordered(x) ~ y + z, Hess = FALSE),
+                   "design appears to be rank-deficient", fixed = TRUE)
 
-              expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
-                             paste0("Some variable(s) are colinear with other ",
-                                    "variables and they have been removed from ",
-                                    "the estimation."),
-                             fixed = TRUE)
-          })
+    expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'z'"),
+                   fixed = TRUE)
+    expect_warning(Regression(x ~ y + Z, type = "Ordered Logit", show.labels = TRUE),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'Fancy Z'"),
+                   fixed = TRUE)
+    y <- z <- factor(sample(letters[1:3], 100, replace = TRUE))
+    expect_warning(Regression(x ~ y + z, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'zb', 'zc'"),
+                   fixed = TRUE)
+    Z <- structure(z, label = "Fancy Z")
+    expect_warning(Regression(x ~ y + Z, type = "Ordered Logit", show.labels = TRUE),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'Fancy Z: b', 'Fancy Z: c"),
+                   fixed = TRUE)
+})
 
 data(bank, package = "flipExampleData")
 test_that("No VIF warning with dummy variables", {
@@ -287,4 +307,21 @@ test_that("DS-3777 VIF is permissible for polr and svyolr models", {
     expect_true(is(w.ordered.logit$original, "svyolr"))
     expect_error(w.vif.table <- vif(w.ordered.logit), NA)
     expect_true(all(w.vif.table < 3) && length(w.vif.table) == 3L)
+    # Aliased predictor
+    dat[["X.2"]] <- dat[["X.1"]]
+    expect_warning(ordered.logit <- Regression(y ~ ., data = dat, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'X.2'"),
+                   fixed = TRUE)
+    expect_error(car::vif(ordered.logit[["original"]]),
+                 "subscript out of bounds")
+    expect_error(car::vif(ordered.logit),
+                 "Cannot compute VIF when there are aliased predictors in the model")
+    # Same for svyolr
+    expect_warning(w.ordered.logit <- Regression(y ~ ., weights = w, data = dat, type = "Ordered Logit"),
+                   paste0("The following variable(s) are colinear with other variables and ",
+                          "no coefficients have been estimated: 'X.2'"),
+                   fixed = TRUE)
+    expect_error(car::vif(w.ordered.logit),
+                 "Cannot compute VIF when there are aliased predictors in the model")
 })

@@ -743,6 +743,8 @@ Regression <- function(formula = NULL,
     result$effects.format <- effects.format
 
     suppressWarnings(tmpSummary <- summary(result$original))
+    if (type == "Ordered Logit")
+        tmpSummary <- appendAliasedToPolrSummary(tmpSummary, .formula, result[["model"]], outcome.name)
     result$summary <- tidySummary(tmpSummary, result$original, result)
     result$summary$call <- cl
 
@@ -765,7 +767,7 @@ Regression <- function(formula = NULL,
         if (!is.null(label))
             result$outcome.label <- label
     }
-    aliased.warning.labels <- if (show.labels) Labels(data, names(result$summary$aliased)) else NULL
+    aliased.warning.labels <- if (show.labels) Labels(data, names(result$summary$aliased))
     if (!recursive.call)
         aliased.preds <- aliasedPredictorWarning(result$summary$aliased, aliased.warning.labels)
     else
@@ -942,7 +944,7 @@ tidySummary <- function(rsummary, fit.reg, result)
         else
             robust.se = FALSE
     }
-    else if (result$type == "Ordered Logit" & result$missing != "Multiple imputation")
+    else if (result$type == "Ordered Logit" && result$missing != "Multiple imputation")
     {   #Tidying up Ordered Logit coefficients table to be consistent with the rest of R.
         coefs <-  rsummary$coefficients
         ps <- 2 * pt(-abs(coefs[, 3]), df = rsummary$df.residual)
@@ -1403,12 +1405,12 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
 aliasedPredictorWarning <- function(aliased, aliased.labels) {
     if (any(aliased))
     {
-        names.aliased <- names(aliased)
-        alias.vars <- if (!is.null(aliased.labels)) aliased.labels else names(aliased)
-        regular.aliased <- aliased[!grepDummyVars(names.aliased)]
+        if (!is.null(aliased.labels))
+            names(aliased) <- aliased.labels
+        regular.aliased <- aliased[!grepDummyVars(names(aliased))]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
                                   " coefficients have been estimated: ",
-                                  paste(sQuote(alias.vars[regular.aliased], q = FALSE), collapse = ", "))
+                                  paste(sQuote(names(which(regular.aliased)), q = FALSE), collapse = ", "))
         if (any(regular.aliased))
             warning(regular.warning)
         return(regular.aliased)
@@ -1421,10 +1423,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
 {
     .orderedLogitWarnings <- function(w) {
         if (w$message == "design appears to be rank-deficient, so dropping some coefs")
-            warning("Some variable(s) are colinear with other variables ",
-                    "and they have been removed from the estimation.")
-        else
-            warning(w$message)
+            return()
+        warning(w$message)
     }
     .orderedLogitErrors <- function(e) {
         if (exists(".design"))
