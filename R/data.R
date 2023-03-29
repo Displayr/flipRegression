@@ -502,6 +502,7 @@ appendAliasedToPolrSummary <- function(model.summary, .formula, data, outcome.na
     model.summary[["aliased"]] <- setNames(logical(nrow(coefs)), rownames(coefs))
     # If aliased are identified, update the logical vector
     if (!is.null(aliased)) {
+        aliased <- setdiff(aliased, "(Intercept)")
         # Identify missing predictors and deem them aliased
         aliased <- aliased[!aliased %in% rownames(coefs)]
         model.summary[["aliased"]][aliased] <- TRUE
