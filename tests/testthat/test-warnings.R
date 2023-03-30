@@ -75,7 +75,8 @@ test_that("Missing",
           })
 
 
-for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Multinomial Logit", "Ordered Logit"))
+for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD",
+               "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Categories", type),
           {
               set.seed(213)
@@ -86,12 +87,10 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD", "Mul
               warn <- switch(type, "Ordered Logit" = "NaNs produced",
                              "Binary Logit" = "y has been dichotimized", NA)
               expect_warning(out <- Regression(y ~ x, type = type), warn)
-              if (type == "Linear")
-                  ExpectWarning(out, "appears to contain categories")
-              else
-                  ExpectNoWarning(out, "appears to contain categories")
+              ExpectNoWarning(out, "appears to contain categories")
               set.seed(213)
-              y  <- 101:200
+              warn <- switch(type, "Binary Logit" = "y has been dichotimized", NA)
+              y  <- sample(12, 100, replace = TRUE)
               x <- rnorm(100, y, y)
               if (type == "Multinomial Logit")
                   y <- factor(cut(y, breaks = c(-Inf, 133, 166, Inf), Labels = c("Low", "Medium", "High")))
