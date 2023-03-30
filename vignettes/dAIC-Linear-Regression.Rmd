@@ -151,7 +151,7 @@ Therefore an estimate of the second moment and consequently variance of this com
 \]
 Thus the estimate of the covariance element $V_{\sigma^2}$ can be estimated with,
 \[
-    \widehat V_{\sigma^2} = \left(\mathbb{V}\text{ar} U_{\sigma^2}\right)^{-1}.
+    \widehat V_{\sigma^2} = \left(\widehat{\mathbb{V}\text{ar}} U_{\sigma^2}\right)^{-1}.
 \]
 Finally $\widehat{\overline{\delta}} = \widehat{\delta_{\boldsymbol{\beta}}} + \widehat{\delta_{\sigma^2}} = \mathrm{trace}(\widehat{\boldsymbol{V}}_{\boldsymbol{\beta}, 0}^{-1} \widehat{\boldsymbol{V}}_{\boldsymbol{\beta}}) + \widehat{\mathcal{I}}_{\sigma^2}\widehat{V}_{\sigma^2}$.
 
