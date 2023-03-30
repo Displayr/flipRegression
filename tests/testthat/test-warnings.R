@@ -87,6 +87,7 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD",
               expect_warning(out <- Regression(y ~ x, type = type), warn)
               ExpectNoWarning(out, "appears to contain categories")
               set.seed(213)
+              warn <- switch(type, "Binary Logit" = "y has been dichotimized", NA)
               y  <- sample(12, 100, replace = TRUE)
               x <- rnorm(100, y, y)
               expect_warning(out <- Regression(y ~ x, type = type), warn)
