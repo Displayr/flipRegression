@@ -93,7 +93,7 @@ for (type in c("Linear", "Poisson", "Quasi-Poisson", "Binary Logit", "NBD",
               y  <- sample(12, 100, replace = TRUE)
               x <- rnorm(100, y, y)
               if (type == "Multinomial Logit")
-                  y <- factor(cut(y, breaks = c(-Inf, 133, 166, Inf), Labels = c("Low", "Medium", "High")))
+                  y <- factor(cut(y, breaks = c(-Inf, 4, 8, Inf), Labels = c("Low", "Medium", "High")))
               expect_warning(out <- Regression(y ~ x, type = type), warn)
               if (type == "Linear")
                   ExpectWarning(out, "appears to contain categories")
