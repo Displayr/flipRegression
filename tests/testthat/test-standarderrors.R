@@ -53,8 +53,8 @@ test_that("HCCM calculations", {
     technical.problem <- "There is a technical problem with the parameter variance-covariance matrix"
     adjustments <- paste0("hc", 0:4)
     for (type in adjustments) {
-        # Expect car::hcmm to give a nasty error since their code is broken as it references an undefined variable
-        expect_error(car::hccm(quad.model, type = "hc0"), "object 'bads' not found")
+        # Expect car::hcmm to error that the matrix is singular
+        expect_error(car::hccm(quad.model, type = "hc0"), "hccm estimator is singular with rank")
         # Otherwise output should match sandwich::vcovHC and warn the user about the technical problem
         expect_warning(output <- vcov2(quad.model, robust.se = type), technical.problem)
         expect_equal(output, sandwich::vcovHC(quad.model, type = toupper(type)))
