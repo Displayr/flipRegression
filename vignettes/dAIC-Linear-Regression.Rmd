@@ -19,24 +19,24 @@ bibliography: bibliography.bib
 
 # Likelihood Theory for Linear Regression
 
-## Standard theory (unweighted)
+## Standard theory (unweighted) with correct model specification
 
 Consider the following linear regression model:
 \[
-    \boldsymbol{Y} \sim \mathcal N(\boldsymbol{X} \boldsymbol{\beta}_0, \sigma^2 \boldsymbol{I}) \quad \text{ or for an individual observation } \quad y \sim \mathcal N(\boldsymbol{x}^T \boldsymbol{\beta}_0, \sigma^2)
+    \boldsymbol{Y} \sim \mathcal N(\boldsymbol{X} \boldsymbol{\beta}_0, \sigma_0^2 \boldsymbol{I}) \quad \text{ or for an individual observation } \quad y \sim \mathcal N(\boldsymbol{x}^T \boldsymbol{\beta}_0, \sigma_0^2)
 \]
 
-where $\boldsymbol{x} = \left( 1, x_1, x_2, \ldots, x_m\right)^T \in \mathbb{R}^{m + 1}$ is a column vector of covariates, $\boldsymbol{X} = \left( \boldsymbol{x}_1, \boldsymbol{x}_2, \ldots, \boldsymbol{x}_n\right)^T$ is an $n \times (m + 1)$ matrix of covariates, $\boldsymbol{Y} = \left( y_1, y_2, \ldots, y_n\right)^T \in \mathbb{R}^n$ are the observed outcomes, $\boldsymbol{\beta} = \left( \beta_0, \beta_1, \beta_2, \ldots, \beta_m\right)\in \mathbb{R}^{m + 1}$ is a vector of regression coefficients, and $\sigma^2 \in \left\{\mathbb{R}_+\setminus 0\right\}$ is the variance of the error term with $\boldsymbol{I}$ being the $p \times p$ identity matrix.
+where $\boldsymbol{x} = \left( 1, x_1, x_2, \ldots, x_m\right)^T \in \mathbb{R}^{m + 1}$ is a column vector of covariates, $\boldsymbol{X} = \left( \boldsymbol{x}_1, \boldsymbol{x}_2, \ldots, \boldsymbol{x}_n\right)^T$ is an $n \times (m + 1)$ matrix of covariates, $\boldsymbol{Y} = \left( y_1, y_2, \ldots, y_n\right)^T \in \mathbb{R}^n$ are the observed outcomes, $\boldsymbol{\beta}_0 = \left( \beta_{0, 0}, \beta_{1, 0}, \beta_{2, 0}, \ldots, \beta_{m, 0}\right)\in \mathbb{R}^{m + 1}$ is a vector of regression coefficients, and $\sigma_0^2 \in \left\{\mathbb{R}_+\setminus 0\right\}$ is the variance of the error term with $\boldsymbol{I}$ being the $p \times p$ identity matrix.
 
 The goal is to estimate the true set of parameters $\boldsymbol{\theta}_0 = \left(\boldsymbol{\beta}_0, \sigma_0^2 \right)$ to gain insight into the population.
 
-Since the true parameters are unknown, the parametric family of models can be characterised in a parametric likelihood framework and the parameter vector estimated via maximisation. This is done as follows:
+Since the true parameters are unknown, the parametric family of models can be characterised in a parametric likelihood framework and the parameter vector estimated via maximisation (Maximum Likelihood Estimation or MLE). This is done as follows:
 
-* The parameter space is defined with,
+* The parameter space of all candidate models in the family is defined with,
 \[
     \boldsymbol{\theta} = \left( \boldsymbol{\beta}^T, \sigma^2\right) \in \mathbb{R}^{m+1} \cup \left\{\mathbb{R}_+\setminus 0\right\}
 \]
-* with the associated parametric likelihood function given by,
+with the associated parametric likelihood function given by,
 \[
     f_{\boldsymbol{\theta}}(\boldsymbol{y}|\boldsymbol{x}) = \frac{1}{\sqrt{2 \pi \sigma^2}} \exp\left(-\frac{(\boldsymbol{y} - \boldsymbol{x}^T \boldsymbol{\beta})^2}{2 \sigma^2}\right).
 \]
@@ -54,13 +54,13 @@ Then the overall log-likelihood function is given by,
 \end{aligned}
 \]
 
-For convenience, define the unexplained variation as $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}_0 \sim \mathcal N(\boldsymbol{0}, \sigma_0^2 \boldsymbol{I})$.
+For convenience, define the unexplained variation as $\boldsymbol{\varepsilon}_0 = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}_0 \sim \mathcal N(\boldsymbol{0}, \sigma_0^2 \boldsymbol{I})$. The candidate unexplained variation takes the form, $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{\beta}_0 - \boldsymbol{\beta}, \sigma_0^2 \boldsymbol{I})$
 
 Maximising the log-likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
 \[
 \begin{aligned}
     \mathcal{U}(\boldsymbol{\theta}) &= \begin{pmatrix} \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\ - \frac{1}{2\sigma^2} (n  - \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} \\
-        \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix}  - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2} & -\frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \\ -\frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2} &  \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3} \end{pmatrix}
+        \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix}  - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2} & -\frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \\ -\frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2} &  \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3} \end{pmatrix}.
 \end{aligned}
 \]
 
@@ -71,7 +71,7 @@ _Proof:_ Looking at partial derivatives.
     \frac{\partial \ell}{\partial \boldsymbol{\beta}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\beta}} = \frac{\partial{l^{[2]}}}{\partial \boldsymbol{\beta}} = \boldsymbol{0}\\
     l^{[3]} &=- (\boldsymbol{Y}^T\boldsymbol{Y} - \boldsymbol{Y}^T\boldsymbol{X}\boldsymbol{\beta} - \boldsymbol{\beta}^T \boldsymbol{X}^T \boldsymbol{Y} + \boldsymbol{\beta} \boldsymbol{X}^T \boldsymbol{X} \boldsymbol{\beta})/(2 \sigma^2)\\
         &\Downarrow\\
-    \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}} &= \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\
+    \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}} &= \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2.
 \end{aligned}
 \]
 
@@ -81,14 +81,14 @@ For the $\sigma^2$ component,
 \begin{aligned}
     \frac{\partial \ell}{\partial \sigma^2} &= \frac{\partial l^{[1]}}{\partial \sigma^2} + \frac{\partial l^{[2]}}{\partial \sigma^2} + \frac{\partial l^{[3]}}{\partial \sigma^2}; \quad \frac{\partial{l^{[1]}}}{\partial \sigma^2} = 0\\
         &\Downarrow\\
-    \frac{\partial l^{[2]}}{\partial \sigma^2} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \sigma^2} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2)
+    \frac{\partial l^{[2]}}{\partial \sigma^2} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \sigma^2} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2).
 \end{aligned}
 \]
 
 Note that the score vector will be zero at the MLE giving,
 \[
 \begin{aligned}
-    \mathcal U(\widehat{\boldsymbol{\theta}}) = \boldsymbol{0} \Rightarrow \begin{cases} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/ \widehat{\sigma}^2 \Rightarrow \widehat{\boldsymbol{\beta}} = (\boldsymbol{X}^T\boldsymbol{X})^{-1}\boldsymbol{X}^T\boldsymbol{Y}\\ - \frac{1}{2\widehat{\sigma}^2} (n  - (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})^T(\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/(\widehat{\sigma}^2)) = 0 \Rightarrow \widehat{\sigma}^2 =  (\boldsymbol{Y} - \widehat{\boldsymbol{Y}})^T(\boldsymbol{Y} - \widehat{\boldsymbol{Y}})/n = \widehat{\boldsymbol{\varepsilon}}^T\widehat{\boldsymbol{\varepsilon}}/n\\
+    \mathcal U(\widehat{\boldsymbol{\theta}}) = \boldsymbol{0} \Rightarrow \begin{cases} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/ \widehat{\sigma}^2 \Rightarrow \widehat{\boldsymbol{\beta}} = (\boldsymbol{X}^T\boldsymbol{X})^{-1}\boldsymbol{X}^T\boldsymbol{Y};\\ - \frac{1}{2\widehat{\sigma}^2} (n  - (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})^T(\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/(\widehat{\sigma}^2)) = 0 \Rightarrow \widehat{\sigma}^2 =  (\boldsymbol{Y} - \widehat{\boldsymbol{Y}})^T(\boldsymbol{Y} - \widehat{\boldsymbol{Y}})/n = \widehat{\boldsymbol{\varepsilon}}^T\widehat{\boldsymbol{\varepsilon}}/n.
      \end{cases}
 \end{aligned}
 \]
@@ -102,7 +102,7 @@ The Hessian matrix is thus computed as,
         \frac{\partial^2\ell}{\partial\sigma^2\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \left(-\frac{n}{2\sigma^2} + \frac{\boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon}}{2(\sigma^2)^2}\right) = \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3}
 \end{aligned}
 \]
-The theory of $d$AIC given in [@dAIC] considers the weighted likelihood function in the construction, so is explored below.
+The theory of $d$AIC given in [@dAIC] considers an extension of the above unweighted likelihood and uses the weighted likelihood function in the construction.
 
 ## Weighted likelihood for multiple regression under sampling design
 
