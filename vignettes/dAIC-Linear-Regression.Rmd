@@ -1,7 +1,7 @@
 ---
 title: "flipRegression - $d$AIC (design adjusted AIC) for Linear Regression"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{flipRegression - $d$AIC (design adjusted AIC) for Linear Regression}
   %\VignetteEngine{knitr::rmarkdown}
@@ -33,54 +33,61 @@ This model can be characterised in a parametric likelihood framework as follows:
 
 The log likelihood function is given by,
 
+\[
 \begin{aligned}
     \ell(\boldsymbol{\theta}) &= \log L(\boldsymbol{\theta} \mid \boldsymbol{Y}, \boldsymbol{X}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
         &=: l^{[1]} + l^{[2]} + l^{[3]}
 \end{aligned}
+\]
 
 For convenience, define the unexplained variation as $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{0}, \sigma^2 \boldsymbol{I})$.
 
 Maximising the log likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
-
+\[
 \begin{aligned}
     \mathcal{U}(\boldsymbol{\theta}) &= \begin{pmatrix} \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\ - \frac{1}{2\sigma^2} (n  - \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} \\
         \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix}  - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2} & -\frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \\ -\frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2} &  \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3} \end{pmatrix}
 \end{aligned}
+\]
 
 _Proof:_ Looking at partial derivatives.
 
+\[
 \begin{aligned}
     \frac{\partial \ell}{\partial \boldsymbol{\beta}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\beta}} = \frac{\partial{l^{[2]}}}{\partial \boldsymbol{\beta}} = \boldsymbol{0}\\
     l^{[3]} &=- (\boldsymbol{Y}^T\boldsymbol{Y} - \boldsymbol{Y}^T\boldsymbol{X}\boldsymbol{\beta} - \boldsymbol{\beta}^T \boldsymbol{X}^T \boldsymbol{Y} + \boldsymbol{\beta} \boldsymbol{X}^T \boldsymbol{X} \boldsymbol{\beta})/(2 \sigma^2)\\
         &\Downarrow\\
     \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}} &= \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\
 \end{aligned}
+\]
 
 For the $\sigma^2$ component,
 
-
+\[
 \begin{aligned}
     \frac{\partial \ell}{\partial \boldsymbol{\sigma^2}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\sigma^2}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\sigma^2}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\sigma^2}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\sigma^2}} = 0\\
         &\Downarrow\\
     \frac{\partial l^{[2]}}{\partial \boldsymbol{\sigma^2}} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \boldsymbol{\sigma^2}} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2)
 \end{aligned}
+\]
 
 Note that the score vector will be zero at the MLE giving,
-
+\[
 \begin{aligned}
     \mathcal U(\widehat{\boldsymbol{\theta}}) = \boldsymbol{0} \Rightarrow \begin{cases} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/ \widehat{\sigma}^2 \Rightarrow \widehat{\boldsymbol{\beta}} = (\boldsymbol{X}^T\boldsymbol{X})^{-1}\boldsymbol{X}^T\boldsymbol{Y}\\ - \frac{1}{2\widehat{\sigma}^2} (n  - (\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})^T(\boldsymbol{Y} - \boldsymbol{X}\widehat{\boldsymbol{\beta}})/(\widehat{\sigma}^2)) = 0 \Rightarrow \widehat{\sigma}^2 =  (\boldsymbol{Y} - \widehat{\boldsymbol{Y}})^T(\boldsymbol{Y} - \widehat{\boldsymbol{Y}})/n = \widehat{\boldsymbol{\varepsilon}}^T\widehat{\boldsymbol{\varepsilon}}/n\\
      \end{cases}
 \end{aligned}
+\]
 
 The Hessian matrix is thus computed as,
-
+\[
 \begin{aligned}
     \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix} \frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \sigma^2} \\ \frac{\partial^2 \ell}{\partial \sigma^2 \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \ell}{\partial \sigma^2 \partial \sigma^2} \end{pmatrix}\\
         \frac{\partial^2\ell}{\partial\boldsymbol{\beta}\partial\boldsymbol{\beta}^T} &= \frac{\partial}{\partial\boldsymbol{\beta}^T} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}) / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2}\\
         \frac{\partial^2\ell}{\partial\boldsymbol{\beta}\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \boldsymbol{X}^T \boldsymbol{\varepsilon}^T / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \Rightarrow \frac{\partial^2\ell}{\partial\sigma^2\partial\boldsymbol{\beta}^T} = - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2}\\
         \frac{\partial^2\ell}{\partial\sigma^2\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \left(-\frac{n}{2\sigma^2} + \frac{\boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon}}{2(\sigma^2)^2}\right) = \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3}
 \end{aligned}
-
+\]
 The theory of $d$AIC given in [@dAIC] considers the weighted likelihood function in the construction, so is explored below.
 
 ## Weighted likelihood
@@ -92,13 +99,13 @@ The parameter space and underlying model is still the same but a simple random s
 where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x}_i)$ an observation can be considered sampled with probability $1/w_i$. For convenience define $\boldsymbol{W} = \mathrm{diag}(w_i)_{i = 1}^n$ as the diagonal matrix of weights.
 
 Leveraging the earlier results from the unweighted likelihood, the log-likelihood takes the form,
-
+\[
 \begin{aligned}
     \widehat{\ell}(\boldsymbol{\theta}) &= - \frac{1}{2} \log(2 \pi) - \frac{1}{2} \log \sigma^2 -  \frac{1}{N}\frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T\boldsymbol{W}(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}\\
         &= - \frac{1}{2} \log(2 \pi) - \frac{1}{2} \log \sigma^2 -  \frac{1}{N}\frac{\boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}}{2\sigma^2}\\
         &= \widehat{\ell}_1 + \widehat{\ell}_2 + \widehat{\ell}_3.
 \end{aligned}
-
+\]
 Maximising the log likelihood function in a similar manner to the unweighted case gives the weighted score vector $\widehat{\mathcal{U}} = \frac{\partial \widehat{\ell}}{\partial \boldsymbol{\theta}} = \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial l_i(\boldsymbol{\beta})}{\partial \boldsymbol{\beta}}$, and corresponding negative Hessian $\widehat{\mathcal J}(\boldsymbol{\theta}) = - \frac{\partial^2 \widehat{\ell}}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T} = - \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial^2\ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}\partial\boldsymbol{\theta}^T}$. Evaluating these leads to the equations,
 \[
 \widehat{\mathcal{U}}(\boldsymbol{\theta}) = \begin{pmatrix} \boldsymbol{X}^T\boldsymbol{W} \boldsymbol{\varepsilon}/ (N\sigma^2)\\ - \frac{1}{2N\sigma^2} (N  - \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} = \frac{1}{N} \sum_{i = 1}^n w_i \begin{pmatrix} \boldsymbol{x}_i^T \frac{(y_i - \boldsymbol{x}_i^T\boldsymbol{\beta})}{2\sigma^2}\\ - \frac{1}{2\sigma^2}  + \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2 (\sigma^2)^2}\end{pmatrix} =: \begin{pmatrix}  U_{\boldsymbol{\beta}}\\ U_{\sigma^2}\end{pmatrix}.
@@ -109,10 +116,11 @@ Maximising the log likelihood function in a similar manner to the unweighted cas
                                  \end{pmatrix}
 \]
 The proof is omitted for brevity but follows the same approach as the unweighted case. When the weighted score vector is set to zero, the weighted MLE is given by,
-
+\[
 \begin{aligned}
     \widehat{\boldsymbol{\beta}} &= \left(\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{X}\right)^{-1}\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{Y}, \qquad       \widehat{\sigma}^2 = \frac{1}{N} \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}.
 \end{aligned}
+\]
 
 # $d$AIC
 
