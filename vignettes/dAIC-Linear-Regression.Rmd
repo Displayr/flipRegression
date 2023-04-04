@@ -56,7 +56,7 @@ Then the overall log-likelihood function is given by,
 
 For convenience, define the unexplained variation as $\boldsymbol{\varepsilon}_0 = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}_0 \sim \mathcal N(\boldsymbol{0}, \sigma_0^2 \boldsymbol{I})$. The candidate unexplained variation takes the form, $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{\beta}_0 - \boldsymbol{\beta}, \sigma_0^2 \boldsymbol{I})$
 
-Maximising the log-likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
+Maximising the log-likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \mathcal L}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \mathcal L}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
 \[
 \begin{aligned}
     \mathcal{U}(\boldsymbol{\theta}) &= \begin{pmatrix} \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\ - \frac{1}{2\sigma^2} (n  - \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} \\
@@ -68,7 +68,7 @@ _Proof:_ Looking at partial derivatives.
 
 \[
 \begin{aligned}
-    \frac{\partial \ell}{\partial \boldsymbol{\beta}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\beta}} = \frac{\partial{l^{[2]}}}{\partial \boldsymbol{\beta}} = \boldsymbol{0}\\
+    \frac{\partial \mathcal L}{\partial \boldsymbol{\beta}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\beta}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\beta}} = \frac{\partial{l^{[2]}}}{\partial \boldsymbol{\beta}} = \boldsymbol{0}\\
     l^{[3]} &=- (\boldsymbol{Y}^T\boldsymbol{Y} - \boldsymbol{Y}^T\boldsymbol{X}\boldsymbol{\beta} - \boldsymbol{\beta}^T \boldsymbol{X}^T \boldsymbol{Y} + \boldsymbol{\beta} \boldsymbol{X}^T \boldsymbol{X} \boldsymbol{\beta})/(2 \sigma^2)\\
         &\Downarrow\\
     \frac{\partial l^{[3]}}{\partial \boldsymbol{\beta}} &= \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2.
@@ -79,7 +79,7 @@ For the $\sigma^2$ component,
 
 \[
 \begin{aligned}
-    \frac{\partial \ell}{\partial \sigma^2} &= \frac{\partial l^{[1]}}{\partial \sigma^2} + \frac{\partial l^{[2]}}{\partial \sigma^2} + \frac{\partial l^{[3]}}{\partial \sigma^2}; \quad \frac{\partial{l^{[1]}}}{\partial \sigma^2} = 0\\
+    \frac{\partial \mathcal L}{\partial \sigma^2} &= \frac{\partial l^{[1]}}{\partial \sigma^2} + \frac{\partial l^{[2]}}{\partial \sigma^2} + \frac{\partial l^{[3]}}{\partial \sigma^2}; \quad \frac{\partial{l^{[1]}}}{\partial \sigma^2} = 0\\
         &\Downarrow\\
     \frac{\partial l^{[2]}}{\partial \sigma^2} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \sigma^2} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2).
 \end{aligned}
@@ -96,10 +96,10 @@ Note that the score vector will be zero at the MLE giving,
 The Hessian matrix is thus computed as,
 \[
 \begin{aligned}
-    \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix} \frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \sigma^2} \\ \frac{\partial^2 \ell}{\partial \sigma^2 \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \ell}{\partial \sigma^2 \partial \sigma^2} \end{pmatrix}\\
-        \frac{\partial^2\ell}{\partial\boldsymbol{\beta}\partial\boldsymbol{\beta}^T} &= \frac{\partial}{\partial\boldsymbol{\beta}^T} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}) / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2}\\
-        \frac{\partial^2\ell}{\partial\boldsymbol{\beta}\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \boldsymbol{X}^T \boldsymbol{\varepsilon}^T / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \Rightarrow \frac{\partial^2\ell}{\partial\sigma^2\partial\boldsymbol{\beta}^T} = - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2}\\
-        \frac{\partial^2\ell}{\partial\sigma^2\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \left(-\frac{n}{2\sigma^2} + \frac{\boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon}}{2(\sigma^2)^2}\right) = \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3}
+    \mathcal{H}(\boldsymbol{\theta}) &= \begin{pmatrix} \frac{\partial^2 \mathcal L}{\partial \boldsymbol{\beta} \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \mathcal L}{\partial \boldsymbol{\beta} \partial \sigma^2} \\ \frac{\partial^2 \mathcal L}{\partial \sigma^2 \partial \boldsymbol{\beta}^T} & \frac{\partial^2 \mathcal L}{\partial \sigma^2 \partial \sigma^2} \end{pmatrix}\\
+        \frac{\partial^2\mathcal L}{\partial\boldsymbol{\beta}\partial\boldsymbol{\beta}^T} &= \frac{\partial}{\partial\boldsymbol{\beta}^T} \boldsymbol{X}^T (\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}) / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2}\\
+        \frac{\partial^2\mathcal L}{\partial\boldsymbol{\beta}\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \boldsymbol{X}^T \boldsymbol{\varepsilon}^T / \sigma^2 = - \frac{\boldsymbol{X}^T\boldsymbol{\varepsilon}}{(\sigma^2)^2} \Rightarrow \frac{\partial^2\mathcal L}{\partial\sigma^2\partial\boldsymbol{\beta}^T} = - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{X}}{(\sigma^2)^2}\\
+        \frac{\partial^2\mathcal L}{\partial\sigma^2\partial\sigma^2} &= \frac{\partial}{\partial\sigma^2} \left(-\frac{n}{2\sigma^2} + \frac{\boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon}}{2(\sigma^2)^2}\right) = \frac{n}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}}{(\sigma^2)^3}
 \end{aligned}
 \]
 The theory of $d$AIC given in [@dAIC] considers an extension of the above unweighted likelihood and uses the weighted likelihood function in the construction.
