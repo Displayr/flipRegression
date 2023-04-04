@@ -30,12 +30,16 @@ This model can be characterised in a parametric likelihood framework as follows:
 \[
     f_{\boldsymbol{\theta}}(\boldsymbol{y}|\boldsymbol{x}) = \frac{1}{\sqrt{2 \pi \sigma^2}} \exp\left(-\frac{(\boldsymbol{y} - \boldsymbol{x}^T \boldsymbol{\beta})^2}{2 \sigma^2}\right).
 \]
+* Each observation has log-likehood given by,
+\[
+    \ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x}_i) = - \frac{1}{2} \log(2 \pi) - \frac{1}{2}\log(\sigma^2) - \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2 \sigma^2}.
+\]
 
-The log likelihood function is given by,
+Then the overall log-likelihood function is given by,
 
 \[
 \begin{aligned}
-    \ell(\boldsymbol{\theta}) &= \log L(\boldsymbol{\theta} \mid \boldsymbol{Y}, \boldsymbol{X}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
+    \ell(\boldsymbol{\theta}) &= \sum_{i = 1}^n \ell_i(\boldsymbol{\theta}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
         &=: l^{[1]} + l^{[2]} + l^{[3]}
 \end{aligned}
 \]
@@ -92,9 +96,9 @@ The theory of $d$AIC given in [@dAIC] considers the weighted likelihood function
 
 ## Weighted likelihood
 
-The parameter space and underlying model is still the same but a simple random sample is not assumed. Instead each observed unit is given a sample weight of $w_i$ to scale up each observation to reflect the occurrence in the population. More specifically, they are chosen such that $\sum_{i = 1}^n w_i = N$, the population total. Then the log-likelihood is estimated using the weighted estimator,
+The parameter space and underlying model is still the same but a simple random sample is not assumed. Instead each observed unit is given a sample weight of $w_i$ to scale up each observation to reflect the occurrence in the population. More specifically, they are chosen such that $\sum_{i = 1}^n w_i = N$, the population total. Then the pseudo-log-likelihood equation is constructed using the weights,
 \[
-    \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N}\sum_{i=1}^n w_i \ell_i(\boldsymbol{\theta})
+    \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N}\sum_{i=1}^n w_i \ell_i(\boldsymbol{\theta}),
 \]
 where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x}_i)$ an observation can be considered sampled with probability $1/w_i$. For convenience define $\boldsymbol{W} = \mathrm{diag}(w_i)_{i = 1}^n$ as the diagonal matrix of weights.
 
