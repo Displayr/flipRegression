@@ -9,6 +9,14 @@ vignette: >
 bibliography: bibliography.bib
 ---
 
+# To-do list
+
+* Properly define the semi-parametric approach, i.e. data follows $g(x, y)$ but modelling choice of $f_\theta(y|x)$ chosen and MLE used.
+* Define $\theta^*$
+* Reconcile the sampling design approach and results that seem invariant in the expectation.
+* Add note about the rescaling of weights used in `survey` (i.e. $N = n$)
+* Add detail of block-wise diagonal calculation, i.e. $\Delta$ is block-wise diagonal with $I_B V_B$ in the top left and $I_S V_S$ in the bottom right.
+
 # Likelihood Theory for Linear Regression
 
 ## Standard theory (unweighted)
