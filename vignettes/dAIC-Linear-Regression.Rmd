@@ -102,7 +102,9 @@ The Hessian matrix is thus computed as,
 \]
 The theory of $d$AIC given in [@dAIC] considers the weighted likelihood function in the construction, so is explored below.
 
-## Weighted likelihood
+## Weighted likelihood for multiple regression under sampling design
+
+In the complex survey design approach, the observations $\left\{ (y_i, \boldsymbol{x}_i): i \in s\right\}$ are assumed to be derived from a sample $s$ of $n$ units drawn from a finite population of size $N$ using some probability sampling design. The data from the finite population are assumed to be generated from some distribution with joint density, $g(y, \boldsymbol{x})$. The desired modelling approach for the data is assumed to be a parametric model, $\left\{ f_{\boldsymbol{\theta}}(y|\boldsymbol{x}), \boldsymbol{\theta} \in \boldsymbol{\Theta}\right\}$. Later the case of multiple regression is explored.
 
 The parameter space and underlying model is still the same but a simple random sample is not assumed. Instead each observed unit is given a sample weight of $w_i$ to scale up each observation to reflect the occurrence in the population. More specifically, they are chosen such that $\sum_{i = 1}^n w_i = N$, the population total. Then the pseudo-log-likelihood equation is constructed using the weights,
 \[
