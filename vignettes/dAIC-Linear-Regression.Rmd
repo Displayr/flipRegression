@@ -126,7 +126,7 @@ The target parameter is $\boldsymbol{\theta}^*$ is the parametric value that is 
 
 The likelihood equation, $\ell(\boldsymbol{\theta})$ being a population mean parameter can be estimated using a sample mean. In the context of sampling design, use the estimator,
 \[
-    \widehat{\mathcal U}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i = 1}^n w_i \ell_i(\boldsymbol{\theta})
+    \widehat{\mathcal U}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial}{\partial \boldsymbol{\theta}}\ell_i(\boldsymbol{\theta})
 \]
 where the contribution to the likelihood by unit $i$ is given by $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i |\boldsymbol{x}_i)$.
 
