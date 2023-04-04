@@ -54,7 +54,7 @@ Then the overall log-likelihood function is given by,
 \end{aligned}
 \]
 
-For convenience, define the unexplained variation as $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{0}, \sigma^2 \boldsymbol{I})$.
+For convenience, define the unexplained variation as $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}_0 \sim \mathcal N(\boldsymbol{0}, \sigma_0^2 \boldsymbol{I})$.
 
 Maximising the log-likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
 \[
@@ -79,9 +79,9 @@ For the $\sigma^2$ component,
 
 \[
 \begin{aligned}
-    \frac{\partial \ell}{\partial \boldsymbol{\sigma^2}} &= \frac{\partial l^{[1]}}{\partial \boldsymbol{\sigma^2}} + \frac{\partial l^{[2]}}{\partial \boldsymbol{\sigma^2}} + \frac{\partial l^{[3]}}{\partial \boldsymbol{\sigma^2}}; \quad \frac{\partial{l^{[1]}}}{\partial \boldsymbol{\sigma^2}} = 0\\
+    \frac{\partial \ell}{\partial \sigma^2} &= \frac{\partial l^{[1]}}{\partial \sigma^2} + \frac{\partial l^{[2]}}{\partial \sigma^2} + \frac{\partial l^{[3]}}{\partial \sigma^2}; \quad \frac{\partial{l^{[1]}}}{\partial \sigma^2} = 0\\
         &\Downarrow\\
-    \frac{\partial l^{[2]}}{\partial \boldsymbol{\sigma^2}} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \boldsymbol{\sigma^2}} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2)
+    \frac{\partial l^{[2]}}{\partial \sigma^2} &= - \frac{n}{2\sigma^2}; \quad     \frac{\partial l^{[3]}}{\partial \sigma^2} = - \frac{\partial}{\partial \sigma^2} \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 \sigma^2) = \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon} / (2 (\sigma^2)^2)
 \end{aligned}
 \]
 
