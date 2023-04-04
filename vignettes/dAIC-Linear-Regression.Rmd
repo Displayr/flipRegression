@@ -23,12 +23,14 @@ bibliography: bibliography.bib
 
 Consider the following linear regression model:
 \[
-    \boldsymbol{Y} \sim \mathcal N(\boldsymbol{X} \boldsymbol{\beta}, \sigma^2 \boldsymbol{I}) \quad \text{ or for an individual observation } \quad y \sim \mathcal N(\boldsymbol{x}^T \boldsymbol{\beta}, \sigma^2)
+    \boldsymbol{Y} \sim \mathcal N(\boldsymbol{X} \boldsymbol{\beta}_0, \sigma^2 \boldsymbol{I}) \quad \text{ or for an individual observation } \quad y \sim \mathcal N(\boldsymbol{x}^T \boldsymbol{\beta}_0, \sigma^2)
 \]
 
 where $\boldsymbol{x} = \left( 1, x_1, x_2, \ldots, x_m\right)^T \in \mathbb{R}^{m + 1}$ is a column vector of covariates, $\boldsymbol{X} = \left( \boldsymbol{x}_1, \boldsymbol{x}_2, \ldots, \boldsymbol{x}_n\right)^T$ is an $n \times (m + 1)$ matrix of covariates, $\boldsymbol{Y} = \left( y_1, y_2, \ldots, y_n\right)^T \in \mathbb{R}^n$ are the observed outcomes, $\boldsymbol{\beta} = \left( \beta_0, \beta_1, \beta_2, \ldots, \beta_m\right)\in \mathbb{R}^{m + 1}$ is a vector of regression coefficients, and $\sigma^2 \in \left\{\mathbb{R}_+\setminus 0\right\}$ is the variance of the error term with $\boldsymbol{I}$ being the $p \times p$ identity matrix.
 
-This model can be characterised in a parametric likelihood framework as follows:
+The goal is to estimate the true set of parameters $\boldsymbol{\theta}_0 = \left(\boldsymbol{\beta}_0, \sigma_0^2 \right)$ to gain insight into the population.
+
+Since the true parameters are unknown, the parametric family of models can be characterised in a parametric likelihood framework and the parameter vector estimated via maximisation. This is done as follows:
 
 * The parameter space is defined with,
 \[
@@ -38,7 +40,7 @@ This model can be characterised in a parametric likelihood framework as follows:
 \[
     f_{\boldsymbol{\theta}}(\boldsymbol{y}|\boldsymbol{x}) = \frac{1}{\sqrt{2 \pi \sigma^2}} \exp\left(-\frac{(\boldsymbol{y} - \boldsymbol{x}^T \boldsymbol{\beta})^2}{2 \sigma^2}\right).
 \]
-* Each observation has log-likehood given by,
+* Each observation has log-likelihood given by,
 \[
     \ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x}_i) = - \frac{1}{2} \log(2 \pi) - \frac{1}{2}\log(\sigma^2) - \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2 \sigma^2}.
 \]
@@ -54,7 +56,7 @@ Then the overall log-likelihood function is given by,
 
 For convenience, define the unexplained variation as $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{0}, \sigma^2 \boldsymbol{I})$.
 
-Maximising the log likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
+Maximising the log-likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \ell}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \ell}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
 \[
 \begin{aligned}
     \mathcal{U}(\boldsymbol{\theta}) &= \begin{pmatrix} \boldsymbol{X}^T \boldsymbol{\varepsilon}/ \sigma^2\\ - \frac{1}{2\sigma^2} (n  - \boldsymbol{\varepsilon}^T\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} \\
