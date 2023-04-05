@@ -11,11 +11,8 @@ bibliography: bibliography.bib
 
 # To-do list
 
-* Properly define the semi-parametric approach, i.e. data follows $g(x, y)$ but modelling choice of $f_\theta(y|x)$ chosen and MLE used.
-* Define $\theta^*$
-* Reconcile the sampling design approach and results that seem invariant in the expectation.
 * Add note about the rescaling of weights used in `survey` (i.e. $N = n$)
-* Add detail of block-wise diagonal calculation, i.e. $\Delta$ is block-wise diagonal with $I_B V_B$ in the top left and $I_S V_S$ in the bottom right.
+* Add detail of block-wise diagonal calculation, i.e. $\boldsymbol{\Delta}$ is block-wise diagonal with $I_B V_B$ in the top left and $I_S V_S$ in the bottom right.
 
 # Likelihood Theory for Linear Regression
 
@@ -49,7 +46,7 @@ Then the overall log-likelihood function is given by,
 
 \[
 \begin{aligned}
-    \mathcal L(\boldsymbol{\theta}) &= \sum_{i = 1}^n \ell_i(\boldsymbol{\theta}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
+    \mathcal L(\boldsymbol{\theta}) &= \sum_{i \in s} \ell_i(\boldsymbol{\theta}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
         &=: l^{[1]} + l^{[2]} + l^{[3]}
 \end{aligned}
 \]
@@ -121,22 +118,35 @@ This is motivated by the using the Kullback-Leibler divergence of the candidate 
 The target parameter is $\boldsymbol{\theta}^*$ is the parametric value that is the 'least false' which is the value that minimizes the Kullback-Leibler above (or equivalently, maximizer of $\ell(\boldsymbol{\theta}))$. In terms of the classical likelihood equations, this occurs at the superpopulation score equation,
 
 \[
-    \mathcal U(\boldsymbol{\theta}^*) = \mathbb{E}_g \left( \left.\frac{\partial \log f_{\boldsymbol{\theta}}(y|\boldsymbol{x})}{\partial \boldsymbol{\theta}}\right|_{\boldsymbol{\theta} = \boldsymbol{\theta}_0}\right) = 0.
+    \mathcal U(\boldsymbol{\theta}^*) = \mathbb{E}_g \left( \left.\frac{\partial \log f_{\boldsymbol{\theta}}(y|\boldsymbol{x})}{\partial \boldsymbol{\theta}}\right|_{\boldsymbol{\theta} = \boldsymbol{\theta}^*}\right) = 0.
 \]
 
-The likelihood equation, $\ell(\boldsymbol{\theta})$ being a population mean parameter can be estimated using a sample mean. In the context of sampling design, use the estimator,
+The likelihood equation, $\ell(\boldsymbol{\theta})$, being a population mean parameter is estimated using the weighted estimator,
 \[
-    \widehat{\mathcal U}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial}{\partial \boldsymbol{\theta}}\ell_i(\boldsymbol{\theta})
+    \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i \in s} w_i \ell_i(\boldsymbol{\theta})
+\]
+where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x})$ and the weights are assumed to scale $\sum_{i \in s}w_i = N$, the population total. To estimate the minimizer of $\ell(\boldsymbol{\theta})$ In the context of sampling design, use the estimator,
+\[
+    \widehat{\mathcal U}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i \in s} w_i \frac{\partial}{\partial \boldsymbol{\theta}}\ell_i(\boldsymbol{\theta})
 \]
 where the contribution to the likelihood by unit $i$ is given by $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i |\boldsymbol{x}_i)$.
 
-Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the is the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$
+Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the is the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$.
 
-The parameter space and underlying model is still the same but a simple random sample is not assumed. Instead each observed unit is given a sample weight of $w_i$ to scale up each observation to reflect the occurrence in the population. More specifically, they are chosen such that $\sum_{i = 1}^n w_i = N$, the population total. Then the pseudo-log-likelihood equation is constructed using the weights,
+Before computing the required terms in this analysis, the link between $\widehat{\boldsymbol{\theta}}$ and the AIC strategy of model assessment is covered. The model that matches the population likelihood the best will minimize the Kullback-Leibler above. The AIC strategy is to estimate this difference by estimating $Q_n = \mathbb{E}_g( \ell(\widehat{\boldsymbol{\theta}}))$ and selecting the model with the largest value.
+
+Theorem 1 of [@dAIC] showed the statistical properties of the naive estimator of $\widehat{\ell}(\widehat{\boldsymbol{\theta}})$ with,
 \[
-    \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N}\sum_{i=1}^n w_i \ell_i(\boldsymbol{\theta}),
+    \mathbb{E}_g(\widehat{\ell}(\widehat{\boldsymbol{\theta}})) = Q_n + \frac{1}{n} \mathrm{tr} \left\{ \boldsymbol{\Delta} \right\} + o_p(n^{-1})
 \]
-where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x}_i)$ an observation can be considered sampled with probability $1/w_i$. For convenience define $\boldsymbol{W} = \mathrm{diag}(w_i)_{i = 1}^n$ as the diagonal matrix of weights.
+where $\boldsymbol{\Delta} = \mathcal I(\boldsymbol{\theta}^*)\boldsymbol{V}(\boldsymbol{\theta}^*)$ and $\mathcal I(\boldsymbol{\theta}) = \mathbb{E}\widehat{\mathcal J}(\boldsymbol{\theta})$ and $\boldsymbol{V}(\boldsymbol{\theta}^*)$ being the asymptotic covariance matrix of $\sqrt{n}\widehat{\boldsymbol{\theta}}$.
+
+In particular, their proof utilizes the regularity conditions and results of Theorem 1.3.9 [@Fuller-2009] under the typical framework in survey estimation where it is supposed that there are a sequence of finite populations indexed by $\nu$ and a sequence of samples of size $n_\nu$ drawn from the $N_\nu$ units in the $\nu^{\mathrm th}$ population with a well-defined probability scheme. Then asymptotic normality and consistency is established with
+
+1. $\widehat{\boldsymbol{\theta}}_\nu$ is asymptotically normal with $\sqrt{n} (\widehat{\boldsymbol{\theta}}_{\nu}- \boldsymbol{\theta}^*) \stackrel{d}{\longrightarrow} \mathcal N(\boldsymbol{0}, \boldsymbol{V}(\boldsymbol{\theta}^*))$.
+2. If a sequence $\left\{\boldsymbol{\theta}_\nu \right\}$ are consistent estimators of $\boldsymbol{\theta}^*$, that is,$\boldsymbol{\theta}_\nu \stackrel{p}{\longrightarrow} \boldsymbol{\theta}^*$, then $\widehat{\mathcal J}_\nu(\boldsymbol{\theta}_\nu) \stackrel{p}{\longrightarrow} \mathcal I(\boldsymbol{\theta})$.
+
+Consider now the precise form of the likelihood equations in this weighted sampling design context. For convenience define $\boldsymbol{W} = \mathrm{diag}(w_i)_{i \in s}$ as the diagonal matrix of weights.
 
 Leveraging the earlier results from the unweighted likelihood, the log-likelihood takes the form,
 \[
@@ -146,20 +156,21 @@ Leveraging the earlier results from the unweighted likelihood, the log-likelihoo
         &= \widehat{\ell}_1 + \widehat{\ell}_2 + \widehat{\ell}_3.
 \end{aligned}
 \]
-Maximising the log likelihood function in a similar manner to the unweighted case gives the weighted score vector $\widehat{\mathcal{U}} = \frac{\partial \widehat{\ell}}{\partial \boldsymbol{\theta}} = \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial l_i(\boldsymbol{\beta})}{\partial \boldsymbol{\beta}}$, and corresponding negative Hessian $\widehat{\mathcal J}(\boldsymbol{\theta}) = - \frac{\partial^2 \widehat{\ell}}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T} = - \frac{1}{N} \sum_{i = 1}^n w_i \frac{\partial^2\ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}\partial\boldsymbol{\theta}^T}$. Evaluating these leads to the equations,
+Maximising the log likelihood function in a similar manner to the unweighted case gives the weighted score vector $\widehat{\mathcal{U}} = \frac{\partial \widehat{\ell}}{\partial \boldsymbol{\theta}} = \frac{1}{N} \sum_{i \in s} w_i \frac{\partial l_i(\boldsymbol{\beta})}{\partial \boldsymbol{\beta}}$, and corresponding negative Hessian $\widehat{\mathcal J}(\boldsymbol{\theta}) = - \frac{\partial^2 \widehat{\ell}}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T} = - \frac{1}{N} \sum_{i \in s} w_i \frac{\partial^2\ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}\partial\boldsymbol{\theta}^T}$. Evaluating these leads to the equations,
 \[
-\widehat{\mathcal{U}}(\boldsymbol{\theta}) = \begin{pmatrix} \boldsymbol{X}^T\boldsymbol{W} \boldsymbol{\varepsilon}/ (N\sigma^2)\\ - \frac{1}{2N\sigma^2} (N  - \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} = \frac{1}{N} \sum_{i = 1}^n w_i \begin{pmatrix} \boldsymbol{x}_i^T \frac{(y_i - \boldsymbol{x}_i^T\boldsymbol{\beta})}{2\sigma^2}\\ - \frac{1}{2\sigma^2}  + \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2 (\sigma^2)^2}\end{pmatrix} =: \begin{pmatrix}  U_{\boldsymbol{\beta}}\\ U_{\sigma^2}\end{pmatrix}.
+\widehat{\mathcal{U}}(\boldsymbol{\theta}) = \begin{pmatrix} \boldsymbol{X}^T\boldsymbol{W} \boldsymbol{\varepsilon}/ (N\sigma^2)\\ - \frac{1}{2N\sigma^2} (N  - \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}/(\sigma^2))\end{pmatrix} = \frac{1}{N} \sum_{i \in s} w_i \begin{pmatrix} \boldsymbol{x}_i^T \frac{(y_i - \boldsymbol{x}_i^T\boldsymbol{\beta})}{2\sigma^2}\\ - \frac{1}{2\sigma^2}  + \frac{(y_i - \boldsymbol{x}_i^T \boldsymbol{\beta})^2}{2 (\sigma^2)^2}\end{pmatrix} =: \begin{pmatrix}  U_{\boldsymbol{\beta}}\\ U_{\sigma^2}\end{pmatrix}.
 \]
 \[
     \widehat{\mathcal J}(\boldsymbol{\theta}) = \begin{pmatrix} \frac{\boldsymbol{X}^T \boldsymbol{W} \boldsymbol{X}}{N} & \frac{\boldsymbol{X}^T \boldsymbol{W} \boldsymbol{\varepsilon}}{N} \\
                                                  \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W} \boldsymbol{X}}{N} & \frac{1}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W}\boldsymbol{\varepsilon}}{N(\sigma^2)^3}
                                  \end{pmatrix}
 \]
-The proof is omitted for brevity but follows the same approach as the unweighted case. When the weighted score vector is set to zero, the weighted MLE is given by,
+The proof is omitted for brevity but follows the same approach as the unweighted case. From (1.3.78) in [@Fuller-2009] $\mathcal I(\boldsymbol{\theta}) = \mathbb{E}\mathcal J(\boldsymbol{\theta})$ can be estimated by $-\mathcal H(\boldsymbol{\theta})$, that is,
 \[
-\begin{aligned}
-    \widehat{\boldsymbol{\beta}} &= \left(\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{X}\right)^{-1}\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{Y}, \qquad       \widehat{\sigma}^2 = \frac{1}{N} \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}.
-\end{aligned}
+    \widehat{\mathcal J}(\boldsymbol{\theta}) = -\frac{1}{N}\sum_{i \in s} w_i \frac{\partial \ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T} = -\frac{1}{N}\sum_{i \in s}  \frac{\partial \ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}  + O_p(n^{-1/2}) = -\mathcal H(\boldsymbol{\theta}) + O_p(n^{-1/2})
+\]
+\[
+    \widehat{\boldsymbol{\beta}} = \left(\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{X}\right)^{-1}\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{Y}, \qquad       \widehat{\sigma}^2 = \frac{1}{N} \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}.
 \]
 
 # $d$AIC
@@ -171,21 +182,21 @@ Following the theory of [@dAIC], the $d$AIC is constructed using the weighted li
 \]
 where $\widehat{\ell}$ is the weighted likelihood and $\widehat{\boldsymbol{\theta}}$ the weighted MLE. The number of parameters $p = m + 2$ (includes the $m$ slope parameters, the intercept, $\beta_0$, and variance parameter, $\sigma^2$). The design effect adjustment value $\widehat{\overline{\delta}}$ is explained in the next section.
 
-## Design effect matrix, $\boldsymbol{\Delta}$
+## Estimating the design effect matrix, $\boldsymbol{\boldsymbol{\Delta}}$
 
-The design effect matrix term $\boldsymbol{\Delta} = \mathcal I(\boldsymbol{\theta}^*) \boldsymbol{V}(\boldsymbol{\theta}^*)$ where $\boldsymbol{V}(\boldsymbol{\theta}^*)$ denotes the asymptotic covariance matrix of $\sqrt{n}\widehat{\boldsymbol{\theta}}$ and $\mathcal{I}(\boldsymbol{\theta}) = \mathbb{E} \widehat{\boldsymbol{\mathcal J}}(\boldsymbol{\theta})$ denotes the Fisher Information matrix and the expectation is taken with respect to the sampling design.
+Recall the design effect matrix term $\boldsymbol{\boldsymbol{\Delta}} = \mathcal I(\boldsymbol{\theta}^*) \boldsymbol{V}(\boldsymbol{\theta}^*)$ where $\boldsymbol{V}(\boldsymbol{\theta}^*)$ denotes the asymptotic covariance matrix of $\sqrt{n}\widehat{\boldsymbol{\theta}}$. The estimate of $\mathcal I(\boldsymbol{\theta})$ is considered first.
 \[
-    \mathcal I(\boldsymbol{\theta}) = \mathbb{E}\widehat{\boldsymbol{\mathcal J}}(\boldsymbol{\theta}) = \begin{pmatrix}  \frac{\boldsymbol{X}^T\boldsymbol{X}}{\sigma^2} & \boldsymbol{0} \\ \boldsymbol{0}^T &  \frac{n}{2(\sigma^2)^2}\end{pmatrix} =: \begin{pmatrix} \mathcal I_{\boldsymbol{\beta}} & \boldsymbol{0}\\ \boldsymbol{0}^T & \mathcal I_{\sigma^2} \end{pmatrix},
+    \mathcal I(\boldsymbol{\theta}) = \mathbb{E}\widehat{\boldsymbol{\mathcal J}}(\boldsymbol{\theta}) \Rightarrow \widehat{\mathcal I}(\widehat{\boldsymbol{\theta}}) = \begin{pmatrix} \frac{\boldsymbol{X}^T\boldsymbol{X}}{\widehat{\sigma}^2} & \boldsymbol{0} \\ \boldsymbol{0}^T &  \frac{n}{2(\widehat{\sigma}^2)^2}\end{pmatrix} =: \begin{pmatrix} \mathcal I_{\boldsymbol{\beta}} & \boldsymbol{0}\\ \boldsymbol{0}^T & \mathcal I_{\sigma^2} \end{pmatrix},
 \]
 where $\boldsymbol{0}$ is a column vector of zeros of dimension $m +1$. Note that the regression parameters, $\boldsymbol{\beta}$, and the variance nuisance parameter, $\sigma^2$, are orthogonal. That is, in the sense that the Information matrix is block diagonal.
 
-The design effect adjustment is computed using $\boldsymbol{\Delta}$ with,
+The design effect adjustment is computed using $\boldsymbol{\boldsymbol{\Delta}}$ with,
 \[
-    \overline{\delta} = \mathrm{trace}(\boldsymbol{\Delta}) / p.
+    \overline{\delta} = \mathrm{trace}(\boldsymbol{\boldsymbol{\Delta}}) / p.
 \]
 The blockwise diagonal form of $\mathcal I(\boldsymbol{\theta})$ allows the trace to be computed separately for the regression parameters and the variance nuisance parameter. Indeed, due to the form of the negative Hessian $\widehat{\mathcal J}(\boldsymbol{\theta})$, it follows that $\boldsymbol{V}(\boldsymbol{\theta})$ will be blockwise diagonal with,
 \[
-    \boldsymbol{V}(\boldsymbol{\theta}) = \begin{pmatrix} V_{\boldsymbol{\beta}} & \boldsymbol{0} \\ \boldsymbol{0}^T & V_{\sigma^2} \end{pmatrix} \Rightarrow \mathrm{trace}(\boldsymbol{\Delta}) = \mathrm{trace}(\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}}) + \mathrm{trace}(\mathcal I_{\boldsymbol{\sigma^2}}V_{\sigma^2}) = \mathrm{trace}(\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}}) +\mathcal I_{\boldsymbol{\sigma^2}}V_{\sigma^2}
+    \boldsymbol{V}(\boldsymbol{\theta}) = \begin{pmatrix} V_{\boldsymbol{\beta}} & \boldsymbol{0} \\ \boldsymbol{0}^T & V_{\sigma^2} \end{pmatrix} \Rightarrow \mathrm{trace}(\boldsymbol{\boldsymbol{\Delta}}) = \mathrm{trace}(\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}}) + \mathrm{trace}(\mathcal I_{\boldsymbol{\sigma^2}}V_{\sigma^2}) = \mathrm{trace}(\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}}) +\mathcal I_{\boldsymbol{\sigma^2}}V_{\sigma^2}
 \]
 The trace calculation is split into the two components. One for the regression parameters and one for the variance nuisance parameter. The trace of the regression parameters is estimated routinely using the standard variance covariance matrices of the regression parameters in $\mathcal I_{\boldsymbol{\beta}}$ and $V_{\boldsymbol{\beta}}$. That is, define $\boldsymbol{V}_{\boldsymbol{\beta}, 0}$ to be the variance covariance matrix of $\boldsymbol{\beta}$ under simple random design and the variance covariance matrix under sampling weights to be $\boldsymbol{V}_{\boldsymbol{\beta}}$. Then simply $\mathcal I_{\boldsymbol{\beta}}\boldsymbol{V}_{\boldsymbol{\beta}} = \boldsymbol{V}_{\boldsymbol{\beta}, 0}^{-1}\boldsymbol{V}(\boldsymbol{\beta})$
 
@@ -195,7 +206,7 @@ The $\sigma^2$ component of the calculation involves estimating the scalars $\ma
 \]
 Therefore an estimate of the second moment and consequently variance of this component since the score vector is zero at the MLE is given by,
 \[
-    \widehat{\mathbb{V}\text{ar}}U_{\sigma^2} = \frac{1}{N}\sum_{i = 1}^n w_i U_{\sigma^2, i}^2(\widehat{\boldsymbol{\theta}}) = \frac{1}{N}\sum_{i = 1}^n w_i \left( - \frac{1}{2\widehat{\sigma}^2} + \frac{(y_i - \boldsymbol{x}_i^T \widehat{\boldsymbol{\beta}})^2}{2(\widehat{\sigma}^2)^2}\right)^2
+    \widehat{\mathbb{V}\text{ar}}U_{\sigma^2} = \frac{1}{N}\sum_{i \in s} w_i U_{\sigma^2, i}^2(\widehat{\boldsymbol{\theta}}) = \frac{1}{N}\sum_{i \in s} w_i \left( - \frac{1}{2\widehat{\sigma}^2} + \frac{(y_i - \boldsymbol{x}_i^T \widehat{\boldsymbol{\beta}})^2}{2(\widehat{\sigma}^2)^2}\right)^2
 \]
 Thus the estimate of the covariance element $V_{\sigma^2}$ can be estimated with,
 \[
