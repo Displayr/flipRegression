@@ -9,11 +9,6 @@ vignette: >
 bibliography: bibliography.bib
 ---
 
-# To-do list
-
-* Add note about the rescaling of weights used in `survey` (i.e. $N = n$)
-* Add detail of block-wise diagonal calculation, i.e. $\boldsymbol{\Delta}$ is block-wise diagonal with $I_B V_B$ in the top left and $I_S V_S$ in the bottom right.
-
 # Likelihood Theory for Linear Regression
 
 ## Standard theory (unweighted) with correct model specification
@@ -213,5 +208,11 @@ Thus the estimate of the covariance element $V_{\sigma^2}$ can be estimated with
     \widehat V_{\sigma^2} = \left(\widehat{\mathbb{V}\text{ar}} U_{\sigma^2}\right)^{-1}.
 \]
 Finally $\widehat{\overline{\delta}} = \widehat{\delta}_{\boldsymbol{\beta}} + \widehat{\delta}_{\sigma^2} = \mathrm{trace}(\widehat{\boldsymbol{V}}_{\boldsymbol{\beta}, 0}^{-1} \widehat{\boldsymbol{V}}_{\boldsymbol{\beta}}) + \widehat{\mathcal{I}}_{\sigma^2}\widehat{V}_{\sigma^2}$.
+
+### Implementation
+
+This result is implemented using the [@survey] package to compute the model but $d$AIC computed manually/
+
+Note in the implementation in [@survey] the rescaled weights $w_i^*$ are used so that $\sum_{i \in s} w_i^* = N = n$. That is, $w_i^* = \frac{w_i}{\overline w}$ where $\overline w = \frac{\sum_{i \in s} w_i}{n}$ which has the implication that $N = n$.
 
 ## References
