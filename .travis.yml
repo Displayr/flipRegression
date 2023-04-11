@@ -17,6 +17,7 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libgit2-dev
   - mkdir -p ~/.R/
+  - export flipData_BRANCH_NAME=DS-4360-2
   - echo "CXXFLAGS = `R CMD config CXXFLAGS` -g0 -flto -w" >> ~/.R/Makevars
   - echo "CXX14FLAGS = -w -O3" >> ~/.R/Makevars
   - sudo apt-get install -y r-cran-rcppeigen
