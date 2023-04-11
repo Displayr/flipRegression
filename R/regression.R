@@ -2140,7 +2140,7 @@ updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
     return(list(formula = new.formula, formula.with.interaction = new.formula.with.interaction))
 }
 
-grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
+grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf") endsWith(string, dummy.pattern)
 
 # Function to impute the missing values in original data to give the equivalent regression
 # coefficients to those generated in the dummy adjusted model.
