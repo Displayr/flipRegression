@@ -86,7 +86,8 @@
 #'   \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 #'   Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #'   See \code{\link{contrasts}} for more information.
-#' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
+#' @param interaction Optional variable to test for interaction with other variables in the model.
+#'                    Output will be a crosstab showing coefficients from both both models.
 #' @param relative.importance Deprecated. To run Relative Importance Analysis, use the output variable.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param correction Method to correct for multiple comparisons. Can be one of \code{"None"},
@@ -534,7 +535,7 @@ Regression <- function(formula = NULL,
 
     # Outcome variable has been processed and the data hasn't been adjusted
     # for missing values yet. Retain the metadata for the estimation data template
-    estimation.data.template <- EstimationDataTemplate(data)
+    estimation.data.template <- EstimationDataTemplate(data, outcome.name = outcome.name)
 
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
@@ -736,10 +737,12 @@ Regression <- function(formula = NULL,
     result[["estimation.data.template"]] <- estimation.data.template
 
     # Inserting the coefficients from the partial data.
-    if (missing != "Dummy variable adjustment")
-        result$model <- data
-    else
-        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+    if (missing != "Dummy variable adjustment") {
+        result[["model"]] <- data
+    } else {
+        result[["model"]] <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+        result[["estimation.data.template"]] <- appendDummyAdjustmentsToTemplate(result)
+    }
 
     result$robust.se <- robust.se
     result$type <- type

@@ -72,17 +72,21 @@ test_that("DS-4360 Estimation Data template created correctly", {
     interest.levels <- c("Very dissatisfied", "unsatisfied", "a little unsatisfied",
                          "Neutral", "A little satisfied", "Satisfied", "Very satisfied")
     sbank <- transform(sbank, Interest = factor(Interest, labels = interest.levels))
+    model.types <- list("Linear", "Binary Logit", "Ordered Logit", "NBD", "Quasi-Poisson",
+                        "Poisson", "Multinomial Logit")
     # Helper function to test same data across all model types
-    fitModelForTest <- function(type, data = sbank) {
-        if (type == "Binary Logit") {
-            bank.formula <- OverallBinary ~ Fees
+    fitModelForTest <- function(type, data = sbank, ...) {
+        is.binary.logit <- type == "Binary Logit"
+        if (is.binary.logit) {
             data <- transform(data, OverallBinary = factor(as.numeric(Overall >= 4)))
         }
+        reg.formula <- if (is.binary.logit) OverallBinary ~ Fees + Interest else Overall ~ Fees + Interest
         if (type == "Ordered Logit") data[["Overall"]] <- Ordered(data[["Overall"]])
         warn.msg <- if (type == "NBD") "Model may not have converged" else NA
-        expect_warning(model <- Regression(formula = bank.formula,
+        expect_warning(model <- Regression(formula = reg.formula,
                                            data = data,
-                                           type = type),
+                                           type = type,
+                                           ...),
                        warn.msg)
         model
     }
@@ -92,26 +96,93 @@ test_that("DS-4360 Estimation Data template created correctly", {
         expect_equal(regression.model[["estimation.data.template"]], expected.template)
     }
     # Basic tests for all model types, no dummy variable adjustment
-    expected.template <- list(
-        Overall = list(
-            type = "numeric",
-            default.value = 1
+    basic.expected.template <- structure(
+        list(
+            Overall = list(
+                type = "numeric",
+                default.value = 1
+            ),
+            Fees = list(
+                type = "numeric",
+                default.value = 1
+            ),
+            Interest = list(
+                type = "factor",
+                levels = interest.levels,
+                observed.levels = interest.levels,
+                has.unobserved.levels = FALSE,
+                ordered = FALSE,
+                default.value = interest.levels[1]
+            )
         ),
-        Fees = list(
-            type = "numeric",
-            default.value = 1
-        ),
-        Interest = list(
-            type = "factor",
-            levels = interest.levels,
-            observed.levels = interest.levels,
-            has.unobserved.levels = FALSE,
-            ordered = FALSE,
-            default.value = interest.levels[1]
-        )
+        outcome.name = "Overall"
+    )
+    categorical.overall <- list(
+        type = "factor",
+        levels = as.character(1:7),
+        observed.levels = as.character(1:7),
+        has.unobserved.levels = FALSE,
+        ordered = FALSE,
+        default.value = "1"
     )
     for (type in model.types) {
         fit <- fitModelForTest(type = type)
+        expected.template <- basic.expected.template
+        outcome.name <- if (type == "Binary Logit") "OverallBinary" else "Overall"
+        if (endsWith(type, "Logit")) {
+            expected.template[["Overall"]] <- categorical.overall
+            expected.template[["Overall"]][["ordered"]]  <- type == "Ordered Logit"
+            if (startsWith(type, "Binary")) {
+                names(expected.template) <- c("OverallBinary", "Fees", "Interest")
+                expected.template[[outcome.name]][["levels"]] <- c("0", "1")
+                expected.template[[outcome.name]][["observed.levels"]] <- c("0", "1")
+                expected.template[[outcome.name]][["default.value"]] <- "0"
+                attr(expected.template, "outcome.name") <- outcome.name
+            }
+        }
+        #waldo::compare(fit$estimation.data.template, expected.template)
         checkEstimationDataTemplate(fit, expected.template)
     }
+    # Dummy variable adjustment
+    sbank.with.missing <- sbank
+    ## Numeric adjustment and Factor adjustment
+    is.na(sbank.with.missing[["Fees"]]) <- sbank.with.missing[["Fees"]] == 5L
+    set.seed(12321)
+    is.na(sbank.with.missing[["Interest"]]) <- sample.int(nrow(sbank), size = 10L)
+    for (type in model.types) {
+        fit.with.missing <- fitModelForTest(type = type,
+                                            data = sbank.with.missing,
+                                            missing = "Dummy variable adjustment")
+        outcome.name <- if (startsWith(type, "Binary")) "OverallBinary" else "Overall"
+        expected.template <- basic.expected.template
+        # Dummy variables are always numeric (binary 0/1) and default to 0.
+        expected.template[["Fees.dummy.var_GQ9KqD7YOf"]] <- list(type = "numeric", default.value = 0)
+        expected.template[["Interest.dummy.var_GQ9KqD7YOf"]] <- list(type = "numeric", default.value = 0)
+        # Numeric adjustment gets the mean of the observed values
+        expected.template[["Fees"]][["imputed.value"]] <- mean(sbank.with.missing[["Fees"]], na.rm = TRUE)
+        # Factor adjustment uses the baseline (first) level
+        expected.template[["Interest"]][["imputed.value"]] <- interest.levels[1]
+        if (endsWith(type, "Logit")) {
+            expected.template[["Overall"]] <- categorical.overall
+            expected.template[["Overall"]][["ordered"]]  <- type == "Ordered Logit"
+            if (startsWith(type, "Binary")) {
+                names(expected.template)[names(expected.template) == "Overall"] <- "OverallBinary"
+                expected.template[[outcome.name]][["levels"]] <- c("0", "1")
+                expected.template[[outcome.name]][["observed.levels"]] <- c("0", "1")
+                expected.template[[outcome.name]][["default.value"]] <- "0"
+            }
+            attr(expected.template, "outcome.name") <- outcome.name
+        }
+        checkEstimationDataTemplate(fit.with.missing, expected.template)
+    }
+    ## Error handling
+    fit.with.missing[["estimation.data.template"]] <- NULL
+    err.msg <- paste0("appendDummyAdjustmentsToTemplate only works with ",
+                      "Regression models that have an estimation.data.template.")
+    expect_error(appendDummyAdjustmentsToTemplate(fit.with.missing), err.msg,
+                 fixed = TRUE)
+    fit.with.missing <- unclass(fit.with.missing)
+    err.msg <- "appendDummyAdjustmentsToTemplate only works with Regression models."
+    expect_error(appendDummyAdjustmentsToTemplate(fit.with.missing), err.msg,
+                 fixed = TRUE)
 })

@@ -277,5 +277,60 @@ Probabilities.Regression <- function(object, newdata, ...)
         lambdas <- exp(log.lambdas)
         return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
     }
-    stop(paste0("Probabilities are not computed for models of type '", object$type, "."))
+    stop("Probabilities are not computed for models of type '", object$type, ".")
+}
+
+#' Adds dummy variable adjustment information for the estimation data template
+#' @param regression.model A Regression object, at least a partially created one,
+#'                         it doesn't need to be of Regression class, but needs to have,
+#'                         at the very least, a list with the the original model fit,
+#'                         in the "original" slot and and the "estimation.data.template"
+#' @return The estimation.data.template element with dummy variable adjustment information added
+#' @importFrom stats coefficients
+appendDummyAdjustmentsToTemplate <- function(regression.model) {
+    if (!inherits(regression.model, "Regression"))
+        stop("appendDummyAdjustmentsToTemplate only works with Regression models.")
+    original.model <- regression.model[["original"]]
+    template <- regression.model[["estimation.data.template"]]
+    if (is.null(template))
+        stop("appendDummyAdjustmentsToTemplate only works with Regression models that ",
+             "have an estimation.data.template.")
+    coefficients <- coefficients(original.model)
+    # Coefficients are either a vector or matrix depending on model type
+    model.type <- getModelType(original.model)
+    # Get the names of the coefficients (either column names or names, depending on model type)
+    coefNamesFunc <- if (model.type == "Multinomial Logit") colnames else names
+    coefficient.names <- coefNamesFunc(coefficients)
+    dummy.adjusted.coefs <- grepDummyVars(coefficient.names)
+    # Nothing to do if there are no dummy variable adjustments
+    if (!any(dummy.adjusted.coefs)) return(template)
+    # Extract the estimation data and model data
+    estimation.data <- regression.model[["estimation.data"]]
+    model.data <- regression.model[["model"]]
+    dummy.adjusted.coefs <- coefficient.names[dummy.adjusted.coefs]
+    # Construct the dummy variable templates and update the matched variables
+    # with their imputed values (replacement values for NA)
+    dummy.template <- mapply(function(variable, variable.name) {
+        predictors.matching.dummy <- attr(variable, "predictors.matching.dummy")
+        first.replaced <- which.max(variable)
+        for (predictor in predictors.matching.dummy)
+            template[[predictor]][["imputed.value"]] <<- dummyAdjustment(
+                model.data[[predictor]],
+                first.replaced
+            )
+        list(type = "numeric", default.value = 0)
+    }, estimation.data[dummy.adjusted.coefs], dummy.adjusted.coefs, SIMPLIFY = FALSE)
+    structure(
+        c(template, dummy.template),
+        outcome.name = attr(template, "outcome.name")
+    )
+}
+
+# determines the appropriate dummy variable adjustment "imputed value",
+# if factor, it is just the baseline (first) level, if numeric, it is the
+# mean of the observed values, this is determined by looking up the
+# the first replaced value (2nd arg has this index) from the input variable
+dummyAdjustment <- function(variable, first.replacement) {
+    if (is.factor(variable)) return(levels(variable)[1L])
+    variable[first.replacement]
 }
