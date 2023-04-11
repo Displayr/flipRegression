@@ -111,7 +111,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
             rownames(x$interaction$coefficients)[ind] <- res$shortened.labels
             title <- paste0(title, " by ", res$common.prefix)
         }
-        relevant.coefs <- !grepDummyVars(row.names(x$interaction$coefficients))
+        relevant.coefs <- !isDummyVariable(row.names(x$interaction$coefficients))
 
         dt <- CrosstabInteractionTable(x$interaction$coefficients[relevant.coefs, , drop = FALSE],
                                        x$interaction$coef.tstat[relevant.coefs, , drop = FALSE],
@@ -162,7 +162,7 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         if (x$missing == "Multiple imputation")
             warning("ANOVA output is based on only the first imputed dataset.")
 
-        relevant.coefs <- !grepDummyVars(row.names(x$anova))
+        relevant.coefs <- !isDummyVariable(row.names(x$anova))
         attr(x$anova, "footer") <- x$footer
         print(x$anova[relevant.coefs, ])
     }
@@ -181,14 +181,14 @@ print.Regression <- function(x, p.cutoff = 0.05, digits = max(3L, getOption("dig
         {# Ignore the dummy variables, if they exist
             if (x$type != "Multinomial Logit")
             {
-                relevant.coefs <- !grepDummyVars(rownames(x$summary$coefficients))
+                relevant.coefs <- !isDummyVariable(rownames(x$summary$coefficients))
                 coefs <- x$summary$coefficients[relevant.coefs, , drop = FALSE]
                 z.statistics <- x$z.statistics[relevant.coefs, , drop = FALSE]
                 p.values <- x$p.values[relevant.coefs, , drop = FALSE]
             }
             else
             {
-                relevant.coefs <- !grepDummyVars(colnames(x$summary$coefficients))
+                relevant.coefs <- !isDummyVariable(colnames(x$summary$coefficients))
                 coefs <- x$summary$coefficients[, relevant.coefs, drop = FALSE]
                 z.statistics <- x$z.statistics[, relevant.coefs, drop = FALSE]
                 p.values <- x$p.values[, relevant.coefs, drop = FALSE]
@@ -522,7 +522,7 @@ checkVIFAndWarn <- function(x)
                            ngettext(length(x), " for ", "s "),
                            printed.values, ". ")
                 }
-                dummy.vars <- grepDummyVars(names(vifs))
+                dummy.vars <- isDummyVariable(names(vifs))
                 vifs.msg <- NULL
                 if (any(!dummy.vars))
                     vifs.msg <- c(vifs.msg, .printVIFs(vifs[!dummy.vars], prefix, x))

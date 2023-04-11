@@ -301,7 +301,7 @@ appendDummyAdjustmentsToTemplate <- function(regression.model) {
     # Get the names of the coefficients (either column names or names, depending on model type)
     coefNamesFunc <- if (model.type == "Multinomial Logit") colnames else names
     coefficient.names <- coefNamesFunc(coefficients)
-    dummy.adjusted.coefs <- grepDummyVars(coefficient.names)
+    dummy.adjusted.coefs <- isDummyVariable(coefficient.names)
     # Nothing to do if there are no dummy variable adjustments
     if (!any(dummy.adjusted.coefs)) return(template)
     # Extract the estimation data and model data
