@@ -254,7 +254,7 @@
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
-#' AddDummyVariablesForNAs
+#' AddDummyVariablesForNAs EstimationDataTemplate
 #' @importFrom flipFormat Labels OriginalName BaseDescription
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
@@ -531,6 +531,11 @@ Regression <- function(formula = NULL,
         WarningFactorToNumeric()
         data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
+
+    # Outcome variable has been processed and the data hasn't been adjusted
+    # for missing values yet. Retain the metadata for the estimation data template
+    estimation.data.template <- EstimationDataTemplate(data)
+
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
     if (partial)
@@ -623,6 +628,7 @@ Regression <- function(formula = NULL,
             final.model$model <- data
             final.model$weights <- weights
             final.model$stacked <- stacked.data.check
+            final.model[["estimation.data.template"]] <- estimation.data.template
             final.model <- setChartData(final.model, output)
             return(final.model)
         }
@@ -725,6 +731,10 @@ Regression <- function(formula = NULL,
         "NBD" = "NBDRegression"))
     result$correction <- correction
     result$formula <- input.formula
+
+    # Add the estimation data template for simulator
+    result[["estimation.data.template"]] <- estimation.data.template
+
     # Inserting the coefficients from the partial data.
     if (missing != "Dummy variable adjustment")
         result$model <- data

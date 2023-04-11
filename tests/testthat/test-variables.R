@@ -63,3 +63,55 @@ test_that("labels adding back for infIndexPlot; DS-3339",
 {
     expect_error(infIndexPlot(z), NA)
 })
+
+test_that("DS-4360 Estimation Data template created correctly", {
+    data(bank, package = "flipExampleData")
+    bank.formula <- Overall ~ Fees + Interest
+    all.variable.names <- flipU::AllVariablesNames(bank.formula, bank)
+    sbank <- subset(bank, select = all.variable.names) |> na.omit()
+    interest.levels <- c("Very dissatisfied", "unsatisfied", "a little unsatisfied",
+                         "Neutral", "A little satisfied", "Satisfied", "Very satisfied")
+    sbank <- transform(sbank, Interest = factor(Interest, labels = interest.levels))
+    # Helper function to test same data across all model types
+    fitModelForTest <- function(type, data = sbank) {
+        if (type == "Binary Logit") {
+            bank.formula <- OverallBinary ~ Fees
+            data <- transform(data, OverallBinary = factor(as.numeric(Overall >= 4)))
+        }
+        if (type == "Ordered Logit") data[["Overall"]] <- Ordered(data[["Overall"]])
+        warn.msg <- if (type == "NBD") "Model may not have converged" else NA
+        expect_warning(model <- Regression(formula = bank.formula,
+                                           data = data,
+                                           type = type),
+                       warn.msg)
+        model
+    }
+    # Function to check each regression model
+    checkEstimationDataTemplate <- function(regression.model, expected.template) {
+        expect_true("estimation.data.template" %in% names(regression.model))
+        expect_equal(regression.model[["estimation.data.template"]], expected.template)
+    }
+    # Basic tests for all model types, no dummy variable adjustment
+    expected.template <- list(
+        Overall = list(
+            type = "numeric",
+            default.value = 1
+        ),
+        Fees = list(
+            type = "numeric",
+            default.value = 1
+        ),
+        Interest = list(
+            type = "factor",
+            levels = interest.levels,
+            observed.levels = interest.levels,
+            has.unobserved.levels = FALSE,
+            ordered = FALSE,
+            default.value = interest.levels[1]
+        )
+    )
+    for (type in model.types) {
+        fit <- fitModelForTest(type = type)
+        checkEstimationDataTemplate(fit, expected.template)
+    }
+})
