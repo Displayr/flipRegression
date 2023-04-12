@@ -120,7 +120,7 @@ The likelihood equation, $\ell(\boldsymbol{\theta})$, being a population mean pa
 \[
     \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i \in s} w_i \ell_i(\boldsymbol{\theta})
 \]
-where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x})$ and the weights are assumed to scale $\sum_{i \in s}w_i = N$, the population total. To estimate the maximizer of $\ell(\boldsymbol{\theta})$ In the context of sampling design, use the estimator,
+where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x})$ and the weights are assumed to aggregate to the population total, $\sum_{i \in s}w_i = N$. To estimate the maximizer of $\ell(\boldsymbol{\theta})$ In the context of sampling design, use the estimator,
 \[
     \widehat{\mathcal U}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i \in s} w_i \frac{\partial}{\partial \boldsymbol{\theta}}\ell_i(\boldsymbol{\theta})
 \]
