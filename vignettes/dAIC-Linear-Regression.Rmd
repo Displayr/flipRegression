@@ -126,7 +126,7 @@ where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbo
 \]
 where the contribution to the likelihood by unit $i$ is given by $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i |\boldsymbol{x}_i)$.
 
-Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the is the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$.
+Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$.
 
 Before computing the required terms in this analysis, the link between $\widehat{\boldsymbol{\theta}}$ and the AIC strategy of model assessment is covered. The model that matches the population likelihood the best will minimize the Kullback-Leibler above. The AIC strategy is to estimate this difference by estimating $Q_n = \mathbb{E}_g( \ell(\widehat{\boldsymbol{\theta}}))$ and selecting the model with the largest value.
 
@@ -211,7 +211,7 @@ Finally $\widehat{\overline{\delta}} = \widehat{\delta}_{\boldsymbol{\beta}} + \
 
 ### Implementation
 
-This result is implemented using the [@survey] package to compute the model but $d$AIC computed manually/
+This result is implemented using the [@survey] package to compute the model but $d$AIC computed manually.
 
 Note in the implementation in [@survey] the rescaled weights $w_i^*$ are used so that $\sum_{i \in s} w_i^* = N = n$. That is, $w_i^* = \frac{w_i}{\overline w}$ where $\overline w = \frac{1}{n}\sum_{i \in s} w_i$ which has the implication that $N = n$.
 
