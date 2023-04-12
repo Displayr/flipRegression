@@ -126,7 +126,7 @@ where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbo
 \]
 where the contribution to the log-likelihood by unit $i$ is given by $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i |\boldsymbol{x}_i)$.
 
-Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$.
+Then $\boldsymbol{\theta}^*$ is consistently estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the weighted pseudo-score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$. This is shown later using results of [@Fuller-2009].
 
 Before computing the required terms in this analysis, the link between $\widehat{\boldsymbol{\theta}}$ and the AIC strategy of model assessment is covered. The model that matches the population likelihood the best will minimize the Kullback-Leibler divergence above. The AIC strategy is to estimate this difference by estimating $Q_n = \mathbb{E}_g( \ell(\widehat{\boldsymbol{\theta}}))$ and selecting the model with the largest value.
 
