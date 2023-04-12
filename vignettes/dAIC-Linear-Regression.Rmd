@@ -110,7 +110,7 @@ This is motivated by the using the Kullback-Leibler divergence of the candidate 
     \mathrm{KL}(f_{\boldsymbol{\theta}}, g) = \mathbb{E}_g \left( \log g(y| \boldsymbol{x})\right) - \ell(\boldsymbol{\theta}).
 \]
 
-The target parameter is $\boldsymbol{\theta}^*$ is the parametric value that is the 'least false' which is the value that minimizes the Kullback-Leibler above (or equivalently, maximizer of $\ell(\boldsymbol{\theta}))$. In terms of the classical likelihood equations, this occurs at the new score equation,
+The target parameter is $\boldsymbol{\theta}^*$ is the parametric value that is the 'least false' which is the value that minimizes the Kullback-Leibler divergence above (or equivalently, maximizer of $\ell(\boldsymbol{\theta}))$. In terms of the classical likelihood equations, this occurs at the new score equation,
 
 \[
     \mathcal U(\boldsymbol{\theta}^*) = \mathbb{E}_g \left( \left.\frac{\partial \log f_{\boldsymbol{\theta}}(y|\boldsymbol{x})}{\partial \boldsymbol{\theta}}\right|_{\boldsymbol{\theta} = \boldsymbol{\theta}^*}\right) = 0.
@@ -128,7 +128,7 @@ where the contribution to the log-likelihood by unit $i$ is given by $\ell_i(\bo
 
 Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$.
 
-Before computing the required terms in this analysis, the link between $\widehat{\boldsymbol{\theta}}$ and the AIC strategy of model assessment is covered. The model that matches the population likelihood the best will minimize the Kullback-Leibler above. The AIC strategy is to estimate this difference by estimating $Q_n = \mathbb{E}_g( \ell(\widehat{\boldsymbol{\theta}}))$ and selecting the model with the largest value.
+Before computing the required terms in this analysis, the link between $\widehat{\boldsymbol{\theta}}$ and the AIC strategy of model assessment is covered. The model that matches the population likelihood the best will minimize the Kullback-Leibler divergence above. The AIC strategy is to estimate this difference by estimating $Q_n = \mathbb{E}_g( \ell(\widehat{\boldsymbol{\theta}}))$ and selecting the model with the largest value.
 
 Theorem 1 of [@dAIC] showed the statistical properties of the naive estimator of $\widehat{\ell}(\widehat{\boldsymbol{\theta}})$ with,
 \[
