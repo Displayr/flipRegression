@@ -107,10 +107,10 @@ The data from the finite population are assumed to be generated from some distri
 
 This is motivated by the using the Kullback-Leibler divergence of the candidate parametric model away from the true model,
 \[
-    \mathrm{KL}(f_{\widehat{\boldsymbol{\theta}}}, g) = \mathbb{E}_g \left( \log g(y| \boldsymbol{x})\right) - \ell(\boldsymbol{\theta}).
+    \mathrm{KL}(f_{\boldsymbol{\theta}}, g) = \mathbb{E}_g \left( \log g(y| \boldsymbol{x})\right) - \ell(\boldsymbol{\theta}).
 \]
 
-The target parameter is $\boldsymbol{\theta}^*$ is the parametric value that is the 'least false' which is the value that minimizes the Kullback-Leibler above (or equivalently, maximizer of $\ell(\boldsymbol{\theta}))$. In terms of the classical likelihood equations, this occurs at the superpopulation score equation,
+The target parameter is $\boldsymbol{\theta}^*$ is the parametric value that is the 'least false' which is the value that minimizes the Kullback-Leibler above (or equivalently, maximizer of $\ell(\boldsymbol{\theta}))$. In terms of the classical likelihood equations, this occurs at the new score equation,
 
 \[
     \mathcal U(\boldsymbol{\theta}^*) = \mathbb{E}_g \left( \left.\frac{\partial \log f_{\boldsymbol{\theta}}(y|\boldsymbol{x})}{\partial \boldsymbol{\theta}}\right|_{\boldsymbol{\theta} = \boldsymbol{\theta}^*}\right) = 0.
@@ -120,11 +120,11 @@ The likelihood equation, $\ell(\boldsymbol{\theta})$, being a population mean pa
 \[
     \widehat{\ell}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i \in s} w_i \ell_i(\boldsymbol{\theta})
 \]
-where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x})$ and the weights are assumed to scale $\sum_{i \in s}w_i = N$, the population total. To estimate the minimizer of $\ell(\boldsymbol{\theta})$ In the context of sampling design, use the estimator,
+where $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i|\boldsymbol{x})$ and the weights are assumed to scale $\sum_{i \in s}w_i = N$, the population total. To estimate the maximizer of $\ell(\boldsymbol{\theta})$ In the context of sampling design, use the estimator,
 \[
     \widehat{\mathcal U}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i \in s} w_i \frac{\partial}{\partial \boldsymbol{\theta}}\ell_i(\boldsymbol{\theta})
 \]
-where the contribution to the likelihood by unit $i$ is given by $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i |\boldsymbol{x}_i)$.
+where the contribution to the log-likelihood by unit $i$ is given by $\ell_i(\boldsymbol{\theta}) = \log f_{\boldsymbol{\theta}}(y_i |\boldsymbol{x}_i)$.
 
 Then $\boldsymbol{\theta}^*$ is estimated by $\widehat{\boldsymbol{\theta}}$ that satisfies the weighted sample score equations, $\widehat{\mathcal U}(\widehat{\boldsymbol{\theta}}) = 0$.
 
