@@ -139,7 +139,7 @@ where $\boldsymbol{\Delta} = \mathcal I(\boldsymbol{\theta}^*)\boldsymbol{V}(\bo
 In particular, their proof utilizes the regularity conditions and results of Theorem 1.3.9 [@Fuller-2009] under the typical framework in survey estimation where it is supposed that there are a sequence of finite populations indexed by $\nu$ and a sequence of samples of size $n_\nu$ drawn from the $N_\nu$ units in the $\nu^{\mathrm th}$ population with a well-defined probability scheme. Then asymptotic normality and consistency is established with
 
 1. $\widehat{\boldsymbol{\theta}}_\nu$ is asymptotically normal with $\sqrt{n} (\widehat{\boldsymbol{\theta}}_{\nu}- \boldsymbol{\theta}^*) \stackrel{d}{\longrightarrow} \mathcal N(\boldsymbol{0}, \boldsymbol{V}(\boldsymbol{\theta}^*))$.
-2. If a sequence $\left\{\boldsymbol{\theta}_\nu \right\}$ are consistent estimators of $\boldsymbol{\theta}^*$, that is,$\boldsymbol{\theta}_\nu \stackrel{p}{\longrightarrow} \boldsymbol{\theta}^*$, then $\widehat{\mathcal J}_\nu(\boldsymbol{\theta}_\nu) \stackrel{p}{\longrightarrow} \mathcal I(\boldsymbol{\theta})$.
+2. If a sequence $\left\{\boldsymbol{\theta}_\nu \right\}$ are consistent estimators of $\boldsymbol{\theta}^*$, that is, $\boldsymbol{\theta}_\nu \stackrel{p}{\longrightarrow} \boldsymbol{\theta}^*$, then $\widehat{\mathcal J}_\nu(\boldsymbol{\theta}_\nu) \stackrel{p}{\longrightarrow} \mathcal I(\boldsymbol{\theta})$.
 
 Consider now the precise form of the likelihood equations in this weighted sampling design context. For convenience define $\boldsymbol{W} = \mathrm{diag}(w_i)_{i \in s}$ as the diagonal matrix of weights.
 
@@ -211,7 +211,7 @@ Finally $\widehat{\overline{\delta}} = \widehat{\delta}_{\boldsymbol{\beta}} + \
 
 ### Implementation
 
-This result is implemented using the [@survey] package to compute the model but $d$AIC computed manually.
+This result is implemented using the `survey` package [@survey] to compute the model but $d$AIC computed manually.
 
 Note in the implementation in [@survey] the rescaled weights $w_i^*$ are used so that $\sum_{i \in s} w_i^* = N = n$. That is, $w_i^* = \frac{w_i}{\overline w}$ where $\overline w = \frac{1}{n}\sum_{i \in s} w_i$ which has the implication that $N = n$.
 
