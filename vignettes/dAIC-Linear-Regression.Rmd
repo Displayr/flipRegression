@@ -213,6 +213,6 @@ Finally $\widehat{\overline{\delta}} = \widehat{\delta}_{\boldsymbol{\beta}} + \
 
 This result is implemented using the `survey` package [@survey] to compute the model but $d$AIC computed manually.
 
-Note in the implementation in [@survey] the rescaled weights $w_i^*$ are used so that $\sum_{i \in s} w_i^* = N = n$. That is, $w_i^* = \frac{w_i}{\overline w}$ where $\overline w = \frac{1}{n}\sum_{i \in s} w_i$ which has the implication that $N = n$.
+Note in the implementation in [@survey] the rescaled weights $w_i^*$ are used so that $\sum_{i \in s} w_i^* = N^* = n$. That is, $w_i^* = \frac{w_i}{\overline w}$ where $\overline w = \frac{1}{n}\sum_{i \in s} w_i$ which has the implication that $N = N^* = n$.
 
 ## References
