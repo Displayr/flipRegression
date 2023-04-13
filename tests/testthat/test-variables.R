@@ -140,7 +140,6 @@ test_that("DS-4360 Estimation Data template created correctly", {
                 attr(expected.template, "outcome.name") <- outcome.name
             }
         }
-        #waldo::compare(fit$estimation.data.template, expected.template)
         checkEstimationDataTemplate(fit, expected.template)
     }
     # Dummy variable adjustment
