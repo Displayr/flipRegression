@@ -286,6 +286,7 @@ Probabilities.Regression <- function(object, newdata, ...)
 #'                         at the very least, a list with the the original model fit,
 #'                         in the "original" slot and and the "estimation.data.template"
 #' @return The estimation.data.template element with dummy variable adjustment information added
+#' @noRd
 #' @importFrom stats coefficients
 appendDummyAdjustmentsToTemplate <- function(regression.model) {
     if (!inherits(regression.model, "Regression"))
