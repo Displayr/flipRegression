@@ -160,12 +160,13 @@ Maximising the log likelihood function in a similar manner to the unweighted cas
                                                  \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W} \boldsymbol{X}}{N} & \frac{1}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W}\boldsymbol{\varepsilon}}{N(\sigma^2)^3}
                                  \end{pmatrix}
 \]
+Solving the pseudo-score equation above yields the pseudo maximum likelihood parameter estimates,
+\[
+    \widehat{\boldsymbol{\beta}} = \left(\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{X}\right)^{-1}\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{Y}, \qquad       \widehat{\sigma}^2 = \frac{1}{N} \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}.
+\]
 The proof is omitted for brevity but follows the same approach as the unweighted case. From (1.3.78) in [@Fuller-2009] $\mathcal I(\boldsymbol{\theta}) = \mathbb{E}\mathcal J(\boldsymbol{\theta})$ can be estimated by $-\mathcal H(\boldsymbol{\theta})$, that is,
 \[
     \widehat{\mathcal J}(\boldsymbol{\theta}) = -\frac{1}{N}\sum_{i \in s} w_i \frac{\partial \ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T} = -\frac{1}{N}\sum_{i \in s}  \frac{\partial \ell_i(\boldsymbol{\theta})}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}  + O_p(n^{-1/2}) = -\mathcal H(\boldsymbol{\theta}) + O_p(n^{-1/2})
-\]
-\[
-    \widehat{\boldsymbol{\beta}} = \left(\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{X}\right)^{-1}\boldsymbol{X}^T\boldsymbol{W}\boldsymbol{Y}, \qquad       \widehat{\sigma}^2 = \frac{1}{N} \boldsymbol{\varepsilon}^T\boldsymbol{W}\boldsymbol{\varepsilon}.
 \]
 
 # $d$AIC
