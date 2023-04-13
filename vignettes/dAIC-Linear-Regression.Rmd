@@ -46,7 +46,7 @@ Then the overall log-likelihood function is given by,
 \end{aligned}
 \]
 
-For convenience, define the unexplained variation as $\boldsymbol{\varepsilon}_0 = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}_0 \sim \mathcal N(\boldsymbol{0}, \sigma_0^2 \boldsymbol{I})$. The candidate unexplained variation takes the form, $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{\beta}_0 - \boldsymbol{\beta}, \sigma_0^2 \boldsymbol{I})$
+For convenience, define the unexplained variation as $\boldsymbol{\varepsilon}_0 = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta}_0 \sim \mathcal N(\boldsymbol{0}, \sigma_0^2 \boldsymbol{I})$. The candidate unexplained variation takes the form, $\boldsymbol{\varepsilon} = \boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta} \sim \mathcal N(\boldsymbol{X}(\boldsymbol{\beta}_0 - \boldsymbol{\beta}), \sigma_0^2 \boldsymbol{I})$
 
 Maximising the log-likelihood function with respect to $\boldsymbol{\beta}$ and $\sigma^2$ yields the maximum likelihood estimates of the regression coefficients and the variance of the error term, respectively. These are obtained at the score vector $\mathcal{U} = \frac{\partial \mathcal L}{\partial \boldsymbol{\theta}}$ with Hessian matrix $\mathcal H(\theta) = \frac{\partial^2 \mathcal L}{\partial \boldsymbol{\theta} \partial \boldsymbol{\theta}^T}$
 \[
