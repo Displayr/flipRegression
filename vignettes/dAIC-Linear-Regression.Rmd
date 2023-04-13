@@ -130,7 +130,7 @@ Then $\boldsymbol{\theta}^*$ is consistently estimated by $\widehat{\boldsymbol{
 
 Before computing the required terms in this analysis, the link between $\widehat{\boldsymbol{\theta}}$ and the AIC strategy of model assessment is covered. The model that matches the population likelihood the best will minimize the Kullback-Leibler divergence above. The AIC strategy is to estimate this difference by estimating $Q_n = \mathbb{E}_g( \ell(\widehat{\boldsymbol{\theta}}))$ and selecting the model with the largest value.
 
-Theorem 1 of [@dAIC] showed the statistical properties of the naive estimator of $\widehat{\ell}(\widehat{\boldsymbol{\theta}})$ with,
+Theorem 1 of [@dAIC] showed the statistical properties of the naive estimator, $\widehat{\ell}(\widehat{\boldsymbol{\theta}})$, with,
 \[
     \mathbb{E}_g(\widehat{\ell}(\widehat{\boldsymbol{\theta}})) = Q_n + \frac{1}{n} \mathrm{tr} \left\{ \boldsymbol{\Delta} \right\} + o_p(n^{-1})
 \]
