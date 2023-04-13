@@ -81,7 +81,7 @@ EffectsPlot <- function(model,
         ## model$summary$aliased <- model$summary$aliased[!model$summary$aliased]
 
     effects <- allEffects(model)
-    relevant.coefs <- !grepDummyVars(names(effects))
+    relevant.coefs <- !isDummyVariable(names(effects))
     effects <- effects[relevant.coefs]
 
     limitEffectsLabels <- function(ef, max.len){

@@ -9,7 +9,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     net.coef <- summary(result$original)$coef[,1]
     missing <- result$missing
     if (missing == "Dummy variable adjustment")
-        net.coef <- net.coef[!grepDummyVars(names(net.coef))]
+        net.coef <- net.coef[!isDummyVariable(names(net.coef))]
     correction <- result$correction
     if (internal.loop)
         correction <- "None"
@@ -75,7 +75,7 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     if (!is.null(importance))
     {
         importance.scores <- result$importance$importance
-        var.names <- result$importance.names[!grepDummyVars(result$importance.names)]
+        var.names <- result$importance.names[!isDummyVariable(result$importance.names)]
         var.labels <- result$importance.labels
         res$net.coef <- importance.scores
         num.var <- length(importance.scores)
@@ -165,8 +165,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
             if (result$missing == "Dummy variable adjustment")
             {
-                tmp.coefs <- tmp.coefs[!grepDummyVars(row.names(tmp.coefs)), ]
-                tmpC.coefs <- tmpC.coefs[!grepDummyVars(row.names(tmpC.coefs)), ]
+                tmp.coefs <- tmp.coefs[!isDummyVariable(row.names(tmp.coefs)), ]
+                tmpC.coefs <- tmpC.coefs[!isDummyVariable(row.names(tmpC.coefs)), ]
             }
 
             if (!inherits(tmp.fit, "try-error") && !inherits(tmpC.fit, "try-error"))

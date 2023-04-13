@@ -86,7 +86,8 @@
 #'   \code{\link{ordered}} variables. Defaults to \code{c("contr.treatment", "contr.treatment"))}.
 #'   Set to \code{c("contr.treatment", "contr.poly"))} to use orthogonal polynomials for \code{\link{factor}}
 #'   See \code{\link{contrasts}} for more information.
-#' @param interaction Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.
+#' @param interaction Optional variable to test for interaction with other variables in the model.
+#'                    Output will be a crosstab showing coefficients from both both models.
 #' @param relative.importance Deprecated. To run Relative Importance Analysis, use the output variable.
 #' @param importance.absolute Whether the absolute value of the relative importance should be shown.
 #' @param correction Method to correct for multiple comparisons. Can be one of \code{"None"},
@@ -254,7 +255,7 @@
 #' @importFrom stats pnorm anova update terms
 #' @importFrom flipData GetData CleanSubset CleanWeights DataFormula
 #' EstimationData CleanBackticks RemoveBackticks ErrorIfInfinity
-#' AddDummyVariablesForNAs
+#' AddDummyVariablesForNAs EstimationDataTemplate
 #' @importFrom flipFormat Labels OriginalName BaseDescription
 #' @importFrom flipU OutcomeName IsCount
 #' @importFrom flipTransformations AsNumeric
@@ -531,6 +532,11 @@ Regression <- function(formula = NULL,
         WarningFactorToNumeric()
         data[, outcome.name] <- outcome.variable <- AsNumeric(outcome.variable, binary = FALSE)
     }
+
+    # Outcome variable has been processed and the data hasn't been adjusted
+    # for missing values yet. Retain the metadata for the estimation data template
+    estimation.data.template <- EstimationDataTemplate(data, outcome.name = outcome.name)
+
     row.names <- rownames(data)
     partial <- missing == "Use partial data (pairwise correlations)"
     if (partial)
@@ -623,6 +629,7 @@ Regression <- function(formula = NULL,
             final.model$model <- data
             final.model$weights <- weights
             final.model$stacked <- stacked.data.check
+            final.model[["estimation.data.template"]] <- estimation.data.template
             final.model <- setChartData(final.model, output)
             return(final.model)
         }
@@ -632,7 +639,7 @@ Regression <- function(formula = NULL,
         if (missing == "Dummy variable adjustment")
         {
             # Check for aliased dummy variables
-            dummy.variables <- names(.estimation.data)[grepDummyVars(names(.estimation.data))]
+            dummy.variables <- names(.estimation.data)[isDummyVariable(names(.estimation.data))]
             predictor.names <- names(.estimation.data)[-which(names(.estimation.data) == outcome.name)]
             mapping.variables <- lapply(dummy.variables,
                                         function(x) attr(.estimation.data[[x]], "predictors.matching.dummy"))
@@ -725,11 +732,17 @@ Regression <- function(formula = NULL,
         "NBD" = "NBDRegression"))
     result$correction <- correction
     result$formula <- input.formula
+
+    # Add the estimation data template for simulator
+    result[["estimation.data.template"]] <- estimation.data.template
+
     # Inserting the coefficients from the partial data.
-    if (missing != "Dummy variable adjustment")
-        result$model <- data
-    else
-        result$model <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+    if (missing != "Dummy variable adjustment") {
+        result[["model"]] <- data
+    } else {
+        result[["model"]] <- AddDummyVariablesForNAs(data, outcome.name, checks = FALSE)
+        result[["estimation.data.template"]] <- appendDummyAdjustmentsToTemplate(result)
+    }
 
     result$robust.se <- robust.se
     result$type <- type
@@ -798,10 +811,10 @@ Regression <- function(formula = NULL,
         if (missing == "Dummy variable adjustment")
         {
             # Update the formula silently (don't throw a warning)
-            signs <- if (importance.absolute) 1 else signs[!grepDummyVars(names(signs))]
+            signs <- if (importance.absolute) 1 else signs[!isDummyVariable(names(signs))]
             # The data only needs to be adjusted and the formula updated for the RIA if dummy variable
             # adjustment was used
-            dummy.predictors <- grepDummyVars(names(result$original$coefficients))
+            dummy.predictors <- isDummyVariable(names(result$original$coefficients))
             if (any(dummy.predictors))
             { # First check if any predictors with dummy vars are factors and throw error since RIA cannot be conducted
                 preds.with.dummy <- extractDummyNames(names(result$original$coefficients)[dummy.predictors])
@@ -821,7 +834,7 @@ Regression <- function(formula = NULL,
                 input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
                                                              data = processed.data$estimation.data,
                                                              update.string = " - ")$formula
-                nms <- nms[!grepDummyVars(nms)]
+                nms <- nms[!isDummyVariable(nms)]
             }
             result$formula <- input.formula
         }
@@ -831,7 +844,7 @@ Regression <- function(formula = NULL,
             result$estimation.data <- .estimation.data <- CopyAttributes(data[subset, , drop = FALSE], data)
             .weights <- weights[subset]
         }
-        relevant.coefs <- !grepDummyVars(rownames(result$summary$coefficients))
+        relevant.coefs <- !isDummyVariable(rownames(result$summary$coefficients))
         result$importance.names <- nms
         labels <- rownames(result$summary$coefficients)[relevant.coefs]
         if (result$type == "Ordered Logit")
@@ -843,7 +856,7 @@ Regression <- function(formula = NULL,
         } else if (output == "Correlation")
         {
             labels <- attr(terms.formula(input.formula, data = data), "term.labels")
-            labels <- result$importance.names <- labels[!grepDummyVars(labels)]
+            labels <- result$importance.names <- labels[!isDummyVariable(labels)]
             if (show.labels)
                 labels <- Labels(data, labels)
         } else
@@ -1407,7 +1420,7 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
     {
         if (!is.null(aliased.labels))
             names(aliased) <- aliased.labels
-        regular.aliased <- aliased[!grepDummyVars(names(aliased))]
+        regular.aliased <- aliased[!isDummyVariable(names(aliased))]
         regular.warning <- paste0("The following variable(s) are colinear with other variables and no",
                                   " coefficients have been estimated: ",
                                   paste(sQuote(names(which(regular.aliased)), q = FALSE), collapse = ", "))
@@ -2127,7 +2140,7 @@ throwCodeReductionWarning <- function(reduction.list)
 updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
                                         update.string = " + ")
 {
-    if (!any(dummy.vars <- grepDummyVars(names(data))))
+    if (!any(dummy.vars <- isDummyVariable(names(data))))
         return(list(formula = formula, formula.with.interaction = formula.with.interaction))
 
     dummy.var <- paste0(names(data)[dummy.vars], collapse = update.string)
@@ -2140,7 +2153,7 @@ updateDummyVariableFormulae <- function(formula, formula.with.interaction, data,
     return(list(formula = new.formula, formula.with.interaction = new.formula.with.interaction))
 }
 
-grepDummyVars <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf$") grepl(dummy.pattern, string)
+isDummyVariable <- function(string, dummy.pattern = ".dummy.var_GQ9KqD7YOf") endsWith(string, dummy.pattern)
 
 # Function to impute the missing values in original data to give the equivalent regression
 # coefficients to those generated in the dummy adjusted model.
@@ -2162,7 +2175,7 @@ adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
     means.from.data <- lapply(data.for.means, function(x) {
         if (is.numeric(x)) mean(x, na.rm = TRUE) else NULL})
     # Check if any aliasing of dummy variables has occurred, first extract mapping
-    dummy.variables <- names(estimation.data)[grepDummyVars(names(estimation.data))]
+    dummy.variables <- names(estimation.data)[isDummyVariable(names(estimation.data))]
     mapping.variables <- lapply(dummy.variables,
                                 function(x) attr(estimation.data[[x]], "predictors.matching.dummy"))
     names(mapping.variables) <- dummy.variables
@@ -2215,7 +2228,7 @@ aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, pr
     if (show.labels)
     {
         # Look up names from the full predictor set of names to ensure appropriate truncation
-        predictor.names <- predictor.names[!grepDummyVars(predictor.names)]
+        predictor.names <- predictor.names[!isDummyVariable(predictor.names)]
         lbls <- Labels(data, names.to.lookup = predictor.names)
         names(lbls) <- predictor.names
         extracted <- ExtractCommonPrefix(lbls)
@@ -2252,7 +2265,7 @@ aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, pr
 
 extractDummyAdjustedCoefs <- function(coefficients, computed.means)
 {
-    dummy.variables <- grepDummyVars(names(coefficients))
+    dummy.variables <- isDummyVariable(names(coefficients))
     dummy.variable.names <- extractDummyNames(names(coefficients)[dummy.variables])
     standard.variables <- grepl(paste0("^", dummy.variable.names, "$", collapse = "|"), names(coefficients))
     standard.variable.names <- names(coefficients)[standard.variables]

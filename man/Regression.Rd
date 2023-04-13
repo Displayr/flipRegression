@@ -138,7 +138,8 @@ See \code{\link{contrasts}} for more information.}
 
 \item{importance.absolute}{Whether the absolute value of the relative importance should be shown.}
 
-\item{interaction}{Optional variable to test for interaction with other variables in the model. Output will be a crosstab showing coefficients from both both models.}
+\item{interaction}{Optional variable to test for interaction with other variables in the model.
+Output will be a crosstab showing coefficients from both both models.}
 
 \item{correction}{Method to correct for multiple comparisons. Can be one of \code{"None"},
 \code{"False Discovery Rate", "Benjamini & Yekutieli", "Bonferroni", "Hochberg", "Holm"} or \code{"Hommel"}.}

@@ -42,7 +42,7 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
         interaction.requested <- !is.null(dummy.processed.data[["interaction.name"]])
         if (interaction.requested)
             new.estimation.data[[dummy.processed.data[["interaction.name"]]]] <- dummy.processed.data[["interaction"]][relevant.subset]
-        dummy.vars.left <- names(new.estimation.data)[grepDummyVars(names(new.estimation.data))]
+        dummy.vars.left <- names(new.estimation.data)[isDummyVariable(names(new.estimation.data))]
         if (length(dummy.vars.left) > 0)
         {
             # Copy attributes for mapping
