@@ -97,12 +97,10 @@ predict.Regression <- function(object, newdata = object$model, na.action = na.pa
     else
         predict(object$original, newdata = newdata, na.action = na.action)
 
-    # if (flipU::IsCount(object$type))
-    #      return(floor(predicted))
     if (object$type == "Binary Logit" || object$type == "Multinomial Logit")
     {
         levs <- levels(Observed(object))
-        predicted <- if(object$type == "Binary Logit")
+        predicted <- if (object$type == "Binary Logit")
             as.integer(predicted >= 0.5) + 1
         else
             match(predicted, levs)
@@ -270,11 +268,11 @@ Probabilities.Regression <- function(object, newdata, ...)
         colnames(probs) <- outcome.levels
         return(probs)
     }
-    xs <- 0:max(Observed(object), na.rm = TRUE)
     if (object$type == "Poisson")
     {
         log.lambdas <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "link"))
         lambdas <- exp(log.lambdas)
+        xs <- 0:max(Observed(object), na.rm = TRUE)
         return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
     }
     stop("Probabilities are not computed for models of type '", object$type, ".")
@@ -297,8 +295,6 @@ appendDummyAdjustmentsToTemplate <- function(regression.model) {
         stop("appendDummyAdjustmentsToTemplate only works with Regression models that ",
              "have an estimation.data.template.")
     coefficients <- coefficients(original.model)
-    # Coefficients are either a vector or matrix depending on model type
-    model.type <- getModelType(original.model)
     # Get the names of the coefficients (either column names or names, depending on model type)
     coefNamesFunc <- if (NCOL(coefficients) > 1L) colnames else names
     coefficient.names <- coefNamesFunc(coefficients)

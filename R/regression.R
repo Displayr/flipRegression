@@ -1262,7 +1262,7 @@ notValidForPartial <- function(object, method)
 {
     ms <- "Use partial data (pairwise correlations)"
     if (object$missing == ms)
-        stop(paste0("'", method, "' not available when 'missing' = ",ms, "'." ))
+        stop(sQuote(method), " not available when ", sQuote("missing"), " = ", dQuote(ms), ".")
 }
 
 
@@ -1273,7 +1273,7 @@ notValidForPartial <- function(object, method)
 notValidForCrosstabInteraction <- function(object, method)
 {
     if (object$test.interaction)
-        stop(paste0("'", method, "' not available when Crosstab interaction variable is supplied." ))
+        stop(sQuote(method), " not available when Crosstab interaction variable is supplied.")
 }
 
 

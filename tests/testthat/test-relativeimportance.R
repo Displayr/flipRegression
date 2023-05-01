@@ -474,9 +474,10 @@ test_that("DS-2876: Jaccard Output", {
     # Check predict method works with missing data
     expect_error(predictions <- predict(excluded.missing.model), NA)
     expect_true(sum(is.na(predictions)) == 1)
+    expected.error <- paste0(sQuote("predict"), " not available when ", sQuote("missing"), " ",
+                             "= ", dQuote("Use partial data (pairwise correlations)"), ".")
     expect_error(predictions <- predict(partial.missing.model),
-                 "'predict' not available when 'missing' = Use partial data (pairwise correlations)",
-                 fixed = TRUE)
+                 expected.error, fixed = TRUE)
     # Check model works with interaction
     dat.with.interaction <- dat
     dat.with.interaction$int <- factor(sample(LETTERS[1:3], size = n, replace = TRUE))
@@ -621,9 +622,10 @@ test_that("DS-2876: Correlation Output", {
     # Check predict method works with missing data
     expect_error(predictions <- predict(excluded.missing.model), NA)
     expect_true(sum(is.na(predictions)) == 1)
+    expected.error <- paste0(sQuote("predict"), " not available when ", sQuote("missing"), " ",
+                             "= ", dQuote("Use partial data (pairwise correlations)"), ".")
     expect_error(predictions <- predict(partial.missing.model),
-                 "'predict' not available when 'missing' = Use partial data (pairwise correlations)",
-                 fixed = TRUE)
+                 expected.error, fixed = TRUE)
     # Check model works with interaction
     dat.with.interaction <- dat
     dat.with.interaction$int <- factor(sample(LETTERS[1:3], size = n, replace = TRUE))
