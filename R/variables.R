@@ -38,30 +38,19 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
     result
 }
 
-#' \code{predict.Regression}
-#'
-#' Predicts a model outcome based on \code{newdata} and a fitted Regression \code{object}.
-#' NA is returned for cases with unfitted factor levels.
-#' @param object A \code{Regression} object.
-#' @param newdata Optionally, a data frame including the variables used to fit the model.
-#' If omitted, the \code{data} supplied to \code{Regression()} is used after any filtering.
-#' @param na.action Function determining what should be done with missing values in \code{newdata}.
-#' The default is to predict \code{NA}.
-#' @param ... Additional arguments to pass to predict.LDA.
-
-#' @export
 #' @importFrom stats predict.glm
-#' @importFrom flipData Observed CheckPredictionVariables
+#' @importFrom flipData Observed CheckPredictionVariables ValidateNewData
 #' @importFrom flipU IsRServer
-predict.Regression <- function(object, newdata = object$model, na.action = na.pass, ...)
+#' @export
+predict.Regression <- function(object, newdata = NULL, na.action = na.pass, ...)
 {
     if (object$test.interaction)
         stop("Cannot predict from regression model with Crosstab interaction.")
     if (isTRUE(object$stacked) && IsRServer())
         stop("Saving predicted values is currently not supported for stacked data.")
-    newdata <- CheckPredictionVariables(object, newdata)
     notValidForPartial(object, "predict")
     notValidForCrosstabInteraction(object, "predict")
+    newdata <- ValidateNewData(object, newdata)
     predicted <- if (any(class(object$original) == "glm"))
         suppressWarnings(predict.glm(object$original, newdata = newdata, na.action = na.action, type = "response"))
     else if ("polr" %in% class(object$original))
@@ -207,37 +196,26 @@ Observed.FitRegression <- function(x)
 #' @export
 probabilities <- function(object)
 {
-    Probabilities.Regression(object)
+    newdata <- object$model
+    Probabilities(object, newdata)
 }
-
 
 #' @importFrom flipData Probabilities
 #' @export
 flipData::Probabilities
 
-
-#' \code{Probabilities.Regression}
-#'
-#' @param object A \code{Regression} object.
-#' @param newdata Optionally, a data frame including the variables used to fit the model.
-#'     If omitted, \code{object$model} is used after any filtering.
-#' @param ... Additional arguments (not used).
 #' @importFrom stats na.pass dpois
-#' @importFrom flipData Probabilities Observed
+#' @importFrom flipData Observed ValidateNewData
 #' @importFrom flipU IsRServer
-#' @details Computes probabilities that are applicable from the relevant model. For exmaple, probabilities
-#' of class membership from a regression model.
-#' @export
-Probabilities.Regression <- function(object, newdata, ...)
+Probabilities.Regression <- function(object, newdata = NULL, ...)
 {
     notValidForPartial(object, "probabilities")
     notValidForCrosstabInteraction(object, "probabilities")
-    if (missing(newdata) || is.null(newdata))
-        newdata <- object$model
     if (object$type == "Linear")
-        stop("'probabilities' is not applicable to linear regression models.")
+        stop(sQuote("Probabilities"), " is not applicable to linear regression models.")
     if (isTRUE(object$stacked) && IsRServer())
         stop("Saving probabilitiles is currently not supported for stacked data.")
+    newdata <- ValidateNewData(object, newdata)
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata,
