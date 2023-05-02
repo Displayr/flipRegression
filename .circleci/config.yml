@@ -19,7 +19,7 @@ parameters:
         default: ""
     remote-deps:
         type: string
-        default: "Displayr/flipData@DS-4360-4"
+        default: ""
     plugins-branch:
         type: string
         default: ""
