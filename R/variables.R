@@ -207,6 +207,7 @@ flipData::Probabilities
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Observed ValidateNewData
 #' @importFrom flipU IsRServer
+#' @export
 Probabilities.Regression <- function(object, newdata = NULL, ...)
 {
     notValidForPartial(object, "probabilities")
