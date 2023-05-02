@@ -361,22 +361,22 @@ issvyglm <- function(model)
 
 #' @importFrom effects allEffects
 #' @export
-allEffects.Regression <- function(model, ...)
+allEffects.Regression <- function(mod, ...)
 {
-    has.aliased <- any(aliased.var <- model$summary$aliased)
+    has.aliased <- any(mod$summary$aliased)
 
-    .estimation.data <-  model$estimation.data
+    .estimation.data <-  mod$estimation.data
     assign(".estimation.data", .estimation.data, envir=.GlobalEnv)
 
     if (has.aliased)
-        model <- updateAliasedModel(model)
-    frml <- model$formula
+        mod <- updateAliasedModel(mod)
+    frml <- mod$formula
 
     assign(".formula", frml, envir=.GlobalEnv)
-    assign(".design", model$design, envir=.GlobalEnv)
+    assign(".design", mod$design, envir=.GlobalEnv)
     attach(.estimation.data, warn.conflicts = FALSE)
-    model$original$data <- .estimation.data
-    effects <- allEffects(model$original, ...)  # BreuschPagan(x$original)
+    mod$original$data <- .estimation.data
+    effects <- allEffects(mod$original, ...)  # BreuschPagan(x$original)
 
     ## remove(".design", envir=.GlobalEnv)
     ## remove(".formula", envir=.GlobalEnv)
