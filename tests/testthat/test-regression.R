@@ -61,30 +61,29 @@ test_that(missing,
           })
 
 missing <- "Multiple imputation"
-test_that(missing,
-          {
-              if (.Platform$OS.type == "windows")
-              {
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.296)
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.302)
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.309)
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.309)
-              } else
-              {
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.300)
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, subset = sb, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.312)
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.312)
-                  z <- as.numeric(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, weights = wgt, subset = sb, missing = missing)$coef[3])
-                  expect_equal(round(z, 3), 0.322)
-              }
-          })
+test_that(missing, {
+    reg.formula <- Overall ~ Fees + Interest + Phone + Branch + Online + ATM
+    basic.reg.args <- list(
+        formula = reg.formula,
+        data = bank,
+        missing = missing
+    )
+    z <- as.numeric(do.call(Regression, basic.reg.args)$coef[3])
+    expect_equal(round(z, 3), 0.298)
+    reg.args <- basic.reg.args
+    reg.args[["subset"]] <- sb
+    z <- as.numeric(do.call(Regression, reg.args)$coef[3])
+    expect_equal(round(z, 3), 0.313)
+    reg.args <- basic.reg.args
+    reg.args[["weights"]] <- wgt
+    z <- as.numeric(do.call(Regression, reg.args)$coef[3])
+    expect_equal(round(z, 3), 0.312)
+    reg.args <- basic.reg.args
+    reg.args[["weights"]] <- wgt
+    reg.args[["subset"]] <- sb
+    z <- as.numeric(do.call(Regression, reg.args)$coef[3])
+    expect_equal(round(z, 3), 0.323)
+})
 
 missing <- "Multiple imputation"
 test_that("DS-2645 - Entirely Missing predictor", {
