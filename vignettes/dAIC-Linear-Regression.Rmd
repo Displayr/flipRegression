@@ -41,7 +41,7 @@ Then the overall log-likelihood function is given by,
 
 \[
 \begin{aligned}
-    \mathcal L(\boldsymbol{\theta}) &= \sum_{i \in s} \ell_i(\boldsymbol{\theta}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
+    \mathcal L(\boldsymbol{\theta}) &= \sum_{i = 1}^n \ell_i(\boldsymbol{\theta}) = - \frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})^T(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\beta})}{2\sigma^2}
         &=: l^{[1]} + l^{[2]} + l^{[3]}
 \end{aligned}
 \]
