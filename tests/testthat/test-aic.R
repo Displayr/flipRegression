@@ -68,11 +68,11 @@ test_that("EH-530: Weighted AIC calculations correct", {
     delta.beta.matrix <- solve(v.beta.zero, v.beta)
     # Compute the sigma2 component of the delta matrix
     ## Information matrix for sigma2 in unweighted case
-    i.sigma2 <- n.hat / (2 * sigma2.hat^2)
+    i.sigma2 <- 1 / (2 * sigma2.hat^2)
     ## Estimate the covariance of sigma2 under sampling weights
     ## Use the score equation estimator
     u.sigma2.i <- -1 / (2 * sigma2.hat) + eps^2 / (2 * sigma2.hat^2)
-    var.sigma2 <-  1 / sum(w * u.sigma2.i^2)
+    var.sigma2 <-  1 / mean(w * u.sigma2.i^2)
     delta.sigma2 <- i.sigma2 * var.sigma2
     # Compute the overall design effects
     delta.beta <- diag(delta.beta.matrix)

@@ -1283,7 +1283,7 @@ extractSvyLmAIC <- function(fit, k = 2) {
     # Use ML estimate of sigma2
     sigma2.hat <- sum(eps^2 * w) / n.hat
     # Compute the likelihood component of the AIC
-    minus.2.ell.hat <- n.hat * (log(sigma2.hat) + 1 + log(2 * pi))
+    minus.2.n.ell.hat <- n.hat * (log(sigma2.hat) + 1 + log(2 * pi))
     # Construct the beta contribution to the design effect matrix
     v.beta.zero <- fit[["naive.cov"]] * sigma2.hat
     v.beta <- vcov(fit)
@@ -1291,6 +1291,10 @@ extractSvyLmAIC <- function(fit, k = 2) {
     delta.beta.matrix <- solve(v.beta.zero, v.beta)
     # Compute the sigma2 component of the delta matrix
     ## Information matrix for sigma2 in unweighted case
+    ### For speed, use i.sigma2 = n.hat / (2 * sigma.hat^2) instead of 1 / (2 * sigma.hat^2)
+    ### The division by delta.sigma2 later uses 1 / sum(w * u.sigma2.i^2) which is equivalent
+    ### to using i.sigma2 / var.sigma2 = (1 / (2 * sigma.hat^2)) / (1 / mean(w * u.sigma2.i^2))
+    ### Equivalnce tested in test-aic.R code
     i.sigma2 <- n.hat / (2 * sigma2.hat^2)
     ## Estimate the covariance of sigma2 under sampling weights
     ## Use the score equation estimator
@@ -1302,7 +1306,7 @@ extractSvyLmAIC <- function(fit, k = 2) {
     delta.bar <- mean(c(delta.beta, delta.sigma2))
     eff.p <- sum(delta.beta, delta.sigma2)
     # Compute the dAIC = -2LL + k * p * deltabar
-    aic <- minus.2.ell.hat + k * eff.p
+    aic <- minus.2.n.ell.hat + k * eff.p
     c(eff.p = eff.p, AIC = aic, deltabar = delta.bar)
 }
 
