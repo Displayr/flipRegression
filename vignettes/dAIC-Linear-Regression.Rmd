@@ -157,9 +157,9 @@ Maximising the log likelihood function in a similar manner to the unweighted cas
 \]
 \[
     \widehat{\mathcal J}(\boldsymbol{\theta}) = \begin{pmatrix} \frac{\boldsymbol{X}^T \boldsymbol{W} \boldsymbol{X}}{N\sigma^2} & \frac{\boldsymbol{X}^T \boldsymbol{W} \boldsymbol{\varepsilon}}{N(\sigma^2)^2} \\
-                                                 \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W} \boldsymbol{X}}{N(\sigma^2)^2} & \frac{1}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W}\boldsymbol{\varepsilon}}{N(\sigma^2)^3}
+                                                 \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W} \boldsymbol{X}}{N(\sigma^2)^2} & -\frac{1}{2(\sigma^2)^2} + \frac{\boldsymbol{\varepsilon}^T \boldsymbol{W}\boldsymbol{\varepsilon}}{N(\sigma^2)^3}
                                  \end{pmatrix}, \qquad  \mathcal J_N(\boldsymbol{\theta}) = \begin{pmatrix} \frac{\boldsymbol{X}^T  \boldsymbol{X}}{N\sigma^2} & \frac{\boldsymbol{X}^T  \boldsymbol{\varepsilon}}{N(\sigma^2)^2} \\
-                                                 \frac{\boldsymbol{\varepsilon}^T  \boldsymbol{X}}{N(\sigma^2)^2} & \frac{1}{2(\sigma^2)^2} - \frac{\boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon}}{N(\sigma^2)^3}
+                                                 \frac{\boldsymbol{\varepsilon}^T  \boldsymbol{X}}{N(\sigma^2)^2} & -\frac{1}{2(\sigma^2)^2} + \frac{\boldsymbol{\varepsilon}^T \boldsymbol{\varepsilon}}{N(\sigma^2)^3}
                                  \end{pmatrix};
 \]
 where $\mathcal J_N(\boldsymbol{\theta})$ is the negative Hessian without the weights applied which is used in later results.
