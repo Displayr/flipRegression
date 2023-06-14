@@ -1647,7 +1647,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     # functions (e.g. predicted values) are not supported
     # for stacked data, so no need to keep track of removed
     # cases.
-    rm.missing <- if (missing == "Exlcude cases with missing data") {
+    rm.missing <- if (missing == "Exclude cases with missing data") {
         apply(stacked.data, 1, function(x){any(is.na(x))})
     } else {
         apply(stacked.data, 1, function(x){all(is.na(x))})
@@ -1693,7 +1693,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     }
 
     # Update subset for removed missing cases
-    if (any(rm.missing)) {
+    if (any(rm.missing) && length(subset) > 1) {
     	old.subset <- subset
     	subset <- subset[!rm.missing]
     	subset <- CopyAttributes(subset, old.subset)
