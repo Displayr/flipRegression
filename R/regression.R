@@ -920,7 +920,7 @@ Regression <- function(formula = NULL,
     # Update sample description if stacked cases removed
     # prior to analysis
     if (stacked.data.check && n.stacked.cases.removed > 0) {
-        result$sample.description <- paste0(result$sample.description,
+        result$sample.description <- paste0(result$sample.description, " ",
                                             n.stacked.cases.removed, " out of ",
                                             n.orig.stacked.cases,
                                             " stacked cases contained missing data and were removed;")
@@ -1639,7 +1639,6 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     unstacked.data <- validated.unstacked.output[["data"]]
     stacks <- validated.unstacked.output[["stacks"]]
     stacked.data <- stackData(unstacked.data)
-
     n.orig.stacked.cases = nrow(stacked.data)
 
     # Exclude missing cases. Stacking can result in
@@ -1647,10 +1646,11 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     # functions (e.g. predicted values) are not supported
     # for stacked data, so no need to keep track of removed
     # cases.
+    missing.vals <- lapply(stacked.data, is.na)
     rm.missing <- if (missing == "Exclude cases with missing data") {
-        apply(stacked.data, 1, function(x){any(is.na(x))})
+        Reduce(`|`, missing.vals)
     } else {
-        apply(stacked.data, 1, function(x){all(is.na(x))})
+        Reduce(`&`, missing.vals)
     }
 
     if (all(rm.missing)) {
@@ -1684,6 +1684,11 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
         {
             subset <- subset & tmp.sub
             attr(subset, "label") <- subset.description
+        }
+        if (any(rm.missing)) {
+        	old.interaction <- interaction
+            interaction <- interaction[!rm.missing]
+            interaction <- CopyAttributes(interaction, old.interaction)
         }
     } else if (!is.null(subset) && length(subset) > 1)
     {

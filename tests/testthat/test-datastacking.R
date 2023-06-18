@@ -965,16 +965,19 @@ test_that("DS-2694: Ensure NET and duplicated variables are removed", {
 })
 
 test_that("DS-4779 Stacking removes unecessary missing cases", {
-    driver.data <- readRDS(system.file("data/DS4779.driver.data.rds", package = "flipRegression"))
+    driver.data <- readRDS(system.file("/inst/extdata/DS4779.driver.data.rds", package = "flipRegression"))
     input.data <- list("Y" = driver.data$outcome, "X" = driver.data$predictors)
-    res <- Regression(type = "Linear",
+
+    expect_error(res <- Regression(type = "Linear",
                stacked.data.check = TRUE,
                unstacked.data = input.data,
                output = "Relative Importance Analysis",
-               show.labels = TRUE)
+               show.labels = TRUE,
+               importance.absolute = TRUE), NA)
 
     #No change in coeffs compared to existing analysis
     expect_equal(res$importance, driver.data$model.importance)
 
     #Sample size is correct
+    expect_equal(nrow(res$estimation.data), 823)
 })
