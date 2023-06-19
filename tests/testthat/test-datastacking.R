@@ -968,12 +968,12 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
     driver.data <- readRDS(system.file("/inst/extdata/DS4779.driver.data.rds", package = "flipRegression"))
     input.data <- list("Y" = driver.data$outcome, "X" = driver.data$predictors)
 
-    expect_error(res <- Regression(type = "Linear",
+    expect_warning(res <- Regression(type = "Linear",
                stacked.data.check = TRUE,
                unstacked.data = input.data,
                output = "Relative Importance Analysis",
                show.labels = TRUE,
-               importance.absolute = TRUE), NA)
+               importance.absolute = FALSE), "Negative signs")
 
     #No change in coeffs compared to existing analysis
     expect_equal(res$importance, driver.data$model.importance)
