@@ -1647,11 +1647,8 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     # for stacked data, so no need to keep track of removed
     # cases.
     missing.vals <- lapply(stacked.data, is.na)
-    rm.missing <- if (missing == "Exclude cases with missing data") {
-        Reduce(`|`, missing.vals)
-    } else {
-        Reduce(`&`, missing.vals)
-    }
+    .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
+    rm.missing <- Reduce(.reduceFunction, missing.vals)
 
     if (all(rm.missing)) {
     	stop("The stacked data contains no observations after missing data has been removed.")
