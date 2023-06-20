@@ -617,6 +617,12 @@ Regression <- function(formula = NULL,
             final.model$coef <- final.model$original$coef <- coefs[, 1]
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
+            if (stacked.data.check && n.stacked.cases.removed > 0) {
+            	final.model$sample.description <- appendStackedCasesRemoved(final.model$sample.description,
+                                                n.stacked.cases.removed,
+                                                n.orig.stacked.cases,
+                                                entirely = TRUE)
+        	}
             if (!is.null(interaction))
             {
                 final.model$interaction <- multipleImputationCrosstabInteraction(models, importance)
@@ -916,14 +922,11 @@ Regression <- function(formula = NULL,
         }
     }
 
-
-    # Update sample description if stacked cases removed
-    # prior to analysis
     if (stacked.data.check && n.stacked.cases.removed > 0) {
-        result$sample.description <- paste0(result$sample.description, " ",
-                                            n.stacked.cases.removed, " out of ",
+        result$sample.description <- appendStackedCasesRemoved(result$sample.description,
+                                            n.stacked.cases.removed,
                                             n.orig.stacked.cases,
-                                            " stacked cases contained missing data and were removed;")
+                                            entirely = missing != "Exclude cases with missing data")
     }
 
     result$footer <- regressionFooter(result)
@@ -1651,11 +1654,11 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     rm.missing <- Reduce(.reduceFunction, missing.vals)
 
     if (all(rm.missing)) {
-    	stop("The stacked data contains no observations after missing data has been removed.")
+        stop("The stacked data contains no observations after missing data has been removed.")
     }
 
     data <- stacked.data[!rm.missing, ]
-	data <- CopyAttributes(data, stacked.data)
+    data <- CopyAttributes(data, stacked.data)
 
     # Update interaction, subset and weights if necessary
     # if interaction vector supplied
@@ -1683,7 +1686,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
             attr(subset, "label") <- subset.description
         }
         if (any(rm.missing)) {
-        	old.interaction <- interaction
+            old.interaction <- interaction
             interaction <- interaction[!rm.missing]
             interaction <- CopyAttributes(interaction, old.interaction)
         }
@@ -1696,9 +1699,9 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
 
     # Update subset for removed missing cases
     if (any(rm.missing) && length(subset) > 1) {
-    	old.subset <- subset
-    	subset <- subset[!rm.missing]
-    	subset <- CopyAttributes(subset, old.subset)
+        old.subset <- subset
+        subset <- subset[!rm.missing]
+        subset <- CopyAttributes(subset, old.subset)
     }
 
     # Update weights
@@ -1707,7 +1710,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
         old.weights <- weights
         weights <- rep(weights, stacks)
         if (any(rm.missing)) {
-        	weights <- weights[!rm.missing]
+            weights <- weights[!rm.missing]
         }
         weights <- CopyAttributes(weights, old.weights)
     }
@@ -2372,4 +2375,15 @@ reduceOutputSize <- function(fit)
     original$data <- NULL
     fit$original <- original
     return(fit)
+}
+
+appendStackedCasesRemoved <- function(sample.description, 
+                                      n.stacked.cases.removed, 
+                                      n.orig.stacked.cases, entirely = TRUE) {
+	qualifier <- if (entirely) "entirely" else "some"
+    sample.description <- paste0(sample.description, " ",
+                                 n.stacked.cases.removed, " out of ",
+                                 n.orig.stacked.cases,
+                                 " stacked cases contained ", qualifier, 
+                                 " missing data and were removed;")
 }
