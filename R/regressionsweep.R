@@ -43,7 +43,15 @@ LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL
         stop(warningSampleSizeTooSmall())
     n.total <- nrow(data)
     weighted <- !is.null(weights)
-    if (n.subset < n.total & weighted)
+    if (weighted) {
+        warning("The pairwise correlation option for missing data assumes ",
+                "that cases are missing completely at random (MCAR), and ",
+                "hence that all cases are drawn from the same population. ",
+                "However, using a weight indicates that you do not believe ",
+                "this to be the case. Use of weights in this case should be ",
+                "treated with caution.")
+    }
+    if (n.subset < n.total && weighted)
         weights <- subset(weights, subset)
     y <- subset.data[, outcome.index]
     x <- subset.data[, predictors.index]

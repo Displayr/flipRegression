@@ -347,13 +347,16 @@ Regression <- function(formula = NULL,
     # Check if stackable data is input
     if (stacked.data.check)
     {
-        stacked.data.output <- processAndStackData(unstacked.data, formula, interaction, subset, weights)
+        stacked.data.output <- processAndStackData(unstacked.data, formula, interaction, subset, weights, missing)
         # Update relevant terms
         data <- stacked.data.output[["data"]]
         formula <- input.formula <- stacked.data.output[["formula"]]
         interaction <- stacked.data.output[["interaction"]]
         subset <- stacked.data.output[["subset"]]
         weights <- stacked.data.output[["weights"]]
+        n.orig.stacked.cases <- stacked.data.output[["n.orig.stacked.cases"]]
+        n.stacked.cases.removed <- stacked.data.output[["n.stacked.cases.removed"]]
+        remove("stacked.data.output")
     } else
         input.formula <- formula # Hack to work past scoping issues in car package: https://cran.r-project.org/web/packages/car/vignettes/embedding.pdf.
 
@@ -614,6 +617,12 @@ Regression <- function(formula = NULL,
             final.model$coef <- final.model$original$coef <- coefs[, 1]
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
+            if (stacked.data.check && n.stacked.cases.removed > 0) {
+            	final.model$sample.description <- appendStackedCasesRemoved(final.model$sample.description,
+                                                n.stacked.cases.removed,
+                                                n.orig.stacked.cases,
+                                                entirely = TRUE)
+        	}
             if (!is.null(interaction))
             {
                 final.model$interaction <- multipleImputationCrosstabInteraction(models, importance)
@@ -754,6 +763,7 @@ Regression <- function(formula = NULL,
     result$missing <- missing
     result$test.interaction <- !is.null(interaction)
     result$effects.format <- effects.format
+
 
     suppressWarnings(tmpSummary <- summary(result$original))
     if (type == "Ordered Logit")
@@ -910,6 +920,13 @@ Regression <- function(formula = NULL,
             }
             result$anova <- anova.out
         }
+    }
+
+    if (stacked.data.check && n.stacked.cases.removed > 0) {
+        result$sample.description <- appendStackedCasesRemoved(result$sample.description,
+                                            n.stacked.cases.removed,
+                                            n.orig.stacked.cases,
+                                            entirely = missing != "Exclude cases with missing data")
     }
 
     result$footer <- regressionFooter(result)
@@ -1617,14 +1634,38 @@ removeMissingVariables <- function(data, formula, formula.with.interaction,
 # Processes the unstacked data and stacks it.
 # If the stacking is successful, the interaction, subset, weights are also updated
 # to be the appropriate size
-processAndStackData <- function(unstacked.data, formula, interaction, subset, weights)
+processAndStackData <- function(unstacked.data, formula, interaction, subset, weights, missing)
 {
     checkDataFeasibleForStacking(unstacked.data)
     unstacked.data <- removeDataReduction(unstacked.data)
     validated.unstacked.output <- validateDataForStacking(unstacked.data)
     unstacked.data <- validated.unstacked.output[["data"]]
     stacks <- validated.unstacked.output[["stacks"]]
-    data <- stackData(unstacked.data)
+    stacked.data <- stackData(unstacked.data)
+    n.orig.stacked.cases = nrow(stacked.data)
+
+    # Exclude missing cases. Stacking can result in
+    # many empty cases when data set is sparse. Respondent-level
+    # functions (e.g. predicted values) are not supported
+    # for stacked data, so no need to keep track of removed
+    # cases.
+    rm.missing <- rep(FALSE, n.orig.stacked.cases)
+    # Don't exclude missing cases when using pairwise correlations.
+    # It currently causes differences which need to be investigated further. (DS-4844)
+    if (missing != "Use partial data (pairwise correlations") {
+    	missing.vals <- lapply(stacked.data, is.na)
+	    .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
+	    rm.missing <- Reduce(.reduceFunction, missing.vals)	
+    }
+    
+
+    if (all(rm.missing)) {
+        stop("The stacked data contains no observations after missing data has been removed.")
+    }
+
+    data <- stacked.data[!rm.missing, ]
+    data <- CopyAttributes(data, stacked.data)
+
     # Update interaction, subset and weights if necessary
     # if interaction vector supplied
     # it should be original n, needs to be stacked to n = nv where v is number oof outcome vars
@@ -1650,23 +1691,45 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
             subset <- subset & tmp.sub
             attr(subset, "label") <- subset.description
         }
+        if (any(rm.missing)) {
+            old.interaction <- interaction
+            interaction <- interaction[!rm.missing]
+            interaction <- CopyAttributes(interaction, old.interaction)
+        }
     } else if (!is.null(subset) && length(subset) > 1)
     {
         old.subset <- subset
         subset <- rep(old.subset, stacks)
         subset <- CopyAttributes(subset, old.subset)
     }
+
+    # Update subset for removed missing cases
+    if (any(rm.missing) && length(subset) > 1) {
+        old.subset <- subset
+        subset <- subset[!rm.missing]
+        subset <- CopyAttributes(subset, old.subset)
+    }
+
     # Update weights
     if (!is.null(weights) && length(weights) != nrow(data))
     {
         old.weights <- weights
         weights <- rep(weights, stacks)
+        if (any(rm.missing)) {
+            weights <- weights[!rm.missing]
+        }
         weights <- CopyAttributes(weights, old.weights)
     }
 
+    n.removed <- Sum(rm.missing)
+
     # Update formula
     formula <- updateStackedFormula(data, formula)
-    list(data = data, formula = formula, interaction = interaction, subset = subset, weights = weights)
+    list(data = data, formula = formula,
+         interaction = interaction,
+         subset = subset, weights = weights,
+         n.orig.stacked.cases = n.orig.stacked.cases,
+         n.stacked.cases.removed = n.removed)
 }
 
 # Removes the data reduction columns and the reduction via the codeframe attribute, if available
@@ -2318,4 +2381,15 @@ reduceOutputSize <- function(fit)
     original$data <- NULL
     fit$original <- original
     return(fit)
+}
+
+appendStackedCasesRemoved <- function(sample.description, 
+                                      n.stacked.cases.removed, 
+                                      n.orig.stacked.cases, entirely = TRUE) {
+	qualifier <- if (entirely) "entirely" else "some"
+    sample.description <- paste0(sample.description, " ",
+                                 n.stacked.cases.removed, " out of ",
+                                 n.orig.stacked.cases,
+                                 " stacked cases contained ", qualifier, 
+                                 " missing data and were removed;")
 }

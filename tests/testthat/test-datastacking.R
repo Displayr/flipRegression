@@ -963,3 +963,78 @@ test_that("DS-2694: Ensure NET and duplicated variables are removed", {
                           "Predictor variables via the Table view options appropriately."),
                    fixed = TRUE)
 })
+
+test_that("DS-4779 Stacking removes unecessary missing cases", {
+    driver.data <- readRDS(system.file("/inst/extdata/DS4779.driver.data.rds", package = "flipRegression"))
+
+    # All models below have 1921 completely missing cases and this
+    # should be reported in the footer.
+    expected.footer <- "1291 out of 2114 stacked cases contained"
+
+    # Basic Driver Analysis
+    # - No filter or weight
+    # - Exclude cases with missing data
+    input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors"]])
+    expect_warning(res <- Regression(type = "Linear",
+               stacked.data.check = TRUE,
+               unstacked.data = input.data,
+               output = "Relative Importance Analysis",
+               show.labels = TRUE,
+               importance.absolute = FALSE,
+               missing = "Exclude cases with missing data"), "Negative signs")
+
+    #No change in coeffs compared to existing analysis
+    expect_equal(res$importance, driver.data[["model.importance"]])
+    #Sample size is correct
+    expect_equal(nrow(res[["estimation.data"]]), 823)
+    # Footer message refers to missing stacked observations being removed
+    expect_match(res$footer, expected.footer)
+
+    # Driver analysis with filter and weight
+    expect_warning(res <- Regression(type = "Linear",
+               stacked.data.check = TRUE,
+               unstacked.data = input.data,
+               output = "Relative Importance Analysis",
+               show.labels = TRUE,
+               importance.absolute = FALSE,
+               missing = "Exclude cases with missing data",
+               subset = driver.data[["income.filter"]],
+               weights = driver.data[["gender.weight"]]), "Negative signs")
+
+    expect_equal(res$importance, driver.data[["filtered.weighted.importance"]])
+    expect_equal(nrow(res[["estimation.data"]]), 416)
+    expect_match(res$footer, expected.footer)
+
+    # Linear model, multiple imputation, filtered and weighted
+    input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors.with.additional.nas"]])
+    expect_error(res <- Regression(type = "Linear",
+               stacked.data.check = TRUE,
+               unstacked.data = input.data,
+               output = "Summary",
+               show.labels = TRUE,
+               importance.absolute = FALSE,
+               missing = "Multiple imputation",
+               subset = driver.data[["income.filter"]],
+               weights = driver.data[["gender.weight"]]), NA)
+
+    expect_equal(res$summary$coefficients, driver.data[["imputed.model.coeffs"]])
+    expect_equal(nrow(res[["estimation.data"]]), 416)
+    expect_match(res$footer, expected.footer)
+
+    # Linear model, dummy variable adjustment, filtered and weighted
+    input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors.with.additional.nas"]])
+    expect_error(res <- Regression(type = "Linear",
+               stacked.data.check = TRUE,
+               unstacked.data = input.data,
+               output = "Summary",
+               show.labels = TRUE,
+               importance.absolute = FALSE,
+               missing = "Dummy variable adjustment",
+               subset = driver.data[["income.filter"]],
+               weights = driver.data[["gender.weight"]]), NA)
+
+    expect_equal(res$summary$coefficients, driver.data[["dummy.model.coeffs"]])
+    expect_equal(nrow(res[["estimation.data"]]), 416)
+    expect_match(res$footer, expected.footer)
+
+})
