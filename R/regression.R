@@ -1649,9 +1649,15 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     # functions (e.g. predicted values) are not supported
     # for stacked data, so no need to keep track of removed
     # cases.
-    missing.vals <- lapply(stacked.data, is.na)
-    .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
-    rm.missing <- Reduce(.reduceFunction, missing.vals)
+    rm.missing <- rep(FALSE, n.orig.stacked.cases)
+    # Don't exclude missing cases when using pairwise correlations.
+    # It currently causes differences which need to be investigated further. (DS-4844)
+    if (missing != "Use partial data (pairwise correlations") {
+    	missing.vals <- lapply(stacked.data, is.na)
+	    .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
+	    rm.missing <- Reduce(.reduceFunction, missing.vals)	
+    }
+    
 
     if (all(rm.missing)) {
         stop("The stacked data contains no observations after missing data has been removed.")

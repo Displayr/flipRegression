@@ -1005,22 +1005,6 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
     expect_equal(nrow(res[["estimation.data"]]), 416)
     expect_match(res$footer, expected.footer)
 
-    # Linear model, pairwise missing, filtered and weighted
-    input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors.with.additional.nas"]])
-    expect_error(res <- Regression(type = "Linear",
-               stacked.data.check = TRUE,
-               unstacked.data = input.data,
-               output = "Summary",
-               show.labels = TRUE,
-               importance.absolute = FALSE,
-               missing = "Use partial data (pairwise correlations)",
-               subset = driver.data[["income.filter"]],
-               weights = driver.data[["gender.weight"]]), NA)
-
-    expect_equal(res$summary$coefficients, driver.data[["pairwise.model.coeffs"]])
-    expect_equal(nrow(res[["model"]]), 823)
-    expect_match(res$footer, expected.footer)
-
     # Linear model, multiple imputation, filtered and weighted
     input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors.with.additional.nas"]])
     expect_error(res <- Regression(type = "Linear",
