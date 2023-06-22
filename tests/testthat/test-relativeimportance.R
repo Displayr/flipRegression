@@ -608,10 +608,10 @@ test_that("DS-2876: Correlation Output", {
                                                      output = "Correlation", missing = "Use partial data (pairwise correlations)"), NA)
     expect_error(subset.partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing, subset = subset,
                                                              output = "Correlation", missing = "Use partial data (pairwise correlations)"), NA)
-    expect_error(weighted.subset.partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
+    expect_warning(weighted.subset.partial.missing.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.missing,
                                                                      subset = subset, weights = weights,
                                                                      output = "Correlation",
-                                                                     missing = "Use partial data (pairwise correlations)"), NA)
+                                                                     missing = "Use partial data (pairwise correlations)"), "MCAR")
     expect_equal(partial.missing.model$importance$sample.size, c(X1 = n - 1, X2 = n, X3 = n))
     dat.with.missing <- as.data.frame(lapply(dat, function(x) {
         x[sample(c(TRUE, FALSE), size = length(x), replace = TRUE)] <- NA
@@ -636,11 +636,11 @@ test_that("DS-2876: Correlation Output", {
                                                 subset = subset,
                                                 interaction = int, output = "Correlation"),
                  NA)
-    expect_error(subset.weight.int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
+    expect_warning(subset.weight.int.model <- Regression(Y ~ X1 + X2 + X3, data = dat.with.interaction,
                                                        subset = subset, weights = weights,
                                                        interaction = int, output = "Correlation",
                                                        missing = "Use partial data (pairwise correlations)"),
-                 NA)
+                 "MCAR")
     # Check interaction with missing values is handled
     dat.with.missing.interaction <- dat.with.interaction
     missing.int <- dat.with.interaction$int

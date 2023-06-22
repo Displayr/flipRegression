@@ -54,8 +54,8 @@ test_that("Use partial data (pairwise correlations) - filtered",
 
 test_that("Use partial data (pairwise correlations) - weighted",
           {
-              z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                              data = bank, missing = missing, weights = bank$weight)
+              expect_warning(z <- Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                              data = bank, missing = missing, weights = bank$weight), "MCAR")
               expect_equal(0.458160, unname(z$original$original$R2), tolerance=1e-5)
               expect_equal(41.17282, unname(z$original$original$F), tolerance=1e-5)
               expect_equal(0.3603956, as.numeric(z$original$coef[2]), tolerance=1e-5)
@@ -70,9 +70,9 @@ test_that("Use partial data (pairwise correlations) - popoulation weighted and f
     wght <- bank$ID
     sub <- bank$weight > 1
     bank$ID <- bank$weight <- bank$dep <- NULL
-    z <- Regression(Overall ~ .,
+    expect_warning(z <- Regression(Overall ~ .,
                     data = bank, missing = missing, weights = wght,
-                    subset = sub)
+                    subset = sub), "MCAR")
     expect_equal(0.414488, unname(z$original$original$R2), tolerance=1e-5)
     expect_equal(8.858319, unname(z$original$original$F), tolerance=1e-5)
     expect_equal(0.3024816, as.numeric(z$original$coef[2]), tolerance=1e-5)
