@@ -981,7 +981,7 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
                output = "Relative Importance Analysis",
                show.labels = TRUE,
                importance.absolute = FALSE,
-               missing = "Exclude cases with missing data"), "Negative signs")
+               missing = "Exclude cases with missing data"), "of the data is missing")
 
     #No change in coeffs compared to existing analysis
     expect_equal(res$importance, driver.data[["model.importance"]])
@@ -999,7 +999,7 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
                importance.absolute = FALSE,
                missing = "Exclude cases with missing data",
                subset = driver.data[["income.filter"]],
-               weights = driver.data[["gender.weight"]]), "Negative signs")
+               weights = driver.data[["gender.weight"]]), "of the data is missing")
 
     expect_equal(res$importance, driver.data[["filtered.weighted.importance"]])
     expect_equal(nrow(res[["estimation.data"]]), 416)
@@ -1007,7 +1007,7 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
 
     # Linear model, multiple imputation, filtered and weighted
     input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors.with.additional.nas"]])
-    expect_error(res <- Regression(type = "Linear",
+    expect_warning(res <- Regression(type = "Linear",
                stacked.data.check = TRUE,
                unstacked.data = input.data,
                output = "Summary",
@@ -1015,7 +1015,7 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
                importance.absolute = FALSE,
                missing = "Multiple imputation",
                subset = driver.data[["income.filter"]],
-               weights = driver.data[["gender.weight"]]), NA)
+               weights = driver.data[["gender.weight"]]), "of the data is missing")
 
     expect_equal(res$summary$coefficients, driver.data[["imputed.model.coeffs"]])
     expect_equal(nrow(res[["estimation.data"]]), 416)
@@ -1023,7 +1023,7 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
 
     # Linear model, dummy variable adjustment, filtered and weighted
     input.data <- list("Y" = driver.data[["outcome"]], "X" = driver.data[["predictors.with.additional.nas"]])
-    expect_error(res <- Regression(type = "Linear",
+    expect_warning(res <- Regression(type = "Linear",
                stacked.data.check = TRUE,
                unstacked.data = input.data,
                output = "Summary",
@@ -1031,7 +1031,7 @@ test_that("DS-4779 Stacking removes unecessary missing cases", {
                importance.absolute = FALSE,
                missing = "Dummy variable adjustment",
                subset = driver.data[["income.filter"]],
-               weights = driver.data[["gender.weight"]]), NA)
+               weights = driver.data[["gender.weight"]]), "of the data is missing")
 
     expect_equal(res$summary$coefficients, driver.data[["dummy.model.coeffs"]])
     expect_equal(nrow(res[["estimation.data"]]), 416)
