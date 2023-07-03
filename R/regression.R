@@ -618,11 +618,11 @@ Regression <- function(formula = NULL,
             final.model$missing = "Multiple imputation"
             final.model$sample.description <- processed.data$description
             if (stacked.data.check && n.stacked.cases.removed > 0) {
-            	final.model$sample.description <- appendStackedCasesRemoved(final.model$sample.description,
+                final.model$sample.description <- appendStackedCasesRemoved(final.model$sample.description,
                                                 n.stacked.cases.removed,
                                                 n.orig.stacked.cases,
                                                 entirely = TRUE)
-        	}
+            }
             if (!is.null(interaction))
             {
                 final.model$interaction <- multipleImputationCrosstabInteraction(models, importance)
@@ -1653,15 +1653,24 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     # Don't exclude missing cases when using pairwise correlations.
     # It currently causes differences which need to be investigated further. (DS-4844)
     if (missing != "Use partial data (pairwise correlations") {
-    	missing.vals <- lapply(stacked.data, is.na)
-	    .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
-	    rm.missing <- Reduce(.reduceFunction, missing.vals)	
+        missing.vals <- lapply(stacked.data, is.na)
+        .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
+        rm.missing <- Reduce(.reduceFunction, missing.vals) 
     }
-    
+
 
     if (all(rm.missing)) {
         stop("The stacked data contains no observations after missing data has been removed.")
     }
+
+    n.missing <- Sum(rm.missing)
+    missing.data.proportion <- n.missing / n.orig.stacked.cases
+    if (missing.data.proportion > 0.5) {
+        warning(paste(FormatAsPercent(missing.data.proportion), "of the data is missing and has been excluded from the analysis.",
+                      "Consider either filters to ensure that the data that is missing is in-line with your expectations,",
+                      "or, set 'Missing Data' to another option."))    
+    }
+    
 
     data <- stacked.data[!rm.missing, ]
     data <- CopyAttributes(data, stacked.data)
@@ -1721,7 +1730,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
         weights <- CopyAttributes(weights, old.weights)
     }
 
-    n.removed <- Sum(rm.missing)
+    
 
     # Update formula
     formula <- updateStackedFormula(data, formula)
@@ -1729,7 +1738,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
          interaction = interaction,
          subset = subset, weights = weights,
          n.orig.stacked.cases = n.orig.stacked.cases,
-         n.stacked.cases.removed = n.removed)
+         n.stacked.cases.removed = n.missing)
 }
 
 # Removes the data reduction columns and the reduction via the codeframe attribute, if available
@@ -2386,7 +2395,7 @@ reduceOutputSize <- function(fit)
 appendStackedCasesRemoved <- function(sample.description, 
                                       n.stacked.cases.removed, 
                                       n.orig.stacked.cases, entirely = TRUE) {
-	qualifier <- if (entirely) "entirely" else "some"
+    qualifier <- if (entirely) "entirely" else "some"
     sample.description <- paste0(sample.description, " ",
                                  n.stacked.cases.removed, " out of ",
                                  n.orig.stacked.cases,
