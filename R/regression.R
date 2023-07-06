@@ -946,7 +946,6 @@ Regression <- function(formula = NULL,
     result <- setChartData(result, output)
     result$stacked <- stacked.data.check
     result <- reduceOutputSize(result)
-
     return(result)
 }
 
@@ -1655,7 +1654,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     if (missing != "Use partial data (pairwise correlations") {
         missing.vals <- lapply(stacked.data, is.na)
         .reduceFunction <- if (missing == "Exclude cases with missing data") `|` else `&`
-        rm.missing <- Reduce(.reduceFunction, missing.vals) 
+        rm.missing <- Reduce(.reduceFunction, missing.vals)
     }
 
 
@@ -1668,9 +1667,9 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
     if (missing.data.proportion > 0.5) {
         warning(paste(FormatAsPercent(missing.data.proportion), "of the data is missing and has been excluded from the analysis.",
                       "Consider either filters to ensure that the data that is missing is in-line with your expectations,",
-                      "or, set 'Missing Data' to another option."))    
+                      "or, set 'Missing Data' to another option."))
     }
-    
+
 
     data <- stacked.data[!rm.missing, ]
     data <- CopyAttributes(data, stacked.data)
@@ -1730,7 +1729,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
         weights <- CopyAttributes(weights, old.weights)
     }
 
-    
+
 
     # Update formula
     formula <- updateStackedFormula(data, formula)
@@ -2389,16 +2388,24 @@ reduceOutputSize <- function(fit)
         fit$design <- original$survey.design
     original$data <- NULL
     fit$original <- original
+
+    # Prevent call objects from carrying around the complete
+    # unstacked data objects.
+    if (fit$stacked) {
+        fit$call[["unstacked.data"]] <- NULL
+        fit$summary$call[["unstacked.data"]] <- NULL
+    }
+
     return(fit)
 }
 
-appendStackedCasesRemoved <- function(sample.description, 
-                                      n.stacked.cases.removed, 
+appendStackedCasesRemoved <- function(sample.description,
+                                      n.stacked.cases.removed,
                                       n.orig.stacked.cases, entirely = TRUE) {
     qualifier <- if (entirely) "entirely" else "some"
     sample.description <- paste0(sample.description, " ",
                                  n.stacked.cases.removed, " out of ",
                                  n.orig.stacked.cases,
-                                 " stacked cases contained ", qualifier, 
+                                 " stacked cases contained ", qualifier,
                                  " missing data and were removed;")
 }
