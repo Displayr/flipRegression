@@ -14,10 +14,9 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     if (internal.loop)
         correction <- "None"
     num.var <- length(net.coef)
-    split.labels <- levels(result$estimation.data[,interaction.name])
+    split.labels <- levels(result$estimation.data[, interaction.name])
     num.split <- length(split.labels)
-    split.names <- paste0(interaction.name, split.labels)
-    split.size <- table(result$estimation.data[,interaction.name])
+    split.size <- table(result$estimation.data[, interaction.name])
     var.names <- CleanBackticks(names(net.coef))
     var.labels <- if (result$show.labels) Labels(result$model, var.names)
                   else                    var.names
@@ -25,13 +24,20 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
     names(split.size) <- split.labels
 
     weights <- result$weights[result$subset]
-    original.r2 <- if (result$type == "Linear" & is.null(weights)) summary(result$original)$r.square
-                   else 1 - deviance(result$original)/nullDeviance(result)
+    is.weighted <- !is.null(weights)
+    original.r2 <- if (result$type == "Linear" && !is.weighted) { summary(result$original)$r.square
+                   } else 1 - deviance(result$original) / nullDeviance(result)
 
-    res <- list(label = interaction.label,
-                split.size = c(split.size, NET = Sum(split.size, remove.missing = FALSE)),
-                pvalue = NA, original.r2 = original.r2, full.r2 = NA, fit = NULL,
-                net.coef = net.coef, importance = importance)
+    res <- list(
+        label = interaction.label,
+        split.size = c(split.size, NET = Sum(split.size, remove.missing = FALSE)),
+        pvalue = NA,
+        original.r2 = original.r2,
+        full.r2 = NA,
+        fit = NULL,
+        net.coef = net.coef,
+        importance = importance
+    )
     outlier.prop.to.remove <- result[["outlier.prop.to.remove"]]
     # Give an extra row for the counts after outlier removal.
     outliers.removed <- !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0
@@ -41,34 +47,68 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
 
     if (is.null(importance))
     {
-        fit2 <- FitRegression(formula.with.interaction, result$estimation.data, weights,
-                              result$type, result$robust.se, result$outlier.prop.to.remove, ...)
-        atest <- ifelse (result$type %in% c("Linear", "Quasi-Poisson"), "F", "Chisq")
-        if (!is.null(weights))
+        fit2 <- FitRegression(
+            .formula = formula.with.interaction,
+            .estimation.data = result$estimation.data,
+            .weights = weights,
+            type = result$type,
+            robust.se = result$robust.se,
+            outlier.prop.to.remove = result$outlier.prop.to.remove,
+            ...
+        )
+        interaction.test <- if (result$type %in% c("Linear", "Quasi-Poisson")) "F" else "Chisq"
+        if (is.weighted)
         {
             .design <- fit2$design
-            assign(".design", .design, envir=.GlobalEnv)
+            assign(".design", .design, envir = .GlobalEnv)
         }
-        atmp <- anova(result$original, fit2$original, test=atest)
-        res$anova.output <- atmp
-        res$full.r2 <- ifelse (result$type == "Linear" & is.null(weights), summary(fit2$original)$r.square,
-                                                        1 - deviance(fit2$original)/nullDeviance(result))
-        if (!is.null(weights))
-            remove(".design", envir=.GlobalEnv)
+        anova.interaction.result <- tryCatch({
+            anova(result[["original"]], fit2[["original"]], test = interaction.test)
+        }, error = function(e) {
+            error.msg <- e[["message"]]
+            if (error.msg != "Non-numeric argument to mathematical function") {
+                product <- get0("productName", ifnotfound = "None", envir = .GlobalEnv)
+                msg <- "The F-test could not be computed for this interaction."
+                extra.msg <- switch(
+                    product,
+                    None = "",
+                    Q = "Please contact support@q-researchsoftware.com for assistance.",
+                    Displayr = "Please contact support@displayr.com for assistance."
+                )
+                stop(msg, " ", extra.msg, " The error message was: ",
+                     error.msg, " from ", deparse(e[["call"]]))
+            }
+            warning("The F-Test could not be computed for this Crosstab interaction. ",
+                    "This is probably because too many cells in the ",
+                    "interaction are empty or contain a single observation. ",
+                    "Try combining categories in the model which contain ",
+                    "small numbers of observations to increase the sample ",
+                    "sizes for cells in the Crosstab interaction.")
+            # Ensure NA values are passed along later
+            list("Pr" = NA, "p" = NA)
+        })
+        res$anova.output <- anova.interaction.result
+        res$full.r2 <- if (result$type == "Linear" && !is.weighted) { summary(fit2$original)$r.square
+                       } else 1 - deviance(fit2$original) / nullDeviance(result)
+        if (is.weighted)
+            remove(".design", envir = .GlobalEnv)
 
         if (!internal.loop)
         {
             res$fit <- fit2$original
-            res$anova.test <- switch(atest, F="F-test", Chisq="Chi-square test")
-            res$pvalue <- if(is.null(weights)) atmp$Pr[2]
-                          else atmp$p
+            res$anova.test <- switch(interaction.test, F = "F-test", Chisq = "Chi-square test")
+            res$pvalue <- if (!is.weighted) { anova.interaction.result$Pr[2]
+                          } else anova.interaction.result$p
 
         } else
         {
-            res$anova.fstat <- atmp[2,5]
-            res$anova.dev <- atmp[2,4]
-            res$anova.df1 <- -diff(as.numeric(atmp[,1]))
-            res$anova.df2 <- atmp[2,1]
+            if (is.weighted)
+                stop("Multiple imputation is currently not supported for weighted models ",
+                     "with interaction.")
+            res$anova.fstat <- anova.interaction.result[2, 5]
+            res$anova.dev <- anova.interaction.result[2, 4]
+            res$anova.df1 <- -diff(as.numeric(anova.interaction.result[, 1]))
+            res$anova.df2 <- anova.interaction.result[2, 1]
         }
     }
 

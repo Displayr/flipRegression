@@ -659,3 +659,78 @@ test_that("DS-4188: No non-zero data after filtering and handling missing data i
                    expected.error, fixed = TRUE),
         expected.warn, fixed = TRUE)
 })
+
+test_that("DS-4889: Unable to compute anova on weighted models with interaction", {
+    mockery::stub(computeInteractionCrosstab, "anova", function(object, ...) stop("Error"))
+    some.weights <- runif(nrow(mtcars))
+    test.dat <- mtcars
+    test.dat[["gear"]] <- as.factor(test.dat[["gear"]])
+    result <- FitRegression(
+        .formula = mpg ~ cyl + gear,
+        .estimation.data = test.dat,
+        .weights = some.weights,
+        type = "Linear",
+        robust.se = FALSE,
+        outlier.prop.to.remove = NULL
+    )
+    result[["terms"]] <- result$original$terms
+    result[["missing"]] <- "Exclude cases with missing data"
+    result[["show.labels"]] <- TRUE
+    result[["weights"]] <- some.weights
+    result[["subset"]] <- TRUE
+    result[["type"]] <- "Linear"
+    result[["estimation.data"]] <- test.dat
+    result[["correction"]] <- "None"
+    interaction.formula <- mpg ~ cyl + gear + cyl:gear
+    expect_error(
+        computeInteractionCrosstab(
+            result = result,
+            interaction.name = "gear",
+            interaction.label = "Some gears",
+            formula.with.interaction = interaction.formula,
+            importance = NULL,
+            importance.absolute = NULL,
+            internal.loop = FALSE
+        ),
+        "The F-test could not be computed for this interaction.",
+        fixed = TRUE
+    )
+    assign("productName", "Displayr", envir = .GlobalEnv)
+    expect_error(
+        computeInteractionCrosstab(
+            result = result,
+            interaction.name = "gear",
+            interaction.label = "Some gears",
+            formula.with.interaction = interaction.formula,
+            importance = NULL,
+            importance.absolute = NULL,
+            internal.loop = FALSE
+        ),
+        "The F-test could not be computed for this interaction. Please contact support@displayr.com"
+    )
+    mockery::stub(computeInteractionCrosstab, "anova",
+         function(object, ...) stop("Non-numeric argument to mathematical function"))
+    expect_error(observed.warning <- capture_warnings(
+            computeInteractionCrosstab(
+                result = result,
+                interaction.name = "gear",
+                interaction.label = "Some gears",
+                formula.with.interaction = interaction.formula,
+                importance = NULL,
+                importance.absolute = NULL,
+                internal.loop = FALSE
+            ),
+        ),
+        NA
+    )
+    expect_equal(
+        observed.warning,
+        paste0("The F-Test could not be computed for this Crosstab interaction. ",
+               "This is probably because too many cells in the interaction are ",
+               "empty or contain a single observation. Try combining categories ",
+               "in the model which contain small numbers of observations to increase ",
+               "the sample sizes for cells in the Crosstab interaction."),
+        fixed = TRUE
+    )
+    rm("productName", envir = .GlobalEnv)
+})
