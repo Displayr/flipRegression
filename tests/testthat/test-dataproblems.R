@@ -695,7 +695,7 @@ test_that("DS-4889: Unable to compute anova on weighted models with interaction"
         "The F-test could not be computed for this interaction.",
         fixed = TRUE
     )
-    productName <- "Displayr"
+    assign("productName", "Displayr", envir = .GlobalEnv)
     expect_error(
         computeInteractionCrosstab(
             result = result,
@@ -732,4 +732,5 @@ test_that("DS-4889: Unable to compute anova on weighted models with interaction"
                "the sample sizes for cells in the Crosstab interaction."),
         fixed = TRUE
     )
+    rm("productName", envir = .GlobalEnv)
 })
