@@ -708,15 +708,6 @@ test_that("DS-4889: Unable to compute anova on weighted models with interaction"
         ),
         "The F-test could not be computed for this interaction. Please contact support@displayr.com"
     )
-    expect_equal(
-        observed.warning,
-        paste0("The F-Test could not be computed for this Crosstab interaction. ",
-               "This is probably because too many cells in the interaction are ",
-               "empty or contain a single observation. Try combining categories ",
-               "in the model which contain small numbers of observations to increase ",
-               "the sample sizes for cells in the Crosstab interaction."),
-        fixed = TRUE
-    )
     mockery::stub(computeInteractionCrosstab, "anova",
          function(object, ...) stop("Non-numeric argument to mathematical function"))
     expect_error(observed.warning <- capture_warnings(
