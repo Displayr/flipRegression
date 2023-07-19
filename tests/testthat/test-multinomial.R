@@ -44,7 +44,8 @@ test_that("Coefficient estimates", {
     )
     expect_equal(
         mnlogit.summary[["coefficients"]],
-        expected.coefs
+        expected.coefs,
+        tolerance = 1e-4 # Rounding differences on architectures or LAPACK libraries
     )
     expected.std.err <- array(
         c(22.6042212565885, 23.6150863481396, 38.5975513681996, 38.6152601702841,
@@ -58,9 +59,14 @@ test_that("Coefficient estimates", {
     )
     expect_equal(
         mnlogit.summary[["standard.errors"]],
-        summary.iris.mn.logit[["standard.errors"]]
+        summary.iris.mn.logit[["standard.errors"]],
+        tolerance = 1e-4 # Rounding differences on architectures or LAPACK libraries
     )
-    expect_equal(mnlogit.summary[["standard.errors"]], expected.std.err)
+    expect_equal(
+        mnlogit.summary[["standard.errors"]],
+        expected.std.err,
+        tolerance = 1e-4 # Rounding differences on architectures or LAPACK libraries
+    )
     expect_equal(
         mnlogit.summary[["z.values"]],
         summary.iris.mn.logit[["z.values"]]
