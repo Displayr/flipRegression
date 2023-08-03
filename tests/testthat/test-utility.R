@@ -55,7 +55,7 @@ test_that("DS-4096: Informative error if arguments are not valid", {
                                 "Ordered Logit", "Multinomial Logit", "NBD")
     not.linear <- setdiff(valid.regression.types, "Linear")
     expected.error <- paste0(sQuote("type"), " should be one of ",
-                             paste0(dQuote(valid.regression.types), collapse = ", "), ".")
+                             paste0(sQuote(valid.regression.types), collapse = ", "), ".")
     expect_error(throwErrorInvalidArgument("type"), expected.error)
     expect_error(Regression(bank.formula, small.bank, type = "foo"), expected.error)
     expect_error(Regression(bank.formula, small.bank, type = "linear"), expected.error)
@@ -64,7 +64,7 @@ test_that("DS-4096: Informative error if arguments are not valid", {
                             "Dummy variable adjustment", "Use partial data (pairwise correlations)",
                             "Imputation (replace missing values with estimates)", "Multiple imputation")
     expected.error <- paste0(sQuote("missing"), " should be one of ",
-                             paste0(dQuote(valid.missing.args), collapse = ", "), ".")
+                             paste0(sQuote(valid.missing.args), collapse = ", "), ".")
     expect_error(throwErrorInvalidArgument("missing"), expected.error, fixed = TRUE)
     expect_error(Regression(bank.formula, small.bank, type = "Linear", missing = "foo"),
                  expected.error, fixed = TRUE)
