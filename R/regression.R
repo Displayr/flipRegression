@@ -1211,10 +1211,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model$df <- NA
             else
             {
-                assign(".design", .design, envir = .GlobalEnv)
                 # Use the internal function to derive the AIC until survey author fixes/updates
                 aic <- extractSvyLmAIC(model)
-                remove(".design", envir = .GlobalEnv)
                 model[["df"]] <- aic[1]
                 model[["aic"]] <- aic[2]
             }
