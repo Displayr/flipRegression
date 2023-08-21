@@ -3,7 +3,7 @@ context("Crosstab interaction")
 data(bank, package = "flipExampleData")
 
 test_that("Basic output", {
-    zz <- suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank))
+    zz <- Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank)
     expect_equal(nrow(zz$interaction$coefficients), 3)
     expect_equal(ncol(zz$interaction$coefficients), 7)
     expect_equal(sum(is.na(zz$interaction$coefficients)), 3)
