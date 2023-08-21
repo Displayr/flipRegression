@@ -31,8 +31,7 @@ test_that("EH-530: Weighted AIC calculations correct", {
     expect_true(abs((default.aic - computed.aic) / computed.aic) < 0.01)
     expect_true(abs((default.tic - computed.aic) / computed.aic) < 0.01)
     # survey package is way off the mark (as of survey version 4.1-1)
-    expect_false(abs((default.aic - survey.aic) / survey.aic) < 0.01)
-    expect_gt(abs((default.aic - survey.aic) / survey.aic), 138)
+    expect_true(abs((default.aic - survey.aic) / survey.aic) < 0.01)
 
     # Check calculation is precise against the theory
     X <- model.matrix(target.formula, data = apisrs)
