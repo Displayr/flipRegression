@@ -1164,8 +1164,11 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                          "Binary Logit" = binomial(link = "logit")))
         else if (type == "Ordered Logit")
         {
-            model <- fitOrderedLogit(.formula, .estimation.data, NULL,
-                                     non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
+            model <- fitOrderedLogit(
+                .formula = .formula,
+                .estimation.data = .estimation.data,
+                non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...
+            )
             model$aic <- AIC(model)
         }
         else if (type == "Multinomial Logit")
@@ -1218,7 +1221,8 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
             }
         }
         else if (type == "Ordered Logit") {
-            model <- fitOrderedLogit(.formula, .estimation.data, weights,
+            .design <- WeightedSurveyDesign(.estimation.data, .weights)
+            model <- fitOrderedLogit(.formula, .estimation.data, .design,
                                      non.outlier.data_GQ9KqD7YOf = non.outlier.data, ...)
         }
         else if (type == "Multinomial Logit")
@@ -1485,17 +1489,20 @@ aliasedPredictorWarning <- function(aliased, aliased.labels) {
 }
 
 #' @importFrom stats model.frame model.matrix model.response
-fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.data_GQ9KqD7YOf, ...)
+fitOrderedLogit <- function(.formula, .estimation.data, .design, non.outlier.data_GQ9KqD7YOf, ...)
 {
+    weighted.model <- !missing(.design) && !is.null(.design)
     .orderedLogitWarnings <- function(w) {
         if (w$message == "design appears to be rank-deficient, so dropping some coefs")
             return()
         warning(w$message)
     }
     .orderedLogitErrors <- function(e) {
-        if (exists(".design"))
+        if (weighted.model)
         {
             m <- model.frame(.formula, model.frame(.design), na.action = na.pass)
+            if (any(non.outlier.data_GQ9KqD7YOf))
+                m <- m[non.outlier.data_GQ9KqD7YOf, , drop = FALSE]
             y <- model.response(m)
             unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
             if (unobserved.levels != "")
@@ -1503,8 +1510,8 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
                      "If possible, this issue could be solved by merging the categories of the outcome variable ",
                      "such that all categories appear in all sub-groups.")
         }
-        if (grepl(c("response must have 3 or more levels|cannot be dichotimized as it only contains one level.$"),
-                  e$message))
+        if (grepl("response must have 3 or more levels|cannot be dichotimized as it only contains one level",
+                  e[["message"]]))
         {
             outcome <- OutcomeVariable(.formula, .estimation.data)
             outcome.levels <- levels(outcome)
@@ -1514,22 +1521,20 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
             if (length(outcome.levels) == 1)
                 stop(base.error.msg, "only one level: ", levels.msg, ". A Regression model cannot be computed ",
                      "when the outcome variable has no variation.")
-            else
-                stop(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
-        } else if (grepl("attempt to find suitable starting values failed|initial value in 'vmmin' is not finite", e$message))
-        {
+            stop(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
+        }
+        if (grepl("attempt to find suitable starting values failed|initial value in 'vmmin' is not finite", e$message))
             stop("It is not possible to fit the Ordered Logit Regression model since a suitable starting point ",
                  "cannot be found for the iterative algorithm used for fitting the model. ",
                  "It is recommended to check the input data to see if it is appropriate. ",
                  "If possible, consider merging categories in the outcome variable that don't have many observations. ",
                  "It is also worth checking that there is sufficient variation in the predictor variables for ",
                  "each level in the outcome variable.")
-        } else
-            stop("An error occurred during model fitting. ",
-                 "Please check your input data for unusual values: ", e$message)
+        stop("An error occurred during model fitting. ",
+             "Please check your input data for unusual values: ", e$message)
     }
     model <- InterceptExceptions(
-        if (is.null(weights))
+        if (!weighted.model)
         {
             withRestarts(
                 tryCatch(polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf,
@@ -1540,17 +1545,11 @@ fitOrderedLogit <- function(.formula, .estimation.data, weights, non.outlier.dat
                 polrWithStart = function(x0) polr(.formula, .estimation.data, subset = non.outlier.data_GQ9KqD7YOf, Hess = TRUE, start = x0))
         } else
         {
-            # svyolr (currently 21/01/2020) doesn't have a subset argument
-            # Instead manually filter the data using the provided non.outlier.data column
-            .estimation.data <- .estimation.data[, names(.estimation.data) != "non.outlier.data_GQ9KqD7YOf",
-                                                 drop = FALSE]
-            .design <- WeightedSurveyDesign(.estimation.data[non.outlier.data_GQ9KqD7YOf, , drop = FALSE],
-                                            weights[non.outlier.data_GQ9KqD7YOf])
-            out <- svyolr(.formula, .design, ...)
+            out <- svyolr(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf, ...)
             out[["df"]] <- out[["edf"]]
             # Compute the dAIC
-            wt <- weights(.design)
-            out[["deltabar"]] <- mean(diag(out[["Hessian"]] %*% out[["var"]]))/mean(wt)
+            wt <- weights(.design, type = "sampling")
+            out[["deltabar"]] <- mean(diag(out[["Hessian"]] %*% out[["var"]])) / mean(wt)
             out[["aic"]] <- out[["deviance"]] + 2 * out[["deltabar"]] * out[["df"]]
             # Need this model element to handle the code in the predict.Regression method
             out[["model"]] <- model.frame(.formula, model.frame(.design), na.action = na.pass)
