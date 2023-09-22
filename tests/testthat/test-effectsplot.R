@@ -4,14 +4,15 @@ data(adult.2000, package = "flipExampleData")
 adult.2000 <- adult.2000[adult.2000$education_num >= 10, ]
 
 test_that("Effects plot", {
-
     for (type in c("Linear", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Binary Logit", "Multinomial Logit"))
-        {
+    {
         rgr <- suppressWarnings(Regression(education_num ~ marital + sex + hrs_per_week + income + workclass,
                           data = adult.2000, type = type,
                           output = "Effects Plot",
                           effects.format = list(max.label = 5, y.axis = "HELLO")))
+        pdf(file = tempfile(fileext = ".pdf"))
         expect_error(suppressWarnings(print(rgr)), NA)
+        dev.off()
     }
 })
 
@@ -22,7 +23,9 @@ test_that("Effects plot with colinear continuous variables; DS-2304",
     model <- suppressWarnings(Regression(data = bank,
                  formula = Overall ~ Fees + Interest + Phone + Branch + Online + ATM + Fees2,
                  output = "Effects Plot", type = "Linear"))
+    pdf(file = tempfile(fileext = ".pdf"))
     expect_error(suppressWarnings(print(model)), NA)
+    dev.off()
 })
 
 test_that("Effects plot with colinear categorical variables; DS-2304",
@@ -32,7 +35,9 @@ test_that("Effects plot with colinear categorical variables; DS-2304",
                           data = adult.2000, type = "Linear",
                           output = "Effects Plot",
                           effects.format = list(max.label = 5, y.axis = "HELLO")))
+    pdf(file = tempfile(fileext = ".pdf"))
     expect_error(suppressWarnings(print(rgr)), NA)
+    dev.off()
 })
 
 
@@ -52,7 +57,9 @@ test_that("Effects plot with weighted and filtered data; ", {
                                                subset = if (sub) adult.subset,
                                                output = "Effects Plot",
                                                effects.format = list(max.label = 5, y.axis = "HELLO")))
+            pdf(file = tempfile(fileext = ".pdf"))
             expect_error(suppressWarnings(print(rgr)), NA)
+            dev.off()
         }
     }
     rm(list = names(adult.2000), envir = .GlobalEnv)

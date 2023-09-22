@@ -35,6 +35,8 @@ test_that("Use partial data (pairwise correlations)",
               expect_equal(0.370859, as.numeric(z$original$coef[2]), tolerance=1e-5)
               expect_equal(334.000000, z$original$original$df[2], tolerance=1e-5)
               expect_equal(0.042810, summary(z$original)$coef[2,2], tolerance=1e-5)
+    # Prevent pops
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
               expect_warning(print(z), "The outcome variable appears to contain categories")
           })
 
@@ -48,6 +50,8 @@ test_that("Use partial data (pairwise correlations) - filtered",
               expect_equal(0.298166, as.numeric(z$original$coef[2]), tolerance=1e-5)
               expect_equal(106, z$original$original$df[2], tolerance=1e-5)
               expect_equal(0.077491, summary(z$original)$coef[2,2], tolerance=1e-5)
+    # Prevent pops
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
               expect_warning(print(z), "The outcome variable appears to contain categories")
           })
 
@@ -61,6 +65,8 @@ test_that("Use partial data (pairwise correlations) - weighted",
               expect_equal(0.3603956, as.numeric(z$original$coef[2]), tolerance=1e-5)
               expect_equal(292.1565, z$original$original$df[2], tolerance=1e-5)
               expect_equal(0.04625331, summary(z$original)$coef[2,2], tolerance=1e-5)
+    # Prevent pops
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
               expect_warning(print(z), "The outcome variable appears to contain categories")
           })
 
@@ -78,8 +84,7 @@ test_that("Use partial data (pairwise correlations) - popoulation weighted and f
     expect_equal(0.3024816, as.numeric(z$original$coef[2]), tolerance=1e-5)
     expect_equal(75.08045, z$original$original$df[2], tolerance=1e-5)
     expect_equal(0.09039705, summary(z$original)$coef[2, 2], tolerance=1e-5)
+    # Prevent pops
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_warning(print(z), "The outcome variable appears to contain categories")
 })
-
-
-

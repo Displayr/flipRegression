@@ -205,7 +205,9 @@ for(missing in c("Multiple imputation", "Imputation (replace missing values with
           expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = TRUE,  weights = wgt, type = type)), NA)
           # weight, filter
           expect_error(z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, missing = missing, data = bank, subset = sb,  weights = wgt, type = type)), NA)
-          expect_error(suppressWarnings(print(z)),NA)
+          # Prevent pop-ups
+          mockery::stub(print.Regression, "print.htmlwidget", NULL)
+          expect_error(suppressWarnings(print(z)), NA)
       })
 
 test_that("allEffects works on Regression object",
@@ -266,6 +268,8 @@ for(missing in c("Imputation (replace missing values with estimates)", "Multiple
 for (type in c("Linear","Poisson", "Quasi-Poisson","Binary Logit", "Ordered Logit", "NBD"))
     test_that(paste(type, "does not have an error when producing non-detailed outputs"),{
             z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM, data = bank, type = type, missing = missing, weights = wgt / 100, subset = sb, detail = FALSE))
+            # Prevent pop-ups
+            mockery::stub(print.Regression, "print.htmlwidget", NULL)
             expect_error(suppressWarnings(print(z)), NA)
           })
 

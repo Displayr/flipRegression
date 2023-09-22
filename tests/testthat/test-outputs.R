@@ -16,19 +16,23 @@ attr(bank$Overall, "label") <- "Overall satisfaction"
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
         test_that(paste("allEffects :", type),
           {
+        pdf(file = tempfile(fileext = ".pdf"))
               zw = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
               expect_error(plot(effects::allEffects(zw)), NA)
               z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb))
               expect_error(plot(effects::allEffects(z)), NA)
+        dev.off()
           })
 
 for (type in c("Linear", "Poisson", "Quasi-Poisson","Binary Logit"))
         test_that(paste("allEffects :", type),
           {
+        pdf(file = tempfile(fileext = ".pdf"))
               zw = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb, weights = wgt))
               expect_error(plot(effects::allEffects(zw)), NA)
               z = suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + fBranch + Online + ATM, data = bank, type = type, subset = sb))
               expect_error(plot(effects::allEffects(z)), NA)
+        dev.off()
           })
 
 test_that("allEffects : Labels", {
@@ -41,7 +45,3 @@ test_that("allEffects : Labels", {
                  NA)
     expect_error(flipFormat::Labels(z$model), NA)
 })
-
-
-
-

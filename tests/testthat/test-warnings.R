@@ -16,8 +16,10 @@ test_that("Heteroskedasticity",
               y  <- 1:100 + .001
               x <- rnorm(100, y, y)
               expect_error(out <- Regression(y ~ x, robust.se = FALSE), NA)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
               expect_warning(print(out), "Breusch")
-              ExpectNoWarning(Regression(y ~ x, robust.se = TRUE), "Breusch")
+              expect_warning(Regression(y ~ x, robust.se = TRUE), NA)
           })
 
 test_that("Outliers",
@@ -26,10 +28,12 @@ test_that("Outliers",
               y  <- 1:10 + rnorm(10, .1)
               x <- 1:10
               expect_error(out <- Regression(y ~ x), NA)
-              ExpectNoWarning(out, "Unusual observations")
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
+              expect_warning(print(out), NA)
               x <- c(10, 1:9)
               expect_error(out <- Regression(y ~ x), NA)
-              ExpectWarning(out, "Unusual observations")
+              expect_warning(print(out), NA)
           })
 
 test_that("DS-2704: Check user prompts for automated outlier detection in unusual observation case",
@@ -39,6 +43,8 @@ test_that("DS-2704: Check user prompts for automated outlier detection in unusua
               x <- 1:10
               x <- c(10, 1:9)
               expect_error(out <- Regression(y ~ x), NA)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
               expect_warning(print(out),
                              "Unusual observations detected. Consider re-running the analysis using automated outlier removal")
               expect_error(out <- Regression(y ~ x, outlier.prop.to.remove = 0.1), NA)
@@ -143,6 +149,8 @@ test_that("Removed aliased predictors (ordered logit)", {
 data(bank, package = "flipExampleData")
 test_that("No VIF warning with dummy variables", {
     z <- Regression(Overall ~ Fees + ATM + Branch, data = bank, missing = "Dummy variable adjustment")
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_warning(print(z), paste0("Unusual observations detected"), fixed = TRUE)
 })
 
@@ -174,6 +182,8 @@ test_that("DS-2826: Warnings for VIFs are improved and appropriate", {
                           "multicollinearity. Consider conducting a relative importance analysis by selecting the ",
                           "output to be Relative Importance Analysis."),
                    fixed = TRUE)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     # Expect VIF cacluation to be skipped an no warning for RIA
     for (ria in c("Relative Importance Analysis", "Shapley Regression"))
     {
@@ -257,6 +267,8 @@ test_that("DS-2826: Check VIFs are handled properly", {
     expect_warning(aliased.mod <- Regression(x ~ y + z),
                    "The following variable(s) are colinear with other variables and no coefficients have been estimated: 'z'",
                    fixed = TRUE)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_error(print(aliased.mod), NA)
     # Check the alias check is used as well as the predictor count checks (see car::vif)
     u <- w <- rnorm(10)

@@ -364,6 +364,8 @@ test_that("DS-2884: Ordered Logit with non-syntactic variable names",
         `Cola Tracking.sav`$Variables$d3
     expect_error(out <- Regression(type = "Ordered Logit", formula = form),
                  NA)
+    # Prevent pops
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_error(print(out), NA)
 
     ColaTracking.sav <- list()
@@ -560,6 +562,8 @@ test_that("Non syntactic variable names and dataset references", {
                                                   outlier.prop.to.remove = 0.4,
                                                   show.labels = TRUE),
                  NA)
+    # Prevent pops
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_error(print(model.using.names), NA)
     expect_error(print(model.using.labels), NA)
 })

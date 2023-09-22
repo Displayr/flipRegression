@@ -192,38 +192,65 @@ types <- c("Linear", "Binary Logit", "Ordered Logit", "Poisson", "Quasi-Poisson"
 output <- "Relative Importance Analysis"
 
 data(bank, package = "flipExampleData")
+bank <- transform(bank, o2 = Overall >= 4)
+o2.formula <- o2 ~ Fees + Interest + Phone + Branch + Online + ATM
+bank.formula <- Overall ~ Fees + Interest + Phone + Branch + Online + ATM
 
-for (t in types)
-    test_that(paste("Relative importance", t),
-              expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                                   data = bank, type = t, output = output))), NA))
-test_that("Relative importance Multinomial Logit",
-          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                         data = bank, type = "Multinomial Logit", output = output))),
-                                        "Type not handled:  Multinomial Logit"))
+for (type in types)
+    test_that(paste("Relative importance", type), {
+        # Prevent pop-ups
+        mockery::stub(print.Regression, "print.htmlwidget", NULL)
+        test.formula <- if (type == "Binary Logit") o2.formula else bank.formula
+        expect_warning(reg <- Regression(test.formula, data = bank, type = type, output = output),
+                       "70% of the data is missing")
+        expect_error(suppressWarnings(print(reg)), NA)
+})
+test_that("Relative importance Multinomial Logit", {
+        # Prevent pop-ups
+        mockery::stub(print.Regression, "print.htmlwidget", NULL)
+        expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
+                     data = bank, type = "Multinomial Logit", output = output))),
+                                        "Type not handled:  Multinomial Logit")
+})
 
 # Weights
-for (t in types)
-    test_that(paste("Relative importance weighted", t),
-              expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                               data = bank, type = t, output = output,
-                                               weights = bank$weight))), NA))
-test_that("Relative importance weighted Multinomial Logit",
-          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                           data = bank, type = "Multinomial Logit", output = output,
-                                           weights = bank$weight))), "Type not handled:  Multinomial Logit"))
+for (type in types)
+    test_that(paste("Relative importance weighted", type), {
+        # Prevent pop-ups
+        mockery::stub(print.Regression, "print.htmlwidget", NULL)
+        test.formula <- if (type == "Binary Logit") o2.formula else bank.formula
+        expect_warning(reg <- Regression(test.formula, data = bank, type = type, output = output,
+                                         weights = bank$weight), "73% of the data is missing")
+        expect_error(suppressWarnings(print(reg)), NA)
+})
+test_that("Relative importance weighted Multinomial Logit", {
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
+    expect_error(suppressWarnings(
+        print(
+            Regression(bank.formula, data = bank, type = "Multinomial Logit", output = output,
+                       weights = bank$weight)
+            )
+        ),
+        "Type not handled:  Multinomial Logit"
+    )
+})
 
 # Filter
-test_that("Relative importance filtered",
-          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                               data = bank, type = "Linear", output = output,
-                                               subset = bank$ID < 100))), NA))
+test_that("Relative importance filtered", {
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
+    expect_error(suppressWarnings(print(Regression(bank.formula, data = bank, type = "Linear", output = output,
+                                                   subset = bank$ID < 100))), NA)
+})
 
 # Robust standard error
-test_that("Relative importance robust SE",
-          expect_error(suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
-                                               data = bank, type = "Linear", output = output,
-                                               robust.se = F))), NA))
+test_that("Relative importance robust SE", {
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
+    expect_error(suppressWarnings(print(Regression(bank.formula, data = bank, type = "Linear", output = output,
+                                                   robust.se = FALSE))), NA)
+})
 
 # Negative sign warning
 test_that("Relative importance negative sign",
@@ -303,6 +330,8 @@ test_that("Shapley",
     expect_equal(result$statistics[1], c(Fees = 3.59831752332123))
     expect_equal(result$p.values[1], c(Fees = 0.000389870122508642))
 
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     suppressWarnings(print(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM,
                      data = bank, type = "Linear", output = "Shapley Regression")))
 
@@ -334,15 +363,18 @@ test_that("Dummy variable adjustment valid", {
 
     not.missing.data <- data.frame(Y, X)
     Xm <- X
-    missing <- sample(1:nrow(X), size = 50, replace = FALSE)
+    missing <- sample(seq_len(nrow(X)), size = 50, replace = FALSE)
     Xm[, 2][missing] <- NA
     missing.data <- data.frame(Y, Xm)
-    for(out in c("Relative Importance Analysis", "Shapley Regression"))
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
+    dummy.adj <- "Dummy variable adjustment"
+    for (out in c("Relative Importance Analysis", "Shapley Regression"))
     {
         expect_warning(z <- Regression(Y ~ X1 + X2 + X3, data = not.missing.data, output = out),
                        NA)
         expect_warning(print(z), "Unusual observations detected")
-        expect_warning(z <- Regression(Y ~ X1 + X2 + X3, data = missing.data, output = out, missing = "Dummy variable adjustment"),
+        expect_warning(z <- Regression(Y ~ X1 + X2 + X3, data = missing.data, output = out, missing = dummy.adj),
                        NA)
         expect_warning(print(z), "Unusual observations detected")
     }
