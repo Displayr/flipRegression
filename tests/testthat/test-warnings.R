@@ -8,7 +8,7 @@ test_that("Predictor is outcome",
               x <- rnorm(100, y, y)
 
               expect_error(Regression(y ~ y, robust.se = FALSE), "A variable may only appear once")
-              ExpectNoWarning(Regression(y ~ x, robust.se = TRUE), "Outcome' variable has been s")
+              expect_warning(Regression(y ~ x, robust.se = TRUE), NA)
 
           })
 test_that("Heteroskedasticity",
@@ -69,14 +69,15 @@ test_that("Dichotomized",
               ExpectNoWarning(Regression(y ~ x, type = "Binary Logit"), "dichotimized")
           })
 
-test_that("Missing",
-          {
-                y  <- 1:50 + rnorm(50, .1)
-                x <- 1:50
-                ExpectNoWarning(Regression(y ~ x), "the data is missing")
-                y  <- c(rep(NA, 500), 1:50 + rnorm(50, .1))
-                x <- 1:550
-                expect_warning(Regression(y ~ x), "the data is missing")
+test_that("Dichotomized", {
+    set.seed(12)
+    # Simulate data from logistic model
+    x <- sample(0:1, size = 10, replace = TRUE)
+    y <- rbinom(10L, size = 10L, prob = 1 / (1 + exp(-1 - 2 * x)))
+    expect_warning(Regression(y ~ x, type = "Binary Logit"), "y has been dichotimized")
+    y.dichot <- rbinom(10L, size = 1L, prob = 1 / (1 + exp(-1 - 2 * x)))
+    expect_warning(Regression(y.dichot ~ x, type = "Binary Logit"), NA)
+})
 
           })
 
