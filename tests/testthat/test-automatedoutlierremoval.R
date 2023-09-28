@@ -159,10 +159,14 @@ test_that("Multinomial Logit", {
     expect_error(regression <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
                                           missing = miss, outlier.prop.to.remove = 0),
                  NA)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_error(print(regression), NA)
     expect_error(regression.with.weight <- Regression(bank.formula[[tt]], data = small.bank, type = tt,
                                                       missing = miss, outlier.prop.to.remove = 0, weights = weight),
                  NA)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_error(print(regression.with.weight), NA)
     # Expect errors for outlier proportion requested
     expect_warning(Regression(bank.formula[[tt]], data = small.bank, type = tt,
@@ -308,6 +312,8 @@ test_that("Correct n.estimation used with outlier removal and checks", {
     expect_equal(z.0$sample.description,
                  paste0("n = 686 cases used in estimation of a total sample size of 896; ",
                         "cases containing missing values have been excluded;"))
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_warning(print(z.0),
                    paste0("Unusual observations detected. Consider re-running the analysis using ",
                           "automated outlier removal with a non-zero setting to automatically remove unusual ",

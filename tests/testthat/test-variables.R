@@ -61,7 +61,9 @@ test_that("na.exclude behaviour of Regression methods",
 
 test_that("labels adding back for infIndexPlot; DS-3339",
 {
+    pdf(file = tempfile(fileext = ".pdf"))
     expect_error(infIndexPlot(z), NA)
+    dev.off()
 })
 
 test_that("DS-4360 Estimation Data template created correctly", {

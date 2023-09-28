@@ -88,6 +88,8 @@ test_that("Other examples",
     x <- X
     x[X < runif(n)] <- NA
     z <- runif(n)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     suppressWarnings(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z)))
     expect_error(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Multiple imputation"), NA)
     expect_error(Regression(y ~ x + z, data = data.frame(y = y, x = x, z = z), missing = "Use partial data (pairwise correlations)"), NA)
@@ -98,7 +100,10 @@ test_that("Other examples",
     distance <- Distance <- c(5, 5, 10, 10, 15, 15, 20, 20)
     price <- Price <- c(1.6, 2.4, 1.1, 1.9, .6, 1.4, .1, .9)
 
+    # Suppress output but test plot works
+    pdf(file = tempfile(fileext = ".pdf"))
     expect_error(PredictionPlot(Regression(price ~ distance)), NA)
+    dev.off()
 
     ## M ~ X
     distance <- Distance

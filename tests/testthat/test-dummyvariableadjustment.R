@@ -73,6 +73,8 @@ test_that("Coefficient estimates are the same ", {
 })
 
 test_that("Robust SE compatible with Dummy variable adjustment", {
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     ill.conditioned.message <- "There is a technical problem with the parameter variance-covariance matrix"
     expect_warning(robust.dummy.regression <- Regression(Y ~ ., data = missing.data,
                                                          missing = "Dummy variable adjustment",
@@ -138,6 +140,8 @@ test_that("DS-2952: Dummy variable adjustment and Ordered Logit printable in RIA
                                      type = "Ordered Logit",
                                      output = "Relative Importance Analysis"),
                  NA)
+    # Prevent pop-ups
+    mockery::stub(print.Regression, "print.htmlwidget", NULL)
     expect_error(print(model), NA)
 })
 
