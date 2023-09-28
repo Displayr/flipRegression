@@ -255,13 +255,24 @@ test_that("Relative importance robust SE", {
 # Negative sign warning
 test_that("Relative importance negative sign",
 {
-          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, dat, NULL, "Linear", c(1, -1 ,1),
-                                                             0.0409055316886271, variable.names = LETTERS[1:3], correction = "None"),
-                         paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
-                                " in Linear Regression. To disable this feature, check the Absolute importance",
-                                " scores option."))
+    expect_warning(
+        flipRegression:::estimateRelativeImportance(
+            formula = y ~ v1 + v2 + v3,
+            data = dat,
+            weights = NULL,
+            type = "Linear",
+            signs = c(1, -1, 1),
+            r.square = 0.0409055316886271,
+            variable.names = LETTERS[1:3],
+            correction = "None"
+        ),
+        paste0("Negative signs in Relative Importance scores were applied from coefficient signs",
+               " in Linear Regression. To disable this feature, check the Absolute importance",
+               " scores option.")
+    )
 
-    res <- Regression(y~v1+v2+v3, dat, output = "Relative Importance Analysis", missing = "Multiple imputation", importance.absolute = TRUE)
+    res <- Regression(formula = y ~ v1 + v2 + v3, data = dat, output = "Relative Importance Analysis",
+                      missing = "Multiple imputation", importance.absolute = TRUE)
     expect_true(all(res$importance$importance > 0))
 })
 
@@ -273,13 +284,18 @@ dat.factor <- cbind(y, X.factor)
 
 # Factor warning
 test_that("Relative importance ordered factor",
-          expect_warning(flipRegression:::estimateRelativeImportance(y ~ v1 + v2 + v3, data = dat.factor,
-                                                                     weights = NULL, type = "Linear",
-                                                                     signs = c(1, -1 ,1),
-                                                                     r.square = 0.0409055316886271,
-                                                                     variable.names = LETTERS[1:3],
-                                                                     correction = "None"),
-                         "The following variables have been treated as categorical: v1,v2,v3. This may over-inflate their effects."))
+    expect_warning(
+        flipRegression:::estimateRelativeImportance(
+            formula = y ~ v1 + v2 + v3,
+            data = dat.factor,
+            weights = NULL, type = "Linear",
+            signs = c(1, -1 ,1),
+            r.square = 0.0409055316886271,
+            variable.names = LETTERS[1:3],
+            correction = "None"
+        ),
+        "The following variables have been treated as categorical: v1,v2,v3. This may over-inflate their effects.")
+)
 
 test_that("Relative importance robust SE, dot in formula",
 {

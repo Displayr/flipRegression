@@ -13,7 +13,7 @@
 #' @export
 PredictionPlot <- function(Regression.object, predictor.number = NULL)
 {
-    if (!is(Regression.object, "Regression"))
+    if (!inherits(Regression.object, "Regression"))
         stop("'PredictionPlot' requires a regression object.")
     # Working out which variable to use.
     coefs <- coef(Regression.object)
@@ -28,7 +28,7 @@ PredictionPlot <- function(Regression.object, predictor.number = NULL)
         warningPredictorVariableDoesNotExist()
     # Identifying the variable to use
     variable.number <- predictor.number + 1
-    y.name = names(Regression.object$model)[1]
+    y.name <- names(Regression.object$model)[1]
     x.name <- names(Regression.object$model)[variable.number]
     x <- Regression.object$model[[variable.number]]#model.matrix(Regression.object)[, 2]
     y <- Regression.object$model[[1]]
@@ -36,7 +36,7 @@ PredictionPlot <- function(Regression.object, predictor.number = NULL)
     equation <- Equation(Regression.object)
     plt <- plot(x,  y, xlab = x.name, ylab = y.name, main = equation)
     # Plotting the line of best fit.
-    if(is.factor(x))
+    if (is.factor(x))
     {
         # Identifying the parameter to use
         n.parameters <- unlist(lapply(x, nlevels))
@@ -50,15 +50,13 @@ PredictionPlot <- function(Regression.object, predictor.number = NULL)
         n.pars <- n.parameters[variable.number] + 1
         for (i in 1:n.pars)
             segments(i - 0.5, pars[i], i + 0.5, pars[i], col = "red", lwd = "2", lty = 2)
+        return(plt)
     }
-    else
-    {
-        b <- coefs[[x.name]]
-        x.mean <- mean(x)
-        y.mean <- mean(y)
-        a <- y.mean - b * x.mean
-        plt <- abline(a, b, col = "red", lwd = 2, lty = 2)
-    }
+    b <- coefs[[x.name]]
+    x.mean <- mean(x)
+    y.mean <- mean(y)
+    a <- y.mean - b * x.mean
+    plt <- abline(a, b, col = "red", lwd = 2, lty = 2)
     plt
 }
 
