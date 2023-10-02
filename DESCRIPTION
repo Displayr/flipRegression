@@ -27,7 +27,7 @@ Imports: car,
  rhtmlHeatmap,
  stats,
  sure,
- survey (>= 4.1.1),
+ survey,
  verbs,
  xml2
 Suggests:
@@ -37,9 +37,9 @@ Suggests:
  rmarkdown,
  testthat,
  robustbase,
- sandwich,
- VGAM
+ sandwich
 Remotes:
+ cran/survey@4.1-1,
  Displayr/flipU,
  Displayr/flipFormat,
  Displayr/flipData,

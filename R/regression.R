@@ -1131,7 +1131,6 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
 
 # Fits the models. Now in a separate function to FitRegression for repeated use
 # to prevent code duplication with the automated outlier removal refitting.
-#' @importFrom stats sigma
 fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
@@ -1773,11 +1772,15 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
 
     # Update formula
     formula <- updateStackedFormula(data, formula)
-    list(data = data, formula = formula,
-         interaction = interaction,
-         subset = subset, weights = weights,
-         n.orig.stacked.cases = n.orig.stacked.cases,
-         n.stacked.cases.removed = n.missing)
+    list(
+        data = data,
+        formula = formula,
+        interaction = interaction,
+        subset = subset,
+        weights = weights,
+        n.orig.stacked.cases = n.orig.stacked.cases,
+        n.stacked.cases.removed = n.missing
+    )
 }
 
 # Removes the data reduction columns and the reduction via the codeframe attribute, if available
