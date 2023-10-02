@@ -1131,6 +1131,7 @@ FitRegression <- function(.formula, .estimation.data, .weights, type, robust.se,
 
 # Fits the models. Now in a separate function to FitRegression for repeated use
 # to prevent code duplication with the automated outlier removal refitting.
+#' @importFrom stats sigma
 fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subset, ...)
 {
     weights <- .weights #Does nothing, except remove notes from package check.
@@ -1211,18 +1212,12 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model$df <- NA
             else
             {
-                assign(".design", .design, envir=.GlobalEnv)
-                aic <- try(extractAIC(model), silent = TRUE)
-                if (any("try-error" %in% class(aic)))
-                {
-                    warning("Error occurred when computing AIC. The most likely ",
-                            "explanation for this is this is a small sample size in ",
-                            "some aspect of the analysis. ")
-                    aic <- rep(NA, 2)
-                }
-                remove(".design", envir=.GlobalEnv)
-                model$df <- aic[1]
-                model$aic <- aic[2]
+                assign(".design", .design, envir = .GlobalEnv)
+                # Use the internal function to derive the AIC until survey author fixes/updates
+                aic <- extractSvyLmAIC(model)
+                remove(".design", envir = .GlobalEnv)
+                model[["df"]] <- aic[1]
+                model[["aic"]] <- aic[2]
             }
         }
         else if (type == "Ordered Logit") {
@@ -1259,9 +1254,14 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                                                family = poisson()),
                             "Quasi-Poisson" = svyglm(.formula, .design, subset = non.outlier.data_GQ9KqD7YOf,
                                                      family = quasipoisson()))
-            assign(".design", .design, envir=.GlobalEnv)
+            env <- environment(model[["formula"]])
+            assign(".design", .design, envir = env)
+            assign("svyglm", svyglm, envir = env)
+            on.exit({
+                remove(".design", envir = env)
+                remove("svyglm", envir = env)
+            })
             aic <- extractAIC(model)
-            remove(".design", envir=.GlobalEnv)
             model$df <- aic[1]
             model$aic <- aic[2]
         }
@@ -1269,6 +1269,34 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
     return(list(model = model, formula = .formula, design = .design, estimation.data = .estimation.data))
 }
 
+# survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
+# intercept only models. Interim fix below which computes the AIC information properly
+# See https://stats.stackexchange.com/questions/592794/reconciling-the-survey-adjusted-aic-for-multiple-regression-models-in-the-r-surv
+# and https://numbers.atlassian.net/browse/EH-547
+extractSvyLmAIC <- function(fit, k = 2) {
+    # Extract weights used in survey
+    w <- fit[["prior.weights"]]
+    n.hat <- sum(w)
+    y <- fit[["y"]]
+    mu.hat <- fit[["linear.predictors"]]
+    eps <- y - mu.hat
+    # Use ML estimate of sigma2
+    sigma2.hat <- sum(eps^2 * w) / n.hat
+    minus.2.ell.hat <- n.hat * (log(sigma2.hat) + 1 + log(2 * pi))
+    V0 <- fit[["naive.cov"]] * sigma2.hat
+    V <- vcov(fit)
+    # Compute the delta matrix for the regression coefficients
+    delta.mu <- solve(V0, V)
+    # Compute the sigma2 component of the delta matrix
+    i.sigma2 <- n.hat / (2 * sigma2.hat^2)
+    u.sigma2 <- -1 / (2 * sigma2.hat) + eps^2 / (2 * sigma2.hat^2)
+    h.sigma2 <- sum(w * u.sigma2^2)
+    delta.sigma2 <- h.sigma2 / i.sigma2
+    delta.bar <- mean(c(diag(delta.mu), delta.sigma2))
+    eff.p <- sum(diag(delta.mu)) + delta.sigma2
+    aic <- minus.2.ell.hat + k * eff.p
+    c(eff.p = eff.p, AIC = aic, deltabar = delta.bar)
+}
 
 #' notValidForPartial
 #'

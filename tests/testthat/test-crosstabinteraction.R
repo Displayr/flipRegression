@@ -7,11 +7,11 @@ test_that("Basic output", {
     expect_equal(nrow(zz$interaction$coefficients), 3)
     expect_equal(ncol(zz$interaction$coefficients), 7)
     expect_equal(sum(is.na(zz$interaction$coefficients)), 3)
-    expect_equal(round(zz$interaction$pvalue,4), 0.0029)
-    expect_equal(round(zz$interaction$coefficients[2,1],4), 0.3345)
-    expect_equal(round(zz$interaction$coef.pvalue[2,1],5), 0.70458)
-    expect_error(suppressWarnings(Regression(bank$Overall~bank$Fees+bank$Interest,
-                                             interaction=bank$ATM)), NA)
+    expect_equal(round(zz$interaction$pvalue, 4), 0.0029)
+    expect_equal(round(zz$interaction$coefficients[2, 1], 4), 0.3345)
+    expect_equal(round(zz$interaction$coef.pvalue[2, 1], 5), 0.70458)
+    expect_error(suppressWarnings(Regression(bank$Overall ~ bank$Fees + bank$Interest,
+                                             interaction = bank$ATM)), NA)
 })
 
 set.seed(12321)
@@ -20,11 +20,9 @@ outliers.to.remove <- 0.1
 w1 <- 2 * runif(nrow(bank))
 f1 <- bank$ID < 200
 test_that("Weights", {
-
     for (tt in all.types[-7])
     {
-        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
-                                                 interaction = ATM, data = bank, type = tt)), NA)
+        expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest, interaction = ATM, data = bank, type = tt)), NA)
         # svyolr (weighted Ordered Logit) will error since it wants to invert the Hessian and the response variable
         # will have unobserved levels for some sub-groups splitting by ATM for the interaction test. This gives a
         # singular Hessian (row/column for the intercept adjustments at the unobserved level)
@@ -47,10 +45,14 @@ test_that("Weights", {
         expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
                                                  interaction = ATM, data = bank, type = tt,
                                                  outlier.prop.to.remove = outliers.to.remove,
-                                                 weights = w1, subset = f1, output = "Relative Importance Analysis")), NA)
+                                                 weights = w1, subset = f1, output = "Relative Importance Analysis")), error.msg)
     }
-    expect_error(suppressWarnings(Regression(Overall ~ Fees + Interest,
-                                             interaction = ATM, data = bank, type = "Multinomial Logit")))
+    expect_error(Regression(Overall ~ Fees + Interest,
+                            interaction = ATM,
+                            data = bank,
+                            type = "Multinomial Logit"),
+                 "Crosstab interaction is incompatible with Multinomial Logit regression.",
+                 fixed = TRUE)
 })
 
 test_that("Multiple imputation", {
@@ -62,7 +64,8 @@ test_that("Multiple imputation", {
                                       data = bank, missing = "Multiple imputation", seed=123))
     expect_equal(round(z2$interaction$pvalue, 3), 0.002)
     expect_true(grepl("n = 648 cases used in estimation of a total sample size of 849;", z1$footer))
-    expect_true(grepl("n = 107 cases used in estimation of a total sample size of 129 (bank$Branch == 4);", z3$footer, fixed = TRUE))
+    expect_true(grepl("n = 107 cases used in estimation of a total sample size of 129 (bank$Branch == 4);",
+                z3$footer, fixed = TRUE))
     c1 <- as.vector(z1$interaction$coefficients)
     c2 <- as.vector(z2$interaction$coefficients)
     p1 <- as.vector(z1$interaction$coef.pvalues)
