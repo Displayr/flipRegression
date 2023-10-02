@@ -60,4 +60,3 @@ workflows:
           plugins-branch: << pipeline.parameters.plugins-branch >>
           trigger-message: << pipeline.parameters.trigger-message >>
           triggered-packages: << pipeline.parameters.triggered-packages >>
-
