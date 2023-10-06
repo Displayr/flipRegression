@@ -1214,8 +1214,14 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
                 model$df <- NA
             else
             {
-                # Use the internal function to derive the AIC until survey author fixes/updates
-                aic <- extractSvyLmAIC(model)
+                aic <- try(extractAIC(model, null_has_intercept = FALSE), silent = TRUE)
+                if (any("try-error" %in% class(aic)))
+                {
+                    warning("Error occurred when computing AIC. The most likely ",
+                            "explanation for this is this is a small sample size in ",
+                            "some aspect of the analysis. ")
+                    aic <- rep(NA, 2)
+                }
                 model[["df"]] <- aic[1]
                 model[["aic"]] <- aic[2]
             }
@@ -1587,19 +1593,16 @@ findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.da
     if (!initial.logit.fit$converged)
         stop("attempt to find suitable starting values failed")
     coefs <- initial.logit.fit$coefficients
-    if (any(is.na(coefs))) {
-        warning("design appears to be rank-deficient, so dropping some coefs")
+    if (anyNA(coefs)) {
         keep <- names(coefs)[!is.na(coefs)]
         coefs <- coefs[keep]
-        x <- x[, keep[-1L], drop = FALSE]
-        pc <- ncol(x)
     }
     q <- nlevels(.estimation.data[[outcome.name]]) - 1L
     first.level <- levels(y)[1]
     cut.point <- substr(first.level, 4L, nchar(first.level))
     q1 <- which(levels(.estimation.data[[outcome.name]]) == cut.point)
-    logit <- function(p) log(p/(1 - p))
-    spacing <- logit((1L:q)/(q + 1L))
+    logit <- function(p) log(p / (1 - p))
+    spacing <- logit((1L:q) / (q + 1L))
     gammas <- -coefs[1L] + spacing - spacing[q1]
     c(coefs[-1L], gammas)
 }
