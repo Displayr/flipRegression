@@ -59,8 +59,14 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         interaction.test <- if (result$type %in% c("Linear", "Quasi-Poisson")) "F" else "Chisq"
         if (is.weighted)
         {
-            .design <- fit2$design
-            assign(".design", .design, envir = .GlobalEnv)
+            .design <- fit2[["design"]]
+            relevant.environment <- environment(fit2[["original"]][["formula"]])
+            assign(".design", .design, envir = relevant.environment)
+            assign("svyglm", survey::svyglm, envir = relevant.environment)
+            on.exit({
+                remove(".design", envir = relevant.environment)
+                remove("svyglm", envir = relevant.environment)
+            })
         }
         anova.interaction.result <- tryCatch({
             anova(result[["original"]], fit2[["original"]], test = interaction.test)
