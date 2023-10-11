@@ -48,7 +48,8 @@ Remotes:
  Displayr/flipTransformations,
  Displayr/flipTables,
  Displayr/rhtmlHeatmap,
- Displayr/verbs
+ Displayr/verbs,
+ svn::svn://r-forge.r-project.org/svnroot/r-survey/pkg/survey
 LinkingTo: Rcpp (>= 0.12.15),
  RcppEigen (>= 0.3.3.4.0)
 VignetteBuilder: knitr
