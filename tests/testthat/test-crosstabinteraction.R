@@ -16,8 +16,7 @@ test_that("Basic output", {
 
 set.seed(12321)
 all.types <- c("Linear", "Binary Logit", "Poisson", "Quasi-Poisson", "NBD", "Ordered Logit", "Multinomial Logit")
-bank <- transform(bank, o2 = factor(bank[["Overall"]] > 3))
-binary.formula <- o2 ~ Fees + Interest
+bank <- transform(bank, o2 = factor(Overall > 3))
 outliers.to.remove <- 0.1
 w1 <- 2 * runif(nrow(bank))
 f1 <- bank$ID < 200
