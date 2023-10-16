@@ -6,7 +6,7 @@ test_that("EH-530: Weighted AIC calculations correct", {
     # Use the simple random sample from the population data
     # Academic performance explained by % english language learners,
     # % free/reduced lunch, and % mobility
-    ## Below is checking whether these measures are all in essential agreement
+    ## Below is checking whether these measures (AIC, TIC and dAIC) are all in essential agreement
     ## (within 1%) for the simplified case of a simple linear regression with no weights
     target.formula <- api00 ~ ell + meals + mobility
 
