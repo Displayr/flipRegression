@@ -1276,47 +1276,6 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
     return(list(model = model, formula = .formula, design = .design, estimation.data = .estimation.data))
 }
 
-# survey (4.1.1) AIC extraction function removes intercept terms causing singularity in
-# intercept only models. Interim fix below which computes the AIC information properly
-# See https://stats.stackexchange.com/questions/592794/reconciling-the-survey-adjusted-aic-for-multiple-regression-models-in-the-r-surv
-# and https://numbers.atlassian.net/browse/EH-547
-extractSvyLmAIC <- function(fit, k = 2) {
-    # Extract weights used in survey
-    w <- fit[["prior.weights"]]
-    n.hat <- sum(w)
-    y <- fit[["y"]]
-    mu.hat <- fit[["linear.predictors"]]
-    eps <- y - mu.hat
-    # Use ML estimate of sigma2
-    sigma2.hat <- sum(eps^2 * w) / n.hat
-    # Compute the likelihood component of the AIC
-    minus.2.n.ell.hat <- n.hat * (log(sigma2.hat) + 1 + log(2 * pi))
-    # Construct the beta contribution to the design effect matrix
-    v.beta.zero <- fit[["naive.cov"]] * sigma2.hat
-    v.beta <- vcov(fit)
-    # Compute the delta matrix for the regression coefficients
-    delta.beta.matrix <- solve(v.beta.zero, v.beta)
-    # Compute the sigma2 component of the delta matrix
-    ## Information matrix for sigma2 in unweighted case
-    ### For speed, use i.sigma2 = n.hat / (2 * sigma.hat^2) instead of 1 / (2 * sigma.hat^2)
-    ### The division by delta.sigma2 later uses 1 / sum(w * u.sigma2.i^2) which is equivalent
-    ### to using i.sigma2 / var.sigma2 = (1 / (2 * sigma.hat^2)) / (1 / mean(w * u.sigma2.i^2))
-    ### Equivalnce tested in test-aic.R code
-    i.sigma2 <- n.hat / (2 * sigma2.hat^2)
-    ## Estimate the covariance of sigma2 under sampling weights
-    ## Use the score equation estimator
-    u.sigma2.i <- -1 / (2 * sigma2.hat) + eps^2 / (2 * sigma2.hat^2)
-    var.sigma2 <-  1 / sum(w * u.sigma2.i^2)
-    delta.sigma2 <- i.sigma2 * var.sigma2
-    # Compute the overall design effects
-    delta.beta <- diag(delta.beta.matrix)
-    delta.bar <- mean(c(delta.beta, delta.sigma2))
-    eff.p <- sum(delta.beta, delta.sigma2)
-    # Compute the dAIC = -2LL + k * p * deltabar
-    aic <- minus.2.n.ell.hat + k * eff.p
-    c(eff.p = eff.p, AIC = aic, deltabar = delta.bar)
-}
-
 #' notValidForPartial
 #'
 #' @param object A Regression object
