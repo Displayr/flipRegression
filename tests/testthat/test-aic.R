@@ -6,6 +6,8 @@ test_that("EH-530: Weighted AIC calculations correct", {
     # Use the simple random sample from the population data
     # Academic performance explained by % english language learners,
     # % free/reduced lunch, and % mobility
+    ## Below is checking whether these measures are all in essential agreement
+    ## (within 1%) for the simplified case of a simple linear regression with no weights
     target.formula <- api00 ~ ell + meals + mobility
 
     wt <- rep(1, nrow(apisrs))
@@ -45,6 +47,7 @@ test_that("EH-530: Weighted AIC calculations correct", {
     expected.aic <- minus.2.ell + eff.p
     expect_equal(default.aic, expected.aic)
 
+    ## Check now the weighted case
     # Compute the weighted equivalent from the sampling weights (~pw)
     weighted.design <- svydesign(id = ~1, weights = ~pw, data = apiclus2)
     weighted.lm <- svyglm(target.formula, design = weighted.design)
