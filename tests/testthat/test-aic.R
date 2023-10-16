@@ -30,7 +30,6 @@ test_that("EH-530: Weighted AIC calculations correct", {
     # Unit weighted model AIC should be within 1% tolerance of the unweighted model and TIC
     expect_true(abs((default.aic - computed.aic) / computed.aic) < 0.01)
     expect_true(abs((default.tic - computed.aic) / computed.aic) < 0.01)
-    # survey package is way off the mark (as of survey version 4.1-1)
     expect_true(abs((default.aic - survey.aic) / survey.aic) < 0.01)
 
     # Check calculation is precise against the theory
