@@ -17,7 +17,7 @@ parameters:
   executor:
     type: enum
     enum: [nightly, rocker, machine]
-    default: rocker
+    default: nightly
 
 workflows:
   build-and-check-R-package:
