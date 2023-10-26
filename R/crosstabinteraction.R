@@ -96,8 +96,6 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         res$anova.output <- anova.interaction.result
         res$full.r2 <- if (result$type == "Linear" && !is.weighted) { summary(fit2$original)$r.square
                        } else 1 - deviance(fit2$original) / nullDeviance(result)
-        if (is.weighted)
-            remove(".design", envir = .GlobalEnv)
 
         if (!internal.loop)
         {
