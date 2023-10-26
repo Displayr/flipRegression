@@ -61,8 +61,8 @@ test_that("EH-530: Weighted AIC calculations correct", {
     default.aic <- AIC(reg.model)
     # Should align with TIC too
     require("VGAM", quietly = TRUE)
-    vglm.model <- vglm(target.formula, data = apisrs, family = uninormal)
-    default.tic <- TIC(vglm.model)
+    vglm.model <- VGAM::vglm(target.formula, data = apisrs, family = uninormal)
+    default.tic <- VGAM::TIC(vglm.model)
     # Compute the svyglm with unit weights
     unit.weighted.lm <- survey::svyglm(target.formula, design = unit.design)
 
