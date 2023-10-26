@@ -366,30 +366,27 @@ allEffects.Regression <- function(mod, ...)
     has.aliased <- any(mod$summary$aliased)
 
     .estimation.data <-  mod$estimation.data
-    assign(".estimation.data", .estimation.data, envir=.GlobalEnv)
+    assign(".estimation.data", .estimation.data, envir = .GlobalEnv)
 
     if (has.aliased)
         mod <- updateAliasedModel(mod)
     frml <- mod$formula
 
-    assign(".formula", frml, envir=.GlobalEnv)
-    assign(".design", mod$design, envir=.GlobalEnv)
+    assign(".formula", frml, envir = .GlobalEnv)
+    assign(".design", mod$design, envir = .GlobalEnv)
     attach(.estimation.data, warn.conflicts = FALSE)
     mod$original$data <- .estimation.data
     effects <- allEffects(mod$original, ...)  # BreuschPagan(x$original)
 
-    ## remove(".design", envir=.GlobalEnv)
-    ## remove(".formula", envir=.GlobalEnv)
-    ## remove(".estimation.data", envir=.GlobalEnv)
     on.exit({
         if (".estimation.data" %in% search())
             detach(".estimation.data")
         if (exists(".formula", envir = .GlobalEnv))
-            remove(".formula", envir=.GlobalEnv)
+            remove(".formula", envir = .GlobalEnv)
         if (exists(".estimation.data", envir = .GlobalEnv))
-            remove(".estimation.data", envir=.GlobalEnv)
+            remove(".estimation.data", envir = .GlobalEnv)
         if (exists("design", envir = .GlobalEnv))
-            remove(".design", envir=.GlobalEnv)
+            remove(".design", envir = .GlobalEnv)
     })
     effects
 }
