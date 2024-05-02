@@ -49,7 +49,6 @@ Remotes:
  Displayr/flipTransformations,
  Displayr/flipTables,
  Displayr/rhtmlHeatmap,
- Displayr/survey,
  Displayr/verbs,
 LinkingTo: Rcpp (>= 0.12.15),
  RcppEigen (<= 0.3.3.9.4)
