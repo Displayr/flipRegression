@@ -1,5 +1,8 @@
 if (identical(Sys.getenv("CIRCLECI"), "true"))
 {
+    Sys.setenv("LC_ALL" = "")
+    Sys.setlocale(category = "LC_ALL", "en_US.UTF-8")
+    Sys.setenv(LANG = Sys.getlocale("LC_CTYPE"))
     test.files <- list.files("tests/testthat", pattern = "\\.R$")
     test.files <- gsub("test-|\\.R$", "", test.files)
     test.filter <- grep("^[asrcd]", test.files,
