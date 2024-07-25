@@ -6,8 +6,6 @@ bank$FeesAndInterest <- bank$Fees * bank$Interest
 linear.model <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
                 data = bank, type = "Linear"))
 
-require(flipRegression, quietly = TRUE)
-
 for (type in c("Linear", "Poisson", "Binary Logit",  "NBD", "Multinomial Logit", "Ordered Logit"))
     test_that(paste("Stepwise: ", type), {
         z <- suppressWarnings(Regression(Overall ~ Fees + Interest + Phone + Branch + Online + ATM + FeesAndInterest,
