@@ -965,7 +965,10 @@ test_that("DS-2694: Ensure NET and duplicated variables are removed", {
 })
 
 test_that("DS-4779 Stacking removes unecessary missing cases", {
-    driver.data <- readRDS(system.file("/inst/extdata/DS4779.driver.data.rds", package = "flipRegression"))
+
+    inst.dir <- system.file("extdata", package = "flipRegression")
+    driver.data <- file.path(inst.dir, "DS4779.driver.data.rds") |>
+        readRDS()
 
     # All models below have 1921 completely missing cases and this
     # should be reported in the footer.
