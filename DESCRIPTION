@@ -52,7 +52,7 @@ Remotes:
  Displayr/survey,
  Displayr/verbs,
 LinkingTo: Rcpp (>= 0.12.15),
- RcppEigen (>= 0.3.3.4.0)
+ RcppEigen (<= 0.3.3.9.4)
 VignetteBuilder: knitr
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Encoding: UTF-8
