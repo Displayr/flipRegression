@@ -1,6 +1,6 @@
-if (identical(Sys.getenv("CIRCLECI"), "true"))
+if (identical(Sys.getenv("CIRCLECI"), "true") && require(devtools, quietly = TRUE))
 {
-    devtools::load_all(".")
+    load_all(".")
     Sys.setenv("LC_ALL" = "")
     Sys.setlocale(category = "LC_ALL", "en_US.UTF-8")
     Sys.setenv(LANG = Sys.getlocale("LC_CTYPE"))
