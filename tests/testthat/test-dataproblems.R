@@ -738,3 +738,81 @@ test_that("DS-4889: Unable to compute anova on weighted models with interaction"
     )
     rm("productName", envir = .GlobalEnv)
 })
+
+test_that("Removing missing entirely missing variables", {
+    some.data <- data.frame(
+        y = runif(5),
+        x1 = runif(5),
+        x2 = rep(NA, 5),
+        x3 = factor(sample(letters[1:2], size = 5, replace = TRUE))
+    )
+    formula <- y ~ x1 + x2
+    missing.variables <- c(y = FALSE, x1 = FALSE, x2 = TRUE)
+    out <- removeMissingVariables(data = some.data, formula = formula, missing.variables = missing.variables) |>
+        expect_warning(
+            paste0(
+                "Data has variable(s) that are entirely missing values (all observed values of the variable are ",
+                "missing). These variable(s) have been removed from the analysis: x2."
+            ),
+            fixed = TRUE
+        )
+    out |> expect_equal(
+        list(
+            data = some.data[, !colnames(some.data) %in% c("x2", "x3")],
+            formula = y ~ x1,
+            formula.with.interaction = y ~ x1
+        )
+    )
+    # Check interaction
+    out.interaction <- removeMissingVariables(data = some.data, formula = formula, interaction = "x3",
+                                              missing.variables = missing.variables) |>
+        expect_warning(
+            paste0(
+                "Data has variable(s) that are entirely missing values (all observed values of the variable are ",
+                "missing). These variable(s) have been removed from the analysis: x2."
+            ),
+            fixed = TRUE
+        )
+    out.interaction |> expect_equal(
+        list(
+            data = some.data[, !colnames(some.data) %in% c("x2")],
+            formula = y ~ x1,
+            formula.with.interaction = y ~ x1 + x3 + x1:x3
+        )
+    )
+    # Check error if missing outcome
+    some.data <- data.frame(y = NA, x1 = runif(5))
+    missing.variables <- c(y = TRUE, x1 = FALSE)
+    removeMissingVariables(data = some.data, formula = y ~ x1, missing.variables = missing.variables) |>
+        expect_error(
+            "Outcome variable is entirely missing (all observed values of the variable are missing).",
+            fixed = TRUE
+        )
+
+    some.data <- data.frame(
+        y = runif(5),
+        x1 = NA,
+        x11 = runif(5),
+        x3 = runif(5),
+        x2 = factor(sample(letters[1:2], size = 5, replace = TRUE))
+    )
+    formula <- y ~ x1 + x11 + x3
+    interaction <- "x2"
+    missing.variables <- c(y = FALSE, x1 = TRUE, x11 = FALSE, x3 = FALSE)
+    removeMissingVariables(data = some.data, formula = y ~ x1 + x11 + x3, interaction = "x2",
+                           missing.variables = missing.variables) |>
+        expect_warning(
+            paste0(
+                "Data has variable(s) that are entirely missing values (all observed values of the variable are ",
+                "missing). These variable(s) have been removed from the analysis: x1."
+            ),
+            fixed = TRUE
+        ) |>
+        expect_equal(
+            list(
+                data = some.data[, !colnames(some.data) %in% c("x1")],
+                formula = y ~ x11 + x3,
+                formula.with.interaction = y ~ x11 + x3 + x2 + x11:x2 + x3:x2
+            )
+        )
+})

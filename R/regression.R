@@ -486,21 +486,22 @@ Regression <- function(formula = NULL,
     outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
     if (Sum(outcome.name == names(data), remove.missing = FALSE) > 1)
-        stop("The 'Outcome' variable has been selected as a 'Predictor'. It must be one or the other, but may not be both.")
-    if (!is.null(weights) & length(weights) != nrow(data))
+        stop("The 'Outcome' variable has been selected as a 'Predictor'. ",
+             "It must be one or the other, but may not be both.")
+    if (!is.null(weights) && length(weights) != nrow(data))
         stop("'weights' and 'data' are required to have the same number of observations. They do not.")
-    if (!is.null(subset) & length(subset) > 1 & length(subset) != nrow(data))
+    if (!is.null(subset) && length(subset) > 1 && length(subset) != nrow(data))
         stop("'subset' and 'data' are required to have the same number of observations. They do not.")
     # Check if there are any entirely missing variables in the data and adjust accordingly.
     missing.variables <- vapply(data, function(x) all(is.na(x)), logical(1L))
     if (any(missing.variables))
     {
-        missing.variable.adjustment <- removeMissingVariables(data, formula, formula.with.interaction,
-                                                              missing.variables, outcome.name, input.formula)
-        data <- missing.variable.adjustment$data
-        formula <- missing.variable.adjustment$formula
-        formula.with.interaction <- missing.variable.adjustment$formula.with.interaction
-        input.formula <- missing.variable.adjustment$input.formula
+        missing.variable.adjustment <- removeMissingVariables(data = data, formula = input.formula,
+                                                              interaction = interaction.name,
+                                                              missing.variables = missing.variables)
+        data <- missing.variable.adjustment[["data"]]
+        formula <- input.formula <- missing.variable.adjustment[["formula"]]
+        formula.with.interaction <- missing.variable.adjustment[["formula.with.interaction"]]
     }
 
     if (type == "Binary Logit" || output == "Jaccard Coefficient")
@@ -509,15 +510,18 @@ Regression <- function(formula = NULL,
             data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data)
         else
         {
-            InterceptExceptions(data <- CreatingBinaryDependentVariableIfNecessary(input.formula, data),
-                                warning.handler = function(w) {
-                                    if (w$message == "The Outcome variable needs to contain two or more categories. It does not.")
-                                        stop("The Outcome variable needs to be a binary variable. It is not. ",
-                                             "It is constant with no variation (all values in the variable are the same). ",
-                                             "Please replace the outcome variable with a binary variable.")
-                                    else
-                                        warning(w$message)
-                                })
+            data <- InterceptExceptions(
+                CreatingBinaryDependentVariableIfNecessary(input.formula, data),
+                warning.handler = function(w) {
+                    message <- warning[["message"]]
+                    if (message == "The Outcome variable needs to contain two or more categories. It does not.")
+                        stop("The Outcome variable needs to be a binary variable. It is not. ",
+                             "It is constant with no variation ",
+                             "(all values in the variable are the same). ",
+                             "Please replace the outcome variable with a binary variable.")
+                    warning(message)
+                }
+            )
             # Convert it to numeric binary, 0,1, if required.
             if (is.factor(data[[outcome.name]]))
                 data[[outcome.name]] <- unclass(data[[outcome.name]]) - 1
@@ -528,7 +532,7 @@ Regression <- function(formula = NULL,
         data[, outcome.name] <- Ordered(outcome.variable)
     else if (type == "Multinomial Logit")
         data[, outcome.name] <- Factor(outcome.variable)
-    else if (IsCount(type) & !IsCount(outcome.variable))
+    else if (IsCount(type) && !IsCount(outcome.variable))
         stopNotCount()
     else if (is.factor(outcome.variable))
     {
@@ -1600,31 +1604,33 @@ setChartData <- function(result, output)
     return(result)
 }
 
-removeMissingVariables <- function(data, formula, formula.with.interaction,
-                                   missing.variables, outcome.name, input.formula)
+#' @importFrom stats reformulate update
+#' @importFrom flipU OutcomeName
+removeMissingVariables <- function(data, formula, interaction, missing.variables)
 {
-    missing.variable.names <- colnames(data)[missing.variables]
+    all.variables <- names(missing.variables)
+    missing.variable.names <- all.variables[missing.variables]
+    outcome.name <- OutcomeName(formula)
     if (outcome.name %in% missing.variable.names)
-        stop("Response variable is entirely missing (all observed values of the variable are missing).")
+        stop("Outcome variable is entirely missing (all observed values of the variable are missing).")
     else {
+        has.interaction <- !missing(interaction) && !is.null(interaction) && interaction != "NULL"
+        non.missing.predictors <- setdiff(all.variables[!missing.variables], outcome.name)
         # Update data and formula
-        formula.terms <- terms.formula(input.formula, data = data)
-        terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep, x = attr(formula.terms, "term.labels"))))
-        input.formula <- update(input.formula, drop.terms(formula.terms, terms.to.drop, keep.response = TRUE))
-        interaction.formula.terms <- terms.formula(formula.with.interaction, data = data)
-        interaction.terms.to.drop <- unique(unlist(sapply(missing.variable.names, grep,
-                                                          x = attr(interaction.formula.terms, "term.labels"))))
-        formula.with.interaction <- update(formula.with.interaction, drop.terms(interaction.formula.terms,
-                                                                                interaction.terms.to.drop,
-                                                                                keep.response = TRUE))
-        formula <- input.formula
-        data <- data[, !missing.variables]
+        formula <- reformulate(non.missing.predictors, response = outcome.name, env = environment(formula))
+        formula.with.interaction <- if (has.interaction) {
+            non.missing.predictors <- c(non.missing.predictors, interaction)
+            interaction <- as.symbol(interaction)
+            update(formula, bquote(. ~ .  * .(interaction)))
+        } else formula
+        data <- data[, c(outcome.name, non.missing.predictors), drop = FALSE]
         missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
-        warning("Data has variable(s) that are entirely missing values (all observed values of the variable are missing). ",
-                "These variable(s) have been removed from the analysis: ", missing.variable.names, ".")
+        warning("Data has variable(s) that are entirely missing values ",
+                "(all observed values of the variable are missing). ",
+                "These variable(s) have been removed from the analysis: ",
+                missing.variable.names, ".")
     }
-    return(list(data = data, formula = formula, input.formula = input.formula,
-                formula.with.interaction = formula.with.interaction))
+    return(list(data = data, formula = formula, formula.with.interaction = formula.with.interaction))
 }
 
 # Takes the input unstacked data, interaction, subset, weights and formula terms
