@@ -513,7 +513,7 @@ Regression <- function(formula = NULL,
             data <- InterceptExceptions(
                 CreatingBinaryDependentVariableIfNecessary(input.formula, data),
                 warning.handler = function(w) {
-                    message <- warning[["message"]]
+                    message <- w[["message"]]
                     if (message == "The Outcome variable needs to contain two or more categories. It does not.")
                         stop("The Outcome variable needs to be a binary variable. It is not. ",
                              "It is constant with no variation ",
