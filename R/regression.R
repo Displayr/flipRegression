@@ -1613,24 +1613,22 @@ removeMissingVariables <- function(data, formula, interaction, missing.variables
     outcome.name <- OutcomeName(formula)
     if (outcome.name %in% missing.variable.names)
         stop("Outcome variable is entirely missing (all observed values of the variable are missing).")
-    else {
-        has.interaction <- !missing(interaction) && !is.null(interaction) && interaction != "NULL"
-        non.missing.predictors <- setdiff(all.variables[!missing.variables], outcome.name)
-        # Update data and formula
-        formula <- reformulate(non.missing.predictors, response = outcome.name, env = environment(formula))
-        formula.with.interaction <- if (has.interaction) {
-            non.missing.predictors <- c(non.missing.predictors, interaction)
-            interaction <- as.symbol(interaction)
-            update(formula, bquote(. ~ .  * .(interaction)))
-        } else formula
-        data <- data[, c(outcome.name, non.missing.predictors), drop = FALSE]
-        missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
-        warning("Data has variable(s) that are entirely missing values ",
-                "(all observed values of the variable are missing). ",
-                "These variable(s) have been removed from the analysis: ",
-                missing.variable.names, ".")
-    }
-    return(list(data = data, formula = formula, formula.with.interaction = formula.with.interaction))
+    has.interaction <- !missing(interaction) && !is.null(interaction) && interaction != "NULL"
+    non.missing.predictors <- setdiff(all.variables[!missing.variables], outcome.name)
+    # Update data and formula
+    formula <- reformulate(non.missing.predictors, response = outcome.name, env = environment(formula))
+    formula.with.interaction <- if (has.interaction) {
+        non.missing.predictors <- c(non.missing.predictors, interaction)
+        interaction <- as.symbol(interaction)
+        update(formula, bquote(. ~ .  * .(interaction)))
+    } else formula
+    data <- data[, c(outcome.name, non.missing.predictors), drop = FALSE]
+    missing.variable.names <- paste0(missing.variable.names, collapse = ", ")
+    warning("Data has variable(s) that are entirely missing values ",
+            "(all observed values of the variable are missing). ",
+            "These variable(s) have been removed from the analysis: ",
+            missing.variable.names, ".")
+    list(data = data, formula = formula, formula.with.interaction = formula.with.interaction)
 }
 
 # Takes the input unstacked data, interaction, subset, weights and formula terms
