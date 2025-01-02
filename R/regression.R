@@ -2360,7 +2360,7 @@ extractImputedValuesFromDummyAdjustments <- function(coefficients, computed.mean
 {
     dummy.variables <- isDummyVariable(names(coefficients))
     dummy.variable.names <- extractDummyNames(names(coefficients)[dummy.variables])
-    standard.variables <- grepl(paste0("^", dummy.variable.names, "$", collapse = "|"), names(coefficients))
+    standard.variables <- dummy.variable.names %in% names(coefficients)
     standard.variable.names <- names(coefficients)[standard.variables]
     slope.values <- as.list(coefficients[standard.variables])
     names(slope.values) <- standard.variable.names
