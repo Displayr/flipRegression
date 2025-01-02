@@ -2351,7 +2351,10 @@ extractDummyAdjustedCoefs <- function(coefficients, computed.means)
     dummy.values <- as.list(coefficients[dummy.variables])
     names(dummy.values) <- dummy.variable.names
     adjusted.vals <- lapply(dummy.variable.names, function(x) {
-        computed.means[[x]] + dummy.values[[x]]/slope.values[[x]]})
+        adjustment <- computed.means[[x]]
+        if (!is.na(dummy.values[[x]])) adjustment <- adjustment + dummy.values[[x]]/slope.values[[x]]
+        adjustment
+    })
     names(adjusted.vals) <- dummy.variable.names
     return(adjusted.vals)
 }
