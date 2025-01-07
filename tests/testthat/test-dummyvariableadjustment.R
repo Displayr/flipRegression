@@ -27,7 +27,7 @@ test_that("Coefficient estimates are the same ", {
     computed.means <- lapply(missing.data, mean, na.rm = TRUE)
 
     # Check extracted Coefs correct, they will be the last three of the regular coefficients
-    dummy.adjusted.coefs <- extractDummyAdjustedCoefs(all.coefs, computed.means)
+    dummy.adjusted.coefs <- extractImputedValuesFromDummyAdjustments(all.coefs, computed.means)
 
     expect_equal(names(dummy.adjusted.coefs), c("X1", "X2", "X3"))
 
@@ -70,6 +70,18 @@ test_that("Coefficient estimates are the same ", {
     # Expect coefficients to be the same between original dummy adjusted regression and
     # on the remapped dataset.
     expect_equal(lm(Y ~ X1 + X2 + X3, data = remapped.data)$coef, all.coefs[-(5:7)])
+
+    # Aliased dummy variable predictors are handled
+    coefficients.with.dummy.aliased <- c(
+        `(Intercept)` = 0.5,
+        X1 = 0.4,
+        X2 = 0.3,
+        X1.dummy.var_GQ9KqD7YOf = NA,
+        X2.dummy.var_GQ9KqD7YOf = 0.6
+    )
+    computed.means <- c(X1 = 1, X2 = 2)
+    extractImputedValuesFromDummyAdjustments(coefficients.with.dummy.aliased, computed.means) |>
+        expect_equal(list(X1 = 1, X2 = 2 + 0.6 / 0.3))
 })
 
 test_that("Robust SE compatible with Dummy variable adjustment", {

@@ -2273,7 +2273,7 @@ adjustDataMissingDummy <- function(data, model, estimation.data, show.labels)
     }
     # Apply filter since one of the predictors may have been removed from the model as its colinear
     # and a dummy variable might be linked to it (it wont have a slope coefficient, so it will have length zero)
-    missing.replacements <- Filter(length, extractDummyAdjustedCoefs(model.coefs, means.from.data))
+    missing.replacements <- Filter(length, extractImputedValuesFromDummyAdjustments(model.coefs, means.from.data))
     missing.numeric <- vapply(names(missing.replacements),
                               function(x) is.numeric(design.data[[x]]),
                               logical(1))
@@ -2340,18 +2340,40 @@ aliasedDummyVariableWarning <- function(data, mapping.variables, show.labels, pr
     warning(warning.msg)
 }
 
-extractDummyAdjustedCoefs <- function(coefficients, computed.means)
+# The values extracted here will allow missing values to be imputed and the predictions
+# using only the standard predictors from the dummy adjusted model (not using dummy adjustment
+# coefficients) will produce the same values as the original data using the full set of
+# predictors (including dummy variable predictors). This is used to prepare a dataset
+# for relative importance analysis as it requires complete data.
+# It returns a vector of imputed values for each predictor in the dataset.
+# If dummy adjusted fit: Y_d = X_d beta_d + eps
+# then fitted Y_d = beta_0 + xbar * beta_x + beta_d where
+#  - xbar = mean of x
+#  - beta_x = slope for x
+#  - beta_d = dummy adjusted variable slope
+# For imputation then equality is needed for the predictor value for the standard set
+# of predictors and the mean used in the full dummy adjusted model.
+# That is,
+#   x beta_x = beta_x xbar + beta_d
+#   => x = xbar + beta_d / beta_x
+extractImputedValuesFromDummyAdjustments <- function(coefficients, computed.means)
 {
     dummy.variables <- isDummyVariable(names(coefficients))
     dummy.variable.names <- extractDummyNames(names(coefficients)[dummy.variables])
-    standard.variables <- grepl(paste0("^", dummy.variable.names, "$", collapse = "|"), names(coefficients))
+    standard.variables <- dummy.variable.names %in% names(coefficients)
     standard.variable.names <- names(coefficients)[standard.variables]
     slope.values <- as.list(coefficients[standard.variables])
     names(slope.values) <- standard.variable.names
     dummy.values <- as.list(coefficients[dummy.variables])
     names(dummy.values) <- dummy.variable.names
     adjusted.vals <- lapply(dummy.variable.names, function(x) {
-        computed.means[[x]] + dummy.values[[x]]/slope.values[[x]]})
+        adjustment <- computed.means[[x]]
+        # A dummy adjustment variable slope might be aliased and its not possible to adjust the slope
+        # The adjustment is not required as it isnt used in the dummy adjustment model. So the
+        # imputed value is just the mean
+        if (!is.na(dummy.values[[x]])) adjustment <- adjustment + dummy.values[[x]] / slope.values[[x]]
+        adjustment
+    })
     names(adjusted.vals) <- dummy.variable.names
     return(adjusted.vals)
 }
