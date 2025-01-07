@@ -504,6 +504,12 @@ Regression <- function(formula = NULL,
         formula <- input.formula <- missing.variable.adjustment[["formula"]]
         formula.with.interaction <- missing.variable.adjustment[["formula.with.interaction"]]
     }
+    if (length(AllVariablesNames(formula, data)) == 2L && missing == "Use partial data (pairwise correlations)") {
+        partial <- FALSE
+        missing <- "Exclude cases with missing data"
+        warning("Only a single predictor variable with non-missing values has been provided for analysis. ",
+                "The missing data option has been changed to Exclude cases with missing data")
+    }
 
     if (type == "Binary Logit" || output == "Jaccard Coefficient")
     {
@@ -555,7 +561,7 @@ Regression <- function(formula = NULL,
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
         result <- list(original = LinearRegressionFromCorrelations(input.formula, data, subset,
-                                                                   weights, outcome.name, ...),
+                                                                   weights, ...),
                        outliers.removed = !is.null(outlier.prop.to.remove) && outlier.prop.to.remove != 0,
                        call = cl)
         result$sample.description <- result$original$sample.description

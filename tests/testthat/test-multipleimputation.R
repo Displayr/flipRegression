@@ -112,8 +112,10 @@ test_that("Other examples",
     # Complete case
     expect_error(Regression(price ~ distance, data = data.frame(distance, price)), NA)
 
-    expect_error(Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)"), NA)
-    expect_error(Regression(price ~ distance, data = data.frame(distance, price)[1:6, ], missing = "Use partial data (pairwise correlations)"), NA)
+    Regression(price ~ distance, data = data.frame(distance, price), missing = "Use partial data (pairwise correlations)") |>
+        expect_warning("Only a single predictor variable with non-missing values has been provided for analysis. ", fixed = TRUE)
+    Regression(price ~ distance, data = data.frame(distance, price)[1:6, ], missing = "Use partial data (pairwise correlations)") |>
+        expect_warning("Only a single predictor variable with non-missing values has been provided for analysis. ", fixed = TRUE)
 
     # Regression-based imputation
     expect_error(Regression(price ~ distance, data = data.frame(distance, price), missing = "Multiple imputation"), NA)
