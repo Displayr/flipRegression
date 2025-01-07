@@ -11,7 +11,7 @@ if (identical(Sys.getenv("CIRCLECI"), "true"))
     if (!dir.exists("reports"))
         dir.create("reports")
     out.file <- paste0("reports/test_results", Sys.getenv("CIRCLE_NODE_INDEX"), ".xml")
-    exit.code <- flipDevTools::RunTestsOnCircleCI(filter = paste0(test.filter, collapse = "|"),
-                                                  load_package = "none", output_file = out.file)
+    file.filter <- paste0(test.filter, collapse = "|")
+    exit.code <- flipDevTools::RunTestsOnCircleCI(path = ".", filter = file.filter, output_file = out.file)
     q(status = exit.code, save = "no")
 }

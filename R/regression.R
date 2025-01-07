@@ -448,7 +448,8 @@ Regression <- function(formula = NULL,
     formula.has.dot <- "." %in% all.vars(input.formula)
     if (formula.has.dot)
         all.variable.names <- all.variable.names[all.variable.names != interaction.name]
-    unique.syntactic.interaction.name <- Last(make.names(c(all.variable.names, interaction.name),
+    all.non.interaction.names <- setdiff(all.variable.names, interaction.name)
+    unique.syntactic.interaction.name <- Last(make.names(c(all.non.interaction.names, interaction.name),
                                                          unique = TRUE),
                                               1)
     interaction.name.needs.updating <- !identical(interaction.name, unique.syntactic.interaction.name)
