@@ -18,8 +18,9 @@ test_that("Check for NAs in correlation matrix",
                                                        missing = "Use partial data (pairwise correlations)")))
               expect_error(suppressWarnings(Regression(y ~ x + z, data = df,
                                                        missing = "Use partial data (pairwise correlations)")))
-              expect_error(suppressWarnings(Regression(y ~ j, data = df,
-                                                       missing = "Use partial data (pairwise correlations)")))
+              Regression(y ~ j, data = df,
+                         missing = "Use partial data (pairwise correlations)") |>
+                  expect_warning("Only a single predictor variable with non-missing values has been provided for analysis")
           })
 
 

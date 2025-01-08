@@ -64,7 +64,7 @@ LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL
         for (c in 1:r)
         {
             pairwise.data <- !is.na(y.and.x[,c]) & !is.na(y.and.x[,r])
-            pairwise.n[r, c] <- if(weighted) Sum(weights[pairwise.data]) else Sum(pairwise.data)
+            pairwise.n[r, c] <- if (weighted) Sum(weights[pairwise.data]) else Sum(pairwise.data)
         }
     min.pairwise.n <- min(pairwise.n, na.rm = TRUE)
     cors <- if (weighted)
@@ -414,4 +414,3 @@ regressionFromCorrelations <- function(y, x, weights = rep(1, nrow(x)), b = 999)
 #         setCor.diagram(set.cor, main = main)
 #     return(set.cor)
 # }
-
