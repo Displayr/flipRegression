@@ -9,8 +9,13 @@ Estimates standard regression models
 To install from GitHub:
 ```
 require(devtools)
-install_github("Displayr/flipRegression", dependencies = NA)
+install_github("Displayr/flipTime", dependencies = NA, force = TRUE)
+install_github("Displayr/flipFormat", dependencies = NA, force = TRUE)
+install_github("Displayr/flipStatistics", dependencies = NA, force = TRUE)
+install_version("RcppEigen", version = "0.3.3.9.4", repos = "http://cran.us.r-project.org")
+install_github("Displayr/flipRegression", dependencies = NA, force = TRUE)
 ```
+IMPORTANT: when you execute the last code above, you will be asked what dependencies you would like to update. You MUST SELECT “None”. Otherwise, it will update RcppEigen to version higher than ‘0.3.3.9.4’, and the installation process will fail.
 
 If you have not set up a GitHub Personal Access Token, you will likely need to do so to avoid 
 GitHub rate limits, which will manifest as 403 errors when downloading packages via
