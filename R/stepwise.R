@@ -6,7 +6,7 @@
 #' @param always.include a vector of names of variables to always include in the model.
 #' @param steps the maximum number of steps to be considered.
 #' @importFrom MASS stepAIC
-#' @importFrom flipU AllVariablesNames CopyAttributes
+#' @importFrom flipU AllVariablesNames CopyAttributes StopForUserError
 #' @importFrom flipFormat Labels
 #' @export
 Stepwise <- function(object, output = "Final", direction = "Backward", always.include = NULL, steps = 1000)
@@ -15,16 +15,16 @@ Stepwise <- function(object, output = "Final", direction = "Backward", always.in
         stop("Invalid regression model object supplied.")
 
     if (object$test.interaction)
-        stop("Stepwise regression is incompatible with regression models with a Crosstab interaction variable supplied.")
+        StopForUserError("Stepwise regression is incompatible with regression models with a Crosstab interaction variable supplied.")
 
     if (object$type == "Quasi-Poisson" && is.null(object$weight))
-        stop("Stepwise regression is currently incompatible with unweighted Quasi-Poisson regression models. Consider using a Poisson or NBD model instead.")
+        StopForUserError("Stepwise regression is currently incompatible with unweighted Quasi-Poisson regression models. Consider using a Poisson or NBD model instead.")
 
     if (object$missing == "Use partial data (pairwise correlations)")
-        stop("Stepwise regression is incompatible with regression models which use partial data (pairwise correlations). Please modify the 'Missing data' setting in the original model.")
+        StopForUserError("Stepwise regression is incompatible with regression models which use partial data (pairwise correlations). Please modify the 'Missing data' setting in the original model.")
 
     if (object$missing == "Imputation (replace missing values with estimates)" || object$missing == "Multiple imputation")
-        stop("Stepwise regression is incompatible with regression models which use imputation. Please modify the 'Missing data' setting in the original model.")
+        StopForUserError("Stepwise regression is incompatible with regression models which use imputation. Please modify the 'Missing data' setting in the original model.")
 
     var.names <- AllVariablesNames(object$formula, object$original$model)
     outcome.name <- var.names[1]

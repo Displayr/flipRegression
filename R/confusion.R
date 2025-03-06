@@ -22,6 +22,7 @@ ConfusionMatrix <- function(obj, subset = obj$subset, weights = obj$weights, dec
 #' @importFrom flipData Observed EstimationData
 #' @importFrom flipFormat FormatAsReal
 #' @importFrom verbs Sum
+#' @importFrom flipU StopForUserError
 #' @export
 ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weights, decimals = NULL)
 {
@@ -45,7 +46,7 @@ ConfusionMatrix.default <- function(obj, subset = obj$subset, weights = obj$weig
             warning(w$message)
     })
     if (inherits(predicted, "try-error") || is.null(predicted))
-        stop("A regression or machine learning model or ensemble is required to calculate a Prediction-Accuracy Table.")
+        StopForUserError("A regression or machine learning model or ensemble is required to calculate a Prediction-Accuracy Table.")
     observed <- Observed(obj)
 
     confusion <- confusionMatrixHelper(observed, predicted, subset, weights)

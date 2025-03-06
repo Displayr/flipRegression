@@ -146,11 +146,12 @@ nullDeviance <- function(x)
 #' McFadden, D. (1974) "Conditional logit analysis of qualitative choice behavior."
 #' Pp. 105-142 in P. Zarembka (ed.), Frontiers in Econometrics
 #' @importFrom stats deviance
+#' @importFrom flipU StopForUserError
 #' @export
 McFaddensRhoSquared <- function(x)
 {
     if (x$type == "Linear")
-        stop("McFadden's rho-squared statistic is not computed for models of type 'Linear'.")
+        StopForUserError("McFadden's rho-squared statistic is not computed for models of type 'Linear'.")
     1 - deviance(x$original) / nullDeviance(x)
 }
 

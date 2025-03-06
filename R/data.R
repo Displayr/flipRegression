@@ -27,7 +27,7 @@ outcomeVariableFromModel <- function(Regression.object)
 #' \item formula.with.interaction Similar formula but with the interaction term added.
 #' \item labels String vector containing either the variable names or labels.
 #' }
-#' @importFrom flipU OutcomeName OutcomeVariable
+#' @importFrom flipU OutcomeName OutcomeVariable StopForUserError
 #' @importFrom flipTransformations AsDataFrame
 #' @importFrom flipFormat ExtractCommonPrefix
 #' @importFrom verbs Sum
@@ -87,9 +87,9 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
                                             "variable to a binary variable ", "variables to binary variables ")
         general.statement <- paste0(", please change the ", non.binary.variable.msg,
                                     "if you wish to create output with the Jaccard coefficients.")
-        stop("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
-             "need to be binary variables (only take the values zero or one). The ", outcome.string,
-             both.not, predictor.string, general.statement)
+        StopForUserError("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
+                         "need to be binary variables (only take the values zero or one). The ", outcome.string,
+                         both.not, predictor.string, general.statement)
     }
     # From here variables appear binary (non-missing values are 0 or 1)
     # Check if any variables have no variation (all zeros or all ones) and throw error
@@ -116,9 +116,9 @@ processDataSuitableForJaccard <- function(data, formula, interaction.name = "NUL
                                     "or all values in the variable are one). Consider if ",
                                     ngettext(n.variables, "this variable is " , "these variables are "),
                                     "appropriate and remove if necessary.")
-        stop("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
-             "should be binary variables. However, the ", outcome.string,
-             both.not, predictor.string, general.statement)
+        StopForUserError("Both the outcome and predictor variable", ngettext(ncol(predictor.variables), " ", "s "),
+                         "should be binary variables. However, the ", outcome.string,
+                         both.not, predictor.string, general.statement)
     }
     formula <- createSuitableFormulaForJaccard(outcome.name = outcome.name,
                                                 predictor.names = predictor.names)
@@ -291,12 +291,9 @@ throwAliasedExceptionImportanceAnalysis <- function(aliased.grouped, labels, out
                             "and at least one predictor needs to be removed to conduct a ", output, ". ",
                             paste0("Group ", 1:length(groups), ": (", groups, ")", collapse = ", "), ".")
     if (is.null(group.name))
-        stop(base.message, group.msg, factor.msg)
-    else
-    {
-        base.message <- paste0("Within the ", group.name, " category, ", sub("^S", "s", base.message))
-        stop(base.message, group.msg, factor.msg)
-    }
+        StopForUserError(base.message, group.msg, factor.msg)
+    base.message <- paste0("Within the ", group.name, " category, ", sub("^S", "s", base.message))
+    StopForUserError(base.message, group.msg, factor.msg)
 }
 
 #' Throw an informative error or construct string
@@ -399,15 +396,16 @@ hasNoVariation <- function(x) {
 #' @param x The string to pass into the error
 #' @param group.name The string of the category label/group name within the cross tab interaction,
 #' @noRd
+#' @importFrom flipU StopForUserError
 throwRIAException <- function(x, group.name = NULL)
 {
     if (is.null(group.name))
-        stop(x)
+        StopForUserError(x)
     else
     { # Change first char to lowercase and prepend the group/category name
         first.char <- substr(x, 1, 1)
         x <- sub(paste0("^", first.char), tolower(first.char), x)
-        stop("Within the ", group.name, " category, ", x)
+        StopForUserError("Within the ", group.name, " category, ", x)
     }
 }
 

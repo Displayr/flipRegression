@@ -6,7 +6,7 @@ resid.Regression <- function(object, ...)
 }
 
 #' @importFrom flipTransformations UnclassIfNecessary
-#' @importFrom flipU IsRServer
+#' @importFrom flipU IsRServer StopForUserError
 #' @importFrom stats residuals
 #' @export
 residuals.Regression <- function(object, type = "raw", ...)
@@ -14,7 +14,7 @@ residuals.Regression <- function(object, type = "raw", ...)
     notValidForPartial(object, "residuals")
     notValidForCrosstabInteraction(object, "residuals")
     if (isTRUE(object$stacked) && IsRServer())
-        stop("Saving residuals is currently not supported for stacked data.")
+        StopForUserError("Saving residuals is currently not supported for stacked data.")
     if (type == "raw" & object$type %in% c("Ordered Logit", "Multinomial Logit", "Binary Logit"))
     {
         observed <- Observed(object)
@@ -40,14 +40,14 @@ computePoissonEsqueProbabilities <- function(xs, lambdas, density)
 
 #' @importFrom stats predict.glm
 #' @importFrom flipData Observed CheckPredictionVariables ValidateNewData
-#' @importFrom flipU IsRServer
+#' @importFrom flipU IsRServer StopForUserError
 #' @export
 predict.Regression <- function(object, newdata = NULL, na.action = na.pass, ...)
 {
     if (object$test.interaction)
-        stop("Cannot predict from regression model with Crosstab interaction.")
+        StopForUserError("Cannot predict from regression model with Crosstab interaction.")
     if (isTRUE(object$stacked) && IsRServer())
-        stop("Saving predicted values is currently not supported for stacked data.")
+        StopForUserError("Saving predicted values is currently not supported for stacked data.")
     notValidForPartial(object, "predict")
     notValidForCrosstabInteraction(object, "predict")
     newdata <- ValidateNewData(object, newdata)
@@ -122,12 +122,12 @@ coefNamesBeforeOmitting <- function(object)
 }
 
 #' @importFrom stats fitted
-#' @importFrom flipU IsRServer
+#' @importFrom flipU IsRServer StopForUserError
 #' @export
 fitted.Regression <- function(object, ...)
 {
     if (isTRUE(object$stacked) && IsRServer())
-        stop("Saving fitted values is currently not supported for stacked data.")
+        StopForUserError("Saving fitted values is currently not supported for stacked data.")
     notValidForPartial(object, "fitted")
     notValidForCrosstabInteraction(object, "fitted")
     fitted.values <- fitted(object$original)
@@ -206,16 +206,16 @@ flipData::Probabilities
 
 #' @importFrom stats na.pass dpois
 #' @importFrom flipData Observed ValidateNewData
-#' @importFrom flipU IsRServer
+#' @importFrom flipU IsRServer StopForUserError
 #' @export
 Probabilities.Regression <- function(object, newdata = NULL, ...)
 {
     notValidForPartial(object, "probabilities")
     notValidForCrosstabInteraction(object, "probabilities")
     if (object$type == "Linear")
-        stop(sQuote("Probabilities"), " is not applicable to linear regression models.")
+        StopForUserError(sQuote("Probabilities"), " is not applicable to linear regression models.")
     if (isTRUE(object$stacked) && IsRServer())
-        stop("Saving probabilitiles is currently not supported for stacked data.")
+        StopForUserError("Saving probabilitiles is currently not supported for stacked data.")
     newdata <- ValidateNewData(object, newdata)
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
     {
@@ -254,7 +254,7 @@ Probabilities.Regression <- function(object, newdata = NULL, ...)
         xs <- 0:max(Observed(object), na.rm = TRUE)
         return(computePoissonEsqueProbabilities(xs, lambdas, dpois))
     }
-    stop("Probabilities are not computed for models of type '", object$type, ".")
+    StopForUserError("Probabilities are not computed for models of type '", object$type, ".")
 }
 
 #' Adds dummy variable adjustment information for the estimation data template
