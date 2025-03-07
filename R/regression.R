@@ -263,6 +263,7 @@
 #' @importFrom lmtest coeftest
 #' @importFrom stats drop.terms terms.formula
 #' @importFrom verbs Last Sum
+#' @importFrom flipU StopForUserError
 #' @export
 Regression <- function(formula = NULL,
                        data = NULL,
@@ -311,8 +312,8 @@ Regression <- function(formula = NULL,
         if (type == "Linear")
             "Shapley Regression"
         else
-            stop("Shapley requires Regression type to be Linear. Set the output to ",
-                 "Relative Importance Analysis instead.")
+            StopForUserError("Shapley requires Regression type to be Linear. Set the output to ",
+                             "Relative Importance Analysis instead.")
     } else if (output %in% c("Jaccard Coefficient", "Correlation"))
         output
     else
@@ -382,12 +383,12 @@ Regression <- function(formula = NULL,
             interaction.label <- if (show.labels && is.character(Labels(interaction))) Labels(interaction)
             else interaction.name
             if (length(unique(Factor(interaction))) < 2)
-                stop("Crosstab interaction variable must contain more than one unique value.")
+                StopForUserError("Crosstab interaction variable must contain more than one unique value.")
             if (type == "Multinomial Logit")
-                stop("Crosstab interaction is incompatible with Multinomial Logit regression.")
+                StopForUserError("Crosstab interaction is incompatible with Multinomial Logit regression.")
 
             if (interaction.name %in% colnames(data))
-                stop("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
+                StopForUserError("The 'Crosstab interaction' variable has been selected as a 'Predictor'")
             data <- cbind(data, Factor(interaction))
             colnames(data)[ncol(data)] <- interaction.name
 
@@ -487,12 +488,12 @@ Regression <- function(formula = NULL,
     outcome.name <- OutcomeName(input.formula, data)
     outcome.variable <- data[[outcome.name]]
     if (Sum(outcome.name == names(data), remove.missing = FALSE) > 1)
-        stop("The 'Outcome' variable has been selected as a 'Predictor'. ",
-             "It must be one or the other, but may not be both.")
+        StopForUserError("The 'Outcome' variable has been selected as a 'Predictor'. ",
+                         "It must be one or the other, but may not be both.")
     if (!is.null(weights) && length(weights) != nrow(data))
-        stop("'weights' and 'data' are required to have the same number of observations. They do not.")
+        StopForUserError("'weights' and 'data' are required to have the same number of observations. They do not.")
     if (!is.null(subset) && length(subset) > 1 && length(subset) != nrow(data))
-        stop("'subset' and 'data' are required to have the same number of observations. They do not.")
+        StopForUserError("'subset' and 'data' are required to have the same number of observations. They do not.")
     # Check if there are any entirely missing variables in the data and adjust accordingly.
     missing.variables <- vapply(data, function(x) all(is.na(x)), logical(1L))
     if (any(missing.variables))
@@ -522,10 +523,10 @@ Regression <- function(formula = NULL,
                 warning.handler = function(w) {
                     message <- w[["message"]]
                     if (message == "The Outcome variable needs to contain two or more categories. It does not.")
-                        stop("The Outcome variable needs to be a binary variable. It is not. ",
-                             "It is constant with no variation ",
-                             "(all values in the variable are the same). ",
-                             "Please replace the outcome variable with a binary variable.")
+                        StopForUserError("The Outcome variable needs to be a binary variable. It is not. ",
+                                         "It is constant with no variation ",
+                                         "(all values in the variable are the same). ",
+                                         "Please replace the outcome variable with a binary variable.")
                     warning(message)
                 }
             )
@@ -556,8 +557,8 @@ Regression <- function(formula = NULL,
     if (partial)
     {
         if (!is.null(importance) && importance %in% c("Relative Importance Analysis", "Shapley Regression"))
-            stop("Relative importance analysis and Shapley Regression are not ",
-                 "available when using pairwise correlations on missing data.")
+            StopForUserError("Relative importance analysis and Shapley Regression are not ",
+                             "available when using pairwise correlations on missing data.")
         subset <- CleanSubset(subset, nrow(data))
         unfiltered.weights <- weights <- CleanWeights(weights)
         result <- list(original = LinearRegressionFromCorrelations(input.formula, data, subset,
@@ -579,9 +580,9 @@ Regression <- function(formula = NULL,
             variable.count <- Sum(sapply(data.for.levels, function(x) abs(length(levels(x)) - 1)), remove.missing = FALSE)
             n.data <- Sum(processed.data$post.missing.data.estimation.sample, remove.missing = FALSE)
             if (n.data < variable.count)
-                stop(gettextf("There are fewer observations (%d)%s(%d)", n.data,
-                              " than there are variables after converting categorical to dummy variables ", variable.count),
-                     ". Either merge levels, remove variables, or convert categorical variables to numeric.")
+                StopForUserError(gettextf("There are fewer observations (%d)%s(%d)", n.data,
+                                          " than there are variables after converting categorical to dummy variables ", variable.count),
+                                 ". Either merge levels, remove variables, or convert categorical variables to numeric.")
         }
 
         if (missing == "Multiple imputation")
@@ -679,7 +680,7 @@ Regression <- function(formula = NULL,
 
         n <- nrow(.estimation.data)
         if (n < ncol(.estimation.data) + 1)
-            stop(warningSampleSizeTooSmall())
+            StopForUserError(warningSampleSizeTooSmall())
         post.missing.data.estimation.sample <- processed.data$post.missing.data.estimation.sample
         .weights <- processed.data$weights
         .formula <- DataFormula(input.formula, data)
@@ -847,9 +848,9 @@ Regression <- function(formula = NULL,
                 {
                     factor.preds <- names(which(factor.preds))
                     factor.names <- if (show.labels) Labels(data, factor.preds) else factor.preds
-                    stop("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
-                         "variables in ", output, ". Please remove the categorical predictors: ",
-                         paste0(sQuote(factor.names, q = FALSE), collapse = ", "), " and re-run the analysis.")
+                    StopForUserError("Dummy variable adjustment method for missing data is not supported for categorical predictor ",
+                                     "variables in ", output, ". Please remove the categorical predictors: ",
+                                     paste0(sQuote(factor.names, q = FALSE), collapse = ", "), " and re-run the analysis.")
                 } # Otherwise, conduct the imputation type step in the data and update formula, removing dummy vars
                 .estimation.data <- adjustDataMissingDummy(data, result$original, .estimation.data, show.labels)
                 input.formula <- updateDummyVariableFormulae(formula = input.formula, formula.with.interaction = NULL,
@@ -1291,11 +1292,12 @@ fitModel <- function(.formula, .estimation.data, .weights, type, robust.se, subs
 #'
 #' @param object A Regression object
 #' @param method The regression method.
+#' @importFrom flipU StopForUserError
 notValidForPartial <- function(object, method)
 {
     ms <- "Use partial data (pairwise correlations)"
     if (object$missing == ms)
-        stop(sQuote(method), " not available when ", sQuote("missing"), " = ", dQuote(ms), ".")
+        StopForUserError(sQuote(method), " not available when ", sQuote("missing"), " = ", dQuote(ms), ".")
 }
 
 
@@ -1303,10 +1305,11 @@ notValidForPartial <- function(object, method)
 #'
 #' @param object A Regression object
 #' @param method The regression method.
+#' @importFrom flipU StopForUserError
 notValidForCrosstabInteraction <- function(object, method)
 {
     if (object$test.interaction)
-        stop(sQuote(method), " not available when Crosstab interaction variable is supplied.")
+        StopForUserError(sQuote(method), " not available when Crosstab interaction variable is supplied.")
 }
 
 
@@ -1441,7 +1444,7 @@ FixVarianceCovarianceMatrix <- function(x, min.eigenvalue = 1e-12)
         v
     }, silent = TRUE)
     if (inherits(v, "try-error"))
-        stop("There is a technical problem with the parameter variance-covariance matrix. ", wng)
+        StopForUserError("There is a technical problem with the parameter variance-covariance matrix. ", wng)
     warning("There is a technical problem with the parameter variance-covariance matrix ",
             "that has been corrected. ", wng)
     v
@@ -1482,9 +1485,9 @@ fitOrderedLogit <- function(.formula, .estimation.data, .design, non.outlier.dat
             y <- model.response(m)
             unobserved.levels <- paste0(setdiff(levels(y), y), collapse = ", ")
             if (unobserved.levels != "")
-                stop("Outcome variable has level(s): ", unobserved.levels, " that are not observed in the data. ",
-                     "If possible, this issue could be solved by merging the categories of the outcome variable ",
-                     "such that all categories appear in all sub-groups.")
+                StopForUserError("Outcome variable has level(s): ", unobserved.levels, " that are not observed in the data. ",
+                                 "If possible, this issue could be solved by merging the categories of the outcome variable ",
+                                 "such that all categories appear in all sub-groups.")
         }
         if (grepl("response must have 3 or more levels|cannot be dichotimized as it only contains one level",
                   e[["message"]]))
@@ -1495,19 +1498,19 @@ fitOrderedLogit <- function(.formula, .estimation.data, .design, non.outlier.dat
                                      "to have three or more levels. The outcome variable here has ")
             levels.msg <- paste0(sQuote(outcome.levels), collapse = " and ")
             if (length(outcome.levels) == 1)
-                stop(base.error.msg, "only one level: ", levels.msg, ". A Regression model cannot be computed ",
-                     "when the outcome variable has no variation.")
-            stop(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
+                StopForUserError(base.error.msg, "only one level: ", levels.msg, ". A Regression model cannot be computed ",
+                                 "when the outcome variable has no variation.")
+            StopForUserError(base.error.msg, "two levels: ", levels.msg, ". Consider using a Binary Logit model instead.")
         }
         if (grepl("attempt to find suitable starting values failed|initial value in 'vmmin' is not finite", e$message))
-            stop("It is not possible to fit the Ordered Logit Regression model since a suitable starting point ",
-                 "cannot be found for the iterative algorithm used for fitting the model. ",
-                 "It is recommended to check the input data to see if it is appropriate. ",
-                 "If possible, consider merging categories in the outcome variable that don't have many observations. ",
-                 "It is also worth checking that there is sufficient variation in the predictor variables for ",
-                 "each level in the outcome variable.")
-        stop("An error occurred during model fitting. ",
-             "Please check your input data for unusual values: ", e$message)
+            StopForUserError("It is not possible to fit the Ordered Logit Regression model since a suitable starting point ",
+                             "cannot be found for the iterative algorithm used for fitting the model. ",
+                             "It is recommended to check the input data to see if it is appropriate. ",
+                             "If possible, consider merging categories in the outcome variable that don't have many observations. ",
+                             "It is also worth checking that there is sufficient variation in the predictor variables for ",
+                             "each level in the outcome variable.")
+        StopForUserError("An error occurred during model fitting. ",
+                         "Please check your input data for unusual values: ", e$message)
     }
     model <- InterceptExceptions(
         if (!weighted.model)
@@ -1554,6 +1557,7 @@ fitOrderedLogit <- function(.formula, .estimation.data, .design, non.outlier.dat
 
 #' @importFrom flipTransformations DichotomizeFactor
 #' @importFrom stats glm.fit
+#' @importFrom flipU StopForUserError
 findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.data, cutoff = 0.5)
 {
     outcome.name <- OutcomeName(.formula, .estimation.data)
@@ -1561,7 +1565,7 @@ findAppropriateStartingValueForOrderedLogit <- function(.formula, .estimation.da
     X <- model.matrix(.formula, .estimation.data)
     initial.logit.fit <- glm.fit(X, y, family = binomial())
     if (!initial.logit.fit$converged)
-        stop("attempt to find suitable starting values failed")
+        StopForUserError("attempt to find suitable starting values failed")
     coefs <- initial.logit.fit$coefficients
     if (anyNA(coefs)) {
         keep <- names(coefs)[!is.na(coefs)]
@@ -1612,14 +1616,14 @@ setChartData <- function(result, output)
 }
 
 #' @importFrom stats reformulate update
-#' @importFrom flipU OutcomeName
+#' @importFrom flipU OutcomeName StopForUserError
 removeMissingVariables <- function(data, formula, interaction, missing.variables)
 {
     all.variables <- names(missing.variables)
     missing.variable.names <- all.variables[missing.variables]
     outcome.name <- OutcomeName(formula)
     if (outcome.name %in% missing.variable.names)
-        stop("Outcome variable is entirely missing (all observed values of the variable are missing).")
+        StopForUserError("Outcome variable is entirely missing (all observed values of the variable are missing).")
     has.interaction <- !missing(interaction) && !is.null(interaction) && interaction != "NULL"
     non.missing.predictors <- setdiff(all.variables[!missing.variables], outcome.name)
     # Update data and formula
@@ -1668,7 +1672,7 @@ processAndStackData <- function(unstacked.data, formula, interaction, subset, we
 
 
     if (all(rm.missing)) {
-        stop("The stacked data contains no observations after missing data has been removed.")
+        StopForUserError("The stacked data contains no observations after missing data has been removed.")
     }
 
     n.missing <- Sum(rm.missing)
@@ -1883,13 +1887,14 @@ checkDataFeasibleForStacking <- function(data)
     validGridPredictor(data[["X"]])
 }
 
+#' @importFrom flipU StopForUserError
 checkListStructure <- function(data)
 {
     named.elements <- c("X", "Y") %in% names(data)
     if ((is.null(data) || !(is.list(data) && all(named.elements))))
-        stop("'unstacked.data' needs to be a list with two elements, ",
-             "'Y' containing a data.frame with the outcome variables and ",
-             "'X' containing a data.frame with the predictor variables.")
+        StopForUserError("'unstacked.data' needs to be a list with two elements, ",
+                         "'Y' containing a data.frame with the outcome variables and ",
+                         "'X' containing a data.frame with the predictor variables.")
 }
 
 validateDataForStacking <- function(data)
@@ -1942,10 +1947,10 @@ validateNamesInGrid <- function(data)
     any.matches <- vapply(matches, any, logical(1))
     # No labels match at all, error since there is nothing to align for stacking
     if (all(!any.matches))
-        stop("It is not possible to stack these variables since none of the outcome variable labels ",
-             "match the variable labels in the predictor variables. The outcome variables ",
-             outcome.variable.set.name, " have labels: ", paste0(sQuote(outcome.names), collapse = ", "),
-             " which don't appear in the labels of the grid of predictor variables.")
+        StopForUserError("It is not possible to stack these variables since none of the outcome variable labels ",
+                         "match the variable labels in the predictor variables. The outcome variables ",
+                         outcome.variable.set.name, " have labels: ", paste0(sQuote(outcome.names), collapse = ", "),
+                         " which don't appear in the labels of the grid of predictor variables.")
     # Check if is a clear match (no clash of predictor names with outcome names) and no codeframe available,
     # then 'transpose' the grid labels, i.e. outcome, predictor labels changed to predictor, outcome
     dimensions.matching <- Sum(any.matches, remove.missing = FALSE)
@@ -1960,36 +1965,39 @@ validateNamesInGrid <- function(data)
                                     "in both dimensions of the grid predictor variables. Please rename the ",
                                     "labels in either the outcome variables or grid predictor variables to ",
                                     "stack the variables and proceed.")
-        stop("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
-             ambiguous.message)
+        StopForUserError("Ambiguous labels in the grid predictors need to be reconciled before stacking can occur. ",
+                         ambiguous.message)
     }
     return(data[["X"]])
 }
 
 #' @importFrom methods is
+#' @importFrom flipU StopForUserError
 validMultiOutcome <- function(data)
 {
     if (!is(data, "data.frame"))
-        stop("Outcome variable to be stacked needs to be a data.frame. ",
-             "Please assign a data.frame to the \"Y\" element of the 'unstacked.data' argument.")
+        StopForUserError("Outcome variable to be stacked needs to be a data.frame. ",
+                         "Please assign a data.frame to the \"Y\" element of the 'unstacked.data' argument.")
 }
 
+#' @importFrom flipU StopForUserError
 checkNumberObservations <- function(data)
 {
     if (!diff(unlist(nrows <- lapply(data, NROW))) == 0)
     {
-        stop("Size of variables doesn't agree, the provided outcome variables have ", nrows[["Y"]],
-             " observations while the provided predictor variables have ", nrows[["X"]],
-             " observations. Please input variables that have the same size.")
+        StopForUserError("Size of variables doesn't agree, the provided outcome variables have ", nrows[["Y"]],
+                         " observations while the provided predictor variables have ", nrows[["X"]],
+                         " observations. Please input variables that have the same size.")
     }
 }
 
 #' @importFrom methods is
+#' @importFrom flipU StopForUserError
 validGridPredictor <- function(data)
 {
     if (!is(data, "data.frame"))
-        stop("Predictor variables to be stacked needs to be a data.frame. ",
-             "Please assign a data.frame to the \"X\" element of the 'unstacked.data' argument.")
+        StopForUserError("Predictor variables to be stacked needs to be a data.frame. ",
+                         "Please assign a data.frame to the \"X\" element of the 'unstacked.data' argument.")
 }
 
 validateOutcomeVariables <- function(data, outcome.names, predictor.names)
@@ -2066,13 +2074,14 @@ checkStackAlignment <- function(data, outcome.names, predictor.names)
     return(data[["Y"]])
 }
 
+#' @importFrom flipU StopForUserError
 stackData <- function(data)
 {
     outcome.names <- getMultiOutcomeNames(data[["Y"]])
     stacked.outcome <- stackOutcome(data[["Y"]], outcome.names)
     stacked.predictors <- stackPredictors(data[["X"]], outcome.names)
     if (!all(row.names(stacked.outcome) == row.names(stacked.predictors)))
-        stop("Stacked variables are not aligned properly. Contact support for further help.")
+        StopForUserError("Stacked variables are not aligned properly. Contact support for further help.")
     stacked.data <- cbind(stacked.outcome, stacked.predictors)
     return(stacked.data)
 }
@@ -2143,6 +2152,7 @@ removeReshapingHelperVariables <- function(data)
 # the predictor names.
 # If this is incorrect, then it will be corrected or matched in either
 # validateNamesInGrid or validateDataForStacking
+#' @importFrom flipU StopForUserError
 getGridNames <- function(data)
 {
     if (all(c("codeframe", "secondarycodeframe") %in% names(attributes(data))))
@@ -2158,11 +2168,11 @@ getGridNames <- function(data)
         split.names <- strsplit(names(data), ", ")
         splits <- vapply(split.names, length, numeric(1))
         if (any(ambiguous.splits <- splits != 2))
-            stop("The variable labels in the predictor grid should be comma separated to determine the columns ",
-                 "that belong to the appropriate outcome variable. This means that the variable labels cannot ",
-                 "use commas. Please remove the commas in the names in the predictor grid to continue ",
-                 "the analysis. The variable labels that are ambiguous and require fixing are: ",
-                 paste0(sQuote(names(data)[ambiguous.splits]), collapse = ", "))
+            StopForUserError("The variable labels in the predictor grid should be comma separated to determine the columns ",
+                             "that belong to the appropriate outcome variable. This means that the variable labels cannot ",
+                             "use commas. Please remove the commas in the names in the predictor grid to continue ",
+                             "the analysis. The variable labels that are ambiguous and require fixing are: ",
+                             paste0(sQuote(names(data)[ambiguous.splits]), collapse = ", "))
         outcome.names <- sapply(split.names, "[", 2)
         predictor.names <- sapply(split.names, "[", 1)
     }

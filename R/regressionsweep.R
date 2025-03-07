@@ -19,6 +19,7 @@
 #' CheckForLinearDependence CalibrateWeight
 #' @importFrom stats complete.cases
 #' @importFrom flipFormat Labels BaseDescription
+#' @importFrom flipU StopForUserError
 #' @importFrom verbs Sum
 #' @export
 LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL,
@@ -35,12 +36,12 @@ LinearRegressionFromCorrelations <- function(formula, data = NULL, subset = NULL
     indices <- c(outcome.index, predictors.index)
     factors <- unlist(lapply(data[,indices], is.factor))
     if (any(factors))
-        stop(paste0("Factors are not permitted when missing is set to 'Use partial data (pairwise)'.
-                    Factors: ", paste(variable.names[indices][factors], collapse = ", ")))
+        StopForUserError(paste0("Factors are not permitted when missing is set to 'Use partial data (pairwise)'.
+                                Factors: ", paste(variable.names[indices][factors], collapse = ", ")))
     subset.data <- if(is.null(subset)) data else subset(data, subset)
     n.subset <- nrow(subset.data)
     if (n.subset < length(predictors.index) + 1)
-        stop(warningSampleSizeTooSmall())
+        StopForUserError(warningSampleSizeTooSmall())
     n.total <- nrow(data)
     weighted <- !is.null(weights)
     if (weighted) {

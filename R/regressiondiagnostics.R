@@ -264,23 +264,25 @@ UnusualObservations <- function(model)
 }
 
 
+#' @importFrom flipU StopForUserError
 checkAcceptableModel <- function(x, classes, diagnostic, exclude.partial.data = TRUE)
 {
     diagnostic <- paste0("'", diagnostic, "'")
     if (exclude.partial.data && x$missing == "Use partial data (pairwise correlations)")
-        stop(diagnostic, " is not computed for model that are computed ",
-             "using 'Use partial data (pairwise correlations)'")
+        StopForUserError(diagnostic, " is not computed for model that are computed ",
+                         "using 'Use partial data (pairwise correlations)'")
     if (!any(classes %in% class(x$original)))
-        stop(diagnostic, " is not computed for models of this type or class.")
+        StopForUserError(diagnostic, " is not computed for models of this type or class.")
 }
 
 #' @export
+#' @importFrom flipU StopForUserError
 vif.Regression <- function (mod, ...)
 {
     # Can't produce VIF if there are aliased variables in the model
     aliased.polr <- getModelType(mod) == "Ordered Logit" && any(mod[["summary"]][["aliased"]])
     if (aliased.polr)
-        stop("Cannot compute VIF when there are aliased predictors in the model")
+        StopForUserError("Cannot compute VIF when there are aliased predictors in the model")
     # Check model acceptable for car::vif
     checkAcceptableModel(mod, c("lm", "glm", "polr", "svyolr"), "vif")
     res <- as.matrix(diagnosticTestFromCar(mod, "vif", ...))
@@ -291,12 +293,13 @@ vif.Regression <- function (mod, ...)
 #' @importFrom car Anova
 #' @importFrom flipFormat ExtractCommonPrefix
 #' @importFrom flipData RemoveBackticks
+#' @importFrom flipU StopForUserError
 #' @export
 Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 {
     if(inherits(mod$original, "svyolr"))
-        stop("'Anova' can not be computed for a 'Ordered Logit' model with weights. To compute the Anova, remove the ",
-             "weights or select a different regression type such as 'Linear'")
+        StopForUserError("'Anova' can not be computed for a 'Ordered Logit' model with weights. To compute the Anova, remove the ",
+                         "weights or select a different regression type such as 'Linear'")
     anova <- diagnosticTestFromCar(mod, "Anova", white.adjust = white.adjust, ...)
     # Updating labels
     if (mod$show.labels)
@@ -325,11 +328,12 @@ Anova.Regression <- function (mod, white.adjust = FALSE, ...)
 #' ncvTest.Regression
 #' @param model A \code{\link{Regression}} model.
 #' @param ... Additional parameters to \code{\link{ncvTest}}
+#' @importFrom flipU StopForUserError
 #' @export
 ncvTest.Regression <- function(model, ...)
 {
   if (!any("lm" %in% class(model$original)))
-    stop(paste0("'ncvTest is not applicable for this model (it is only appropriate for a model with type of 'Linear' and no sampling weights)."))
+    StopForUserError(paste0("'ncvTest is not applicable for this model (it is only appropriate for a model with type of 'Linear' and no sampling weights)."))
   checkAcceptableModel(model, "lm", "'ncvTest'")
   diagnosticTestFromCar(model, "ncvTest", ...)
 }
@@ -338,11 +342,12 @@ ncvTest.Regression <- function(model, ...)
 #' residualPlots.Regression
 #' @param model A \code{\link{Regression}} model.
 #' @param ... Additional parameters to \code{\link{residualPlots}}
+#' @importFrom flipU StopForUserError
 #' @export
 residualPlots.Regression <- function(model, ...)
 {
     if(issvyglm(model))
-        stop("'residualPlots' does not work with weights. Instead, run the model without weights but including the weight variable as a predictor.")
+        StopForUserError("'residualPlots' does not work with weights. Instead, run the model without weights but including the weight variable as a predictor.")
     checkAcceptableModel(model, c("glm","lm"), "'residualPlots'")
     assign(".estimation.data", model$estimation.data, envir=.GlobalEnv)
     assign(".formula", model$formula, envir=.GlobalEnv)

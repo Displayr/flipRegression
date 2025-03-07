@@ -344,6 +344,7 @@ print.Stepwise <- function(x, ...)
 # table in a regression summary.
 #' @importFrom flipFormat DataTableWithRItemFormat AddSignificanceHighlightingToDataTable
 #' @importFrom stats pt qt qnorm fitted fitted.values
+#' @importFrom flipU StopForUserError
 createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits = 2,
                                       p.digits = 2, coefficient.indices = 1:2,
                                       test.index = 3, p.index = 4,
@@ -362,7 +363,7 @@ createRegressionDataTable <- function(x, p.cutoff, caption = NULL, coeff.digits 
       test.column <- NULL
 
     } else if (length(t.col) > 0 && length(z.col) > 0 || length(t.col) > 1 || length(z.col) > 1) {
-      stop("Ambiguous statistical testing information in coefficients table.")
+      StopForUserError("Ambiguous statistical testing information in coefficients table.")
     } else if (length(t.col) > 0) {
       test.type <- "t"
       test.column <- t.col

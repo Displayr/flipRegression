@@ -2,6 +2,7 @@
 #' @importFrom flipData DataFormula
 #' @importFrom stats update.formula
 #' @importFrom verbs Sum
+#' @importFrom flipU StopForUserError
 computeInteractionCrosstab <- function(result, interaction.name, interaction.label,
                                        formula.with.interaction, importance,
                                        importance.absolute, internal.loop, ...)
@@ -81,8 +82,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                     Q = "Please contact support@q-researchsoftware.com for assistance.",
                     Displayr = "Please contact support@displayr.com for assistance."
                 )
-                stop(msg, " ", extra.msg, " The error message was: ",
-                     error.msg, " from ", deparse(e[["call"]]))
+                StopForUserError(msg, " ", extra.msg, " The error message was: ",
+                                 error.msg, " from ", deparse(e[["call"]]))
             }
             warning("The F-Test could not be computed for this Crosstab interaction. ",
                     "This is probably because too many cells in the ",
@@ -107,8 +108,8 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
         } else
         {
             if (is.weighted)
-                stop("Multiple imputation is currently not supported for weighted models ",
-                     "with interaction.")
+                StopForUserError("Multiple imputation is currently not supported for weighted models ",
+                                 "with interaction.")
             res$anova.fstat <- anova.interaction.result[2, 5]
             res$anova.dev <- anova.interaction.result[2, 4]
             res$anova.df1 <- -diff(as.numeric(anova.interaction.result[, 1]))
@@ -195,15 +196,15 @@ computeInteractionCrosstab <- function(result, interaction.name, interaction.lab
                                          outlier.prop.to.remove),
                            silent = TRUE)
             if (inherits(tmp.fit, "try-error"))
-                stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
-                     " takes the value ", split.labels[j], ". ", attr(tmp.fit, "condition")$message, "\n")
+                StopForUserError(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
+                                 " takes the value ", split.labels[j], ". ", attr(tmp.fit, "condition")$message, "\n")
             tmpC.fit <- try(FitRegression(formula2, estimation.data[-is.split,],
                                           weights[-is.split], result$type, result$robust.se,
                                           outlier.prop.to.remove),
                             silent = TRUE)
             if (inherits(tmpC.fit, "try-error"))
-                stop(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
-                     " doesn't take the value ", split.labels[j], ". ", attr(tmpC.fit, "condition")$message, "\n")
+                StopForUserError(base.error.msg, " The model cannot be computed for the sub-group when ", interaction.name,
+                                 " doesn't take the value ", split.labels[j], ". ", attr(tmpC.fit, "condition")$message, "\n")
             tmp.coefs <- tidySummary(summary(tmp.fit$original), tmp.fit$original, result)$coef
             tmpC.coefs <- tidySummary(summary(tmpC.fit$original), tmpC.fit$original, result)$coef
 

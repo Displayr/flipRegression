@@ -1,24 +1,25 @@
 # Helper function to check user has input a valid value.
+#' @importFrom flipU StopForUserError
 checkAutomaterOutlierRemovalSetting <- function(outlier.prop.to.remove, estimation.data)
 {
     remove.outliers <- !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0
     if (remove.outliers && outlier.prop.to.remove >= 0.5)
-        stop("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
-             FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
-             " to a lower setting and re-run the analysis.")
+        StopForUserError("At most, 50% of the data can be removed as part of the Automated Outlier Removal process. ",
+                         FormatAsPercent(outlier.prop.to.remove), " of outliers were asked to be removed, please set this ",
+                         " to a lower setting and re-run the analysis.")
     n <- nrow(estimation.data)
     p <- ncol(estimation.data)
     outlier.prop.to.remove <- if (is.null(outlier.prop.to.remove)) 0 else outlier.prop.to.remove
     if (floor(n * (1 - outlier.prop.to.remove)) < p + 1 && outlier.prop.to.remove > 0)
-        stop(warningSampleSizeTooSmall(), " If ", outlier.prop.to.remove * 100, "% of the outlying data is ",
-             "removed there will be less data than parameters to predict in the model which is not possible. ",
-             " Consider a simpler model with less parameters or change the automated outlier removal setting ",
-             " to a smaller value.")
+        StopForUserError(warningSampleSizeTooSmall(), " If ", outlier.prop.to.remove * 100, "% of the outlying data is ",
+                         "removed there will be less data than parameters to predict in the model which is not possible. ",
+                         " Consider a simpler model with less parameters or change the automated outlier removal setting ",
+                         " to a smaller value.")
     remove.outliers
 }
 
 # Identifies the outliers and refits the model
-#' @importFrom flipU InterceptExceptions
+#' @importFrom flipU InterceptExceptions StopForUserError
 refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights,
                                       type, robust.se, outlier.prop.to.remove,
                                       dummy.processed.data, seed, ...)
@@ -69,9 +70,9 @@ refitModelWithoutOutliers <- function(model, formula, .estimation.data, .weights
                 {
                     missing.levels <- regmatches(e$message,
                                                  regexpr("(?<=level\\(s\\): )(.*?)(?= that)", e$message, perl = TRUE))
-                    stop("Removing outliers has removed all the observations in the outcome variable with level(s): ",
-                         missing.levels,  ". If possible, this issue could be solved by merging the categories of the",
-                         " outcome variable or reducing the Automated Outlier removal setting.")
+                    StopForUserError("Removing outliers has removed all the observations in the outcome variable with level(s): ",
+                                     missing.levels,  ". If possible, this issue could be solved by merging the categories of the",
+                                     " outcome variable or reducing the Automated Outlier removal setting.")
                 }
                 else
                     stop(e$message)

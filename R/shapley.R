@@ -2,6 +2,7 @@
 # Shapley, L.S. (1953). "A value for n-person games"
 #' @importFrom utils combn
 #' @importFrom verbs Sum
+#' @importFrom flipU StopForUserError
 computeShapleyImportance <- function(formula, data = NULL, weights, signs,
                                      variable.names, robust.se = FALSE, outlier.prop.to.remove = NULL,
                                      show.warnings = TRUE, correction, ...)
@@ -32,8 +33,8 @@ computeShapleyImportance <- function(formula, data = NULL, weights, signs,
 
     n.predictors <- ncol(num.X)
     if (n.predictors > 27)
-        stop("Shapley can run with a maximum of 27 predictors. Set the ",
-             "output to Relative Importance Analysis instead.")
+        StopForUserError("Shapley can run with a maximum of 27 predictors. Set the ",
+                         "output to Relative Importance Analysis instead.")
 
     raw.importance <- rep(NA, n.predictors)
 

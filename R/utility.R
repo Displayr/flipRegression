@@ -74,6 +74,7 @@ isFormula <- function(formula) {
     is.call(formula) && length(formula) == 3L && formula[[1]] == quote(`~`)
 }
 
+#' @importFrom flipU StopForUserError
 validateFormulaArgument <- function(regression.args) {
     # If stacked data is provided, then the formula is not required
     stacked.data.check <- regression.args[["stacked.data.check"]]
@@ -81,37 +82,41 @@ validateFormulaArgument <- function(regression.args) {
     # Check formula
     formula <- regression.args[["formula"]]
     if (!isFormula(formula))
-        stop(dQuote("formula"), " argument is not a formula and is required unless stackable data is provided via the ",
-             dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
-             "Please provide a formula or stackable data and re-run the Regression.")
+        StopForUserError(dQuote("formula"), " argument is not a formula and is required unless stackable data is provided via the ",
+                         dQuote("stacked.data.check"), " and ", dQuote("unstacked.data"), " arguments. ",
+                         "Please provide a formula or stackable data and re-run the Regression.")
 }
 
 # Regression argument checking
+#' @importFrom flipU StopForUserError
 validateOutlierRemovalArgument <- function(regression.args) {
     outlier.prop.to.remove <- regression.args[["outlier.prop.to.remove"]]
     if (is.null(outlier.prop.to.remove)) return()
     if (!is.numeric(outlier.prop.to.remove) || length(outlier.prop.to.remove) != 1L)
-        stop(dQuote("outlier.prop.to.remove"), " should be a single numeric value.")
+        StopForUserError(dQuote("outlier.prop.to.remove"), " should be a single numeric value.")
     if (outlier.prop.to.remove < 0 || outlier.prop.to.remove > 1)
-        stop(dQuote("outlier.prop.to.remove"), " should be between 0 and 1.")
+        StopForUserError(dQuote("outlier.prop.to.remove"), " should be between 0 and 1.")
 }
 
+#' @importFrom flipU StopForUserError
 validateStatisticalAssumptionsArgument <- function(regression.args) {
     if (!identical(regression.args[["statistical.assumptions"]], alist(, )[[1]]))
-        stop("'statistical.assumptions' objects are not yet supported.")
+        StopForUserError("'statistical.assumptions' objects are not yet supported.")
 }
 
+#' @importFrom flipU StopForUserError
 validateRobustStandardErrorsArgument <- function(regression.args) {
     robust.standard.errors <- regression.args[["robust.standard.errors"]]
     if (is.null(robust.standard.errors)) return()
     if (!is.logical(robust.standard.errors) || length(robust.standard.errors) != 1L)
-        stop(dQuote("robust.standard.errors"), " should be a single logical value.")
+        StopForUserError(dQuote("robust.standard.errors"), " should be a single logical value.")
 }
 
+#' @importFrom flipU StopForUserError
 validateRegressionArg <- function(regression.args, arg.name, valid.values) {
     arg <- regression.args[[arg.name]]
     if (!is.character(arg) || length(arg) != 1L)
-        stop(dQuote(arg.name), " should be a single character value.")
+        StopForUserError(dQuote(arg.name), " should be a single character value.")
     if (!arg %in% valid.values)
         throwErrorInvalidArgument(arg.name)
 }
@@ -123,41 +128,44 @@ valid.arguments <- list(
                 "Multiple imputation")
 )
 
+#' @importFrom flipU StopForUserError
 validateRegressionTypeArgument <- function(regression.args) {
     validateRegressionArg(regression.args, "type", valid.arguments[["type"]])
     type <- regression.args[["type"]]
     robust.se <- regression.args[["robust.se"]]
     not.linear <- type != "Linear"
     if (not.linear && isTRUE(robust.se))
-        stop("Robust standard errors are only supported for Linear regression.")
+        StopForUserError("Robust standard errors are only supported for Linear regression.")
     output <- regression.args[["output"]]
     if (not.linear && startsWith(output, "Shapley"))
-        stop("Shapley requires Regression type to be Linear. Set the output to ",
-             "Relative Importance Analysis instead.")
+        StopForUserError("Shapley requires Regression type to be Linear. Set the output to ",
+                         "Relative Importance Analysis instead.")
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorInvalidArgument <- function(arg.name) {
     valid.parameters <- valid.arguments[[arg.name]]
-    stop(sQuote(arg.name), " should be one of ",
-         paste0(dQuote(valid.parameters), collapse = ", "), ".")
+    StopForUserError(sQuote(arg.name), " should be one of ",
+                     paste0(dQuote(valid.parameters), collapse = ", "), ".")
 }
 
+#' @importFrom flipU StopForUserError
 validateMissingValueArgument <- function(regression.args) {
     validateRegressionArg(regression.args, "missing", valid.arguments[["missing"]])
     # Check combination of missing value handling and outlier removal
     outlier.prop.to.remove <- regression.args[["outlier.prop.to.remove"]]
     missing <- regression.args[["missing"]]
     if (missing == "Multiple imputation" && !is.null(outlier.prop.to.remove) && outlier.prop.to.remove > 0)
-        stop("Multiple imputation is not supported with automated outlier removal. ",
-             "Either change the missing value handling option or set the Automated outlier ",
-             "removal percentage to zero")
+        StopForUserError("Multiple imputation is not supported with automated outlier removal. ",
+                         "Either change the missing value handling option or set the Automated outlier ",
+                         "removal percentage to zero")
     internal <- isTRUE(regression.args[["internal"]])
     partial <- missing == "Use partial data (pairwise correlations)"
     if (internal && partial)
-        stop("'internal' may not be selected with regressions based on correlation matrices.")
+        StopForUserError("'internal' may not be selected with regressions based on correlation matrices.")
     not.linear <- regression.args[["type"]] != "Linear"
     if (not.linear && partial)
-        stop("Use partial data (pairwise correlations) is only supported for Linear regression.")
+        StopForUserError("Use partial data (pairwise correlations) is only supported for Linear regression.")
     if (isTRUE(regression.args[["robust.se"]]) && (partial || missing == "Multiple imputation"))
-        stop("Robust standard errors cannot be computed with 'missing' set to ", missing, ".")
+        StopForUserError("Robust standard errors cannot be computed with 'missing' set to ", missing, ".")
 }
