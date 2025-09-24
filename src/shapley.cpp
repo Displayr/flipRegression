@@ -73,10 +73,10 @@ double regressorSubsetRsquared(NumericVector combination_indices,
 
     for (int i = 0; i < combination_size; i++)
         for (int j = 0; j < combination_size; j++)
-            corr_regressors_submatrix(i, j) = corr_regressors(combination_indices[i],
-                                      combination_indices[j]);
+            corr_regressors_submatrix(i, j) = corr_regressors(static_cast<int>(combination_indices[i]),
+                                      static_cast<int>(combination_indices[j]));
     for (int i = 0; i < combination_size; i++)
-        corr_xy_subvector[i] = corr_xy[combination_indices[i]];
+        corr_xy_subvector[i] = corr_xy[static_cast<int>(combination_indices[i])];
 
     // v'M^1v, where v = corr_xy_subvector and M = corr_regressors_submatrix
     return (double)(corr_regressors_submatrix.llt().solve(corr_xy_subvector).dot(corr_xy_subvector));
@@ -176,4 +176,3 @@ NumericVector shapleyImportance(Eigen::MatrixXd & corr_regressors,
 
     return importance;
 }
-
