@@ -816,3 +816,26 @@ test_that("Removing missing entirely missing variables", {
             )
         )
 })
+
+test_that("RS-20388: Survey weighted models preserve number of respondents in predictions", {
+    some.weighted.data.for.logistic <- data.frame(
+        y = rbinom(100, size = 1, prob = 0.5),
+        x1 = rnorm(100),
+        weights = runif(100, min = 0.5, max = 2)
+    )
+    # Set some rows to missing
+    is.na(some.weighted.data.for.logistic$x1) <- sample(1:100, size = 10)
+    model <- Regression(
+        y ~ x1, data = some.weighted.data.for.logistic,
+        type = "Binary Logit",
+        weights = some.weighted.data.for.logistic$weights,
+        missing = "Exclude cases with missing data"
+    )
+    probabilities <- Probabilities(model)
+    probabilities |> expect_type("double")
+    probabilities |> nrow() |> expect_equal(100L)
+
+    probabilities.with.missing <- Probabilities(model, na.action = na.omit)
+    probabilities.with.missing |> expect_type("double")
+    probabilities.with.missing |> nrow() |> expect_equal(90L)
+})

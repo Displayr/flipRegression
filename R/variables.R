@@ -216,7 +216,9 @@ Probabilities.Regression <- function(object, newdata = NULL, ...)
         StopForUserError(sQuote("Probabilities"), " is not applicable to linear regression models.")
     if (isTRUE(object$stacked) && IsRServer())
         StopForUserError("Saving probabilitiles is currently not supported for stacked data.")
-    newdata <- ValidateNewData(object, newdata)
+    na.action <- if ("na.action" %in% ...names()) list(...)[["na.action"]] else na.pass
+    newdata <- ValidateNewData(object, newdata) |>
+        structure(na.action = na.action) # Ensure NA rows are preserved, survey models may drop them otherwise
     if (object$type %in% c("Ordered Logit", "Multinomial Logit"))
     {
         probs <- suppressWarnings(predict(object$original, newdata = newdata,
@@ -230,7 +232,7 @@ Probabilities.Regression <- function(object, newdata = NULL, ...)
 
     if (object$type == "Binary Logit")
     {
-        probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.pass, type = "response"))
+        probs <- suppressWarnings(predict(object$original, newdata = newdata, na.action = na.action, type = "response"))
         outcome.levels <- levels(Observed(object))
         if (length(outcome.levels) == 1L)
         {
