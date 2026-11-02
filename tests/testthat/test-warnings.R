@@ -310,12 +310,15 @@ test_that("DS-2826: Check VIFs are handled properly", {
 
     expect_warning(nan.mod <- Regression(q28 ~ q31 + Q5_1 + Q5_2, data = phone,
                                          subset = phone.subset, weights = phone.weights, interaction = q2))
-    nan.caught.warning <- paste0(
-        "Possible multicollinearity detected in the data. Consider conducting a relative ",
+    # The VIF of this near-singular model is numerically unstable and differs between environments: NaN or a
+    # negative value gives the general warning, a huge positive value (as in NixR) the high-VIF warning. Either
+    # warns about the collinearity.
+    collinearity.warning <- paste0(
+        "^(Possible multicollinearity detected in the data\\. Consider conducting a relative ",
         "importance analysis by selecting the output to be Relative Importance Analysis or ",
-        "Shapley Regression."
+        "Shapley Regression\\.|A high squared Generalized Variance Inflation Factor is observed in the coefficients Q5_1 )"
     )
-    expect_warning(checkVIFAndWarn(nan.mod), nan.caught.warning, fixed = TRUE)
+    expect_warning(checkVIFAndWarn(nan.mod), collinearity.warning)
 })
 
 test_that("DS-3777 VIF is permissible for polr and svyolr models", {
