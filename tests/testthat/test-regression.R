@@ -68,12 +68,13 @@ test_that(missing, {
         data = bank,
         missing = missing
     )
+    # Expected values are from mice 3.13.0, which the R Server (NixR) pins.
     z <- as.numeric(do.call(Regression, basic.reg.args)$coef[3])
-    expect_equal(round(z, 3), 0.298)
+    expect_equal(round(z, 3), 0.300)
     reg.args <- basic.reg.args
     reg.args[["subset"]] <- sb
     z <- as.numeric(do.call(Regression, reg.args)$coef[3])
-    expect_equal(round(z, 3), 0.313)
+    expect_equal(round(z, 3), 0.312)
     reg.args <- basic.reg.args
     reg.args[["weights"]] <- wgt
     z <- as.numeric(do.call(Regression, reg.args)$coef[3])
@@ -82,7 +83,7 @@ test_that(missing, {
     reg.args[["weights"]] <- wgt
     reg.args[["subset"]] <- sb
     z <- as.numeric(do.call(Regression, reg.args)$coef[3])
-    expect_equal(round(z, 3), 0.323)
+    expect_equal(round(z, 3), 0.322)
 })
 
 missing <- "Multiple imputation"
